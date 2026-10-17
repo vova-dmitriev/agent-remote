@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "types": ["node"],
+    "jsx": "react-jsx",
+    "paths": {
+      "@/*": ["./apps/mini-app/src/*"],
+      "@protocol": ["./packages/protocol/src/index.ts"],
+      "@storybook-fixtures/*": ["./apps/mini-app/.storybook/fixtures/*"],
+      "@storybook-components/*": ["./apps/mini-app/.storybook/components/*"]
+    },
+    "rewriteRelativeImportExtensions": true
+  },
+  "include": ["apps/**/*.ts", "packages/**/*.ts", "tests/**/*.ts", "apps/**/*.tsx", "scripts/**/*.ts"]
+}

@@ -1,0 +1,123 @@
+.session-changes {
+  flex: 0 0 auto;
+  min-width: 0;
+  margin: 0.25rem 0 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.session-changes > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.8rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+.session-changes summary:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+.session-changes-count {
+  margin-left: auto;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.session-changes-content {
+  max-height: min(48dvh, 32rem);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 0 0.65rem 0.65rem;
+}
+.session-change-file {
+  border-top: 1px solid var(--line);
+}
+.session-change-file > summary {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  padding: 0.65rem 0.1rem;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+.session-change-path {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, monospace;
+}
+.session-change-kind {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+.session-change-added {
+  color: var(--markdown-syntax-string);
+}
+.session-change-deleted {
+  color: var(--danger-text);
+}
+.session-change-patch pre {
+  margin: 0 0 0.5rem;
+  padding: 0.5rem 0;
+  overflow-x: auto;
+  tab-size: 2;
+  font-size: 0.75rem;
+  line-height: 1.6;
+  background: var(--markdown-code-background);
+}
+.session-change-patch code {
+  display: block;
+  min-width: max-content;
+}
+.session-change-patch .diff-line {
+  display: inline-block;
+  min-width: 100%;
+  padding: 0 0.6rem;
+}
+.session-change-patch .diff-line-add {
+  background: color-mix(in srgb, var(--status-ready) 15%, transparent);
+}
+.session-change-patch .diff-line-delete {
+  background: color-mix(in srgb, var(--destructive) 13%, transparent);
+}
+.session-change-patch .diff-line-hunk {
+  color: var(--muted);
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+}
+
+.session-changes-chevron,
+.session-change-chevron {
+  flex: none;
+  color: var(--muted);
+}
+.session-changes[open] > summary .session-changes-chevron {
+  transform: rotate(180deg);
+}
+.session-change-file[open] > summary .session-change-chevron {
+  transform: rotate(90deg);
+}
+.session-change-patch .diff-line::before {
+  content: attr(data-line);
+  display: inline-block;
+  min-width: 2.5em;
+  padding-right: 0.65em;
+  color: var(--muted);
+  user-select: none;
+}
+
+.session-change-patch pre code {
+  font-size: 0.8rem;
+}
+.session-change-patch.message-markdown :is(.hljs-comment, .hljs-quote) {
+  color: color-mix(in srgb, var(--markdown-syntax-comment) 80%, var(--foreground));
+}
+.session-change-patch.message-markdown :is(.hljs-number, .hljs-attr, .hljs-symbol, .hljs-bullet) {
+  color: color-mix(in srgb, var(--markdown-syntax-number) 80%, var(--foreground));
+}
+.session-change-patch.message-markdown :is(.hljs-title, .hljs-built_in, .hljs-section, .hljs-selector-class) {
+  color: color-mix(in srgb, var(--markdown-syntax-title) 80%, var(--foreground));
+}
+
+.session-change-patch.message-markdown :is(.hljs-string, .hljs-regexp, .hljs-addition, .hljs-meta .hljs-string) {
+  color: color-mix(in srgb, var(--markdown-syntax-string) 80%, var(--foreground));
+}

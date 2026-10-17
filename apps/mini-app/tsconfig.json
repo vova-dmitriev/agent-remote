@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "paths": {
+      "@/*": ["./src/*"],
+      "@protocol": ["../../packages/protocol/src/index.ts"],
+      "@storybook-fixtures/*": ["./.storybook/fixtures/*"],
+      "@storybook-components/*": ["./.storybook/components/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", ".storybook/**/*.ts", ".storybook/**/*.tsx", "*.config.ts"]
+}

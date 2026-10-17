@@ -1,0 +1,74 @@
+export const TargetKind = {
+  Cmux: 'cmux',
+  ClaudeCodeCli: 'claude-code-cli',
+  ClaudeCodeDesktop: 'claude-code-desktop',
+  ClaudeDesktopChat: 'claude-desktop-chat',
+  CodexCli: 'codex-cli',
+  CodexDesktop: 'codex-desktop',
+} as const;
+
+export type TargetKind = (typeof TargetKind)[keyof typeof TargetKind];
+
+export const ConnectorTransport = {
+  Cmux: 'cmux',
+  Hooks: 'hooks',
+  Pty: 'pty',
+  Accessibility: 'accessibility',
+  Channel: 'channel',
+  AppServer: 'app-server',
+} as const;
+
+export type ConnectorTransport = (typeof ConnectorTransport)[keyof typeof ConnectorTransport];
+
+export const FrameType = {
+  Auth: 'auth',
+  Subscribe: 'subscribe',
+  Resume: 'resume',
+  Command: 'command',
+  HistoryRead: 'history_read',
+  HistoryDone: 'history_done',
+  HistoryItem: 'history_item',
+  Heartbeat: 'heartbeat',
+  Snapshot: 'snapshot',
+  Event: 'event',
+  CommandResult: 'command_result',
+  Authenticated: 'authenticated',
+  ResyncRequired: 'resync_required',
+  DeviceStatus: 'device_status',
+  Error: 'error',
+  Select: 'select',
+  Ack: 'ack',
+} as const;
+
+export type FrameType = (typeof FrameType)[keyof typeof FrameType];
+
+export const EventType = {
+  Message: 'message',
+  Status: 'status',
+  Tool: 'tool',
+  Snapshot: 'snapshot',
+  Permission: 'permission',
+  BindingLost: 'binding_lost',
+  UserInput: 'user_input',
+  Activity: 'activity',
+  SessionRenamed: 'session_renamed',
+  TurnStart: 'turn_start',
+  TurnEnd: 'turn_end',
+  SessionEnd: 'session_end',
+  Diagnostic: 'diagnostic',
+  ToolStart: 'tool_start',
+  ToolEnd: 'tool_end',
+} as const;
+
+export type EventType = (typeof EventType)[keyof typeof EventType];
+
+export const MessageRole = {
+  User: 'user',
+  Assistant: 'assistant',
+} as const;
+
+export type MessageRole = (typeof MessageRole)[keyof typeof MessageRole];
+
+/** Reserved connector identities; other connector IDs remain opaque strings. */
+export const ConnectorId = { Native: 'native' } as const;
+export type ConnectorId = (typeof ConnectorId)[keyof typeof ConnectorId];

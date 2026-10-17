@@ -1,0 +1,3 @@
+export const FEED_READING_INSET = 22
+export const READING_RESTORE_STABLE_FRAMES = 3
+export const READING_RESTORE_MAX_FRAMES = 90

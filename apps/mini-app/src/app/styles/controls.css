@@ -1,0 +1,163 @@
+a {
+  color: inherit;
+}
+.text-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+}
+.pair-card {
+  margin-top: 16px;
+  padding: 26px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.pair-card p {
+  margin-top: 13px;
+  color: var(--muted);
+  line-height: 1.65;
+}
+.pair-card .disclosure {
+  font-size: 12px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+form label {
+  display: block;
+  font-size: 12px;
+  margin: 20px 0 9px;
+}
+input,
+textarea {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 13px;
+  width: 100%;
+  color: inherit;
+}
+textarea {
+  resize: vertical;
+  line-height: 1.6;
+}
+.primary,
+.secondary,
+.danger {
+  padding: 12px 18px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-size: 13px;
+  font-weight: 600;
+}
+.primary {
+  background: var(--accent);
+  color: var(--primary-foreground);
+}
+.secondary {
+  background: transparent;
+  border-color: var(--line);
+}
+.danger {
+  color: var(--danger-text);
+  background: transparent;
+  border-color: var(--line);
+  margin-top: 18px;
+}
+.pair-card .primary {
+  margin-top: 14px;
+  width: 100%;
+}
+.notice {
+  padding: 14px 18px;
+  border-radius: 10px;
+  margin-bottom: 18px;
+  font-size: 13px;
+}
+.error {
+  background: var(--error-background);
+  color: var(--error-foreground);
+}
+.back {
+  margin: 3px 0 25px;
+}
+.composer {
+  border-top: 1px solid var(--line);
+  padding-top: 4px;
+}
+.muted {
+  font-size: 11px;
+  color: var(--muted);
+}
+.permission {
+  border: 1px solid var(--warning);
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 18px;
+  margin: 12px 0;
+}
+.permission-heading,
+.permission-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.permission h2 {
+  font-size: 15px;
+}
+.permission-heading > span {
+  font-size: 12px;
+  color: var(--accent);
+}
+.permission pre {
+  max-height: 150px;
+  overflow: auto;
+}
+.receipt {
+  text-align: center;
+  font-size: 12px;
+  color: var(--accent);
+  padding: 16px;
+}
+.settings {
+  margin-top: 25px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.settings p {
+  margin-top: 12px;
+  line-height: 1.6;
+}
+
+.composer-hint {
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.composer-input {
+  position: relative;
+}
+.composer-input textarea {
+  padding-right: 50px;
+  border-radius: 24px;
+}
+.composer .composer-input textarea:disabled {
+  overflow: hidden;
+}
+.composer-send[data-slot="button"] {
+  position: absolute;
+  right: 7px;
+  bottom: 7px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--foreground);
+  color: var(--background);
+}

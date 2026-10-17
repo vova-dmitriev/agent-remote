@@ -1,0 +1,193 @@
+import {
+  ConnectionStatus,
+  FrameType,
+  serverFrameSchema,
+  type HistoryPageDirection,
+  type ClientCommand,
+  type CommandResult,
+} from "@protocol"
+import { createAppSocket } from "./socket"
+import { logoutSession } from "./auth/logout"
+import { isAuthenticationError, startSessionAuthentication } from "./auth/errors"
+import { SessionAuthentication } from "./auth/session"
+import { AttachmentTransfer } from "./attachments"
+import { CommandSubmission } from "./commands.js"
+import { requestJson } from "./request-error"
+import { ReadingPositions } from "./reading-position"
+import { HistoryWindow } from "./history-window"
+import { HistoryStream, loadSessionHistory, restoreHistoryWindow } from "./history"
+import type { Device, TransportHandlers } from "./types.js"
+
+export class AppTransport {
+  private commands = new CommandSubmission((method, path, body) =>
+    this.request(path, { method, ...(body ? { body: JSON.stringify(body) } : {}) }),
+  )
+  private token = ""
+  private socket: WebSocket | undefined
+  private stopped = false
+  private expiresAt = 0
+  private retry: ReturnType<typeof setTimeout> | undefined
+  private authentication: SessionAuthentication
+  private deviceId: string | null = null
+  private selectedId: string | null = null
+  private selection = 0
+  private historyStream = new HistoryStream()
+  private window = new HistoryWindow()
+  private reading = new ReadingPositions((path, options) => this.request(path, options))
+  private restoreHistory: number | null = null
+  private requests = new Set<AbortController>()
+  readonly attachments = new AttachmentTransfer(() => ({ origin: this.origin, token: this.token }), this.requests)
+  constructor(
+    private initData: string,
+    private handlers: TransportHandlers,
+    private origin = "",
+  ) {
+    this.authentication = new SessionAuthentication(
+      origin,
+      (login) => {
+        if (this.stopped) return
+        this.token = login.token
+        this.expiresAt = login.expiresAt
+        const previous = this.socket
+
+        this.connect()
+        previous?.close()
+      },
+      (error) => {
+        const expired = isAuthenticationError(error)
+
+        this.handlers.onConnection(expired ? ConnectionStatus.Expired : ConnectionStatus.Offline)
+        if (expired) this.close()
+      },
+    )
+  }
+
+  start() {
+    return startSessionAuthentication(this.authentication, this.initData, this.handlers)
+  }
+  private connect() {
+    if (this.stopped) return
+
+    if (Date.now() >= this.expiresAt) {
+      void this.authentication.renew()
+
+      return
+    }
+
+    clearTimeout(this.retry)
+    const socket = createAppSocket(this.origin, () => this.token)
+
+    this.socket = socket
+
+    socket.onmessage = (event) => {
+      if (this.stopped || socket !== this.socket) return
+
+      try {
+        const frame = serverFrameSchema.parse(JSON.parse(String(event.data)))
+
+        if (frame.type === FrameType.Authenticated) {
+          this.handlers.onConnection(ConnectionStatus.Online)
+          if (this.deviceId) this.selectTarget(this.deviceId, this.selectedId)
+          this.restoreHistory = this.selectedId ? this.selection : null
+        }
+
+        if (frame.type === FrameType.CommandResult) frame.result = this.commands.observe(frame.result)
+        this.handlers.onFrame(frame)
+
+        const streamChanged = frame.type === FrameType.Snapshot && this.historyStream.changed(frame)
+
+        if (frame.type === FrameType.Snapshot && (this.restoreHistory === this.selection || streamChanged) && this.selectedId) {
+          if (streamChanged) ++this.selection
+          this.restoreHistory = null
+          const selected = this.selectedId
+          const generation = this.selection
+          const current = () => this.currentHistory(socket, selected, generation)
+
+          void restoreHistoryWindow(selected, this.history(selected), current, this.handlers)
+        }
+      } catch {
+        socket.close()
+      }
+    }
+
+    socket.onclose = (event) => {
+      if (this.stopped || socket !== this.socket) return
+      this.handlers.onConnection(ConnectionStatus.Offline)
+      if (event.code === 4001 || Date.now() >= this.expiresAt) void this.authentication.renew()
+      else this.retry = setTimeout(() => this.connect(), 1500)
+    }
+  }
+  async request<T>(path: string, options: RequestInit = {}, onResponse?: (response: Response) => void): Promise<T> {
+    return requestJson<T>(
+      this.origin + path,
+      { ...options, headers: { "content-type": "application/json", authorization: `Bearer ${this.token}`, ...options.headers } },
+      this.requests,
+      onResponse,
+    )
+  }
+  devices = () => this.request<Device[]>("/devices")
+  selectTarget(deviceId: string, sessionId: string | null) {
+    this.reading.flush()
+    ++this.selection
+    this.deviceId = deviceId
+    this.selectedId = sessionId
+    this.window.reset()
+    if (this.socket?.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify({ type: FrameType.Subscribe, deviceId, sessionId }))
+  }
+  resetTarget() {
+    ++this.selection
+    this.deviceId = this.selectedId = null
+
+    this.commands = new CommandSubmission((method, path, body) =>
+      this.request(path, { method, ...(body ? { body: JSON.stringify(body) } : {}) }),
+    )
+  }
+  private currentHistory = (socket: WebSocket | undefined, sessionId: string, generation: number) =>
+    !this.stopped && socket === this.socket && sessionId === this.selectedId && generation === this.selection
+  history(sessionId: string, latest = false) {
+    if (latest) {
+      ++this.selection
+      this.window.reset()
+    }
+
+    const generation = this.selection
+    const socket = this.socket
+
+    return loadSessionHistory(
+      sessionId,
+      (path, observe) => this.request(path, {}, observe),
+      () => this.currentHistory(socket, sessionId, generation),
+      (status) => this.handlers.onHistoryStatus?.(sessionId, status),
+      latest
+        ? ""
+        : () => this.reading.query(this.deviceId + ":" + sessionId, sessionId, () => this.currentHistory(socket, sessionId, generation)),
+      this.window.observe,
+    )
+  }
+  async historyPage(sessionId: string, direction: HistoryPageDirection, edge?: string) {
+    const socket = this.socket,
+      generation = this.selection
+
+    return this.window.page(
+      direction,
+      (query, observe) => this.request("/sessions/" + encodeURIComponent(sessionId) + "/events" + query, {}, observe),
+      () => this.currentHistory(socket, sessionId, generation),
+      edge,
+    )
+  }
+  send = (command: ClientCommand): Promise<CommandResult> => this.commands.send(command)
+
+  retryPending = (commandId?: string) => this.commands.retryPending(commandId)
+  checkPending = (commandId: string) => this.commands.checkPending(commandId)
+  logout = () => logoutSession(this)
+  close() {
+    this.stopped = true
+    clearTimeout(this.retry)
+    this.authentication.close()
+    this.reading.close()
+    this.socket?.close()
+    this.token = ""
+    for (const request of this.requests) request.abort()
+    this.requests.clear()
+  }
+}

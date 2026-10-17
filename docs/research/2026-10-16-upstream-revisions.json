@@ -1,0 +1,53 @@
+{
+  "checked_on": "2026-10-16",
+  "scope": "metadata and selected source review; no runtime tests",
+  "repositories": [
+    {
+      "repository": "jsayubi/ccgram",
+      "commit": "75b38e1bab4af411b40b4e589d050786eb65ceca",
+      "license": "MIT",
+      "url": "https://github.com/jsayubi/ccgram"
+    },
+    {
+      "repository": "slopus/happy",
+      "commit": "bd6348d50aadfc88736499c8e51e4cec10c9343b",
+      "license": "MIT",
+      "url": "https://github.com/slopus/happy"
+    },
+    {
+      "repository": "rennf93/cc-tg-hub",
+      "commit": "f4abecc196e0a8ddb6ca0cd9177c9a16a2e9b099",
+      "license": "MIT",
+      "url": "https://github.com/rennf93/cc-tg-hub"
+    },
+    {
+      "repository": "six-ddc/ccbot",
+      "commit": "9d7ab9721f09d748db242c22d04aa494cbebc72d",
+      "license": "MIT",
+      "url": "https://github.com/six-ddc/ccbot"
+    },
+    {
+      "repository": "tiann/hapi",
+      "commit": "317e39a0bb9c768ce135f3fbe3157f9e3fefeebe",
+      "license": "AGPL-3.0",
+      "url": "https://github.com/tiann/hapi"
+    },
+    {
+      "repository": "rsprowler/claude-code-telegram-bridge",
+      "commit": "694b14c3bb437edcf927dfd37550b3a9ddf958ef",
+      "license": "MIT",
+      "url": "https://github.com/rsprowler/claude-code-telegram-bridge"
+    },
+    {
+      "repository": "W4M-ai/cmux-tui",
+      "commit": "bb0fea83d2fcdb5f172e651cf0f4d81a37329eb8",
+      "license": "MIT",
+      "url": "https://github.com/W4M-ai/cmux-tui"
+    }
+  ],
+  "cmux_pr_3411": {
+    "state": "open",
+    "merged": false,
+    "head": "ad03210f2ec44d7c0ce3427f483b371dea317ca6"
+  }
+}

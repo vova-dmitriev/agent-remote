@@ -1,0 +1,39 @@
+name: Repository safety
+on:
+  pull_request:
+  push:
+permissions:
+  contents: read
+jobs:
+  secrets:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install pinned Gitleaks with checksum verification
+        run: bash scripts/security/install-gitleaks-linux.sh
+      - name: Check public files, complete history and hook regressions
+        run: |
+          node scripts/security/check.mjs worktree
+          node scripts/security/check.mjs history
+          node --test scripts/security/check.test.mjs scripts/validation/pre-commit.test.mjs
+  validation:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.12.0'
+      - name: Install pinned tooling and dependencies
+        run: |
+          npm install --global pnpm@10.34.7
+          pnpm install --frozen-lockfile
+          bash scripts/security/install-gitleaks-linux.sh
+      - name: Start isolated test services
+        run: docker compose -f compose.test.yml up -d --wait
+      - name: Validate source, types, production build and tests
+        run: npm run validate:commit

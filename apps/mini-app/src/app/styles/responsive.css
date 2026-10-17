@@ -1,0 +1,43 @@
+@media (max-width: 560px) {
+  .shell {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+  .brand {
+    font-size: 15px;
+  }
+  .empty {
+    padding: 45px 0 60px;
+  }
+  .empty h1 {
+    font-size: 28px;
+  }
+  .pair-card {
+    padding: 20px;
+  }
+  .detail-heading {
+    align-items: flex-start;
+  }
+  .detail-heading > .status {
+    padding-top: 4px;
+    text-align: right;
+  }
+  .detail-heading h1 {
+    font-size: 20px;
+  }
+  .feed {
+    height: 40dvh;
+  }
+  .app-actions {
+    gap: 3px;
+  }
+}
+
+@media (max-width: 360px) {
+  .shell > header {
+    flex-wrap: wrap;
+  }
+  .app-actions {
+    margin-left: auto;
+  }
+}

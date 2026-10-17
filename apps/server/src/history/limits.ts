@@ -1,0 +1,8 @@
+export const HISTORY_WINDOW_BEFORE_MESSAGES = 50;
+export const HISTORY_WINDOW_AFTER_MESSAGES = 50;
+export const HISTORY_MAX_PENDING_READS_PER_DEVICE = 4;
+export const HISTORY_SOURCE_TIMEOUT_MS = 8000;
+export const HISTORY_SOURCE_CURSOR_PREFIX = 'source:';
+export const HISTORY_POSITION_CURSOR_PREFIX = 'position:';
+export const HISTORY_CACHE_CURSOR_PREFIX = 'cache:';
+export const HISTORY_WINDOW_CACHE_VERSION = 'window-v3';

@@ -1,0 +1,43 @@
+.subagents {
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.75rem;
+}
+.subagents summary {
+  cursor: pointer;
+  padding: 0.4rem 0;
+  color: var(--muted);
+}
+.subagents summary span {
+  margin-left: 0.5rem;
+}
+.subagent-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 9rem;
+  overflow: auto;
+}
+.subagent-list li {
+  padding: 0.4rem 0;
+}
+.subagent-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.subagent-heading strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.subagent-heading span,
+.subagent-list small {
+  color: var(--muted);
+}
+.subagent-list p {
+  margin: 0.2rem 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

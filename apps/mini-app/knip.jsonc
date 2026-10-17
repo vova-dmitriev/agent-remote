@@ -1,0 +1,5 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": ["steiger.config.mjs", "eslint/rules.mjs", "eslint/one-component.mjs", "eslint.e2e.config.mjs"],
+  "project": ["src/**/*.{ts,tsx,css,mdx}", ".storybook/**/*.{ts,tsx}", "*.config.{ts,mjs}", "eslint/*.mjs"],
+}

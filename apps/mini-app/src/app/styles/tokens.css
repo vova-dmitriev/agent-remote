@@ -1,0 +1,85 @@
+:root {
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  color: var(--foreground);
+  background: var(--background);
+  font-synthesis: none;
+  font-size: 15px;
+  --palette-background: #f7f9fc;
+  --palette-foreground: #1c2738;
+  --palette-primary: #006fc5;
+  --palette-primary-foreground: #ffffff;
+  --palette-surface: #ffffff;
+  --palette-muted: #5c6b80;
+  --palette-link: #006fc5;
+  --background: var(--palette-background);
+  --foreground: var(--palette-foreground);
+  --primary: var(--palette-primary);
+  --primary-foreground: var(--palette-primary-foreground);
+  --accent: var(--primary);
+  --line: color-mix(in srgb, currentColor 13%, transparent);
+  --surface: var(--palette-surface);
+  --muted: var(--palette-muted);
+  --status-muted: #a1a9b5;
+  --status-ready: #4c9b70;
+  --status-busy: #bb8938;
+  --destructive: #bf3a4b;
+  --destructive-foreground: #ffffff;
+  --danger-text: var(--destructive);
+  --error-background: #fff0f2;
+  --error-foreground: #ad3041;
+  --warning: #ba852c;
+  --radius: 0.5rem;
+  --markdown-link: var(--palette-link);
+  --markdown-inline-code: color-mix(in srgb, var(--foreground) 7%, transparent);
+  --markdown-code-background: var(--surface);
+  --markdown-code-foreground: var(--foreground);
+  --markdown-code-toolbar: color-mix(in srgb, var(--foreground) 5%, var(--surface));
+  --markdown-syntax-comment: #65758a;
+  --markdown-syntax-keyword: #7948ae;
+  --markdown-syntax-string: #377a47;
+  --markdown-syntax-number: #96641f;
+  --markdown-syntax-title: #0078b8;
+  --markdown-syntax-tag: #ad3041;
+}
+.dark {
+  --palette-background: #17191d;
+  --palette-foreground: #e8edf4;
+  --palette-surface: #20242b;
+  --palette-muted: #a4adbb;
+  --palette-primary: #0098ff;
+  --primary: var(--palette-primary);
+  --primary-foreground: var(--palette-primary-foreground);
+  --markdown-link: var(--palette-link);
+  --palette-primary-foreground: #071c2b;
+  --danger-text: #ff8391;
+  --error-background: #392329;
+  --error-foreground: #ffb6be;
+  --palette-link: #0098ff;
+  --markdown-syntax-comment: #8391a5;
+  --markdown-syntax-keyword: #c4a7ff;
+  --markdown-syntax-string: #9ece8d;
+  --markdown-syntax-number: #e0b66d;
+  --markdown-syntax-title: #6fc3ff;
+  --markdown-syntax-tag: #f392ae;
+}
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--surface);
+  --color-secondary-foreground: var(--foreground);
+  --color-accent: color-mix(in srgb, var(--primary) 12%, var(--surface));
+  --color-accent-foreground: var(--foreground);
+  --color-muted: color-mix(in srgb, var(--foreground) 12%, var(--surface));
+  --color-muted-foreground: var(--muted);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-input: var(--line);
+  --color-ring: var(--primary);
+}
+@custom-variant dark (&:where(.dark, .dark *));

@@ -1,0 +1,64 @@
+.message-preview {
+  position: fixed;
+  z-index: 50;
+  width: min(360px, calc(100vw - 16px));
+  max-height: calc(100dvh - 16px);
+  overflow: hidden;
+  padding: 13px 15px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--foreground);
+  background: var(--surface);
+  box-shadow: 0 6px 24px color-mix(in srgb, var(--foreground) 18%, transparent);
+}
+.message-preview-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 7px;
+  font-size: 12px;
+}
+.message-preview-heading strong {
+  color: var(--accent);
+}
+.message-preview-heading time {
+  color: var(--muted);
+  font-size: 11px;
+}
+.message-preview-content {
+  max-height: min(260px, calc(100dvh - 100px));
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.message-preview .message-markdown :is(p, ul, ol, blockquote, table, pre) {
+  margin: 0.45rem 0;
+}
+.message-preview .message-markdown :is(h1, h2, h3, h4, h5, h6) {
+  margin: 0.6rem 0 0.3rem;
+  font-size: 14px;
+}
+.message-preview .message-markdown :is(p, li) {
+  white-space: pre-line;
+}
+.message-preview .message-markdown > :first-child {
+  margin-top: 0;
+}
+.message-preview .message-markdown > :last-child {
+  margin-bottom: 0;
+}
+.markdown-link-preview {
+  color: var(--markdown-link);
+}
+.markdown-code-preview {
+  max-width: 100%;
+  overflow: hidden;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--markdown-code-background);
+  color: var(--markdown-code-foreground);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

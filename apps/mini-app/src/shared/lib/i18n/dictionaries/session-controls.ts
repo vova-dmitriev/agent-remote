@@ -1,0 +1,83 @@
+export const sessionControlsEN = {
+  editQueuedPrompt: "Edit",
+  sendQueuedNow: "Send now",
+  queuedPromptEditor: "Edit queued message",
+  saveQueuedPrompt: "Save",
+  cancelQueuedEdit: "Cancel",
+  promptEditing: "Editing · automatic delivery paused",
+  launchContextUnavailable: "Could not preserve the launch settings. The session was not stopped.",
+  cmuxContextUnavailable: "The original cmux surface is unavailable. The session was not stopped.",
+  restartWithInput: "Restart with input",
+  restartWithInputHint: "Resumes this conversation on your Mac with remote input. The current turn will stop; history is preserved.",
+  nativeRestartUnavailable: "Could not verify a running Claude process for this conversation. Open it on your Mac.",
+  nativeRestartAmbiguous:
+    "This conversation is open in multiple Claude processes. On your Mac, finish the turns and type /exit in duplicate terminals, leaving one open. Restart with input will become available automatically.",
+
+  nativeInputConnect: "Connect input for this session",
+  nativeResumeInstructions:
+    "After the current turn finishes, type /exit in Claude. Open a new terminal and run this command. The session history is preserved.",
+
+  cancelSessionName: "Cancel",
+  renameSession: "Rename session",
+  sessionNameScope: "Name in Agent Remote",
+  saveSessionName: "Save",
+
+  subagents: "Subagents",
+  subagentsCount: "{{active}} active / {{total}}",
+  subagentsLastKnown: "Last known state",
+  subagentQueued: "Starting",
+  subagentCompleted: "Completed",
+  subagentFailed: "Failed",
+  subagentStopped: "Stopped",
+  sessionProvider: "Agent provider",
+  allAgents: "All",
+  newSession: "New session",
+  sessionProject: "Project folder",
+  createSession: "Create session",
+  creatingSession: "Creating…",
+  newCodexSessionHint: "Starts a managed Codex CLI session on your Mac.",
+  newClaudeSessionHint: "Opens Claude Code in Terminal on your Mac. Confirm project trust there if requested.",
+  invalidProject: "This project folder is unavailable on your Mac.",
+}
+
+export const sessionControlsRU = {
+  editQueuedPrompt: "Изменить",
+  sendQueuedNow: "Отправить сейчас",
+  queuedPromptEditor: "Изменить сообщение в очереди",
+  saveQueuedPrompt: "Сохранить",
+  cancelQueuedEdit: "Отмена",
+  promptEditing: "Редактирование · автоотправка приостановлена",
+  launchContextUnavailable: "Не удалось сохранить параметры запуска. Сессия не остановлена.",
+  cmuxContextUnavailable: "Исходная панель cmux недоступна. Сессия не остановлена.",
+  restartWithInput: "Перезапустить с вводом",
+  restartWithInputHint: "Mac возобновит эту же сессию с удалённым вводом. Текущий ход остановится, история сохранится.",
+  nativeRestartUnavailable: "Не удалось проверить запущенный процесс Claude для этой сессии. Открой её на Mac.",
+  nativeRestartAmbiguous:
+    "Эта сессия открыта в нескольких процессах Claude. На Mac дождись завершения ходов и введи /exit в лишних терминалах, оставив один открытым. Кнопка перезапуска с вводом появится автоматически.",
+
+  nativeInputConnect: "Подключить ввод в эту сессию",
+  nativeResumeInstructions:
+    "Дождись завершения хода и введи /exit в Claude. Открой новый терминал и выполни эту команду. История сессии сохранится.",
+
+  cancelSessionName: "Отмена",
+  renameSession: "Переименовать сессию",
+  sessionNameScope: "Название в Agent Remote",
+  saveSessionName: "Сохранить",
+
+  subagents: "Субагенты",
+  subagentsCount: "Активны: {{active}} / {{total}}",
+  subagentsLastKnown: "Последнее известное состояние",
+  subagentQueued: "Запускается",
+  subagentCompleted: "Завершён",
+  subagentFailed: "Ошибка",
+  subagentStopped: "Остановлен",
+  sessionProvider: "Агент",
+  allAgents: "Все",
+  newSession: "Новая сессия",
+  sessionProject: "Папка проекта",
+  createSession: "Создать сессию",
+  creatingSession: "Создание…",
+  newCodexSessionHint: "Запустит управляемую сессию Codex CLI на твоём Mac.",
+  newClaudeSessionHint: "Откроет Claude Code в Терминале на Mac. Если потребуется, подтверди доверие к проекту на Mac.",
+  invalidProject: "Папка проекта недоступна на Mac.",
+}

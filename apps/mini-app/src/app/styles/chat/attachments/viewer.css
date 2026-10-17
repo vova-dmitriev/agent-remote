@@ -1,0 +1,86 @@
+.attachment-dialog {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  overflow: hidden;
+  color: var(--foreground);
+  background: var(--background);
+  overscroll-behavior: none;
+}
+.attachment-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+.attachment-dialog::backdrop {
+  background: var(--background);
+}
+.viewer-toolbar {
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  padding: max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) 8px max(10px, env(safe-area-inset-left));
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+.viewer-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+.viewer-controls {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.viewer-toolbar button[data-slot="button"] {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+.viewer-percentage {
+  min-width: 4ch;
+  font-size: 13px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.viewer-viewport {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  touch-action: none;
+  overscroll-behavior: none;
+  cursor: grab;
+  user-select: none;
+  margin-bottom: env(safe-area-inset-bottom);
+}
+.viewer-viewport:active {
+  cursor: grabbing;
+}
+.viewer-viewport img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  transform-origin: center;
+  user-select: none;
+  pointer-events: none;
+  will-change: transform;
+}

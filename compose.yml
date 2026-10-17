@@ -1,0 +1,76 @@
+services:
+  redis:
+    image: redis:7.4-alpine
+    command:
+      [
+        'redis-server',
+        '--requirepass',
+        '${REDIS_PASSWORD:?Set REDIS_PASSWORD}',
+        '--appendonly',
+        'yes',
+        '--appendfsync',
+        'everysec',
+        '--maxmemory',
+        '256mb',
+        '--maxmemory-policy',
+        'noeviction',
+      ]
+    environment:
+      REDISCLI_AUTH: ${REDIS_PASSWORD:?Set REDIS_PASSWORD}
+    volumes:
+      - redis:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: claude_remote
+      POSTGRES_USER: claude_remote
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U claude_remote -d claude_remote']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  relay:
+    build: .
+    environment:
+      BOT_TOKEN: ${BOT_TOKEN:?Set BOT_TOKEN}
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL to postgres service}
+      REDIS_URL: redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD}@redis:6379/0
+      PUBLIC_ORIGIN: https://${DOMAIN:?Set DOMAIN}
+      HOST: 0.0.0.0
+      REMOTE_INPUT_ENABLED: ${REMOTE_INPUT_ENABLED:-0}
+      REMOTE_PERMISSIONS_ENABLED: ${REMOTE_PERMISSIONS_ENABLED:-0}
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+  proxy:
+    image: caddy:2-alpine
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN}
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - relay
+    restart: unless-stopped
+volumes:
+  redis:
+  postgres:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,2 @@
+export const COMMAND_RECEIPT_LIMIT = 200
+export const COMMAND_PENDING_LIMIT = 200

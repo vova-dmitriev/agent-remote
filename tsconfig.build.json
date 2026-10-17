@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "declaration": true,
+    "outDir": "dist",
+    "rootDir": "."
+  },
+  "include": ["apps/**/*.ts", "packages/**/*.ts", "apps/**/*.tsx"],
+  "exclude": [
+    "**/*.test.ts",
+    "apps/mini-app/vite.config.ts",
+    "**/*.stories.tsx",
+    "apps/mini-app/.storybook/**",
+    "apps/mini-app/vitest.storybook.config.ts"
+  ]
+}

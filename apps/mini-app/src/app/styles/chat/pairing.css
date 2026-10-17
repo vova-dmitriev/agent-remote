@@ -1,0 +1,33 @@
+.pair-command {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 16px 0;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 8px 12px;
+}
+.pair-command code {
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+.pair-manual {
+  margin-top: 20px;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+.pair-manual summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 13px;
+}
+.pair-manual summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+.pair-card .disclosure {
+  margin-top: 20px;
+  padding-bottom: 0;
+  border-bottom: 0;
+}

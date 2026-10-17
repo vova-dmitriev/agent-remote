@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+node scripts/security/check.mjs worktree
+exec node scripts/security/check.mjs history
