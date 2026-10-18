@@ -42,8 +42,10 @@ export class RelayClient extends EventEmitter {
           clearTimeout(authTimeout);
           this.attempt = 0;
           this.heartbeat = setInterval(() => this.send({ type: FrameType.Heartbeat }), 10000);
-          this.emit(RuntimeEvent.Online);
+          this.emit(RuntimeEvent.Online, frame.epoch);
         } else if (
+          frame.type === FrameType.ProfilesRequest ||
+          frame.type === FrameType.ProfilesCancel ||
           frame.type === FrameType.HistoryRead ||
           frame.type === FrameType.Command ||
           frame.type === FrameType.Select ||

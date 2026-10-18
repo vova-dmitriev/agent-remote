@@ -1,3 +1,4 @@
+import { DaemonErrorCode } from '../error-codes.js';
 import { spawn } from 'node:child_process';
 import { chmod, stat, writeFile } from 'node:fs/promises';
 import { isIP } from 'node:net';
@@ -23,7 +24,7 @@ export function parsePersonalTunnelConfig(
   }
 
   if (settings.some((value) => !value)) {
-    throw new Error('INCOMPLETE_PERSONAL_TUNNEL_CONFIG');
+    throw new Error(DaemonErrorCode.INCOMPLETE_PERSONAL_TUNNEL_CONFIG);
   }
 
   const [origin, tunnelId, credentialsFile] = settings as [string, string, string];
@@ -32,7 +33,7 @@ export function parsePersonalTunnelConfig(
   try {
     url = new URL(origin);
   } catch {
-    throw new Error('INVALID_PERSONAL_PUBLIC_ORIGIN');
+    throw new Error(DaemonErrorCode.INVALID_PERSONAL_PUBLIC_ORIGIN);
   }
 
   const hostname = url.hostname;
@@ -54,15 +55,15 @@ export function parsePersonalTunnelConfig(
     !/[a-z]/.test(labels.at(-1)!) ||
     /\.(localhost|local|internal|lan|home|localdomain|arpa|onion)$/.test(hostname)
   ) {
-    throw new Error('INVALID_PERSONAL_PUBLIC_ORIGIN');
+    throw new Error(DaemonErrorCode.INVALID_PERSONAL_PUBLIC_ORIGIN);
   }
 
   if (!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(tunnelId)) {
-    throw new Error('INVALID_PERSONAL_TUNNEL_ID');
+    throw new Error(DaemonErrorCode.INVALID_PERSONAL_TUNNEL_ID);
   }
 
   if (!isAbsolute(credentialsFile) || /[\0\r\n]/.test(credentialsFile)) {
-    throw new Error('INVALID_PERSONAL_TUNNEL_CREDENTIALS_FILE');
+    throw new Error(DaemonErrorCode.INVALID_PERSONAL_TUNNEL_CREDENTIALS_FILE);
   }
 
   return { origin: url.origin, tunnelId, credentialsFile };
@@ -74,7 +75,7 @@ export async function startNamedTunnel(
   options: { configPath: string; executable?: string; timeoutMs?: number },
 ) {
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
-    throw new Error('INVALID_LOCAL_PORT');
+    throw new Error(DaemonErrorCode.INVALID_LOCAL_PORT);
   }
 
   // Validate callers too: ingress must never broaden an unvalidated hostname.
@@ -89,7 +90,7 @@ export async function startNamedTunnel(
       throw new Error();
     }
   } catch {
-    throw new Error('PERSONAL_TUNNEL_CREDENTIALS_UNAVAILABLE');
+    throw new Error(DaemonErrorCode.PERSONAL_TUNNEL_CREDENTIALS_UNAVAILABLE);
   }
 
   try {
@@ -113,7 +114,7 @@ export async function startNamedTunnel(
 
     await chmod(options.configPath, 0o600);
   } catch {
-    throw new Error('PERSONAL_TUNNEL_CONFIG_WRITE_FAILED');
+    throw new Error(DaemonErrorCode.PERSONAL_TUNNEL_CONFIG_WRITE_FAILED);
   }
 
   const child = spawn(
@@ -155,7 +156,11 @@ export async function startNamedTunnel(
   try {
     await new Promise<void>((resolve, reject) => {
       let buffer = '';
-      const timer = setTimeout(() => finish(new Error('TUNNEL_START_TIMEOUT')), options.timeoutMs ?? 30000);
+
+      const timer = setTimeout(
+        () => finish(new Error(DaemonErrorCode.TUNNEL_START_TIMEOUT)),
+        options.timeoutMs ?? 30000,
+      );
 
       const data = (chunk: Buffer) => {
         buffer = (buffer + chunk.toString('utf8')).slice(-16384);
@@ -165,8 +170,8 @@ export async function startNamedTunnel(
         }
       };
 
-      const unavailable = () => finish(new Error('CLOUDFLARED_UNAVAILABLE'));
-      const prematureExit = () => finish(new Error('TUNNEL_EXITED'));
+      const unavailable = () => finish(new Error(DaemonErrorCode.CLOUDFLARED_UNAVAILABLE));
+      const prematureExit = () => finish(new Error(DaemonErrorCode.TUNNEL_EXITED));
 
       const finish = (error?: Error) => {
         clearTimeout(timer);

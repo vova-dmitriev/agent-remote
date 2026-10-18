@@ -4,8 +4,8 @@ import { createSessionStore } from "@/entities/session/model/store"
 import { SessionContext } from "@/entities/session/model/context/session-context"
 import type { SessionProviderProps } from "./session-provider.types"
 
-export function SessionProvider({ children }: SessionProviderProps) {
-  const [store] = useState(createSessionStore)
+export function SessionProvider({ children, initialProviderFilter }: SessionProviderProps) {
+  const [store] = useState(() => createSessionStore(initialProviderFilter))
 
   return (
     <SessionContext.Provider value={store}>

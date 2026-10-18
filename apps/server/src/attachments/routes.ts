@@ -1,3 +1,4 @@
+import { ErrorCode } from '../../../../packages/protocol/src/index.js';
 import { AttachmentKind, MAX_ATTACHMENT_BYTES } from '../../../../packages/protocol/src/index.js';
 import {
   ATTACHMENT_UPLOADS_PER_WINDOW,
@@ -17,7 +18,7 @@ const bearer = (req: Request) => {
   const value = req.headers.authorization;
 
   if (!value?.startsWith('Bearer ') || value.length > 520) {
-    throw new Fault('UNAUTHORIZED', 401);
+    throw new Fault(ErrorCode.UNAUTHORIZED, 401);
   }
 
   return value.slice(7);
@@ -31,7 +32,7 @@ const fail = (res: Response, error: unknown) => {
   } else if (error instanceof z.ZodError || error instanceof URIError) {
     fault = new Fault(AttachmentFaultCode.Invalid);
   } else {
-    fault = new Fault('INTERNAL_ERROR', 503);
+    fault = new Fault(ErrorCode.INTERNAL_ERROR, 503);
   }
 
   if (!res.headersSent) {
@@ -60,7 +61,7 @@ export function mountAttachmentRoutes(
         const sessionId = String(req.params.sessionId);
 
         if (sessionId.length > 512) {
-          throw new Fault('INVALID_REQUEST');
+          throw new Fault(ErrorCode.INVALID_REQUEST);
         }
 
         if (deviceMode) {
@@ -78,7 +79,7 @@ export function mountAttachmentRoutes(
           ).rows[0];
 
           if (!row) {
-            throw new Fault('NOT_FOUND', 404);
+            throw new Fault(ErrorCode.NOT_FOUND, 404);
           }
 
           contexts.set(req, { ownerId: principal.userId, deviceId: row.device_id, sessionId });
@@ -94,7 +95,7 @@ export function mountAttachmentRoutes(
       (req: Request, res: Response, next: NextFunction) => {
         try {
           if (!deviceMode && !inputEnabled) {
-            throw new Fault('CAPABILITY_UNAVAILABLE', 409);
+            throw new Fault(ErrorCode.CAPABILITY_UNAVAILABLE, 409);
           }
 
           limiter.take(contexts.get(req)!.ownerId, ATTACHMENT_UPLOADS_PER_WINDOW);

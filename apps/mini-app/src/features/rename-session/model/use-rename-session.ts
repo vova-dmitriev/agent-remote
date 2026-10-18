@@ -18,10 +18,7 @@ export function useRenameSession() {
 
       if (!lease || !source) throw new Error(ErrorCode.NO_AUTHENTICATED_CLIENT)
 
-      await lease.client.request(`/sessions/${encodeURIComponent(source.id)}`, {
-        method: "PATCH",
-        body: JSON.stringify({ title: title.trim(), generation: source.generation }),
-      })
+      await lease.client.renameSession(source.id, title.trim(), source.generation)
 
       if (!runtime.isCurrent(lease)) throw new Error(ErrorCode.STALE_SESSION)
     },

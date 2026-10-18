@@ -49,3 +49,11 @@ export const HistoryNavigationDirection = {
 } as const;
 export type HistoryNavigationDirection =
   (typeof HistoryNavigationDirection)[keyof typeof HistoryNavigationDirection];
+
+export const HistoryCursorPrefix = {
+  Cache: 'cache:',
+  Source: 'source:',
+  Position: 'position:',
+} as const;
+
+export type HistoryCursorPrefix = (typeof HistoryCursorPrefix)[keyof typeof HistoryCursorPrefix];

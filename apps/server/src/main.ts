@@ -1,3 +1,5 @@
+import { ServerErrorCode } from './error-codes.js';
+import { SharedPrivateErrorCode } from '../../../packages/protocol/src/private-error-codes.js';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRelay } from './relay.js';
@@ -10,7 +12,7 @@ async function main() {
     publicOrigin = process.env.PUBLIC_ORIGIN;
 
   if (!databaseUrl || !redisUrl || !botToken || !publicOrigin) {
-    throw new Error('MISSING_SERVER_CONFIG');
+    throw new Error(ServerErrorCode.MISSING_SERVER_CONFIG);
   }
 
   const origin = new URL(publicOrigin);
@@ -22,7 +24,7 @@ async function main() {
       ['localhost', '127.0.0.1', '[::1]'].includes(origin.hostname)
     )
   ) {
-    throw new Error('HTTPS_REQUIRED');
+    throw new Error(SharedPrivateErrorCode.HTTPS_REQUIRED);
   }
 
   const relay = await createRelay({

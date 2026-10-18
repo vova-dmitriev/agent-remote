@@ -1,3 +1,4 @@
+import { ErrorCode } from '../../../../packages/protocol/src/index.js';
 import { NativePidDomain, NativeProcessKind } from '../domain/runtime.js';
 import { NativeRestartState } from '../../../../packages/protocol/src/index.js';
 import { execFile } from 'node:child_process';
@@ -147,7 +148,7 @@ export class NativeProcesses {
     const before = await this.resolve(expected.sessionId, expected.cwd);
 
     if (!before || before.pid !== expected.pid || before.procStart !== expected.procStart) {
-      throw new Error('STALE_SESSION');
+      throw new Error(ErrorCode.STALE_SESSION);
     }
 
     try {
@@ -175,20 +176,20 @@ export class NativeProcesses {
 
       return { ...context, args: restartArguments(context.args, expected.sessionId) };
     } catch {
-      throw new Error('LAUNCH_CONTEXT_UNAVAILABLE');
+      throw new Error(ErrorCode.LAUNCH_CONTEXT_UNAVAILABLE);
     }
   }
   async stop(expected: NativeProcess) {
     const current = await this.resolve(expected.sessionId, expected.cwd);
 
     if (!current || current.pid !== expected.pid || current.procStart !== expected.procStart) {
-      throw new Error('STALE_SESSION');
+      throw new Error(ErrorCode.STALE_SESSION);
     }
 
     try {
       process.kill(expected.pid, 'SIGTERM');
     } catch {
-      throw new Error('UNKNOWN_AFTER_WRITE');
+      throw new Error(ErrorCode.UNKNOWN_AFTER_WRITE);
     }
 
     const deadline = Date.now() + 10000;
@@ -202,7 +203,7 @@ export class NativeProcesses {
         if ((error as NodeJS.ErrnoException).code === 'ESRCH') {
           alive = false;
         } else {
-          throw new Error('UNKNOWN_AFTER_WRITE');
+          throw new Error(ErrorCode.UNKNOWN_AFTER_WRITE);
         }
       }
 
@@ -210,7 +211,7 @@ export class NativeProcesses {
 
       if (!alive || (identity && identity.start !== expected.procStart)) {
         if ((await this.matches(expected.sessionId, expected.cwd)).length) {
-          throw new Error('UNKNOWN_AFTER_WRITE');
+          throw new Error(ErrorCode.UNKNOWN_AFTER_WRITE);
         }
 
         return;
@@ -219,6 +220,6 @@ export class NativeProcesses {
       await delay(100);
     }
 
-    throw new Error('UNKNOWN_AFTER_WRITE');
+    throw new Error(ErrorCode.UNKNOWN_AFTER_WRITE);
   }
 }

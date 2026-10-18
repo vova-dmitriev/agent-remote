@@ -6,7 +6,7 @@ import { MessageBubble } from "../message-bubble"
 import { HistorySkeleton } from "../loading/history-skeleton"
 import type { FeedContentProps } from "./feed-content.types"
 
-export function FeedContent({ sessionId, messages, tab, terminal, agent, historyStatus, virtualizer }: FeedContentProps) {
+export function FeedContent({ sessionId, messages, tab, terminal, agent, historyStatus, virtualizer, available }: FeedContentProps) {
   const { t } = useTranslation()
 
   if (tab === SessionTab.Terminal)
@@ -36,7 +36,7 @@ export function FeedContent({ sessionId, messages, tab, terminal, agent, history
 
   return (
     <p className="placeholder" data-testid={SESSION_FEED_IDS.empty}>
-      {t("emptyHistory")}
+      {t(available ? "emptyHistory" : "disconnectedHistory")}
     </p>
   )
 }

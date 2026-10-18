@@ -1,11 +1,13 @@
+import { ErrorCode } from './error-codes.js';
+
 export function validatePrompt(text: string): string {
   // eslint-disable-next-line no-control-regex -- Intentionally reject control characters at the wire boundary.
   if (typeof text !== 'string' || /[\x00-\x08\x0b-\x1f\x7f-\x9f]/u.test(text)) {
-    throw new Error('INVALID_PROMPT');
+    throw new Error(ErrorCode.INVALID_PROMPT);
   }
 
   if (new TextEncoder().encode(text).length > 16_384) {
-    throw new Error('PROMPT_TOO_LARGE');
+    throw new Error(ErrorCode.PROMPT_TOO_LARGE);
   }
 
   return text;

@@ -1,3 +1,4 @@
+import { DaemonErrorCode } from '../error-codes.js';
 import { randomBytes } from 'node:crypto';
 import { readFile, writeFile, appendFile, chmod } from 'node:fs/promises';
 import { parseEnv } from 'node:util';
@@ -36,11 +37,11 @@ export async function ensurePersonalEnv(path: string) {
   const postgresPassword = values.PERSONAL_POSTGRES_PASSWORD!;
 
   if (!/^[a-f0-9]{64}$/.test(postgresPassword)) {
-    throw new Error('INVALID_PERSONAL_DATABASE_PASSWORD');
+    throw new Error(DaemonErrorCode.INVALID_PERSONAL_DATABASE_PASSWORD);
   }
 
   if (!/^[a-f0-9]{64}$/.test(values.PERSONAL_REDIS_PASSWORD!)) {
-    throw new Error('INVALID_PERSONAL_REDIS_PASSWORD');
+    throw new Error(DaemonErrorCode.INVALID_PERSONAL_REDIS_PASSWORD);
   }
 
   return {
@@ -57,7 +58,7 @@ export async function startQuickTunnel(
   options: { executable?: string; timeoutMs?: number; configPath?: string } = {},
 ) {
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
-    throw new Error('INVALID_LOCAL_PORT');
+    throw new Error(DaemonErrorCode.INVALID_LOCAL_PORT);
   }
 
   const child = spawn(
@@ -95,7 +96,11 @@ export async function startQuickTunnel(
   try {
     const origin = await new Promise<string>((resolve, reject) => {
       let buffer = '';
-      const timer = setTimeout(() => reject(new Error('TUNNEL_START_TIMEOUT')), options.timeoutMs ?? 30000);
+
+      const timer = setTimeout(
+        () => reject(new Error(DaemonErrorCode.TUNNEL_START_TIMEOUT)),
+        options.timeoutMs ?? 30000,
+      );
 
       const finish = (error?: Error, url?: string) => {
         clearTimeout(timer);
@@ -121,10 +126,10 @@ export async function startQuickTunnel(
 
       child.once('error', () => {
         exited = true;
-        finish(new Error('CLOUDFLARED_UNAVAILABLE'));
+        finish(new Error(DaemonErrorCode.CLOUDFLARED_UNAVAILABLE));
       });
 
-      child.once('exit', () => finish(new Error('TUNNEL_EXITED')));
+      child.once('exit', () => finish(new Error(DaemonErrorCode.TUNNEL_EXITED)));
     });
 
     return { origin, close, exited: exit };

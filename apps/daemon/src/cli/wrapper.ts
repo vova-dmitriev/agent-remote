@@ -1,3 +1,4 @@
+import { ErrorCode } from '../../../../packages/protocol/src/index.js';
 import { WrapperActionType, IpcMessageType } from '../domain/ipc.js';
 import { CommandStatus, TargetKind } from '../../../../packages/protocol/src/index.js';
 import { CmuxClient } from '../cmux/client.js';
@@ -111,7 +112,7 @@ export async function startClaude(
 
           if (action.type === WrapperActionType.Snapshot) {
             if (!cmux || !cmuxClient || !config) {
-              throw new Error('CAPABILITY_UNAVAILABLE');
+              throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
             }
 
             result = {
@@ -128,7 +129,7 @@ export async function startClaude(
             result = { status: CommandStatus.Dispatched };
           } else {
             if (!remote || remote.claudeSessionId !== action.sessionId) {
-              throw new Error('STALE_SESSION');
+              throw new Error(ErrorCode.STALE_SESSION);
             }
 
             if (action.type === WrapperActionType.Prompt) {

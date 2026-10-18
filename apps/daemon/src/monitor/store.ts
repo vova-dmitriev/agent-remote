@@ -1,3 +1,4 @@
+import { DaemonErrorCode } from '../error-codes.js';
 import {
   ConnectorId,
   FrameType,
@@ -13,6 +14,10 @@ import {
   type EventEnvelope,
 } from '../../../../packages/protocol/src/index.js';
 import { CommandStoreOutcome } from '../domain/runtime.js';
+import { ErrorCode, type HistoryRead } from '../../../../packages/protocol/src/index.js';
+import { cachedLocalHistory } from './local-history.js';
+import { localCommand } from './local-command.js';
+import type { ClientCommand } from '../../../../packages/protocol/src/index.js';
 import Sqlite from 'better-sqlite3';
 import { chmodSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
@@ -57,6 +62,10 @@ export class LocalStore {
     );
 
     this.recoverCommands();
+
+    this.db.exec(
+      'CREATE TABLE IF NOT EXISTS local_command_intents(id TEXT PRIMARY KEY,data TEXT NOT NULL,created_at INTEGER NOT NULL)',
+    );
   }
   cursor(): Cursor {
     return {
@@ -119,14 +128,14 @@ export class LocalStore {
       ) ||
       !session.claudeSessionId
     ) {
-      throw new Error('NOT_FOUND');
+      throw new Error(ErrorCode.NOT_FOUND);
     }
 
     if (
       transcriptPath !== undefined &&
       (typeof transcriptPath !== 'string' || transcriptPath.length > 4096)
     ) {
-      throw new Error('INVALID_TRANSCRIPT_PATH');
+      throw new Error(DaemonErrorCode.INVALID_TRANSCRIPT_PATH);
     }
 
     this.db
@@ -181,14 +190,14 @@ export class LocalStore {
       !session.claudeSessionId ||
       session.target.claudeSessionId !== session.claudeSessionId
     ) {
-      throw new Error('NOT_FOUND');
+      throw new Error(ErrorCode.NOT_FOUND);
     }
 
     if (
       transcriptPath !== undefined &&
       (typeof transcriptPath !== 'string' || transcriptPath.length > 4096)
     ) {
-      throw new Error('INVALID_TRANSCRIPT_PATH');
+      throw new Error(DaemonErrorCode.INVALID_TRANSCRIPT_PATH);
     }
 
     this.db
@@ -348,6 +357,29 @@ export class LocalStore {
   }
   finish(result: CommandResult) {
     this.db.prepare('UPDATE commands SET result=? WHERE id=?').run(JSON.stringify(result), result.commandId);
+  }
+  receipt(commandId: string): CommandResult {
+    const row = this.db.prepare('SELECT result FROM commands WHERE id=?').get(commandId) as
+      { result: string } | undefined;
+
+    if (!row) {
+      if (this.hasLocalIntent(commandId)) {
+        return { commandId, status: CommandStatus.Unknown, code: ErrorCode.UNFINISHED_DISPATCH };
+      }
+
+      throw new Error(ErrorCode.NOT_FOUND);
+    }
+
+    return JSON.parse(row.result) as CommandResult;
+  }
+  localCommand(command: ClientCommand) {
+    return localCommand(this.db, command);
+  }
+  hasLocalIntent(commandId: string) {
+    return !!this.db.prepare('SELECT 1 FROM local_command_intents WHERE id=?').get(commandId);
+  }
+  historyPage(request: Pick<HistoryRead, 'sessionId' | 'direction' | 'anchor'>) {
+    return cachedLocalHistory(this.db, this.deviceId, request);
   }
   recoverCommands() {
     const rows = this.db.prepare('SELECT id,result FROM commands').all() as { id: string; result: string }[];

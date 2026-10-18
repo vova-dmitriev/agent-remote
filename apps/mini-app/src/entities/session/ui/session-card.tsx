@@ -1,7 +1,9 @@
+import { SessionStatus } from "@protocol"
 import { useTranslation } from "@/shared/lib/hooks"
 import { Button } from "@/shared/ui/button"
 import { SESSION_CARD_IDS } from "../config/test-ids"
-import { sourceNames, statuses, sessionTitle, agentName } from "../lib/labels"
+import { sourceNames, sessionTitle, agentName } from "../lib/labels"
+import { sessionStatusLabel, sourceAvailable } from "../lib/availability"
 import type { SessionCardProps } from "./session-card.types"
 
 export function SessionCard({ session, onSelect }: SessionCardProps) {
@@ -25,10 +27,10 @@ export function SessionCard({ session, onSelect }: SessionCardProps) {
         </span>
         <strong data-testid={SESSION_CARD_IDS.title}>{sessionTitle(session, 12) ?? t("selectedChat")}</strong>
         <span className="status" data-testid={SESSION_CARD_IDS.status}>
-          {t(statuses[session.status])}
+          {t(sessionStatusLabel(session))}
         </span>
       </div>
-      <span className={"status-dot " + session.status} />
+      <span className={"status-dot " + (sourceAvailable(session) ? session.status : SessionStatus.Unknown)} />
     </Button>
   )
 }

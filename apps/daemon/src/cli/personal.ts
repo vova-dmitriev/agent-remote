@@ -1,3 +1,4 @@
+import { DaemonErrorCode } from '../error-codes.js';
 import { LocalServiceStatus } from '../domain/cli.js';
 import { execFile } from 'node:child_process';
 import { mkdir, writeFile, access } from 'node:fs/promises';
@@ -30,7 +31,7 @@ export async function startPersonal(root = installationRoot()) {
   }
 
   await access(join(root, 'dist/mini-app/index.html')).catch(() => {
-    throw new Error('BUILD_REQUIRED');
+    throw new Error(DaemonErrorCode.BUILD_REQUIRED);
   });
 
   const bot = personalBot(config.botToken.trim());
@@ -49,7 +50,7 @@ export async function startPersonal(root = installationRoot()) {
       },
     );
   } catch {
-    throw new Error('PERSONAL_DATABASE_START_FAILED');
+    throw new Error(DaemonErrorCode.PERSONAL_DATABASE_START_FAILED);
   }
 
   let tunnel: Awaited<ReturnType<typeof startQuickTunnel>> | undefined;
@@ -111,11 +112,11 @@ export async function startPersonal(root = installationRoot()) {
 
   const checkRunning = () => {
     if (stopped) {
-      throw new Error('PERSONAL_START_CANCELLED');
+      throw new Error(DaemonErrorCode.PERSONAL_START_CANCELLED);
     }
 
     if (tunnelStopped) {
-      throw new Error('TUNNEL_EXITED');
+      throw new Error(DaemonErrorCode.TUNNEL_EXITED);
     }
   };
 
@@ -190,7 +191,7 @@ export async function startPersonal(root = installationRoot()) {
     }
 
     if (!healthy) {
-      throw new Error('TUNNEL_HEALTH_TIMEOUT');
+      throw new Error(DaemonErrorCode.TUNNEL_HEALTH_TIMEOUT);
     }
 
     checkRunning();
@@ -223,7 +224,7 @@ export async function startPersonal(root = installationRoot()) {
           device = await loadConfig();
         } catch (error) {
           if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-            throw new Error('INVALID_LOCAL_DEVICE_CONFIG');
+            throw new Error(DaemonErrorCode.INVALID_LOCAL_DEVICE_CONFIG);
           }
 
           if (pairingAttempted || stopped) {

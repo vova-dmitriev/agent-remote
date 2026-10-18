@@ -15,7 +15,7 @@ afterEach(() => {
   }
 });
 
-function fixture(script) {
+function fixture(script, validationCommand = 'node --check example.mjs') {
   const root = mkdtempSync(join(tmpdir(), 'strict-pre-commit-test-'));
 
   directories.push(root);
@@ -32,7 +32,7 @@ function fixture(script) {
     join(root, 'package.json'),
     JSON.stringify({
       type: 'module',
-      scripts: { 'validate:commit': 'node --check example.mjs' },
+      scripts: { 'validate:commit': validationCommand },
     }),
   );
 
@@ -77,4 +77,28 @@ test('pre-commit fails closed when the staged validation command is missing', ()
   writeFileSync(join(root, 'package.json'), '{"type":"module"}');
   execFileSync('git', ['add', 'package.json'], { cwd: root });
   assert.equal(hook(root).status, 1);
+});
+
+test('staged validation resolves Desktop workspace dependencies without staging them', () => {
+  const root = fixture(
+    `import { createRequire } from 'node:module';
+const requireDesktop = createRequire(new URL('./apps/desktop/package.json', import.meta.url));
+if (requireDesktop('desktop-fixture') !== 'synthetic') throw new Error('Missing Desktop dependency');
+`,
+    'node example.mjs',
+  );
+
+  const desktop = join(root, 'apps/desktop');
+  const dependency = join(desktop, 'node_modules/desktop-fixture');
+
+  mkdirSync(dependency, { recursive: true });
+  writeFileSync(join(desktop, 'package.json'), '{"private":true}');
+  writeFileSync(join(dependency, 'package.json'), '{"main":"index.cjs"}');
+  writeFileSync(join(dependency, 'index.cjs'), "module.exports = 'synthetic';\n");
+  execFileSync('git', ['add', 'apps/desktop/package.json'], { cwd: root });
+
+  const result = hook(root);
+
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.equal(execFileSync('git', ['ls-files', '**/node_modules/**'], { cwd: root }).toString(), '');
 });

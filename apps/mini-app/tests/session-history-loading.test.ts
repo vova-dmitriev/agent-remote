@@ -8,7 +8,7 @@ import { createLanguageInstance } from "../src/shared/lib/i18n/index.js"
 import { SessionFeed } from "../src/pages/session/ui/session-feed/session-feed.js"
 import { SESSION_FEED_IDS } from "../src/pages/session/config/test-ids.js"
 
-function render(historyStatus: HistoryStatus, tab: SessionTab = SessionTab.History, messages: HistoryMessage[] = []) {
+function render(historyStatus: HistoryStatus, tab: SessionTab = SessionTab.History, messages: HistoryMessage[] = [], available = true) {
   return renderToStaticMarkup(
     createElement(
       I18nextProvider,
@@ -20,10 +20,18 @@ function render(historyStatus: HistoryStatus, tab: SessionTab = SessionTab.Histo
         terminal: null,
         tab,
         historyStatus,
+        available,
       }),
     ),
   )
 }
+
+it("explains that empty cached history needs a session connection instead of promising new messages", () => {
+  const html = render(HistoryStatus.Ready, SessionTab.History, [], false)
+
+  expect(html).toContain("No cached messages. History will load when this session reconnects.")
+  expect(html).not.toContain("Available messages from this session will appear here.")
+})
 
 it("renders a busy skeleton instead of empty history before the initial history response", () => {
   const html = render(HistoryStatus.Loading)

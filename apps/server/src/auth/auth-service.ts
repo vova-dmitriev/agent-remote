@@ -1,3 +1,4 @@
+import { ErrorCode } from '../../../../packages/protocol/src/index.js';
 import { randomUUID } from 'node:crypto';
 import { type Database } from '../db/database.js';
 import { Fault, hash, secret, telegramIdentity, type Principal } from './security.js';
@@ -38,7 +39,7 @@ export class AuthService {
     const row = rows.rows[0];
 
     if (!row) {
-      throw new Fault('UNAUTHORIZED', 401);
+      throw new Fault(ErrorCode.UNAUTHORIZED, 401);
     }
 
     return { userId: row.id, telegramId: row.telegram_id };

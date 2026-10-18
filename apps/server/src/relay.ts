@@ -1,3 +1,4 @@
+import { ServerErrorCode } from './error-codes.js';
 import {
   ConnectorId,
   ErrorCode,
@@ -11,6 +12,7 @@ import {
   TargetKind,
   SessionStatus,
   CommandStatus,
+  HandoffPhase,
   appFrameSchema,
   deviceFrameSchema,
   clientCommandSchema,
@@ -36,6 +38,10 @@ import { SourceHistory } from './history/source.js';
 import { SessionHistory } from './history/service.js';
 import { persistEvent, eventNotificationId } from './history/events.js';
 import { BoundedSender } from '../../../packages/transport/src/bounded-sender.js';
+import { ProfileProxy } from './profiles/proxy.js';
+import { ServerProfiles } from './profiles/service.js';
+import { ProfileMetadataCache } from './profiles/repository.js';
+import { profileRequestSchema, ProfileRequestKind } from '../../../packages/protocol/src/index.js';
 import { DeviceFence } from './devices/fence.js';
 import { AttachmentService } from './attachments/service.js';
 import { mountAttachmentRoutes } from './attachments/routes.js';
@@ -51,6 +57,9 @@ import { BrowserSessions, readRefreshCookie, refreshCookie } from './auth/browse
 import { AuthService } from './auth/auth-service.js';
 import { DeviceService, type DeviceRecord } from './devices/service.js';
 import { Fault, Limiter, hash, telegramIdentity, type Principal } from './auth/security.js';
+import { claimHandoffCreateCommandId, claimRelayCommandId } from './continuity/command-claims.js';
+import { ContinuityService } from './continuity/service.js';
+import { ContinuityError } from './continuity/types.js';
 
 export interface RelayConfig {
   databaseUrl: string;
@@ -84,7 +93,7 @@ const bearer = (req: Request) => {
   const value = req.headers.authorization;
 
   if (!value?.startsWith('Bearer ') || value.length > 520) {
-    throw new Fault('UNAUTHORIZED', 401);
+    throw new Fault(ErrorCode.UNAUTHORIZED, 401);
   }
 
   return value.slice(7);
@@ -104,10 +113,10 @@ const fault = (error: unknown): Fault => {
   }
 
   if (error instanceof z.ZodError) {
-    return new Fault('INVALID_REQUEST');
+    return new Fault(ErrorCode.INVALID_REQUEST);
   }
 
-  return new Fault('INTERNAL_ERROR', 503);
+  return new Fault(ErrorCode.INTERNAL_ERROR, 503);
 };
 
 function commandCapability(action: ClientCommand['action']['type']) {
@@ -142,6 +151,7 @@ export async function createRelay(config: RelayConfig) {
 
   const labels = new SessionLabels(db);
   const history = new SessionHistory(db, messaging?.cache);
+  const continuity = new ContinuityService(db);
 
   const auth = new AuthService(db, config.botToken),
     devices = new DeviceService(db),
@@ -173,6 +183,8 @@ export async function createRelay(config: RelayConfig) {
   const sender = new BoundedSender();
   const send = (socket: WebSocket, frame: ServerFrame) => sender.send(socket, frame);
   const sourceHistory = new SourceHistory(db, live, send);
+  const profileProxy = new ProfileProxy(devices, live, send);
+  const profiles = new ServerProfiles(devices, live, profileProxy, new ProfileMetadataCache(db));
 
   mountAttachmentRoutes(
     http,
@@ -193,7 +205,7 @@ export async function createRelay(config: RelayConfig) {
       );
 
       if (!page) {
-        throw new Fault('ATTACHMENT_UNAVAILABLE', 503);
+        throw new Fault(ErrorCode.ATTACHMENT_UNAVAILABLE, 503);
       }
     },
   );
@@ -232,6 +244,7 @@ export async function createRelay(config: RelayConfig) {
       }
 
       live.delete(connection.device.id);
+      profileProxy.disconnect(connection);
 
       fanout(connection.device.owner_id, connection.device.id, {
         type: FrameType.DeviceStatus,
@@ -292,7 +305,77 @@ export async function createRelay(config: RelayConfig) {
     return fence.run(parsed.target.deviceId, () => executeCommand(p, parsed));
   }
 
-  async function executeCommand(p: Principal, input: ClientCommand): Promise<CommandResult> {
+  async function dispatchHandoffCreate(p: Principal, operationId: string): Promise<CommandResult> {
+    const row = (
+      await db.pool.query<{ device_id: string }>(
+        'SELECT device_id FROM handoff_operations WHERE owner_id=$1 AND id=$2',
+        [p.userId, operationId],
+      )
+    ).rows[0];
+
+    if (!row) {
+      throw new Fault(ErrorCode.NOT_FOUND, 404);
+    }
+
+    return fence.run(row.device_id, async () => {
+      const device = await devices.owned(p, row.device_id);
+      const scope = { deviceId: device.id, deviceGeneration: device.generation };
+      const operation = await continuity.getHandoff(p, scope, operationId);
+
+      if (operation.phase !== HandoffPhase.CreatingTarget) {
+        throw new Fault(ContinuityError.InvalidPhase, 409);
+      }
+
+      const conversation = await continuity.getConversation(p, scope, operation.conversationId);
+
+      const source = await continuity.getExecution(
+        p,
+        scope,
+        operation.conversationId,
+        operation.sourceExecutionId,
+      );
+
+      const snapshot = device.snapshot ? snapshotSchema.parse(device.snapshot) : emptySnapshot();
+
+      const session = snapshot.sessions.find(
+        (candidate) =>
+          candidate.id === source.nativeSessionId && candidate.generation === operation.sourceGeneration,
+      );
+
+      if (
+        conversation.activeExecutionId !== operation.sourceExecutionId ||
+        conversation.version !== operation.expectedConversationVersion + 1 ||
+        source.generation !== operation.sourceGeneration ||
+        !session?.cwd
+      ) {
+        throw new Fault(ErrorCode.STALE_SESSION, 409);
+      }
+
+      const input = clientCommandSchema.parse({
+        commandId: operation.createCommandId,
+        target: session.target,
+        sessionId: session.id,
+        generation: session.generation,
+        action: {
+          type: CommandActionType.CreateSession,
+          provider: operation.selection.provider,
+          cwd: session.cwd,
+          execution: {
+            selection: operation.selection,
+            expectedVersion: operation.expectedProfileVersion,
+          },
+        },
+      });
+
+      return executeCommand(p, input, operation.id);
+    });
+  }
+
+  async function executeCommand(
+    p: Principal,
+    input: ClientCommand,
+    handoffOperationId?: string,
+  ): Promise<CommandResult> {
     const source = clientCommandSchema.parse(input);
 
     await devices.owned(p, source.target.deviceId);
@@ -312,8 +395,29 @@ export async function createRelay(config: RelayConfig) {
 
     if (previous) {
       if (previous.fingerprint !== fingerprint) {
-        throw new Fault('COMMAND_ID_REUSED', 409);
+        throw new Fault(ErrorCode.COMMAND_ID_REUSED, 409);
       }
+
+      await db.transaction((tx) =>
+        handoffOperationId
+          ? claimHandoffCreateCommandId(
+              tx,
+              p.userId,
+              source.target.deviceId,
+              source.commandId,
+              handoffOperationId,
+              fingerprint,
+              Date.now(),
+            )
+          : claimRelayCommandId(
+              tx,
+              p.userId,
+              source.target.deviceId,
+              source.commandId,
+              fingerprint,
+              Date.now(),
+            ),
+      );
 
       return {
         commandId: source.commandId,
@@ -327,7 +431,7 @@ export async function createRelay(config: RelayConfig) {
     const connection = live.get(source.target.deviceId);
 
     if (!connection) {
-      throw new Fault('DEVICE_OFFLINE', 409);
+      throw new Fault(ErrorCode.DEVICE_OFFLINE, 409);
     }
 
     const device = await devices.owned(p, source.target.deviceId);
@@ -335,7 +439,7 @@ export async function createRelay(config: RelayConfig) {
     const session = data.sessions.find((s) => s.id === source.sessionId);
 
     if (!session || JSON.stringify(session.target) !== JSON.stringify(source.target)) {
-      throw new Fault('NOT_FOUND', 404);
+      throw new Fault(ErrorCode.NOT_FOUND, 404);
     }
 
     if (
@@ -343,7 +447,7 @@ export async function createRelay(config: RelayConfig) {
       (source.action.type !== CommandActionType.RestartSession &&
         (session.binding !== BindingState.Verified || session.integrationState !== IntegrationState.Ready))
     ) {
-      throw new Fault('STALE_SESSION', 409);
+      throw new Fault(ErrorCode.STALE_SESSION, 409);
     }
 
     const capability = commandCapability(source.action.type);
@@ -354,14 +458,14 @@ export async function createRelay(config: RelayConfig) {
         ? !config.permissionsEnabled
         : !config.inputEnabled)
     ) {
-      throw new Fault('CAPABILITY_UNAVAILABLE', 409);
+      throw new Fault(ErrorCode.CAPABILITY_UNAVAILABLE, 409);
     }
 
     if (
       source.action.type === CommandActionType.RestartSession &&
       (session.target.kind !== TargetKind.ClaudeCodeCli || session.target.connectorId !== ConnectorId.Native)
     ) {
-      throw new Fault('CAPABILITY_UNAVAILABLE', 409);
+      throw new Fault(ErrorCode.CAPABILITY_UNAVAILABLE, 409);
     }
 
     if (
@@ -370,23 +474,23 @@ export async function createRelay(config: RelayConfig) {
         (candidateValue) => candidateValue === session.target.kind,
       )
     ) {
-      throw new Fault('CAPABILITY_UNAVAILABLE', 409);
+      throw new Fault(ErrorCode.CAPABILITY_UNAVAILABLE, 409);
     }
 
     if (source.action.type === CommandActionType.CreateSession && source.action.cwd !== session.cwd) {
-      throw new Fault('INVALID_PROJECT', 400);
+      throw new Fault(ErrorCode.INVALID_PROJECT, 400);
     }
 
     if (
       source.action.type === CommandActionType.Prompt &&
       !canDeliverPrompt(session.status, source.action.delivery)
     ) {
-      throw new Fault('SESSION_NOT_IDLE', 409);
+      throw new Fault(ErrorCode.SESSION_NOT_IDLE, 409);
     }
 
     if (source.action.type === CommandActionType.Prompt && source.action.attachments?.length) {
       if (!session.capabilities.attachments) {
-        throw new Fault('CAPABILITY_UNAVAILABLE', 409);
+        throw new Fault(ErrorCode.CAPABILITY_UNAVAILABLE, 409);
       }
 
       await attachments.validate(
@@ -405,7 +509,7 @@ export async function createRelay(config: RelayConfig) {
       );
 
       if (!pending || pending.expiresAt <= Date.now()) {
-        throw new Fault('PERMISSION_EXPIRED', 409);
+        throw new Fault(ErrorCode.PERMISSION_EXPIRED, 409);
       }
 
       expiresAt = Math.min(expiresAt, pending.expiresAt);
@@ -422,31 +526,70 @@ export async function createRelay(config: RelayConfig) {
       );
 
       if (!pending || pending.expiresAt <= Date.now() || session.status === SessionStatus.Ended) {
-        throw new Fault('USER_INPUT_EXPIRED', 409);
+        throw new Fault(ErrorCode.USER_INPUT_EXPIRED, 409);
       }
 
       try {
         validateUserInputAnswers(pending, source.action.answers);
       } catch {
-        throw new Fault('INVALID_USER_INPUT');
+        throw new Fault(ErrorCode.INVALID_USER_INPUT);
       }
 
       expiresAt = Math.min(expiresAt, pending.expiresAt);
     }
 
-    const inserted = await db.pool.query(
-      'INSERT INTO command_audit(owner_id,command_id,device_id,session_id,action,fingerprint,status,created_at) VALUES($1,$2,$3,$4,$5,$6,$8,$7) ON CONFLICT DO NOTHING RETURNING command_id',
-      [
-        p.userId,
-        source.commandId,
-        source.target.deviceId,
-        source.sessionId,
-        source.action.type,
-        fingerprint,
-        Date.now(),
-        CommandStatus.Accepted,
-      ],
-    );
+    const inserted = await db.transaction(async (tx) => {
+      if (handoffOperationId && source.action.type !== CommandActionType.CreateSession) {
+        throw new Fault(ContinuityError.CommandIdReserved, 409);
+      }
+
+      const claimed = handoffOperationId
+        ? await claimHandoffCreateCommandId(
+            tx,
+            p.userId,
+            source.target.deviceId,
+            source.commandId,
+            handoffOperationId,
+            fingerprint,
+            Date.now(),
+          )
+        : await claimRelayCommandId(
+            tx,
+            p.userId,
+            source.target.deviceId,
+            source.commandId,
+            fingerprint,
+            Date.now(),
+          );
+
+      if (!claimed) {
+        return { rowCount: 0 };
+      }
+
+      const createEvidence =
+        source.action.type === CommandActionType.CreateSession && source.action.execution
+          ? {
+              selection: source.action.execution.selection,
+              version: source.action.execution.expectedVersion,
+            }
+          : null;
+
+      return tx.query(
+        'INSERT INTO command_audit(owner_id,command_id,device_id,session_id,action,fingerprint,status,created_at,create_selection,create_expected_profile_version) VALUES($1,$2,$3,$4,$5,$6,$8,$7,$9,$10) ON CONFLICT DO NOTHING RETURNING command_id',
+        [
+          p.userId,
+          source.commandId,
+          source.target.deviceId,
+          source.sessionId,
+          source.action.type,
+          fingerprint,
+          Date.now(),
+          CommandStatus.Accepted,
+          createEvidence?.selection ?? null,
+          createEvidence?.version ?? null,
+        ],
+      );
+    });
 
     if (!inserted.rowCount) {
       return executeCommand(p, source);
@@ -524,7 +667,7 @@ export async function createRelay(config: RelayConfig) {
 
   route(HttpMethod.Post, '/auth/refresh', async (req) => {
     if (req.headers.origin !== config.publicOrigin) {
-      throw new Fault('ACCESS_DENIED', 403);
+      throw new Fault(ErrorCode.ACCESS_DENIED, 403);
     }
 
     limiter.take('refresh:' + req.ip, 30);
@@ -558,6 +701,8 @@ export async function createRelay(config: RelayConfig) {
 
       revoked = await browserSessions.revoke(readRefreshCookie(req.headers.cookie));
     }
+
+    profileProxy.cancelAuth(revoked);
 
     for (const client of clients) {
       if (revoked.includes(hash(client.token))) {
@@ -605,6 +750,48 @@ export async function createRelay(config: RelayConfig) {
     return devices.confirm(body.proof, body.claimId, body.approved);
   });
 
+  route(HttpMethod.Post, '/devices/:deviceId/profiles', async (req, res) => {
+    const token = bearer(req);
+    const p = await principal(req);
+    const deviceId = boundedId.parse(req.params.deviceId);
+
+    limiter.take('profiles:' + p.userId, 120);
+    const request = profileRequestSchema.parse(req.body);
+
+    if (
+      !config.inputEnabled &&
+      request.kind !== ProfileRequestKind.List &&
+      request.kind !== ProfileRequestKind.Operation
+    ) {
+      throw new Fault(ErrorCode.CAPABILITY_UNAVAILABLE, 409);
+    }
+
+    const controller = new AbortController();
+
+    const cancel = () => {
+      if (!res.writableEnded) {
+        controller.abort();
+      }
+    };
+
+    res.once('close', cancel);
+
+    try {
+      return await profiles.request(
+        p,
+        deviceId,
+        request,
+        hash(token),
+        async () => {
+          await auth.authenticate(token);
+        },
+        controller.signal,
+      );
+    } finally {
+      res.off('close', cancel);
+    }
+  });
+
   route(HttpMethod.Get, '/devices', async (req) => devices.list(await principal(req)));
 
   route(HttpMethod.Delete, '/devices/:id', async (req) => {
@@ -617,6 +804,7 @@ export async function createRelay(config: RelayConfig) {
 
       if (connection) {
         live.delete(id);
+        profileProxy.disconnect(connection);
         connection.socket.close(4003, 'REVOKED');
       }
 
@@ -690,7 +878,7 @@ export async function createRelay(config: RelayConfig) {
     ).rows[0];
 
     if (!row) {
-      throw new Fault('NOT_FOUND', 404);
+      throw new Fault(ErrorCode.NOT_FOUND, 404);
     }
 
     return fence.run(row.device_id, async () => {
@@ -717,7 +905,7 @@ export async function createRelay(config: RelayConfig) {
     ).rows[0];
 
     if (!row) {
-      throw new Fault('NOT_FOUND', 404);
+      throw new Fault(ErrorCode.NOT_FOUND, 404);
     }
 
     if (row.sessionId === null) {
@@ -782,7 +970,7 @@ export async function createRelay(config: RelayConfig) {
 
           if (!client) {
             if (frame.type !== FrameType.Auth) {
-              throw new Fault('UNAUTHORIZED', 401);
+              throw new Fault(ErrorCode.UNAUTHORIZED, 401);
             }
 
             const p = await auth.authenticate(frame.token);
@@ -814,7 +1002,7 @@ export async function createRelay(config: RelayConfig) {
             const data = await snapshot(client.principal, frame.deviceId);
 
             if (frame.sessionId && !data.snapshot.sessions.some((s) => s.id === frame.sessionId)) {
-              throw new Fault('NOT_FOUND', 404);
+              throw new Fault(ErrorCode.NOT_FOUND, 404);
             }
 
             client.deviceId = frame.deviceId;
@@ -843,7 +1031,7 @@ export async function createRelay(config: RelayConfig) {
               result: await command(client.principal, frame.command),
             });
           } else {
-            throw new Fault('INVALID_FRAME');
+            throw new Fault(ErrorCode.INVALID_FRAME);
           }
         })
         .catch((error) => {
@@ -901,7 +1089,7 @@ export async function createRelay(config: RelayConfig) {
 
           if (!connection) {
             if (frame.type !== FrameType.Auth) {
-              throw new Fault('UNAUTHORIZED', 401);
+              throw new Fault(ErrorCode.UNAUTHORIZED, 401);
             }
 
             const found = await devices.authenticate(frame.token);
@@ -917,6 +1105,11 @@ export async function createRelay(config: RelayConfig) {
 
               connection = { socket, device, epoch: randomUUID(), lastSeen: Date.now() };
               live.set(device.id, connection);
+
+              if (previous) {
+                profileProxy.disconnect(previous);
+              }
+
               previous?.socket.close(4002, 'REPLACED');
               clearTimeout(timeout);
               send(socket, { type: FrameType.Authenticated, epoch: connection.epoch });
@@ -925,9 +1118,15 @@ export async function createRelay(config: RelayConfig) {
             return;
           }
 
+          if (frame.type === FrameType.ProfilesResult) {
+            await profileProxy.accept(connection, frame);
+
+            return;
+          }
+
           if (frame.type === FrameType.HistoryItem || frame.type === FrameType.HistoryDone) {
             if (live.get(connection.device.id) !== connection) {
-              throw new Fault('STALE_EPOCH', 409);
+              throw new Fault(ErrorCode.STALE_EPOCH, 409);
             }
 
             sourceHistory.accept(connection, frame);
@@ -941,12 +1140,19 @@ export async function createRelay(config: RelayConfig) {
             }
 
             if (live.get(connection.device.id) !== connection) {
-              throw new Fault('STALE_EPOCH', 409);
+              throw new Fault(ErrorCode.STALE_EPOCH, 409);
             }
 
-            await devices.owned({ userId: connection.device.owner_id, telegramId: '' }, connection.device.id);
+            const ctx = await devices.owned(
+              { userId: connection.device.owner_id, telegramId: '' },
+              connection.device.id,
+            );
+
+            if (ctx.generation !== connection.device.generation) {
+              throw new Fault(ErrorCode.STALE_EPOCH, 409);
+            }
+
             connection.lastSeen = Date.now();
-            const ctx = connection.device;
 
             await db.pool.query('UPDATE devices SET last_seen_at=$1 WHERE owner_id=$2 AND id=$3', [
               connection.lastSeen,
@@ -954,13 +1160,21 @@ export async function createRelay(config: RelayConfig) {
               ctx.id,
             ]);
 
-            if (frame.type === FrameType.Heartbeat) {
+            if (frame.type === FrameType.HandoffSeedProof) {
+              await continuity.recordAuthenticatedSeedProof(
+                { userId: ctx.owner_id, telegramId: '' },
+                { deviceId: ctx.id, deviceGeneration: ctx.generation },
+                frame,
+              );
+
+              return;
+            } else if (frame.type === FrameType.Heartbeat) {
               return;
             }
 
             if (frame.type === FrameType.Snapshot) {
               if (frame.snapshot.sessions.some((s) => s.target.deviceId !== ctx.id)) {
-                throw new Fault('INVALID_DEVICE');
+                throw new Fault(ErrorCode.INVALID_DEVICE);
               }
 
               const ids = new Set(frame.snapshot.sessions.map((s) => s.id));
@@ -993,7 +1207,7 @@ export async function createRelay(config: RelayConfig) {
                       s.capabilities.terminalSnapshot,
                   ))
               ) {
-                throw new Fault('INVALID_SNAPSHOT');
+                throw new Fault(ServerErrorCode.INVALID_SNAPSHOT);
               }
 
               frame.snapshot.sessions = await labels.apply(
@@ -1037,7 +1251,7 @@ export async function createRelay(config: RelayConfig) {
               const event = eventSchema.parse(frame.event);
 
               if (event.deviceId !== ctx.id) {
-                throw new Fault('INVALID_DEVICE');
+                throw new Fault(ErrorCode.INVALID_DEVICE);
               }
 
               if (
@@ -1049,7 +1263,7 @@ export async function createRelay(config: RelayConfig) {
                   )
                 ).rowCount
               ) {
-                throw new Fault('NOT_FOUND', 404);
+                throw new Fault(ErrorCode.NOT_FOUND, 404);
               }
 
               if (await persistEvent(db, ctx.owner_id, event)) {
@@ -1079,7 +1293,7 @@ export async function createRelay(config: RelayConfig) {
                 );
 
                 if (frame.result.status !== CommandStatus.Dispatched || !created.rowCount) {
-                  throw new Fault('INVALID_COMMAND_RESULT');
+                  throw new Fault(ServerErrorCode.INVALID_COMMAND_RESULT);
                 }
               }
 
@@ -1100,7 +1314,7 @@ export async function createRelay(config: RelayConfig) {
                 fanout(ctx.owner_id, ctx.id, { type: FrameType.CommandResult, result: frame.result });
               }
             } else {
-              throw new Fault('INVALID_FRAME');
+              throw new Fault(ErrorCode.INVALID_FRAME);
             }
           });
         })
@@ -1176,6 +1390,7 @@ export async function createRelay(config: RelayConfig) {
     devices,
     attachments,
     command,
+    dispatchHandoffCreate,
     replay,
     live,
     notify,
@@ -1188,6 +1403,7 @@ export async function createRelay(config: RelayConfig) {
     async close() {
       closing = true;
       sourceHistory.close();
+      profileProxy.close();
       clearInterval(timer);
       clearInterval(retention);
 

@@ -1,3 +1,4 @@
+import { ErrorCode } from '../../../../packages/protocol/src/index.js';
 import { connect } from 'node:net';
 import { PassThrough, Writable } from 'node:stream';
 import { lstat } from 'node:fs/promises';
@@ -7,7 +8,7 @@ import { CodexRpcClient, MAX_CODEX_FRAME_BYTES } from './rpc-client.js';
 
 export async function verifyLocalSocket(path: string) {
   if (!isAbsolute(path)) {
-    throw new Error('CODEX_INVALID_SOCKET');
+    throw new Error(ErrorCode.CODEX_INVALID_SOCKET);
   }
 
   const [socket, directory] = await Promise.all([lstat(path), lstat(dirname(path))]);
@@ -20,7 +21,7 @@ export async function verifyLocalSocket(path: string) {
     directory.uid !== process.getuid?.() ||
     (directory.mode & 0o022) !== 0
   ) {
-    throw new Error('CODEX_INVALID_SOCKET');
+    throw new Error(ErrorCode.CODEX_INVALID_SOCKET);
   }
 }
 
@@ -71,7 +72,7 @@ export async function connectCodexSocket(path: string) {
   try {
     await new Promise<void>((resolve, reject) => {
       socket.once('open', resolve);
-      socket.once('error', () => reject(new Error('CODEX_DISCONNECTED')));
+      socket.once('error', () => reject(new Error(ErrorCode.CODEX_DISCONNECTED)));
     });
 
     await client.initialize();

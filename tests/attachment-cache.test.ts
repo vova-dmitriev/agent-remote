@@ -102,8 +102,26 @@ it('deduplicates derived blobs, keeps original upload bytes, evicts only rebuild
     const legacyBytes = Buffer.from('Legacy file'),
       legacy = await service.store(context, { ...upload(legacyBytes), uploadId: legacyId }, false);
 
+    // Stage an existing 001–005 database with a legacy row before migration 006 is installed.
+    await fixture.db.pool.query("DELETE FROM server_schema_migrations WHERE version='006_attachment_cache'");
+
     await fixture.db.migrate();
     expect((await service.read(context, legacy.id)).bytes).toEqual(legacyBytes);
+
+    expect(
+      (await fixture.db.pool.query('SELECT bytes IS NULL AS moved FROM attachments WHERE id=$1', [legacy.id]))
+        .rows[0].moved,
+    ).toBe(true);
+
+    expect(
+      (
+        await fixture.db.pool.query(
+          "SELECT 1 FROM server_schema_migrations WHERE version='006_attachment_cache'",
+        )
+      ).rowCount,
+    ).toBe(1);
+
+    await fixture.db.migrate();
 
     expect(
       (await fixture.db.pool.query('SELECT bytes IS NULL AS moved FROM attachments WHERE id=$1', [legacy.id]))

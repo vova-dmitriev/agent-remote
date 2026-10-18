@@ -1,3 +1,4 @@
+import { ErrorCode } from '../../../../packages/protocol/src/index.js';
 import { MessageRole } from '../../../../packages/protocol/src/index.js';
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 
@@ -78,7 +79,7 @@ export function telegramIdentity(raw: string, botToken: string, now = Date.now()
 
     throw new Error();
   } catch {
-    throw new Fault('UNAUTHORIZED', 401);
+    throw new Fault(ErrorCode.UNAUTHORIZED, 401);
   }
 }
 
@@ -95,7 +96,7 @@ export class Limiter {
       }
 
       if (this.buckets.size >= 10000) {
-        throw new Fault('RATE_LIMITED', 429);
+        throw new Fault(ErrorCode.RATE_LIMITED, 429);
       }
     }
 
@@ -105,7 +106,7 @@ export class Limiter {
     }
 
     if (++bucket.count > limit) {
-      throw new Fault('RATE_LIMITED', 429);
+      throw new Fault(ErrorCode.RATE_LIMITED, 429);
     }
   }
 }

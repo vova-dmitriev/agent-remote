@@ -1,6 +1,6 @@
-import type { AppTransport } from "@/shared/api"
+import type { ApplicationClient } from "@/shared/api"
 
 export interface RuntimeLease {
-  readonly client: AppTransport
+  readonly client: ApplicationClient
   readonly epoch: number
 }

@@ -4,6 +4,7 @@
 @import "./sessions.css";
 @import "./controls.css";
 @import "./responsive.css";
+@import "./accounts/accounts.css";
 @import "./chat/feed.css";
 @import "./chat/outbox/outbox.css";
 @import "./chat/activity/activity.css";

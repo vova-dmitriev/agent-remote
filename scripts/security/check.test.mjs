@@ -44,6 +44,8 @@ test('private/generated paths are denied, curated screenshots and environment te
     'secret.pem',
     'test-results/trace.zip',
     'session.jsonl',
+    'apps/desktop/out/agent-remote-desktop-darwin-arm64/Agent Remote.app/Contents/Info.plist',
+    'copied/Agent Remote.app/Contents/Resources/app.asar',
   ]) {
     assert.equal(isPrivatePath(file), true, file);
   }
@@ -51,6 +53,20 @@ test('private/generated paths are denied, curated screenshots and environment te
   for (const file of ['.env.example', 'docs/screenshots/sessions.png', 'apps/mini-app/src/index.ts']) {
     assert.equal(isPrivatePath(file), false, file);
   }
+});
+
+test('force-added Desktop build output is blocked by staged path policy', () => {
+  const directory = fixture();
+  const generated = 'apps/desktop/out/package/Info.plist';
+
+  mkdirSync(join(directory, 'apps/desktop/out/package'), { recursive: true });
+  writeFileSync(join(directory, '.gitignore'), 'apps/desktop/out/\n');
+  writeFileSync(join(directory, generated), 'synthetic generated output');
+  execFileSync('git', ['add', '--force', generated], { cwd: directory });
+  const result = scan(directory, 'staged');
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Private\/generated path/);
 });
 
 test('staged secret is blocked even after the working copy has been sanitized; values are suppressed', () => {

@@ -1,3 +1,5 @@
+import { HistoryCursorPrefix } from '../../../../packages/protocol/src/index.js';
+
 export const TRANSCRIPT_PAGE_MESSAGES = 100;
 export const TRANSCRIPT_AROUND_BEFORE_MESSAGES = 49;
 export const TRANSCRIPT_AROUND_AFTER_MESSAGES = 51;
@@ -12,5 +14,5 @@ export const TRANSCRIPT_MAX_SEEN_IDS = 10_000;
 export const TRANSCRIPT_MAX_POSITION_ENTRIES = 10_000;
 export const TRANSCRIPT_PREFIX_BYTES = 4_096;
 export const TRANSCRIPT_ANCHOR_BYTES = 64;
-export const TRANSCRIPT_POSITION_PREFIX = 'position:';
+export const TRANSCRIPT_POSITION_PREFIX = HistoryCursorPrefix.Position;
 export const JSONL_NEWLINE_BYTE = 10;

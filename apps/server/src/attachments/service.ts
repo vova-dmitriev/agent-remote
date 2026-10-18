@@ -1,3 +1,4 @@
+import { ErrorCode } from '../../../../packages/protocol/src/index.js';
 import {
   BindingState,
   IntegrationState,
@@ -42,7 +43,7 @@ export class AttachmentService {
     ).rows[0];
 
     if (!row) {
-      throw new Fault('NOT_FOUND', 404);
+      throw new Fault(ErrorCode.NOT_FOUND, 404);
     }
 
     return sessionSchema.parse(row.data);
@@ -86,7 +87,7 @@ export class AttachmentService {
       );
 
       if (!device.rowCount) {
-        throw new Fault('NOT_FOUND', 404);
+        throw new Fault(ErrorCode.NOT_FOUND, 404);
       }
 
       const sessionRow = (
@@ -97,13 +98,13 @@ export class AttachmentService {
       ).rows[0];
 
       if (!sessionRow) {
-        throw new Fault('NOT_FOUND', 404);
+        throw new Fault(ErrorCode.NOT_FOUND, 404);
       }
 
       const session = sessionSchema.parse(sessionRow.data);
 
       if (session.generation !== input.generation) {
-        throw new Fault('STALE_SESSION', 409);
+        throw new Fault(ErrorCode.STALE_SESSION, 409);
       }
 
       if (
@@ -113,7 +114,7 @@ export class AttachmentService {
           session.binding !== BindingState.Verified ||
           session.integrationState !== IntegrationState.Ready)
       ) {
-        throw new Fault('CAPABILITY_UNAVAILABLE', 409);
+        throw new Fault(ErrorCode.CAPABILITY_UNAVAILABLE, 409);
       }
 
       const existing = (
@@ -292,7 +293,7 @@ export class AttachmentService {
     ).rows[0];
 
     if (!row) {
-      throw new Fault('NOT_FOUND', 404);
+      throw new Fault(ErrorCode.NOT_FOUND, 404);
     }
 
     if (Number(row.expires_at) <= Date.now()) {
@@ -323,7 +324,7 @@ export class AttachmentService {
     ).rows[0];
 
     if (!row) {
-      throw new Fault('NOT_FOUND', 404);
+      throw new Fault(ErrorCode.NOT_FOUND, 404);
     }
 
     return { messageId: row.source_message_id, position: row.source_position };
@@ -343,7 +344,7 @@ export class AttachmentService {
       const row = stored.get(descriptor.id);
 
       if (!row) {
-        throw new Fault('NOT_FOUND', 404);
+        throw new Fault(ErrorCode.NOT_FOUND, 404);
       }
 
       if (Number(row.expires_at) <= Date.now()) {

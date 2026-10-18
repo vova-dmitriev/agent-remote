@@ -1,0 +1,16 @@
+export const SESSION_CREATE_IDS = {
+  root: "session-create",
+  toggle: "session-create-toggle",
+  form: "session-create-form",
+  submit: "session-create-submit",
+  profile: "create-profile",
+  profileStatus: "create-profile-status",
+  model: "create-model",
+  effort: "create-effort",
+  profileOption: "create-profile-option",
+  provider: { root: "create-provider", trigger: "create-provider-trigger", panel: "create-provider-panel" },
+  claude: "create-provider-claude",
+  codex: "create-provider-codex",
+  project: { root: "create-project", trigger: "create-project-trigger", panel: "create-project-panel" },
+  projectOption: "create-project-option",
+} as const

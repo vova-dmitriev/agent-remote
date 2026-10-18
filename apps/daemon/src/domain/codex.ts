@@ -95,9 +95,22 @@ export const CodexMethod = {
   Initialize: 'initialize',
   Initialized: 'initialized',
   ModelList: 'model/list',
+  AccountRead: 'account/read',
+  AccountLoginStart: 'account/login/start',
+  AccountLoginCancel: 'account/login/cancel',
+  AccountRateLimitsRead: 'account/rateLimits/read',
+  ConfigRead: 'config/read',
+  ThreadList: 'thread/list',
 } as const;
 
 export type CodexMethod = (typeof CodexMethod)[keyof typeof CodexMethod];
+
+export const CodexLaunchArgument = {
+  Server: 'app-server',
+  Listen: '--listen',
+  UnixSocketPrefix: 'unix://',
+} as const;
+export type CodexLaunchArgument = (typeof CodexLaunchArgument)[keyof typeof CodexLaunchArgument];
 
 export const CodexItemsView = {
   NotLoaded: 'notLoaded',

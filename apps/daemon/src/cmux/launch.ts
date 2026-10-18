@@ -1,10 +1,11 @@
+import { ErrorCode } from '../../../../packages/protocol/src/index.js';
+import { shellQuote as quote } from '../shell/index.js';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { z } from 'zod';
 import { cmuxContextSchema, type CmuxContext } from './context.js';
 
 const execute = promisify(execFile);
-const quote = (value: string) => "'" + value.replaceAll("'", "'\\''") + "'";
 
 export type CmuxExecute = (args: string[], env: NodeJS.ProcessEnv) => Promise<string>;
 
@@ -26,7 +27,7 @@ const run: CmuxExecute = async (args, source) => {
       })
     ).stdout;
   } catch {
-    throw new Error('CMUX_CONTEXT_UNAVAILABLE');
+    throw new Error(ErrorCode.CMUX_CONTEXT_UNAVAILABLE);
   }
 };
 
@@ -42,7 +43,7 @@ export async function prepareCmuxContext(
     surface = z.uuid().safeParse(env.CMUX_SURFACE_ID);
 
   if (!workspace.success || !surface.success) {
-    throw new Error('CMUX_CONTEXT_UNAVAILABLE');
+    throw new Error(ErrorCode.CMUX_CONTEXT_UNAVAILABLE);
   }
 
   try {
@@ -79,7 +80,7 @@ export async function prepareCmuxContext(
 
     return context;
   } catch {
-    throw new Error('CMUX_CONTEXT_UNAVAILABLE');
+    throw new Error(ErrorCode.CMUX_CONTEXT_UNAVAILABLE);
   }
 }
 

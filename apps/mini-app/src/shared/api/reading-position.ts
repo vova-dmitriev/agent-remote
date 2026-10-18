@@ -8,7 +8,7 @@ import {
   type ReadingPosition,
 } from "@/shared/lib/reading-position"
 
-type Request = <T>(path: string, options?: RequestInit) => Promise<T>
+type PositionOperations = Pick<import("./application-client").ApplicationOperations, "getReadingPosition" | "saveReadingPosition">
 
 export class ReadingPositions {
   private cache = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
@@ -18,7 +18,7 @@ export class ReadingPositions {
   private stopped = false
   private unsubscribe: () => void
 
-  constructor(private request: Request) {
+  constructor(private operations: PositionOperations) {
     this.unsubscribe = subscribePositions((scope, position) => {
       if (!this.scopes.has(scope) || !position.updatedAt) return
       this.pending.set(scope, { ...position, updatedAt: position.updatedAt })
@@ -29,10 +29,6 @@ export class ReadingPositions {
     globalThis.window?.addEventListener?.("pagehide", this.flush)
   }
 
-  private path(sessionId: string) {
-    return "/sessions/" + encodeURIComponent(sessionId) + "/reading-position"
-  }
-
   private async load(scope: string, sessionId: string, current: () => boolean) {
     this.scopes.set(scope, sessionId)
     const local = readPosition(scope)
@@ -41,7 +37,7 @@ export class ReadingPositions {
       const response = await this.cache.fetchQuery({
         queryKey: ["reading-position", scope],
         staleTime: 0,
-        queryFn: async () => readingPositionResponseSchema.parse(await this.request(this.path(sessionId))),
+        queryFn: async () => readingPositionResponseSchema.parse(await this.operations.getReadingPosition(sessionId)),
       })
 
       if (!this.stopped && current()) {
@@ -85,14 +81,7 @@ export class ReadingPositions {
       if (!sessionId) continue
 
       const mutation = this.cache.getMutationCache().build(this.cache, {
-        mutationFn: async () =>
-          readingPositionResponseSchema.parse(
-            await this.request(this.path(sessionId), {
-              method: "PUT",
-              body: JSON.stringify(position),
-              keepalive: true,
-            }),
-          ),
+        mutationFn: async () => readingPositionResponseSchema.parse(await this.operations.saveReadingPosition(sessionId, position)),
       })
 
       void mutation.execute(undefined).catch(() => {

@@ -1,0 +1,157 @@
+import { handoffRequestSchema, type HandoffOperation } from '../../../../../packages/protocol/src/index.js';
+import { Fault, type Principal } from '../../auth/security.js';
+import type { Database } from '../../db/database.js';
+import { ContinuityRepository } from '../repository.js';
+import { ContinuityError, type ContinuityReadScope, type StartHandoffInput } from '../types.js';
+import { CommandClaimKind, reserveHandoffCommandIds } from '../command-claims.js';
+import { fingerprint, uuid } from './values.js';
+import { z } from 'zod';
+
+const startInput = z.strictObject({
+  operationId: z.uuid(),
+  createCommandId: z.uuid(),
+  seedCommandId: z.uuid(),
+  request: handoffRequestSchema,
+});
+
+export class HandoffContinuityService {
+  private readonly repository = new ContinuityRepository();
+  constructor(
+    private readonly database: Database,
+    private readonly now = Date.now,
+  ) {}
+
+  async start(
+    principal: Principal,
+    scope: ContinuityReadScope,
+    raw: StartHandoffInput,
+  ): Promise<HandoffOperation> {
+    const input = startInput.parse(raw);
+    const request = input.request;
+
+    if (request.ownerId !== principal.userId || request.deviceId !== scope.deviceId) {
+      throw new Fault(ContinuityError.NotFound, 404);
+    }
+
+    if (new Set([input.operationId, input.createCommandId, input.seedCommandId]).size !== 3) {
+      throw new Fault(ContinuityError.InvalidIdentifiers, 400);
+    }
+
+    const requestFingerprint = fingerprint(input);
+
+    try {
+      return await this.database.transaction(async (tx) => {
+        await this.repository.device(tx, principal.userId, scope.deviceId, scope.deviceGeneration);
+
+        const prior = await this.repository.findOperation(
+          tx,
+          principal.userId,
+          request.deviceId,
+          input.operationId,
+        );
+
+        if (prior) {
+          if (prior.fingerprint !== requestFingerprint) {
+            throw new Fault(ContinuityError.ReplayConflict, 409);
+          }
+
+          return prior.value;
+        }
+
+        const conversation = await this.repository.conversation(
+          tx,
+          principal.userId,
+          request.deviceId,
+          request.conversationId,
+          true,
+        );
+
+        if (conversation.version !== request.expectedConversationVersion) {
+          throw new Fault(ContinuityError.VersionConflict, 409);
+        }
+
+        if (conversation.activeExecutionId !== request.sourceExecutionId) {
+          throw new Fault(ContinuityError.SourceNotActive, 409);
+        }
+
+        const source = await this.repository.execution(
+          tx,
+          principal.userId,
+          request.deviceId,
+          request.conversationId,
+          request.sourceExecutionId,
+        );
+
+        if (source.generation !== request.sourceGeneration) {
+          throw new Fault(ContinuityError.SourceNotActive, 409);
+        }
+
+        if (
+          await this.repository.activeOperation(
+            tx,
+            principal.userId,
+            request.deviceId,
+            request.conversationId,
+          )
+        ) {
+          throw new Fault(ContinuityError.OperationActive, 409);
+        }
+
+        const now = this.now();
+
+        await reserveHandoffCommandIds(
+          tx,
+          principal.userId,
+          scope.deviceId,
+          [
+            {
+              id: input.operationId,
+              kind: CommandClaimKind.HandoffOperation,
+              operationId: input.operationId,
+            },
+            {
+              id: input.createCommandId,
+              kind: CommandClaimKind.HandoffCreate,
+              operationId: input.operationId,
+            },
+            {
+              id: input.seedCommandId,
+              kind: CommandClaimKind.HandoffSeed,
+              operationId: input.operationId,
+            },
+          ],
+          requestFingerprint,
+          now,
+        );
+
+        await this.repository.insertOperation(tx, input, requestFingerprint, now);
+
+        await this.repository.bumpConversation(
+          tx,
+          principal.userId,
+          request.deviceId,
+          request.conversationId,
+          conversation.version,
+          now,
+        );
+
+        return (await this.repository.operation(tx, principal.userId, request.deviceId, input.operationId))
+          .value;
+      });
+    } catch (error) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === '23505') {
+        throw new Fault(ContinuityError.ReplayConflict, 409);
+      }
+
+      throw error;
+    }
+  }
+
+  get(principal: Principal, scope: ContinuityReadScope, id: string) {
+    return this.database.transaction(async (tx) => {
+      await this.repository.device(tx, principal.userId, scope.deviceId, scope.deviceGeneration);
+
+      return (await this.repository.operation(tx, principal.userId, scope.deviceId, uuid.parse(id))).value;
+    });
+  }
+}

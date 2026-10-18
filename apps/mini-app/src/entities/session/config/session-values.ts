@@ -16,10 +16,4 @@ export const SessionActionType = { Logout: "logout" } as const
 
 export type SessionActionType = (typeof SessionActionType)[keyof typeof SessionActionType]
 
-export const ProviderFilterValue = {
-  All: "all",
-  Claude: AgentName.Claude,
-  Codex: AgentName.Codex,
-} as const
-
-export type ProviderFilterValue = (typeof ProviderFilterValue)[keyof typeof ProviderFilterValue]
+export { ProviderFilterValue } from "@protocol"

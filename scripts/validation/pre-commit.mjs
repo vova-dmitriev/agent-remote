@@ -11,7 +11,7 @@ const temporary = mkdtempSync(join(tmpdir(), 'agent-remote-index-'));
 try {
   exportSnapshot(root, temporary, ScanMode.Staged);
 
-  for (const relative of ['node_modules', 'apps/mini-app/node_modules']) {
+  for (const relative of ['node_modules', 'apps/mini-app/node_modules', 'apps/desktop/node_modules']) {
     const source = join(root, relative);
 
     if (existsSync(source)) {

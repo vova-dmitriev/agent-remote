@@ -1,3 +1,4 @@
+import { ErrorCode } from '../../../../packages/protocol/src/index.js';
 import {
   ConnectorId,
   SubagentStatus,
@@ -105,7 +106,7 @@ export class Monitor extends EventEmitter {
       adapter = this.options.adapters.get(connectorId);
 
     if (!adapter) {
-      throw new Error('NOT_FOUND');
+      throw new Error(ErrorCode.NOT_FOUND);
     }
 
     const descriptor = adapter.descriptor();
@@ -377,7 +378,7 @@ export class Monitor extends EventEmitter {
       ) ||
       saved.status === SessionStatus.Ended
     ) {
-      throw new Error('STALE_SESSION');
+      throw new Error(ErrorCode.STALE_SESSION);
     }
 
     if (!this.sessions.has(saved.id)) {
@@ -406,7 +407,7 @@ export class Monitor extends EventEmitter {
     const session = this.sessions.get(id);
 
     if (!session || session.generation !== generation || session.target.connectorId !== ConnectorId.Native) {
-      throw new Error('STALE_SESSION');
+      throw new Error(ErrorCode.STALE_SESSION);
     }
 
     session.status = SessionStatus.Ended;
@@ -473,7 +474,7 @@ export class Monitor extends EventEmitter {
       );
 
     if (!retired) {
-      throw new Error('SESSION_QUOTA');
+      throw new Error(ErrorCode.SESSION_QUOTA);
     }
 
     this.options.permissions.cancelSession(retired.id, retired.generation);
@@ -654,7 +655,7 @@ export class Monitor extends EventEmitter {
   }
   select(id: string | null) {
     if (id && !this.sessions.has(id)) {
-      throw new Error('NOT_FOUND');
+      throw new Error(ErrorCode.NOT_FOUND);
     }
 
     this.selectedId = id;

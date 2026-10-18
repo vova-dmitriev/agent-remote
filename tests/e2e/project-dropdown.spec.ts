@@ -2,7 +2,7 @@ import { expect } from '@playwright/test';
 import { test, deviceFixture } from './support/relay-fixture.js';
 import { sessionSnapshot } from './support/session-fixtures.js';
 import { identity } from './support/identity.js';
-import { SESSION_CREATE_IDS } from '../../apps/mini-app/src/pages/sessions/config/test-ids.js';
+import { SESSION_CREATE_IDS } from '../../apps/mini-app/src/features/create-session/config/test-ids.js';
 
 for (const width of [320, 390]) {
   test(`long project paths wrap inside the ${width}px viewport`, async ({ page }) => {
@@ -22,13 +22,17 @@ for (const width of [320, 390]) {
     const item = page.getByTestId(SESSION_CREATE_IDS.projectOption);
 
     await expect(item).toBeVisible();
-    expect(await item.evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
+    expect(await item.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
     const bounds = await panel.boundingBox();
 
     expect(bounds!.x).toBeGreaterThanOrEqual(0);
     expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
     await item.click();
     await expect(panel).not.toBeVisible();
-    await expect(page.getByTestId(SESSION_CREATE_IDS.project.trigger)).toHaveAttribute('data-value', snapshot.sessions[0]!.id);
+
+    await expect(page.getByTestId(SESSION_CREATE_IDS.project.trigger)).toHaveAttribute(
+      'data-value',
+      snapshot.sessions[0]!.id,
+    );
   });
 }

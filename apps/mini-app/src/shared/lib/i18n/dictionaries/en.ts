@@ -1,8 +1,12 @@
+import { accountsEN } from "./accounts"
 import { sessionControlsEN } from "./session-controls"
 import { viewerEN } from "./viewer"
 import { activityEN } from "./activity"
+import { extensionEN } from "./extension"
 
 export const en = {
+  ...accountsEN,
+  ...extensionEN,
   ...viewerEN,
   ...activityEN,
   ...sessionControlsEN,
@@ -44,6 +48,7 @@ export const en = {
   terminalWaiting: "Waiting for a snapshot of this terminal…",
   you: "You",
   emptyHistory: "Available messages from this session will appear here.",
+  disconnectedHistory: "No cached messages. History will load when this session reconnects.",
   signInTitle: "Work stays on your Mac.",
   signInSubtitle: "You can be anywhere.",
   signInHint: "Open Agent Remote from the Telegram bot menu to sign in.",

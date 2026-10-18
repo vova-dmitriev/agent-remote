@@ -1,3 +1,6 @@
+import { ServerErrorCode } from '../error-codes.js';
+import { ErrorCode } from '../../../../packages/protocol/src/index.js';
+
 import {
   EventType,
   HISTORY_PAGE_MESSAGES,
@@ -69,7 +72,7 @@ function decode(value: unknown): Cursor | undefined {
       ),
     );
   } catch {
-    throw new Fault('INVALID_CURSOR');
+    throw new Fault(ErrorCode.INVALID_CURSOR);
   }
 }
 
@@ -104,7 +107,7 @@ export class SessionHistory {
     ).rows[0];
 
     if (!session) {
-      throw new Fault('NOT_FOUND', 404);
+      throw new Fault(ErrorCode.NOT_FOUND, 404);
     }
 
     const before = decode(cursor),
@@ -113,7 +116,7 @@ export class SessionHistory {
     const anchor = around === undefined ? undefined : z.string().min(1).max(512).parse(around);
 
     if ([before, newer, anchor].filter(Boolean).length > 1) {
-      throw new Fault('INVALID_CURSOR');
+      throw new Fault(ErrorCode.INVALID_CURSOR);
     }
 
     const values = [principal.userId, session.device_id, sessionId, EventType.Message];
@@ -222,7 +225,7 @@ export class SessionHistory {
                 (event) => event.deviceId !== session.device_id || event.sessionId !== sessionId,
               )
             ) {
-              throw new Error('INVALID_CACHED_HISTORY');
+              throw new Error(ServerErrorCode.INVALID_CACHED_HISTORY);
             }
 
             return page;

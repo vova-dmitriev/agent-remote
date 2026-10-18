@@ -1,3 +1,3 @@
-import type { ClientCommand, CommandResult } from "@protocol"
+import type { ClientCommand, CommandResult, HttpRequestMethod } from "@protocol"
 
-export type CommandRequest = (method: "POST" | "GET", path: string, body?: ClientCommand) => Promise<CommandResult>
+export type CommandRequest = (method: HttpRequestMethod, path: string, body?: ClientCommand) => Promise<CommandResult>

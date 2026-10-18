@@ -1,3 +1,4 @@
+import { ErrorCode } from '../../../../packages/protocol/src/index.js';
 import { readFile, lstat, realpath, unlink } from 'node:fs/promises';
 import { dirname, basename, join } from 'node:path';
 import { stateDirectory } from '../config.js';
@@ -30,6 +31,6 @@ export async function restoreLaunch(path: string) {
 
     return context;
   } catch {
-    throw new Error('LAUNCH_CONTEXT_UNAVAILABLE');
+    throw new Error(ErrorCode.LAUNCH_CONTEXT_UNAVAILABLE);
   }
 }

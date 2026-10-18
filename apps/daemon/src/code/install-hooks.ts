@@ -1,3 +1,5 @@
+import { DaemonErrorCode } from '../error-codes.js';
+import { shellQuote as quote } from '../shell/index.js';
 import { ClaudeHookEvent, ClaudeHookType } from '../domain/claude.js';
 import { readFile, writeFile, copyFile, rename, mkdir } from 'node:fs/promises';
 import { dirname, isAbsolute } from 'node:path';
@@ -59,11 +61,9 @@ async function atomic(path: string, data: Settings) {
   await rename(temp, path);
 }
 
-const quote = (value: string) => "'" + value.replaceAll("'", "'\\''") + "'";
-
 export async function installHooks(path: string, entry: string) {
   if (!isAbsolute(entry)) {
-    throw new Error('ABSOLUTE_ENTRY_REQUIRED');
+    throw new Error(DaemonErrorCode.ABSOLUTE_ENTRY_REQUIRED);
   }
 
   await mkdir(dirname(path), { recursive: true, mode: 0o700 });

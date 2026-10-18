@@ -1,3 +1,4 @@
+import { DaemonErrorCode } from '../error-codes.js';
 import { ClaudeRecordType, ClaudeContentType } from '../domain/claude.js';
 import {
   TRANSCRIPT_WINDOW_BYTES,
@@ -61,7 +62,7 @@ export async function transcriptWindow(file: FileHandle, end: number, count: num
     const { bytesRead } = await file.read(buffer, 0, buffer.length, next);
 
     if (bytesRead !== buffer.length) {
-      throw new Error('TRANSCRIPT_CHANGED');
+      throw new Error(DaemonErrorCode.TRANSCRIPT_CHANGED);
     }
 
     const combined = Buffer.concat([buffer, pending]);

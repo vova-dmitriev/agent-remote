@@ -1,6 +1,14 @@
 import { ArrowLeft } from "lucide-react"
 import { StatusConfidence, HistoryStatus, ConnectionStatus, DeviceStatus } from "@protocol"
-import { SessionTab, SessionChanges, SessionAvailability, sourceNames, statuses, sessionTitle, agentName } from "@/entities/session"
+import {
+  SessionTab,
+  SessionChanges,
+  SessionAvailability,
+  sourceNames,
+  sessionStatusLabel,
+  sessionTitle,
+  agentName,
+} from "@/entities/session"
 import { feedbackText } from "@/shared/lib/i18n"
 import { useTranslation } from "@/shared/lib/hooks"
 import { SessionTitle } from "@/features/rename-session"
@@ -29,6 +37,7 @@ export function SessionPage({
   rename,
 }: SessionPageProps) {
   const { t, language } = useTranslation()
+  const available = sessionAvailable(state, session)
 
   return (
     <section className="detail" data-testid={SESSION_PAGE_IDS.root}>
@@ -60,12 +69,12 @@ export function SessionPage({
             <p className="source">
               {t(sourceNames[session.target.kind])} ·{" "}
               <span className="status" data-testid={SESSION_PAGE_IDS.status}>
-                {t(statuses[session.status])}
+                {t(sessionStatusLabel(session, available))}
               </span>
             </p>
           </div>
         </div>
-        <SessionAvailability key={session.id + ":availability:" + session.generation} available={sessionAvailable(state, session)} />
+        <SessionAvailability key={session.id + ":availability:" + session.generation} available={available} />
         <SessionActions
           key={session.id + ":" + session.generation}
           session={session}
@@ -103,7 +112,7 @@ export function SessionPage({
           </Button>
         </div>
       ) : null}
-      <SubagentPanel agents={session.subagents ?? []} online={sessionAvailable(state, session)} />
+      <SubagentPanel agents={session.subagents ?? []} online={available} />
       {session.changes ? <SessionChanges key={session.id + ":changes:" + session.generation} changes={session.changes} /> : null}
       <SessionFeed
         key={session.id + tab}
@@ -113,12 +122,13 @@ export function SessionPage({
         agent={agentName(session)}
         messages={messages}
         historyStatus={historyStatus}
+        available={available}
         tab={tab}
         terminal={state.snapshot?.terminal ?? null}
       />
       <SessionPermissions session={session} state={state} controller={controller} />
       <UserInputRequests session={session} state={state} controller={controller} />
-      <SessionActivity session={session} available={sessionAvailable(state, session)} />
+      <SessionActivity session={session} available={available} />
       <SessionComposer
         controller={controller}
         session={session}

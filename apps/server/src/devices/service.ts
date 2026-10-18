@@ -1,3 +1,4 @@
+import { ErrorCode } from '../../../../packages/protocol/src/index.js';
 import { randomUUID } from 'node:crypto';
 import { type Database } from '../db/database.js';
 import { Fault, hash, secret, type Principal } from '../auth/security.js';
@@ -22,7 +23,7 @@ export class DeviceService {
     ).rows[0];
 
     if (!row) {
-      throw new Fault('NOT_FOUND', 404);
+      throw new Fault(ErrorCode.NOT_FOUND, 404);
     }
 
     return row;
@@ -36,7 +37,7 @@ export class DeviceService {
     ).rows[0];
 
     if (!row) {
-      throw new Fault('UNAUTHORIZED', 401);
+      throw new Fault(ErrorCode.UNAUTHORIZED, 401);
     }
 
     return row;
@@ -70,7 +71,7 @@ export class DeviceService {
         (await tx.query('SELECT id FROM devices WHERE owner_id=$1 AND revoked_at IS NULL', [p.userId]))
           .rowCount
       ) {
-        throw new Fault('DEVICE_QUOTA', 409);
+        throw new Fault(ErrorCode.DEVICE_QUOTA, 409);
       }
 
       const claimId = randomUUID();
@@ -81,7 +82,7 @@ export class DeviceService {
       );
 
       if (!row.rowCount) {
-        throw new Fault('PAIRING_UNAVAILABLE', 409);
+        throw new Fault(ErrorCode.PAIRING_UNAVAILABLE, 409);
       }
 
       return { claimId: row.rows[0].claim_id as string };
@@ -103,7 +104,7 @@ export class DeviceService {
     ).rows[0];
 
     if (!row) {
-      throw new Fault('NOT_FOUND', 404);
+      throw new Fault(ErrorCode.NOT_FOUND, 404);
     }
 
     return { claimId: row.claim_id, telegramId: row.telegram_id, expiresAt: Number(row.expires_at) };
@@ -118,7 +119,7 @@ export class DeviceService {
       ).rows[0];
 
       if (!row) {
-        throw new Fault('NOT_FOUND', 404);
+        throw new Fault(ErrorCode.NOT_FOUND, 404);
       }
 
       if (!approved) {
@@ -131,7 +132,7 @@ export class DeviceService {
         (await tx.query('SELECT id FROM devices WHERE owner_id=$1 AND revoked_at IS NULL', [row.owner_id]))
           .rowCount
       ) {
-        throw new Fault('DEVICE_QUOTA', 409);
+        throw new Fault(ErrorCode.DEVICE_QUOTA, 409);
       }
 
       const deviceId = randomUUID(),

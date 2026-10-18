@@ -1,6 +1,6 @@
 # Account Management and Automatic Fallback Implementation Plan
 
-> **For agentic workers:** Use superpowers:executing-plans for approved implementation; use superpowers:subagent-driven-development only if explicitly selected. Planning only. No code implementation, live sign-in, usage or deployment is authorized by this document. Never commit.
+> **For agentic workers:** Use superpowers:executing-plans for approved implementation; use superpowers:subagent-driven-development only if explicitly selected. Implementation was explicitly authorized by the user on 2026-10-18, including Luna high subagents. Live sign-in, paid usage and deployment remain separate actions. Never commit.
 
 **Goal:** Persist connected subscription/API profiles, including at least two independently authenticated OpenAI/ChatGPT subscription accounts for Codex, manage them from a dedicated page, and continue work automatically through an explicitly configured fallback chain when quota is exhausted.
 
@@ -10,9 +10,13 @@
 
 **Spec:** [Account management and fallback](../specs/2026-10-17-profile-management-fallback-design.md). **Dependency:** [Cross-provider continuity Tasks 1–3](2026-10-17-cross-provider-continuity.md) for managed profiles; Tasks 4–6 for automatic context/queue transfer.
 
+## Execution status — 2026-10-18
+
+Tasks 1–2 have an integrated Codex management foundation: durable metadata and operations, isolated native configuration, subscription sign-in, encrypted API enrollment, a shared Accounts & keys page and recovery tests. Independent Claude account authentication, active-execution dependencies, offline queued removal and real-provider acceptance remain unfinished. Task 3 quota observations/rules, Task 4 automatic continuation and Task 5 full release acceptance remain pending. Profile-aware creation and durable handoff are dependencies, not completed capabilities.
+
 ## Global constraints
 
-- Planning only; never commit or use real credentials/sessions in automated tests. Keep all secret values out of source, fixtures, logs, URLs, relay persistence and browser persistence.
+- Implementation is authorized; never commit or use real credentials/sessions in automated tests. Keep all secret values out of source, fixtures, logs, URLs, relay persistence and browser persistence.
 - Owner/device/generation/version checks precede reads and every side effect. Named const objects and derived types define every state, action, trigger and error code.
 - PostgreSQL/local journals are durable authorities; Redis is a cache. Logout/revoke clears UI and pending enrollment. Credential deletion requires acknowledged local completion.
 - Automatic inference requires an enabled policy authorizing the destination, model, context sharing and paid API use. Follow native access policies; do not replace global logins or assume different keys have independent quotas.
@@ -89,4 +93,4 @@ C. Automatic continuation, recovery and acceptance (Tasks 4–5), capability-gat
 
 ## Planning result
 
-The extension replaces the earlier exclusion of automatic quota fallback. It does not authorize implementation, billing changes or native account switching yet. The next implementation gate is verified isolated profiles and profile-aware creation; account management can ship before automatic cross-provider continuation.
+The extension replaces the earlier exclusion of automatic quota fallback. Subsequent user approval authorizes implementation; live billing changes and native account sign-ins remain separate. The next implementation gate is verified isolated profiles and profile-aware creation; account management can ship before automatic cross-provider continuation.

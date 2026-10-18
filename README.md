@@ -12,7 +12,11 @@ These screenshots come exclusively from English Storybook stories with synthetic
 
 <img src="docs/screenshots/conversation.png" width="430" alt="English Codex conversation using synthetic Storybook messages" />
 
-The Mini App includes provider filters, session creation and renaming, bounded history, saved reading positions, message navigation, questions and approvals, subagent activity, editable queued prompts, file attachments, an image viewer and available native file-edit patches. Connector capabilities determine which controls are available. The unsent prompt queue is currently in memory and is lost when the app closes or reloads.
+The Mini App includes provider filters, session creation and renaming, bounded history, saved reading positions, message navigation, questions and approvals, subagent activity, editable queued prompts, file attachments, an image viewer and available native file-edit patches. Connector capabilities determine which controls are available. Telegram's unsent prompt queue remains in memory and is lost when that app closes or reloads. The Chrome host persists acknowledged drafts and queued intents in the local companion.
+
+<img src="docs/screenshots/accounts.png" width="700" alt="English Accounts and keys page showing two synthetic OpenAI subscriptions and an API profile" />
+
+The shared [Accounts & keys page](docs/accounts-and-keys.md) manages isolated Codex profiles and encrypted enrollment. New Codex sessions can explicitly select a profile, model and supported reasoning effort. The native default remains a separate choice; saving a preferred profile does not silently change it. Conversation handoff and automatic quota fallback remain unfinished. Authenticated native acceptance remains a release gate.
 
 ## Agent quick start: isolated development
 
@@ -38,7 +42,9 @@ npm exec --yes --package=pnpm@10.34.7 -- pnpm install --frozen-lockfile
 npm run storybook
 ```
 
-The source layout is `apps/mini-app` (UI), `apps/server` (relay), `apps/daemon` (Mac companion), `apps/macos-helper` (Swift helper), and `packages/protocol` (shared wire contracts and domain values). Keep owned states and errors in named constant objects/types; keep logical blocks and component props in separate modules as required by the repository rules.
+When CodeGraph is available, initialize a new checkout with `codegraph init .`, then use `codegraph explore "symbol names or question"` before reading/searching source. Refresh after changes with `codegraph sync .`; `codegraph status .` reports freshness. The generated graph database stays local and is excluded from Git.
+
+The source layout is `apps/mini-app` (shared UI), `apps/server` (relay), `apps/daemon` (Mac companion), `apps/desktop` (Electron host), `apps/chrome-extension` (Chrome host), `apps/macos-helper` (Swift helper), and `packages/protocol` (shared wire contracts and domain values). Keep owned states and errors in named constant objects/types; keep logical blocks and component props in separate modules as required by the repository rules.
 
 ## Verification
 
@@ -49,7 +55,7 @@ docker compose -f compose.test.yml up -d --wait
 pnpm validate
 ```
 
-This runs secret checks, hook regression tests, TypeScript, the guarded production build (ESLint, FSD, structure, React checks, formatting and unused-code checks), and the unit/integration suite. On macOS it first builds and locally signs the native helper needed by process-context tests; other platforms skip macOS-only native tests. Browser acceptance runs separately:
+This runs secret checks, hook regression tests, TypeScript, the guarded production build (ESLint, FSD, structure, React checks, formatting and unused-code checks), the Chrome and Desktop builds, and the unit/integration suite. On macOS it first builds and locally signs the native helper needed by process-context tests; other platforms skip macOS-only native tests. Browser acceptance runs separately:
 
 ```sh
 docker compose -f compose.test.yml up -d --wait
@@ -77,6 +83,32 @@ pnpm verify:archive
 
 Archives and checksums are written to ignored `artifacts/`. Native dependencies are tied to the OS, CPU architecture and Node ABI. Public macOS distribution requires Developer ID signing and notarization; local helper signing is ad hoc.
 
+## Desktop: internal macOS build
+
+The Electron host reuses the Mini App UI and the independently supervised local companion. It has its own local approval identity; Telegram pairing and Chrome approval do not grant Desktop access. Closing the window leaves agent sessions running.
+
+```sh
+npm run validate
+npm run package:desktop
+```
+
+The renderer build needs no Telegram login or live account. Packaging additionally requires the built macOS helper and downloads a checksum-verified Node 22.23.3 runtime for the host architecture. Toolchains, companion resources and internal unsigned Forge output stay in ignored build directories. See [Desktop development and acceptance](docs/desktop.md). Signing, notarization and real provider-account acceptance remain release gates.
+
+## Chrome extension: internal macOS build
+
+The Manifest V3 side panel and full tab reuse the Mini App's React UI and connect to an approved local companion through Native Messaging. Local OS-account authorization is separate from Telegram relay login. Closing the browser leaves the independently supervised companion running.
+
+```sh
+pnpm build
+node scripts/extension/build.mjs
+node scripts/extension/verify-artifact.mjs dist/chrome-extension
+node scripts/extension/package.mjs
+```
+
+The internal ZIP is written to ignored `artifacts/chrome-extension/`. Follow the [Chrome installation, client approval and uninstall instructions](docs/chrome-extension.md) for the separate companion runtime and exact browser registration.
+
+This is an unsigned internal implementation. The measured companion artifact uses Node 22.12.0 on macOS arm64; maintained-runtime selection, native helper compatibility, signed/notarized distribution and actual clean-profile Chrome acceptance remain release gates. No Chrome Web Store publication or public companion readiness is claimed.
+
 ## Run with your own Telegram bot
 
 This starts a real service and connects your own accounts; it is separate from fixture-based development. Keep the Mac awake and online. You need Docker Desktop, `cloudflared`, and the Claude/Codex authentication required by your chosen connector.
@@ -102,7 +134,7 @@ Secret detection is a safeguard, not a guarantee. Review every proposed change f
 ## Documentation
 
 - [Companion and connector installation](docs/install-daemon.md), [Codex integration](docs/codex.md), [personal launch](docs/personal-launch.md).
-- [Frontend architecture](docs/frontend-architecture.md), [Storybook coverage](docs/storybook-coverage.md), [browser test coverage](docs/e2e-coverage.md).
+- [Frontend architecture](docs/frontend-architecture.md), [Storybook coverage](docs/storybook-coverage.md), [browser test coverage](docs/e2e-coverage.md), [Desktop development](docs/desktop.md), [desktop application plan](docs/superpowers/plans/2026-10-17-desktop-shared-ui.md), [Chrome extension implementation](docs/chrome-extension.md), [Chrome extension plan](docs/superpowers/plans/2026-10-17-chrome-extension-shared-ui.md).
 - [Attachments and storage limits](docs/attachments.md), [Redis/BullMQ recovery](docs/redis-bullmq.md), [operations and rollback](docs/operations.md).
 - [Service specification](docs/superpowers/specs/2026-10-16-telegram-cmux-design.md), [implementation status](docs/superpowers/plans/2026-10-16-claude-remote-implementation.md), [local TypeScript APIs](docs/typescript-modules.md).
 - [Third-party notices](THIRD_PARTY_NOTICES.md). Some historical design and operations documents are in Russian; this README and screenshot fixtures are in English.

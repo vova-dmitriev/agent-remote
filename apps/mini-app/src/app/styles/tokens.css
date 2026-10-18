@@ -79,6 +79,9 @@
   --color-muted-foreground: var(--muted);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--line);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--foreground);
   --color-input: var(--line);
   --color-ring: var(--primary);
 }

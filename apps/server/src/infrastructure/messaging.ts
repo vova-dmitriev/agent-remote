@@ -1,3 +1,4 @@
+import { ErrorCode } from '../../../../packages/protocol/src/index.js';
 import { RedisConnectionStatus } from '../domain/infrastructure.js';
 import { createHash } from 'node:crypto';
 import { RedisCache, redisClient } from './redis.js';
@@ -10,7 +11,7 @@ export async function createMessaging(url: string, identity: string) {
     await client.connect();
   } catch {
     client.disconnect();
-    throw new Error('REDIS_UNAVAILABLE');
+    throw new Error(ErrorCode.REDIS_UNAVAILABLE);
   }
 
   const prefix = 'claude-remote-' + createHash('sha256').update(identity).digest('hex').slice(0, 24);
@@ -22,7 +23,7 @@ export async function createMessaging(url: string, identity: string) {
     queue,
     async health() {
       if (client.status !== RedisConnectionStatus.Ready) {
-        throw new Error('REDIS_UNAVAILABLE');
+        throw new Error(ErrorCode.REDIS_UNAVAILABLE);
       }
 
       await client.ping();

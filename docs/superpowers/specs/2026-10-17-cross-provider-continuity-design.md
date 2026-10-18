@@ -1,6 +1,6 @@
 # Cross-provider continuity and execution profiles
 
-Status: proposed design, not implemented. Requested scope: planning only.
+Status: implementation started by explicit user instruction on 2026-10-17. Shared profile/continuity contracts are implemented; profile management, native enrollment, profile-aware execution and automatic fallback remain pending.
 
 ## Goal and confirmed requirements
 

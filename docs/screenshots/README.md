@@ -5,7 +5,10 @@ These images show existing synthetic Storybook stories in English with the dark 
 | File               | Story                                   | CSS viewport | PNG size    |
 | ------------------ | --------------------------------------- | ------------ | ----------- |
 | `sessions.png`     | `app-remote-application--sessions`      | 1100 × 760   | 2200 × 1520 |
+| `accounts.png`     | `pages-accounts--accounts-and-keys`     | 700 × 1000   | 1400 × 2000 |
 | `conversation.png` | `app-remote-application--codex-session` | 430 × 600    | 860 × 1200  |
+
+The accounts image uses `apps/mini-app/.storybook/fixtures/accounts/profiles.ts` and `apps/mini-app/src/pages/accounts/ui/accounts-view.stories.tsx`. Its identities are reserved synthetic examples; it does not prove authenticated provider compatibility.
 
 ## Source fixtures
 
@@ -16,7 +19,7 @@ These images show existing synthetic Storybook stories in English with the dark 
 - `apps/mini-app/.storybook/fixtures/session.ts`
 - `apps/mini-app/.storybook/fixtures/page-states.ts`
 
-The screenshots preserve the fixture content without DOM replacements or image retouching. Both images were visually inspected; the capture script also rejects Cyrillic page text.
+The screenshots preserve the fixture content without DOM replacements or image retouching. All images were visually inspected; the capture script also rejects Cyrillic page text.
 
 ## Reproduce
 

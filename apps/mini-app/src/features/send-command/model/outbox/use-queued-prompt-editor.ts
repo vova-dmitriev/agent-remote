@@ -12,9 +12,9 @@ export function useQueuedPromptEditor({ item, queue }: QueuedPromptEditorOptions
     setError("")
   }
 
-  function save() {
+  async function save() {
     try {
-      if (!queue.saveEdit(id, text)) setError(ErrorCode.STALE_SESSION)
+      if (!(await queue.saveEdit(id, text))) setError(ErrorCode.STALE_SESSION)
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : ErrorCode.INVALID_PROMPT)
     }

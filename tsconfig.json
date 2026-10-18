@@ -14,7 +14,9 @@
       "@/*": ["./apps/mini-app/src/*"],
       "@protocol": ["./packages/protocol/src/index.ts"],
       "@storybook-fixtures/*": ["./apps/mini-app/.storybook/fixtures/*"],
-      "@storybook-components/*": ["./apps/mini-app/.storybook/components/*"]
+      "@storybook-components/*": ["./apps/mini-app/.storybook/components/*"],
+      "@extension/*": ["./apps/chrome-extension/src/*"],
+      "@transport/*": ["./packages/transport/src/*"]
     },
     "rewriteRelativeImportExtensions": true
   },

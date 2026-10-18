@@ -1,3 +1,6 @@
+import { DaemonErrorCode } from '../../error-codes.js';
+import { ErrorCode } from '../../../../../packages/protocol/src/index.js';
+
 import { z } from 'zod';
 import { createHash, randomBytes } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -42,7 +45,7 @@ function response<T>(schema: z.ZodType<T>, value: unknown): T {
   const parsed = schema.safeParse(value);
 
   if (!parsed.success) {
-    throw new Error('INVALID_PAIRING_RESPONSE');
+    throw new Error(DaemonErrorCode.INVALID_PAIRING_RESPONSE);
   }
 
   return parsed.data;
@@ -117,11 +120,11 @@ export async function connectMac(options: ConnectOptions = {}, deps = defaults) 
 
   const check = () => {
     if (options.signal?.aborted) {
-      throw new Error('PAIRING_CANCELLED');
+      throw new Error(DaemonErrorCode.PAIRING_CANCELLED);
     }
 
     if (signal.aborted || deps.now() >= deadline) {
-      throw new Error('PAIRING_EXPIRED');
+      throw new Error(ErrorCode.PAIRING_EXPIRED);
     }
   };
 
@@ -173,7 +176,7 @@ export async function connectMac(options: ConnectOptions = {}, deps = defaults) 
 
       if (status.claimId) {
         if (!/^[1-9][0-9]{0,18}$/.test(String(status.telegramId))) {
-          throw new Error('INVALID_PAIRING_IDENTITY');
+          throw new Error(DaemonErrorCode.INVALID_PAIRING_IDENTITY);
         }
 
         const approved = await deps.confirm(String(status.telegramId), signal);

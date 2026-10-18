@@ -3,6 +3,7 @@ import { SESSION_AVAILABILITY_IDS as IDS } from '../../apps/mini-app/src/entitie
 import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
 import { SESSION_PAGE_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
 import { SHELL_IDS } from '../../apps/mini-app/src/widgets/application-shell/config/test-ids.js';
+import { COMMAND_IDS } from '../../apps/mini-app/src/features/send-command/config/test-ids.js';
 import { test, delivered } from './support/relay-fixture.js';
 import { identity } from './support/identity.js';
 import { byTestId } from './support/testid.js';
@@ -49,6 +50,15 @@ for (const language of ['ru', 'en'] as const) {
 
     await expect(trigger).toHaveAttribute('data-availability', 'offline');
     await expect(details).toHaveText(offline);
+    await expect(page.getByTestId(SESSION_PAGE_IDS.status)).toHaveText(offline);
+    await expect(page.getByTestId(COMMAND_IDS.prompt)).toBeDisabled();
+
+    await expect(page.getByTestId(COMMAND_IDS.availabilityHint)).toHaveText(
+      language === 'ru'
+        ? 'Источник недоступен. Открой агента на Mac и проверь его подключение.'
+        : 'The source is unavailable. Open the agent on your Mac and check its connection.',
+    );
+
     await page.screenshot({ path: `artifacts/session-status-${language}-dark.png`, animations: 'disabled' });
 
     await publishSnapshot((snapshot) => {

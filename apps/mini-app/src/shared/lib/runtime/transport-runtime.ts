@@ -1,4 +1,4 @@
-import type { AppTransport } from "@/shared/api"
+import type { ApplicationClient } from "@/shared/api"
 import type { RuntimeLease } from "./types"
 
 export class TransportRuntime {
@@ -17,7 +17,7 @@ export class TransportRuntime {
     return this.active
   }
 
-  attach(client: AppTransport): RuntimeLease {
+  attach(client: ApplicationClient): RuntimeLease {
     this.active = { client, epoch: ++this.generation }
 
     return this.active

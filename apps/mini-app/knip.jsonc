@@ -1,5 +1,27 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": ["steiger.config.mjs", "eslint/rules.mjs", "eslint/one-component.mjs", "eslint.e2e.config.mjs"],
-  "project": ["src/**/*.{ts,tsx,css,mdx}", ".storybook/**/*.{ts,tsx}", "*.config.{ts,mjs}", "eslint/*.mjs"],
+  "workspaces": {
+    ".": {
+      "entry": [
+        "src/extension.tsx",
+        "vite.extension.config.ts",
+        "desktop.html",
+        "src/desktop.tsx",
+        "vite.desktop.config.ts",
+        "../../tests/e2e/session-creation.spec.ts",
+        "../../tests/e2e/project-dropdown.spec.ts",
+        "steiger.config.mjs",
+        "eslint/rules.mjs",
+        "eslint/one-component.mjs",
+        "eslint.e2e.config.mjs",
+      ],
+      "project": ["src/**/*.{ts,tsx,css,mdx}", ".storybook/**/*.{ts,tsx}", "*.config.{ts,mjs}", "eslint/*.mjs"],
+      "paths": { "@extension/*": ["../chrome-extension/src/*"] },
+    },
+    "../chrome-extension": {
+      "entry": ["src/background/main.ts"],
+      "project": ["src/**/*.ts"],
+      "paths": { "@/*": ["../mini-app/src/*"], "@protocol": ["../../packages/protocol/src/index.ts"] },
+    },
+  },
 }

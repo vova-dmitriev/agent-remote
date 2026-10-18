@@ -27,7 +27,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
-          node-version: '22.12.0'
+          node-version: '22.23.3'
       - name: Install pinned tooling and dependencies
         run: |
           npm install --global pnpm@10.34.7
@@ -37,3 +37,46 @@ jobs:
         run: docker compose -f compose.test.yml up -d --wait
       - name: Validate source, types, production build and tests
         run: npm run validate:commit
+      - name: Verify shared UI in Storybook and mobile browser fixtures
+        run: |
+          pnpm exec playwright install --with-deps chrome
+          npm run test-storybook
+          E2E_APP_PORT=4175 npm run test:e2e
+      - name: Verify internal Chrome extension package
+        run: |
+          npm run package:extension
+          unzip -t artifacts/chrome-extension/agent-remote-chrome-extension.zip
+          npm run verify:extension
+  extension-browser:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.23.3'
+      - name: Install pinned tooling and isolated Chromium
+        run: |
+          npm install --global pnpm@10.34.7
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install chromium
+      - name: Exercise MV3 assets and synthetic native host in temporary profiles
+        run: npm run test:extension:e2e
+  desktop:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.23.3'
+      - name: Install pinned tooling and dependencies
+        run: |
+          npm install --global pnpm@10.34.7
+          pnpm install --frozen-lockfile
+      - name: Build production desktop application
+        run: npm run build:desktop
+      - name: Run native packaged-runtime and Electron integration tests
+        run: npm run test:desktop -- --maxWorkers=2

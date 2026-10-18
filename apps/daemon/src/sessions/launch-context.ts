@@ -1,5 +1,9 @@
+import { DaemonErrorCode } from '../error-codes.js';
+import { ErrorCode } from '../../../../packages/protocol/src/index.js';
+
 import { z } from 'zod';
 import { isAbsolute } from 'node:path';
+import { ClaudeRestartArgument } from '../domain/claude.js';
 
 export const launchContextSchema = z.object({
   executable: z.string().refine(isAbsolute),
@@ -76,7 +80,7 @@ const boolean = new Set([
 
 export function restartArguments(args: readonly string[], sessionId: string): string[] {
   if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,511}$/.test(sessionId)) {
-    throw new Error('INVALID_CLAUDE_ARGS');
+    throw new Error(DaemonErrorCode.INVALID_CLAUDE_ARGS);
   }
 
   const result: string[] = [];
@@ -86,7 +90,7 @@ export function restartArguments(args: readonly string[], sessionId: string): st
       flag = argument.split('=')[0]!,
       inline = argument.includes('=');
 
-    if (['--continue', '-c', '--fork-session'].includes(flag)) {
+    if (Object.values(ClaudeRestartArgument).some((value) => value === flag)) {
       continue;
     }
 
@@ -107,7 +111,7 @@ export function restartArguments(args: readonly string[], sessionId: string): st
     }
 
     if (!single.has(flag) && !multiple.has(flag) && !optional.has(flag) && !boolean.has(flag)) {
-      throw new Error('LAUNCH_CONTEXT_UNAVAILABLE');
+      throw new Error(ErrorCode.LAUNCH_CONTEXT_UNAVAILABLE);
     }
 
     result.push(argument);
@@ -120,7 +124,7 @@ export function restartArguments(args: readonly string[], sessionId: string): st
       const value = args[++index];
 
       if (value === undefined) {
-        throw new Error('LAUNCH_CONTEXT_UNAVAILABLE');
+        throw new Error(ErrorCode.LAUNCH_CONTEXT_UNAVAILABLE);
       }
 
       result.push(value);
@@ -133,7 +137,7 @@ export function restartArguments(args: readonly string[], sessionId: string): st
       }
 
       if (!count) {
-        throw new Error('LAUNCH_CONTEXT_UNAVAILABLE');
+        throw new Error(ErrorCode.LAUNCH_CONTEXT_UNAVAILABLE);
       }
     } else if (args[index + 1] !== undefined && !args[index + 1]!.startsWith('-')) {
       result.push(args[++index]!);

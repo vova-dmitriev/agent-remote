@@ -1,3 +1,4 @@
+import { DaemonErrorCode } from '../error-codes.js';
 import {
   TargetKind,
   positiveInteger,
@@ -45,7 +46,7 @@ export class CmuxClient {
         (value) => typeof value === 'string' && uuid.test(value),
       )
     ) {
-      throw new Error('INVALID_CMUX_TARGET');
+      throw new Error(DaemonErrorCode.INVALID_CMUX_TARGET);
     }
 
     return ['--window', target.windowId, '--workspace', target.workspaceId, '--surface', target.surfaceId];
@@ -66,7 +67,11 @@ export class CmuxClient {
         (error, stdout) => {
           // CLI stderr may contain terminal/chat content; do not include it in errors.
           if (error) {
-            reject(new Error('CMUX_COMMAND_FAILED', { cause: { code: error.code, killed: error.killed } }));
+            reject(
+              new Error(DaemonErrorCode.CMUX_COMMAND_FAILED, {
+                cause: { code: error.code, killed: error.killed },
+              }),
+            );
           } else {
             resolve(stdout);
           }

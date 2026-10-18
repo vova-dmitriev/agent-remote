@@ -1,3 +1,4 @@
+import { ErrorCode } from '../../../../packages/protocol/src/index.js';
 import {
   HistoryDirection,
   EventType,
@@ -67,7 +68,7 @@ export class SourceHistory {
     ).rows[0];
 
     if (!row) {
-      throw new Fault('NOT_FOUND', 404);
+      throw new Fault(ErrorCode.NOT_FOUND, 404);
     }
 
     const connection = this.live.get(row.device_id);
@@ -78,18 +79,18 @@ export class SourceHistory {
           (value) => typeof value === 'string' && value.startsWith(HISTORY_SOURCE_CURSOR_PREFIX),
         )
       ) {
-        throw new Fault('SERVICE_UNAVAILABLE', 503);
+        throw new Fault(ErrorCode.SERVICE_UNAVAILABLE, 503);
       }
 
       return null;
     }
 
     if (connection.device.owner_id !== principal.userId) {
-      throw new Fault('NOT_FOUND', 404);
+      throw new Fault(ErrorCode.NOT_FOUND, 404);
     }
 
     if ([before, around, after].filter((value) => value !== undefined).length > 1) {
-      throw new Fault('INVALID_CURSOR');
+      throw new Fault(ErrorCode.INVALID_CURSOR);
     }
 
     if (
@@ -99,7 +100,7 @@ export class SourceHistory {
         !position.startsWith(HISTORY_POSITION_CURSOR_PREFIX) ||
         !around)
     ) {
-      throw new Fault('INVALID_CURSOR');
+      throw new Fault(ErrorCode.INVALID_CURSOR);
     }
 
     const raw = before ?? around ?? after;
@@ -108,7 +109,7 @@ export class SourceHistory {
       raw !== undefined &&
       (typeof raw !== 'string' || !raw.length || raw.length > HISTORY_CURSOR_MAX_LENGTH)
     ) {
-      throw new Fault('INVALID_CURSOR');
+      throw new Fault(ErrorCode.INVALID_CURSOR);
     }
 
     // Legacy cached cursors stay on their original data source.
@@ -120,7 +121,7 @@ export class SourceHistory {
       [...this.pending.values()].filter((value) => value.deviceId === row.device_id).length >=
       HISTORY_MAX_PENDING_READS_PER_DEVICE
     ) {
-      throw new Fault('RATE_LIMITED', 429);
+      throw new Fault(ErrorCode.RATE_LIMITED, 429);
     }
 
     const requestId = randomUUID();
@@ -139,7 +140,7 @@ export class SourceHistory {
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         this.pending.delete(requestId);
-        reject(new Fault('HISTORY_RELOAD_FAILED', 503));
+        reject(new Fault(ErrorCode.HISTORY_RELOAD_FAILED, 503));
       }, HISTORY_SOURCE_TIMEOUT_MS);
 
       this.pending.set(requestId, {
@@ -175,7 +176,7 @@ export class SourceHistory {
       if (!this.send(connection.socket, request)) {
         clearTimeout(timer);
         this.pending.delete(requestId);
-        reject(new Fault('SERVICE_UNAVAILABLE', 503));
+        reject(new Fault(ErrorCode.SERVICE_UNAVAILABLE, 503));
       }
     });
   }
@@ -242,7 +243,7 @@ export class SourceHistory {
   close() {
     for (const pending of this.pending.values()) {
       clearTimeout(pending.timer);
-      pending.reject(new Fault('SERVICE_UNAVAILABLE', 503));
+      pending.reject(new Fault(ErrorCode.SERVICE_UNAVAILABLE, 503));
     }
 
     this.pending.clear();

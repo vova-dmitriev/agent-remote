@@ -17,8 +17,10 @@ import { ReadingPositions } from "./reading-position"
 import { HistoryWindow } from "./history-window"
 import { HistoryStream, loadSessionHistory, restoreHistoryWindow } from "./history"
 import type { Device, TransportHandlers } from "./types.js"
+import type { ApplicationClient } from "./application-client"
+import { RelayOperations } from "./relay-operations"
 
-export class AppTransport {
+export class AppTransport extends RelayOperations implements ApplicationClient {
   private commands = new CommandSubmission((method, path, body) =>
     this.request(path, { method, ...(body ? { body: JSON.stringify(body) } : {}) }),
   )
@@ -33,7 +35,7 @@ export class AppTransport {
   private selection = 0
   private historyStream = new HistoryStream()
   private window = new HistoryWindow()
-  private reading = new ReadingPositions((path, options) => this.request(path, options))
+  private reading = new ReadingPositions(this)
   private restoreHistory: number | null = null
   private requests = new Set<AbortController>()
   readonly attachments = new AttachmentTransfer(() => ({ origin: this.origin, token: this.token }), this.requests)
@@ -42,6 +44,8 @@ export class AppTransport {
     private handlers: TransportHandlers,
     private origin = "",
   ) {
+    super()
+
     this.authentication = new SessionAuthentication(
       origin,
       (login) => {
@@ -126,6 +130,7 @@ export class AppTransport {
     )
   }
   devices = () => this.request<Device[]>("/devices")
+  profiles = (deviceId: string) => this.profileAccess(deviceId, () => !this.stopped)
   selectTarget(deviceId: string, sessionId: string | null) {
     this.reading.flush()
     ++this.selection

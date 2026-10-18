@@ -1,9 +1,13 @@
+import { accountsRU } from "./accounts"
 import { sessionControlsRU } from "./session-controls"
 import { viewerRU } from "./viewer"
 import { activityRU } from "./activity"
+import { extensionRU } from "./extension"
 import type { Dictionary } from "../types"
 
 export const ru = {
+  ...accountsRU,
+  ...extensionRU,
   ...viewerRU,
   ...activityRU,
   ...sessionControlsRU,
@@ -45,6 +49,7 @@ export const ru = {
   terminalWaiting: "Ожидаем снимок выбранного терминала…",
   you: "Ты",
   emptyHistory: "Здесь появятся доступные сообщения этой сессии.",
+  disconnectedHistory: "Нет сохранённых сообщений. История загрузится после восстановления подключения к сессии.",
   signInTitle: "Работа остаётся на Mac.",
   signInSubtitle: "Ты можешь быть где угодно.",
   signInHint: "Открой Agent Remote из меню Telegram-бота, чтобы войти в свой аккаунт.",

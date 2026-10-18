@@ -7,6 +7,7 @@ export interface SessionFeedProps {
   readingScope?: string | undefined
   messages: HistoryMessage[]
   historyStatus?: HistoryStatus
+  available?: boolean
   tab: SessionTab
   terminal: AppSnapshot["terminal"]
   agent: AgentName

@@ -1,3 +1,6 @@
+import { ServerErrorCode } from '../error-codes.js';
+import { ErrorCode } from '../../../../packages/protocol/src/index.js';
+
 import {
   NotificationBackoffType,
   RedisConnectionStatus,
@@ -43,7 +46,7 @@ export class NotificationQueue {
     const data = payload.parse({ outboxId });
 
     if (this.client.status !== RedisConnectionStatus.Ready) {
-      throw new Error('REDIS_UNAVAILABLE');
+      throw new Error(ErrorCode.REDIS_UNAVAILABLE);
     }
 
     await this.queue.add('notify', data, { jobId: outboxId });
@@ -73,7 +76,7 @@ export class NotificationQueue {
   }
   async start(deliver: (id: string) => Promise<number>) {
     if (this.worker) {
-      throw new Error('WORKER_ALREADY_STARTED');
+      throw new Error(ServerErrorCode.WORKER_ALREADY_STARTED);
     }
 
     this.stopping = false;

@@ -1,3 +1,4 @@
+import { ErrorCode } from '../../../../packages/protocol/src/index.js';
 import {
   MessageRole,
   ATTACHMENT_TTL_MS,
@@ -33,18 +34,22 @@ import { AttachmentHistory } from './history.js';
 import { nativeImageMime } from './image-content.js';
 import { boundedBody, nativeFile } from './io.js';
 import { type NativeMedia, type PreparedAttachment } from './types.js';
+import type { LocalAttachmentBackend } from './local-backend.js';
+import { RelayAttachmentMirror } from './relay-mirror.js';
 
 export type { NativeMedia, PreparedAttachment } from './types.js';
 interface Options {
-  relayUrl: string;
-  deviceToken: string;
+  relayUrl?: string;
+  deviceToken?: string;
   directory: string;
   fetch?: typeof fetch;
   current?: (session: Session) => boolean;
+  local?: LocalAttachmentBackend;
 }
 export class AttachmentService {
   private readonly history = new AttachmentHistory();
   private readonly fetcher: typeof fetch;
+  private readonly mirrors: RelayAttachmentMirror;
   private root?: Promise<string>;
   private closed = false;
   private files = new Map<string, { size: number; expiresAt: number }>();
@@ -60,8 +65,17 @@ export class AttachmentService {
   private queue: Promise<unknown> = Promise.resolve();
   private readonly maintenance: ReturnType<typeof setInterval>;
   constructor(private options: Options) {
-    validateRelayUrl(options.relayUrl);
+    if (options.relayUrl) {
+      validateRelayUrl(options.relayUrl);
+    }
+
     this.fetcher = options.fetch ?? fetch;
+
+    this.mirrors = new RelayAttachmentMirror(
+      options.local,
+      !!(options.relayUrl && options.deviceToken),
+      (session, id, init) => this.request(session, id, init),
+    );
 
     this.maintenance = setInterval(() => {
       void this.pruneExpired().catch(() => {});
@@ -197,6 +211,8 @@ export class AttachmentService {
           throw new Error(AttachmentErrorCode.IntegrityFailed);
         }
 
+        await this.mirrors.prepare(session, descriptor, bytes);
+
         if (this.closed) {
           throw new Error(AttachmentErrorCode.Unavailable);
         }
@@ -230,7 +246,7 @@ export class AttachmentService {
   }
   async remember(session: Session, text: string, attachments: readonly PreparedAttachment[]) {
     await this.directory();
-    this.history.remember(session, text, attachments);
+    this.history.remember(session, text, this.mirrors.history(session, attachments));
 
     const save = this.metadataQueue.then(async () => {
       const path = join(this.options.directory, 'attachments', 'history.json');
@@ -399,7 +415,7 @@ export class AttachmentService {
     }
 
     if (this.options.current && !this.options.current(session)) {
-      throw new Error('STALE_SESSION');
+      throw new Error(ErrorCode.STALE_SESSION);
     }
 
     const bytes = media.bytes ?? (media.path ? await nativeFile(media.path) : undefined);
@@ -428,7 +444,7 @@ export class AttachmentService {
       (!source || JSON.stringify(source) === JSON.stringify(known.source))
     ) {
       try {
-        await this.request(session, known.descriptor.id, { method: 'HEAD' });
+        await this.request(session, known.descriptor.id, { method: 'HEAD' }, !!this.options.relayUrl);
 
         return known.descriptor;
       } catch (error) {
@@ -483,7 +499,7 @@ export class AttachmentService {
     const uuid = `${hash.slice(0, 8)}-${hash.slice(8, 12)}-5${hash.slice(13, 16)}-a${hash.slice(17, 20)}-${hash.slice(20, 32)}`;
 
     if (this.options.current && !this.options.current(session)) {
-      throw new Error('STALE_SESSION');
+      throw new Error(ErrorCode.STALE_SESSION);
     }
 
     const response = await this.request(session, undefined, {
@@ -520,6 +536,10 @@ export class AttachmentService {
       throw new Error(AttachmentErrorCode.IntegrityFailed);
     }
 
+    await this.options.local?.importDescriptor(session, value, bytes).catch(() => {
+      /* A bounded relay export remains usable when the optional local cache is full. */
+    });
+
     this.exported.set(key, {
       descriptor: value,
       expiresAt: Date.now() + ATTACHMENT_TTL_MS - ATTACHMENT_EXPORT_EXPIRY_MARGIN_MS,
@@ -532,8 +552,20 @@ export class AttachmentService {
 
     return value;
   }
-  private async request(session: Session, id?: string, init: RequestInit = {}) {
+  private async request(session: Session, id?: string, init: RequestInit = {}, relayOnly = false) {
     if (this.closed) {
+      throw new Error(AttachmentErrorCode.Unavailable);
+    }
+
+    if (this.options.local && !relayOnly && (id || !this.options.relayUrl)) {
+      const local = await this.options.local.request(session, id, init);
+
+      if (local) {
+        return local;
+      }
+    }
+
+    if (!this.options.relayUrl || !this.options.deviceToken) {
       throw new Error(AttachmentErrorCode.Unavailable);
     }
 
@@ -562,6 +594,10 @@ export class AttachmentService {
           ? AttachmentErrorCode.Unavailable
           : AttachmentErrorCode.TransferFailed,
       );
+    }
+
+    if (this.options.current && !this.options.current(session)) {
+      throw new Error(ErrorCode.STALE_SESSION);
     }
 
     return response;
@@ -609,5 +645,6 @@ export class AttachmentService {
     this.pending.clear();
     this.files.clear();
     this.exported.clear();
+    this.mirrors.close();
   }
 }

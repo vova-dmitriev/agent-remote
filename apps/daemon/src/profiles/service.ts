@@ -1,0 +1,147 @@
+import {
+  AgentProvider,
+  ProfileAction,
+  ErrorCode,
+  ProfileOperationPhase,
+  profileMutationSchema,
+  profileListSchema,
+  type ProfileMutation,
+  type ProfileOperation,
+} from '../../../../packages/protocol/src/index.js';
+import { immutableProfileScope } from './storage/scope.js';
+import { ProfileRegistry } from './registry.js';
+import { ProfileJournal } from './lifecycle/journal.js';
+import { mutateProfile } from './lifecycle/mutation.js';
+import { removeProfileCredentials } from './lifecycle/cleanup.js';
+import type { ProfileServiceOptions } from './lifecycle/types.js';
+
+export class ProfileService {
+  readonly registry: ProfileRegistry;
+  private journal: ProfileJournal;
+
+  constructor(private options: ProfileServiceOptions) {
+    this.options = { ...options, scope: immutableProfileScope(options.scope) };
+    this.registry = new ProfileRegistry(this.options.database, this.options.scope);
+    this.journal = new ProfileJournal(this.options.database, this.options.scope);
+  }
+
+  list() {
+    return profileListSchema.parse({
+      available: true,
+      observedAt: Date.now(),
+      profiles: this.registry.list(),
+      operations: this.journal.pending(),
+      defaults: {
+        [AgentProvider.Claude]: this.registry.defaultFor(AgentProvider.Claude)?.id ?? null,
+        [AgentProvider.Codex]: this.registry.defaultFor(AgentProvider.Codex)?.id ?? null,
+      },
+    });
+  }
+
+  operation(id: string) {
+    return this.journal.get(id);
+  }
+
+  async execute(input: ProfileMutation, current = () => true): Promise<ProfileOperation> {
+    if (!current()) {
+      throw new Error(ErrorCode.UNAUTHORIZED);
+    }
+
+    const request = profileMutationSchema.parse(input);
+
+    if (
+      request.action !== ProfileAction.Create &&
+      request.action !== ProfileAction.Rename &&
+      request.action !== ProfileAction.SetDefault &&
+      request.action !== ProfileAction.Remove &&
+      this.options.executionActive?.(request.profileId)
+    ) {
+      throw new Error(ErrorCode.PROFILE_EXECUTION_ACTIVE);
+    }
+
+    const result = this.journal.run(request, () => {
+      const profile = mutateProfile(this.registry, request);
+      const now = Date.now();
+
+      return {
+        ...this.options.scope,
+        id: request.operationId,
+        profileId: profile.id,
+        action: request.action,
+        phase:
+          request.action === ProfileAction.Remove
+            ? ProfileOperationPhase.Removing
+            : ProfileOperationPhase.Complete,
+        profileVersion: profile.version,
+        version: 1,
+        createdAt: now,
+        updatedAt: now,
+      };
+    });
+
+    return result.phase === ProfileOperationPhase.Removing ? this.reconcile(result.id, current) : result;
+  }
+
+  async reconcile(id: string, current = () => true): Promise<ProfileOperation> {
+    if (!current()) {
+      throw new Error(ErrorCode.UNAUTHORIZED);
+    }
+
+    const operation = this.operation(id);
+
+    if (operation.phase !== ProfileOperationPhase.Removing) {
+      return operation;
+    }
+
+    const profile = this.registry.get(operation.profileId);
+
+    try {
+      await this.options.waitForInactive?.(profile.id, current);
+
+      if (this.options.cleanup) {
+        await this.options.cleanup(profile, current);
+      } else {
+        await removeProfileCredentials(this.options.directory, profile, current);
+      }
+    } catch (error) {
+      if (!current()) {
+        throw new Error(ErrorCode.UNAUTHORIZED);
+      }
+
+      const code =
+        Object.values(ErrorCode).find((value) => error instanceof Error && value === error.message) ??
+        ErrorCode.REQUEST_FAILED;
+
+      return this.options.database.connection.transaction(() => {
+        const latest = this.operation(id);
+
+        return latest.phase === ProfileOperationPhase.Removing
+          ? this.journal.save({ ...latest, code, version: latest.version + 1, updatedAt: Date.now() })
+          : latest;
+      })();
+    }
+
+    if (!current()) {
+      throw new Error(ErrorCode.UNAUTHORIZED);
+    }
+
+    return this.options.database.connection.transaction(() => {
+      const latest = this.operation(id);
+
+      if (latest.phase !== ProfileOperationPhase.Removing) {
+        return latest;
+      }
+
+      const removed = this.registry.completeRemoval(profile.id, operation.profileVersion);
+
+      return this.journal.save({
+        ...latest,
+        code: undefined,
+        phase: ProfileOperationPhase.Complete,
+        profileVersion: removed.version,
+        version: latest.version + 1,
+        updatedAt: Date.now(),
+      });
+    })();
+  }
+}

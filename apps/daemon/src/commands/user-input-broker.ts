@@ -1,3 +1,4 @@
+import { DaemonErrorCode } from '../error-codes.js';
 import {
   ErrorCode,
   pendingUserInputSchema,
@@ -24,17 +25,17 @@ export class UserInputBroker {
   }
   open(source: PendingUserInput, answer: Entry['answer']): void {
     if (this.closed) {
-      throw new Error('BROKER_CLOSED');
+      throw new Error(DaemonErrorCode.BROKER_CLOSED);
     }
 
     const request = pendingUserInputSchema.parse(structuredClone(source));
 
     if (this.entries.has(request.requestId)) {
-      throw new Error('DUPLICATE_REQUEST');
+      throw new Error(DaemonErrorCode.DUPLICATE_REQUEST);
     }
 
     if (this.entries.size >= this.maxPending) {
-      throw new Error('USER_INPUT_QUEUE_FULL');
+      throw new Error(ErrorCode.USER_INPUT_QUEUE_FULL);
     }
 
     request.expiresAt = Math.min(request.expiresAt, Date.now() + this.maxWaitMs);
@@ -53,12 +54,12 @@ export class UserInputBroker {
     const entry = this.entries.get(requestId);
 
     if (!entry || entry.request.generation !== generation) {
-      throw new Error('USER_INPUT_EXPIRED');
+      throw new Error(ErrorCode.USER_INPUT_EXPIRED);
     }
 
     if (entry.request.expiresAt <= Date.now()) {
       this.cancel(requestId);
-      throw new Error('USER_INPUT_EXPIRED');
+      throw new Error(ErrorCode.USER_INPUT_EXPIRED);
     }
 
     const answers = validateUserInputAnswers(entry.request, raw);
@@ -77,7 +78,7 @@ export class UserInputBroker {
         throw error;
       }
 
-      throw new Error('UNKNOWN_AFTER_WRITE');
+      throw new Error(ErrorCode.UNKNOWN_AFTER_WRITE);
     }
   }
   pending(): PendingUserInput[] {

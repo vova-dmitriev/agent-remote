@@ -116,3 +116,16 @@ it('receives a native image history frame larger than four MiB without disconnec
   expect(await pending).toBe('still-connected');
   await f.client.close();
 });
+
+it.each(['account/read', 'model/list', 'account/rateLimits/read', 'config/read'])(
+  'reports a %s timeout as a read failure rather than uncertain delivery',
+  async (method) => {
+    const f = fixture({ timeoutMs: 10 });
+
+    try {
+      await expect(f.client.request(method, {})).rejects.toThrow('CODEX_TIMEOUT');
+    } finally {
+      await f.client.close();
+    }
+  },
+);

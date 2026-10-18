@@ -4,11 +4,13 @@ import { feedbackText } from "@/shared/lib/i18n"
 import { LanguageSwitcher } from "@/shared/ui/language-switcher"
 import { ThemeSwitcher } from "@/shared/ui/theme-switcher"
 import { Button } from "@/shared/ui/button"
+import { useHost } from "@/shared/lib/host"
 import { SHELL_IDS } from "../config/test-ids"
 import type { ApplicationShellProps } from "./application-shell.types"
 
 export function ApplicationShell({ connection, result, onHome, onLogout, children, compact = false }: ApplicationShellProps) {
   const { t } = useTranslation()
+  const host = useHost()
   const online = connection === ConnectionStatus.Online
 
   return (
@@ -22,6 +24,11 @@ export function ApplicationShell({ connection, result, onHome, onLogout, childre
             {t(online ? ConnectionStatus.Online : connection === ConnectionStatus.Expired ? "loginRequired" : ConnectionStatus.Offline)}
           </span>
           <div className="app-actions">
+            {host.capabilities.fullTab ? (
+              <Button variant="link" data-testid={SHELL_IDS.openTab} onClick={() => void host.openFullTab?.()}>
+                {t("extensionOpenFullTab")}
+              </Button>
+            ) : null}
             <LanguageSwitcher />
             <ThemeSwitcher />
             <Button variant="link" className="text-button" data-testid={SHELL_IDS.logout} onClick={onLogout}>

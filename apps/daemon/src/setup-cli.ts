@@ -1,3 +1,4 @@
+import { DaemonErrorCode } from './error-codes.js';
 import { CliCommand, CliAction } from './domain/cli.js';
 import { IpcMessageType } from './domain/ipc.js';
 import { ClaudeHookEvent } from './domain/claude.js';
@@ -7,7 +8,7 @@ import { cmuxContext } from './cmux/context.js';
 import { homedir } from 'node:os';
 import { join, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadConfig, localSecret, socketPath } from './config.js';
+import { loadConfig, localSecret, socketPath, stateDirectory } from './config.js';
 import { requestLocal } from './code/ipc.js';
 import { installHooks, uninstallHooks } from './code/install-hooks.js';
 import { startDaemon } from './main.js';
@@ -15,6 +16,22 @@ import { startClaude } from './cli/wrapper.js';
 
 export async function runCli(argv = process.argv.slice(2)) {
   const [command, ...args] = argv;
+
+  if (command === CliCommand.Profiles) {
+    const { runProfilesCli } = await import('./profiles/runtime/cli.js');
+
+    await runProfilesCli(args, stateDirectory());
+
+    return;
+  }
+
+  if (command === CliCommand.Browser) {
+    const { runBrowserCli } = await import('./browser/cli/index.js');
+
+    await runBrowserCli(args);
+
+    return;
+  }
 
   if (command === CliCommand.Personal) {
     const { startPersonal } = await import('./cli/personal.js');
@@ -114,7 +131,7 @@ export async function runCli(argv = process.argv.slice(2)) {
       ASCII_CONTROL_CHARACTERS.test(executable) ||
       args.some((arg) => arg.includes('\0'))
     ) {
-      throw new Error('INVALID_CLAUDE_ARGS');
+      throw new Error(DaemonErrorCode.INVALID_CLAUDE_ARGS);
     }
 
     process.exitCode = await startClaude([], { stdin: process.stdin, stdout: process.stdout }, undefined, {
@@ -202,7 +219,7 @@ export async function runCli(argv = process.argv.slice(2)) {
         input += chunk.toString();
 
         if (Buffer.byteLength(input) > 120000) {
-          throw new Error('HOOK_TOO_LARGE');
+          throw new Error(DaemonErrorCode.HOOK_TOO_LARGE);
         }
       }
 

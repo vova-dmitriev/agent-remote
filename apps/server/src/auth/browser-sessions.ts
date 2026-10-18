@@ -1,3 +1,4 @@
+import { ErrorCode } from '../../../../packages/protocol/src/index.js';
 import { type Database } from '../db/database.js';
 import { Fault, hash, secret } from './security.js';
 
@@ -16,7 +17,7 @@ export class BrowserSessions {
       ).rows[0];
 
       if (!row) {
-        throw new Fault('UNAUTHORIZED', 401);
+        throw new Fault(ErrorCode.UNAUTHORIZED, 401);
       }
 
       await tx.query('INSERT INTO browser_sessions(token_hash,owner_id,expires_at) VALUES($1,$2,$3)', [
@@ -37,7 +38,7 @@ export class BrowserSessions {
   }
   async revoke(credential: string) {
     if (!/^[a-f0-9]{64}$/.test(credential)) {
-      throw new Fault('UNAUTHORIZED', 401);
+      throw new Fault(ErrorCode.UNAUTHORIZED, 401);
     }
 
     return this.db.transaction(async (tx) => {
@@ -48,7 +49,7 @@ export class BrowserSessions {
       ).rowCount;
 
       if (!row) {
-        throw new Fault('UNAUTHORIZED', 401);
+        throw new Fault(ErrorCode.UNAUTHORIZED, 401);
       }
 
       const revoked = (
@@ -65,7 +66,7 @@ export class BrowserSessions {
   }
   async refresh(credential: string, now = Date.now(), expectedTelegramId?: string) {
     if (!/^[a-f0-9]{64}$/.test(credential)) {
-      throw new Fault('UNAUTHORIZED', 401);
+      throw new Fault(ErrorCode.UNAUTHORIZED, 401);
     }
 
     return this.db.transaction(async (tx) => {
@@ -77,7 +78,7 @@ export class BrowserSessions {
       ).rows[0];
 
       if (!row || (expectedTelegramId !== undefined && row.telegram_id !== expectedTelegramId)) {
-        throw new Fault('UNAUTHORIZED', 401);
+        throw new Fault(ErrorCode.UNAUTHORIZED, 401);
       }
 
       const token = secret(),

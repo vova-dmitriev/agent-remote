@@ -3,6 +3,17 @@ import { connect } from 'node:net';
 import { mkdir, lstat, chmod, unlink, open } from 'node:fs/promises';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
+import {
+  ManagedCodexChildState,
+  ManagedCodexLaunchEvidenceType,
+  type ManagedCodexLaunchEvidence,
+  type ManagedCodexLaunchOptions,
+} from './launch/types.js';
+import { CodexLaunchArgument } from '../domain/codex.js';
+import { ErrorCode } from '../../../../packages/protocol/src/index.js';
+import { ManagedCodexPath } from './launch/values.js';
+import { managedCodexSocketPath } from './launch/paths.js';
+import { forgetOwnedProfileChild, ownedProfileChild, trackOwnedProfileChild } from './launch/owned-child.js';
 
 async function listening(path: string): Promise<boolean> {
   return new Promise((resolve) => {
@@ -24,105 +35,242 @@ async function listening(path: string): Promise<boolean> {
   });
 }
 
-export async function ensureManagedCodexSocket(stateDirectory: string, executable = 'codex') {
-  const directory = join(stateDirectory, 'codex'),
-    path = join(directory, 'app-server.sock'),
-    lock = join(directory, 'launch.lock');
+export function managedCodexSocketListening(path: string): Promise<boolean> {
+  return listening(path);
+}
 
-  await mkdir(directory, { recursive: true, mode: 0o700 });
-  const info = await lstat(directory);
+export async function managedCodexSocketExited(path: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const socket = connect(path);
+    const timer = setTimeout(() => finish(false), 300);
 
-  if (
-    !info.isDirectory() ||
-    info.isSymbolicLink() ||
-    info.uid !== process.getuid?.() ||
-    (info.mode & 0o077) !== 0
-  ) {
-    throw new Error('CODEX_INVALID_SOCKET');
-  }
+    const finish = (exited: boolean) => {
+      clearTimeout(timer);
+      socket.destroy();
+      resolve(exited);
+    };
 
-  if (await listening(path)) {
-    return path;
-  }
+    socket.once('connect', () => finish(false));
 
-  let handle;
+    socket.once('error', (error: NodeJS.ErrnoException) =>
+      finish(error.code === 'ECONNREFUSED' || error.code === 'ENOENT'),
+    );
+  });
+}
 
-  for (let attempt = 0; attempt < 100; attempt++) {
-    try {
-      handle = await open(lock, 'wx', 0o600);
-      break;
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
-        throw error;
-      }
+export async function managedCodexChildState(pid: number): Promise<ManagedCodexChildState> {
+  try {
+    process.kill(pid, 0);
 
-      if (await listening(path)) {
-        return path;
-      }
+    return ManagedCodexChildState.Unverified;
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code;
 
-      await delay(100);
+    if (code === 'ESRCH') {
+      return ManagedCodexChildState.Exited;
     }
-  }
 
-  if (!handle) {
-    throw new Error('CODEX_DAEMON_START_FAILED');
+    if (code === 'EPERM') {
+      return ManagedCodexChildState.Unverified;
+    }
+
+    return ManagedCodexChildState.Unknown;
   }
+}
+
+export async function ensureManagedCodexSocket(
+  stateDirectory: string,
+  executable = 'codex',
+  options?: ManagedCodexLaunchOptions,
+) {
+  const environment = options ? { ...options.environment } : undefined;
+  const prefixArguments = [...(options?.prefixArguments ?? [])];
+
+  const directory = join(stateDirectory, ManagedCodexPath.Directory),
+    path = managedCodexSocketPath(stateDirectory),
+    lock = join(directory, ManagedCodexPath.Lock);
+
+  let possibleChild = false;
+
+  const evidence = (value: ManagedCodexLaunchEvidence) => {
+    if (value.type === ManagedCodexLaunchEvidenceType.ExistingOrUnknown) {
+      possibleChild = true;
+    }
+
+    if (value.type === ManagedCodexLaunchEvidenceType.ChildCreated) {
+      possibleChild = true;
+    }
+
+    if (
+      value.type === ManagedCodexLaunchEvidenceType.NoChildCreated ||
+      value.type === ManagedCodexLaunchEvidenceType.ChildExited
+    ) {
+      possibleChild = false;
+    }
+
+    options?.onEvidence?.(value);
+  };
 
   try {
+    await mkdir(directory, { recursive: true, mode: 0o700 });
+    const info = await lstat(directory);
+
+    if (
+      !info.isDirectory() ||
+      info.isSymbolicLink() ||
+      info.uid !== process.getuid?.() ||
+      (info.mode & 0o077) !== 0
+    ) {
+      throw new Error(ErrorCode.CODEX_INVALID_SOCKET);
+    }
+
     if (await listening(path)) {
+      const owned = ownedProfileChild(path, evidence);
+
+      evidence(
+        owned?.pid
+          ? { type: ManagedCodexLaunchEvidenceType.ChildCreated, pid: owned.pid }
+          : { type: ManagedCodexLaunchEvidenceType.ExistingOrUnknown },
+      );
+
       return path;
     }
 
-    try {
-      const stale = await lstat(path);
+    let handle;
 
-      if (!stale.isSocket() || stale.uid !== process.getuid?.()) {
-        throw new Error('CODEX_INVALID_SOCKET');
-      }
+    for (let attempt = 0; attempt < 100; attempt++) {
+      try {
+        handle = await open(lock, 'wx', 0o600);
+        break;
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
+          throw error;
+        }
 
-      await unlink(path);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-        throw error;
+        evidence({ type: ManagedCodexLaunchEvidenceType.ExistingOrUnknown });
+
+        if (await listening(path)) {
+          const owned = ownedProfileChild(path, evidence);
+
+          if (owned?.pid) {
+            evidence({ type: ManagedCodexLaunchEvidenceType.ChildCreated, pid: owned.pid });
+          }
+
+          return path;
+        }
+
+        await delay(100);
       }
     }
 
-    const child = spawn(executable, ['app-server', '--listen', 'unix://' + path], {
-      detached: true,
-      stdio: 'ignore',
-      shell: false,
-    });
+    if (!handle) {
+      throw new Error(ErrorCode.CODEX_DAEMON_START_FAILED);
+    }
 
-    let failed = false;
-
-    child.once('error', () => {
-      failed = true;
-    });
-
-    child.once('exit', () => {
-      failed = true;
-    });
-
-    child.unref();
-
-    for (let attempt = 0; attempt < 100; attempt++) {
-      if (failed) {
-        throw new Error('CODEX_DAEMON_START_FAILED');
-      }
-
+    try {
       if (await listening(path)) {
-        await chmod(path, 0o600);
+        const owned = ownedProfileChild(path, evidence);
+
+        evidence(
+          owned?.pid
+            ? { type: ManagedCodexLaunchEvidenceType.ChildCreated, pid: owned.pid }
+            : { type: ManagedCodexLaunchEvidenceType.ExistingOrUnknown },
+        );
 
         return path;
       }
 
-      await delay(100);
+      try {
+        const stale = await lstat(path);
+
+        if (!stale.isSocket() || stale.uid !== process.getuid?.()) {
+          throw new Error(ErrorCode.CODEX_INVALID_SOCKET);
+        }
+
+        if (options?.onEvidence) {
+          evidence({ type: ManagedCodexLaunchEvidenceType.ExistingOrUnknown });
+          throw new Error(ErrorCode.CODEX_DAEMON_START_FAILED);
+        }
+
+        await unlink(path);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+          throw error;
+        }
+      }
+
+      let child;
+
+      try {
+        child = spawn(
+          executable,
+          [
+            ...prefixArguments,
+            CodexLaunchArgument.Server,
+            CodexLaunchArgument.Listen,
+            CodexLaunchArgument.UnixSocketPrefix + path,
+          ],
+          {
+            detached: true,
+            stdio: 'ignore',
+            shell: false,
+            ...(environment ? { env: environment, cwd: environment.CODEX_HOME } : {}),
+          },
+        );
+      } catch (error) {
+        evidence({ type: ManagedCodexLaunchEvidenceType.NoChildCreated });
+        throw error;
+      }
+
+      let failed = false;
+
+      child.once('error', () => {
+        failed = true;
+
+        if (child.pid === undefined) {
+          forgetOwnedProfileChild(path, child);
+          evidence({ type: ManagedCodexLaunchEvidenceType.NoChildCreated });
+        }
+      });
+
+      if (child.pid !== undefined) {
+        trackOwnedProfileChild(path, child, () => {
+          failed = true;
+          evidence({ type: ManagedCodexLaunchEvidenceType.ChildExited, pid: child.pid! });
+        });
+
+        evidence({ type: ManagedCodexLaunchEvidenceType.ChildCreated, pid: child.pid });
+      } else {
+        evidence({ type: ManagedCodexLaunchEvidenceType.ExistingOrUnknown });
+      }
+
+      child.unref();
+
+      for (let attempt = 0; attempt < 100; attempt++) {
+        if (failed) {
+          throw new Error(ErrorCode.CODEX_DAEMON_START_FAILED);
+        }
+
+        if (await listening(path)) {
+          await chmod(path, 0o600);
+
+          return path;
+        }
+
+        await delay(100);
+      }
+
+      child.kill('SIGTERM');
+      throw new Error(ErrorCode.CODEX_DAEMON_START_FAILED);
+    } finally {
+      await handle.close();
+      await unlink(lock).catch(() => {});
+    }
+  } catch (error) {
+    if (options?.onEvidence && !possibleChild) {
+      evidence({ type: ManagedCodexLaunchEvidenceType.NoChildCreated });
     }
 
-    child.kill('SIGTERM');
-    throw new Error('CODEX_DAEMON_START_FAILED');
-  } finally {
-    await handle.close();
-    await unlink(lock).catch(() => {});
+    throw error;
   }
 }

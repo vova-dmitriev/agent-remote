@@ -1,5 +1,11 @@
 # Product verification coverage
 
+## Accounts and keys
+
+`accounts-page.spec.ts` and `accounts/security.spec.ts` exercise the shared UI against a real relay, PostgreSQL and isolated controlled native children. They cover encrypted API enrollment, two retained subscription identities, CRUD/default persistence, navigation/filter preservation, offline metadata, untrusted recipient refusal and logout during native verification. They do not authenticate real provider accounts.
+
+`tests/extension-e2e/accounts.spec.ts` exercises browser encryption in the production MV3 artifact through a real Native Messaging bridge and approved local grant. It checks readiness and absence of the plaintext key from Chrome storage and returned profile metadata. The fixture records CSP violations and page errors; it never registers the extension in a personal browser profile.
+
 The browser suite runs Chromium with an iPhone 13 viewport against the real Vite application, NestJS relay, PostgreSQL, signed synthetic Telegram identities, and real WebSockets. It never sends Telegram messages or operates personal chats. A mobile viewport is not physical Telegram acceptance.
 
 `tests/e2e/support/relay-fixture.ts` represents a controlled device. Its commands are acknowledged without running an external application. `tests/e2e/product/` controls that device and network faults entirely inside the test process. No application debug endpoint or authentication bypass is used. Capability fixtures describe advertised capabilities; they do not establish native integration compatibility.
@@ -110,6 +116,8 @@ Unicode-safe bounded truncation and preserved permission/failure/deep-link behav
 - Reading bookmarks contain only device/session scope, message ID and row offset, bounded to 100 entries. Browser storage failure retains an in-memory fallback. No message body or attachment path is persisted in a bookmark.
 
 ## Restart context and keyboard regression coverage
+
+Account-management acceptance on 2026-10-18: all 174 mobile scenarios and 10 built Chrome/native scenarios passed. `accounts/recovery.spec.ts` loses committed create/enrollment replies and reloads before recovery; `accounts-page.spec.ts` reconnects the Mac without leaving Accounts. Separate unit tests cover immediate local logout/disconnect cancellation, native cleanup barriers, obsolete sign-ins and maximum-size paged metadata. Controlled peers prove transport behavior; real provider sign-in, profile-aware launch and automatic fallback remain separate release gates.
 
 - `prompt-queue.spec.ts`, `delivery-recovery.spec.ts` and `attachments/recovery.spec.ts`: editable input during work, Enter enqueue, FIFO across native idle transitions, cancellation, exact command/attachment IDs, GET-only reconciliation, independent controls and immutable submitted attachments.
 - `native-restart-ambiguity.spec.ts`: duplicate native writers produce an accurate RU/EN explanation; restart remains unavailable until a unique verified process remains. No user process is stopped by tests.

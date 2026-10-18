@@ -18,6 +18,7 @@ import {
 } from "@protocol"
 import type { Connection, HistoryStatus } from "@/shared/api"
 import { SessionActionType } from "../config/session-values"
+import { sourceAvailable } from "../lib/availability"
 
 export interface SessionState {
   snapshot: AppSnapshot | null
@@ -137,10 +138,8 @@ export function canQueuePrompt(connection: Connection, deviceStatus: DeviceStatu
   return (
     connection === ConnectionStatus.Online &&
     deviceStatus === DeviceStatus.Online &&
-    session.binding === BindingState.Verified &&
-    session.integrationState === IntegrationState.Ready &&
-    !!session.capabilities.prompt &&
-    session.status !== SessionStatus.Ended
+    sourceAvailable(session) &&
+    !!session.capabilities.prompt
   )
 }
 

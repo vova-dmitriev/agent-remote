@@ -35,14 +35,23 @@ import { EventReplay } from './monitor/replay.js';
 import { AdapterRegistry, SourceAdapter } from './adapters/registry.js';
 import { UserInputBroker } from './commands/user-input-broker.js';
 import { PermissionBroker } from './commands/permission-broker.js';
-import { Dispatcher } from './commands/dispatcher.js';
+import { DispatchScheduler } from './commands/scheduling/index.js';
+import { Dispatcher, type DispatcherOptions } from './commands/dispatcher.js';
 import { MessageTracker, TranscriptSources } from './monitor/history.js';
 import { startHookServer } from './code/hook-server.js';
 import { RelayClient } from './relay-client.js';
-import { loadConfig, localSecret, socketPath, stateDirectory } from './config.js';
+import { localSecret, socketPath, stateDirectory } from './config.js';
+
+import { runtimeConfiguration, browserSettings } from './local/bootstrap/configuration.js';
+import { localClientSecret } from './local/bootstrap/identity.js';
+import { openLocalServices } from './local/bootstrap/services.js';
+import { NoRelay } from './local/bootstrap/no-relay.js';
+import { LocalController } from './local/controller/controller.js';
+import { RuntimeProfileRelay } from './profiles/runtime/relay.js';
+import { startLocalServer } from './local/server/server.js';
 
 export async function startDaemon() {
-  const config = await loadConfig(),
+  const config = await runtimeConfiguration(stateDirectory()),
     token = await localSecret();
 
   await mkdir(stateDirectory(), { recursive: true, mode: 0o700 });
@@ -83,9 +92,15 @@ export async function startDaemon() {
     allowSessionCreation: inputEnabled,
   });
 
+  const localServices = await openLocalServices(config, stateDirectory(), (id) => monitor.session(id), {
+    inputEnabled,
+    baseEnvironment: process.env,
+    native: { executable: 'codex' },
+  });
+
   const attachments = new AttachmentService({
-    relayUrl: config.relayUrl,
-    deviceToken: config.deviceToken,
+    ...(config.relay ? { relayUrl: config.relay.relayUrl, deviceToken: config.relay.deviceToken } : {}),
+    local: localServices.media,
     directory: stateDirectory(),
     current: (source) => {
       const current = monitor.session(source.id);
@@ -96,7 +111,8 @@ export async function startDaemon() {
 
   const nativeProcesses = new NativeProcesses(process.env.CLAUDE_CONFIG_DIR ?? join(homedir(), '.claude'));
 
-  const dispatcher = new Dispatcher({
+  const dispatchOptions: DispatcherOptions = {
+    scheduler: new DispatchScheduler(),
     deviceId: config.deviceId,
     store,
     monitor,
@@ -119,10 +135,20 @@ export async function startDaemon() {
         monitor.releaseNativeRestart(session.id);
       }
     },
-    createSession: (action) => createManagedSession(action, { monitor, codex, directory: stateDirectory() }),
+    createSession: (action, current) =>
+      createManagedSession(action, {
+        monitor,
+        codex,
+        profiles: localServices.profiles,
+        current,
+        directory: stateDirectory(),
+      }),
     prepareAttachments: (session, items) => attachments.prepare(session, items),
     recordAttachments: (session, text, items) => attachments.remember(session, text, items),
-  });
+  };
+
+  const dispatcher = new Dispatcher(dispatchOptions);
+  const localDispatcher = new Dispatcher(dispatchOptions);
 
   dispatcher.setConnection(false);
   const desktopBridge = new BridgeClient();
@@ -206,8 +232,39 @@ export async function startDaemon() {
     },
   });
 
-  const relay = new RelayClient(config.relayUrl, config.deviceToken);
+  const localController = new LocalController({
+    ...localServices,
+    deviceId: config.deviceId,
+    ownerId: config.ownerId,
+    monitor,
+    store,
+    adapters,
+    dispatcher: localDispatcher,
+    history: (request) => (readers.has(request.sessionId) ? readers.page(request) : Promise.resolve(null)),
+  });
+
+  const localServer = await startLocalServer({
+    path: join(stateDirectory(), 'client.sock'),
+    capability: await localClientSecret(stateDirectory()),
+    controller: localController,
+    grants: localServices.grants,
+    instanceId: config.instanceId,
+    refreshOrigins: async () => (await browserSettings(stateDirectory()))?.origins ?? [],
+  });
+
+  const relay = config.relay
+    ? new RelayClient(config.relay.relayUrl, config.relay.deviceToken)
+    : new NoRelay();
+
   let online = false;
+  let relayEpoch: string | undefined;
+
+  const profileRelay = new RuntimeProfileRelay(
+    localServices.profiles,
+    () => (online && !stopping ? relayEpoch : undefined),
+    (frame) => relay.send(frame),
+  );
+
   let stopping = false;
   let pendingSnapshot = false;
 
@@ -250,7 +307,8 @@ export async function startDaemon() {
     }
   };
 
-  relay.on(RuntimeEvent.Online, () => {
+  relay.on(RuntimeEvent.Online, (epoch?: string) => {
+    relayEpoch = epoch;
     online = true;
     dispatcher.setConnection(true);
     snapshot();
@@ -268,16 +326,27 @@ export async function startDaemon() {
   });
 
   relay.on(RuntimeEvent.Offline, () => {
+    relayEpoch = undefined;
+    profileRelay.disconnect();
     online = false;
     dispatcher.setConnection(false);
-    userInputs.clear();
 
-    for (const pending of permissions.pending()) {
-      permissions.cancelSession(pending.sessionId, pending.generation);
+    if (!localController.hasViewers()) {
+      userInputs.clear();
+
+      for (const pending of permissions.pending()) {
+        permissions.cancelSession(pending.sessionId, pending.generation);
+      }
     }
   });
 
   relay.on(RuntimeEvent.Frame, (frame: ServerFrame) => {
+    if (frame.type === FrameType.ProfilesRequest || frame.type === FrameType.ProfilesCancel) {
+      void profileRelay.receive(frame);
+
+      return;
+    }
+
     if (frame.type === FrameType.HistoryRead) {
       void readers
         .page(frame)
@@ -529,10 +598,14 @@ export async function startDaemon() {
     }
 
     stopping = true;
+    profileRelay.disconnect();
     clearInterval(poll);
     clearInterval(nativePoll);
     clearInterval(activityPoll);
     dispatcher.setConnection(false);
+    localDispatcher.setConnection(false);
+    await localServer.close();
+    await localController.close();
     online = false;
     relay.close();
     permissions.close();
@@ -542,14 +615,17 @@ export async function startDaemon() {
     await polling;
     await activityTask;
     await dispatcher.drain();
+    await localDispatcher.drain();
     await codex.close();
     await attachments.close();
     await adapters.close();
     store.close();
+    localServices.database.close();
   };
 
   relay.on(RuntimeEvent.Revoked, () => {
-    void close();
+    relay.close();
+    dispatcher.setConnection(false);
   });
 
   return { monitor, close };

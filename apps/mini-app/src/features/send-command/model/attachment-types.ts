@@ -8,5 +8,6 @@ export interface PendingAttachment {
   progress: number
   status: PendingAttachmentStatus
   error?: string | undefined
+  reference?: AttachmentDescriptor
   descriptor?: AttachmentDescriptor
 }

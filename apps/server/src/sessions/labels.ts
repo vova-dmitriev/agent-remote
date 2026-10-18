@@ -1,3 +1,4 @@
+import { ErrorCode } from '../../../../packages/protocol/src/index.js';
 import { AgentProvider, type Session } from '../../../../packages/protocol/src/index.js';
 import { z } from 'zod';
 import { type Database } from '../db/database.js';
@@ -57,11 +58,11 @@ export class SessionLabels {
       ).rows[0];
 
       if (!row) {
-        throw new Fault('NOT_FOUND', 404);
+        throw new Fault(ErrorCode.NOT_FOUND, 404);
       }
 
       if (row.data.generation !== body.generation) {
-        throw new Fault('STALE_SESSION', 409);
+        throw new Fault(ErrorCode.STALE_SESSION, 409);
       }
 
       await tx.query(

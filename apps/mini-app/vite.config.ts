@@ -5,11 +5,13 @@ import { fileURLToPath } from "node:url"
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  optimizeDeps: { entries: ["index.html"], include: ["libsodium-wrappers"] },
   resolve: {
     alias: {
       "@storybook-fixtures": fileURLToPath(new URL("./.storybook/fixtures", import.meta.url)),
       "@storybook-components": fileURLToPath(new URL("./.storybook/components", import.meta.url)),
       "@": fileURLToPath(new URL("./src", import.meta.url)),
+      "@transport": fileURLToPath(new URL("../../packages/transport/src", import.meta.url)),
       "@protocol": fileURLToPath(new URL("../../packages/protocol/src/index.ts", import.meta.url)),
     },
   },

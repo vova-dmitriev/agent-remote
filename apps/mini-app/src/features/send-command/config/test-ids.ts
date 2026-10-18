@@ -2,6 +2,7 @@ export const COMMAND_IDS = {
   root: "session-composer",
   restartSession: "native-input-restart",
   connectionHint: "session-composer-connection-hint",
+  availabilityHint: "session-composer-availability-hint",
   label: "session-composer-label",
   prompt: "session-composer-prompt",
   send: "session-composer-send",

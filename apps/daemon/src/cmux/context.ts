@@ -1,3 +1,4 @@
+import { DaemonErrorCode } from '../error-codes.js';
 import { z } from 'zod';
 
 export const cmuxContextSchema = z.strictObject({
@@ -15,7 +16,7 @@ export function cmuxContext(env: NodeJS.ProcessEnv = process.env, windowId?: str
   });
 
   if (!result.success) {
-    throw new Error('INVALID_CMUX_CONTEXT');
+    throw new Error(DaemonErrorCode.INVALID_CMUX_CONTEXT);
   }
 
   return result.data;

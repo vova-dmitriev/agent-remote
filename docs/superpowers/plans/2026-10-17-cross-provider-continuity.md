@@ -1,6 +1,6 @@
 # Cross-provider Continuity Implementation Plan
 
-> **For agentic workers:** Use superpowers:executing-plans for approved implementation; use superpowers:subagent-driven-development only if explicitly selected. This document is a proposed plan. No implementation or deployment is authorized by this planning request. Never commit.
+> **For agentic workers:** Use superpowers:executing-plans for approved implementation; use superpowers:subagent-driven-development only if explicitly selected. Implementation was explicitly authorized by the user after the strict-validation baseline commit on 2026-10-17. Live account sign-ins and deployment remain separate; create commits only when explicitly requested.
 
 **Goal:** Continue a logical conversation across Claude and Codex using an explicit subscription/API profile while preserving reviewed task and project context.
 
@@ -10,9 +10,17 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-17-cross-provider-continuity-design.md`.
 
+## Execution status — 2026-10-18
+
+The user authorized implementation with `gpt-6-luna` at high reasoning effort, at most five agents total. The current harness permits four concurrent agents including the coordinator, so at most three workers run together. No commits, live sign-ins, paid inference or production deployment are authorized by this implementation wave.
+
+Contracts and the Codex account-management foundation are implemented and tested. The Task 2 credential/runtime foundations exist; authenticated live-provider compatibility remains unverified. Task 3 currently adds authoritative profile-aware Codex creation and the shared profile/model chooser. Claude API-key isolation is investigated and implemented only through supported native interfaces; independent subscription isolation must remain unavailable until established. Tasks 4–8 remain pending.
+
+The latest pre-wave baseline passed full validation (1,012 tests across 224 files), 294 Storybook cases, nine account browser scenarios and the built-extension account-enrollment scenario. Checkboxes below retain acceptance scope; a preparatory API or synthetic peer is not authenticated native acceptance.
+
 ## Global constraints
 
-- Planning only; use synthetic temporary runtimes during implementation checks. No real chat prompts, credential inspection/export or account changes in tests.
+- Use synthetic temporary runtimes during implementation checks. No real chat prompts, credential inspection/export or account changes in tests.
 - Follow existing owner/device/generation/runtime fences, durable command IDs and unknown-write behavior. Never commit.
 - Stored credentials/checkpoint bodies stay local; profile queries expose opaque IDs and safe metadata. API-key enrollment is an explicit device-encrypted import, never a readback API; see the follow-up connection-management plan.
 - All domain values use dedicated named const objects and derived types. Frontend follows FSD, named props, static test IDs, RU/EN copy, 200-line source files and six-file directories.
@@ -39,10 +47,12 @@ D. Durable Accounts & keys management and user-defined quota fallback: [follow-u
 
 **Interfaces:** define `ExecutionProfileSummary`, `ExecutionCapabilities`, `Conversation`, `ExecutionLink`, `ContextCheckpointSummary`, `CheckpointApproval`, `HandoffRequest`, `HandoffOperation` and strict schemas. Profiles expose only safe metadata. Checkpoint bodies are local and addressed by ID/digest.
 
-- [ ] Probe installed Claude/Codex in isolated temporary roots without reading existing credentials: profile-root isolation, official login paths, auth-mode/identity checks, model discovery, seed delivery, Desktop ownership limits. Record supported/unsupported/unknown per runtime and version.
-- [ ] Write failing schema tests: reject secret fields, foreign provider/profile pairing, invalid model/effort combinations and arbitrary executable/environment inputs; preserve existing create-session payloads when new options are omitted.
-- [ ] Add named `ProfileAuthMode`, `ProfileStatus`, `HandoffPhase`, `ExecutionMode` and error codes. Phases include preparing, awaiting source/auth, creating target, delivering context, ready, failed and unknown.
-- [ ] Run `npx vitest run tests/execution-profile-protocol.test.ts --maxWorkers=4`; require observed RED before implementing and GREEN afterward.
+- [x] Probe installed Claude/Codex in isolated temporary roots without reading existing credentials: profile-root isolation, official login paths, auth-mode/identity checks, model discovery, seed delivery, Desktop ownership limits. Record supported/unsupported/unknown per runtime and version.
+- [x] Write failing schema tests: reject secret fields, foreign provider/profile pairing, invalid model/effort combinations and arbitrary executable/environment inputs; preserve existing create-session payloads when new options are omitted.
+- [x] Add named `ProfileAuthMode`, `ProfileStatus`, `HandoffPhase`, `ExecutionMode` and error codes. Phases include preparing, awaiting source/auth, creating target, delivering context, ready, failed and unknown.
+- [x] Run `npx vitest run tests/execution-profile-protocol.test.ts --maxWorkers=4`; require observed RED before implementing and GREEN afterward.
+
+**Verification:** 20 contract tests passed after observed RED; `npm run validate` passed with 652 tests across 154 files plus 8 hook/security regressions, typecheck and all guarded-build quality gates. Native authenticated capabilities remain explicitly unverified in `docs/provider-profile-compatibility.md`. The create-session wire extension is deferred to Task 3 so selection cannot be accepted before its launcher honors it.
 
 ### Task 2: Local execution profiles and authenticated metadata
 

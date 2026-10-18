@@ -5,7 +5,7 @@ export const ScanMode = Object.freeze({
 });
 
 const privatePath =
-  /(^|\/)(?:\.env(?:\..*)?|\.local-data|\.superpowers|\.worktrees|\.cloudflared|\.ssh|artifacts|output|node_modules|dist|build|coverage|\.build|\.swiftpm|storybook-static|playwright-report|test-results|credentials[^/]*\.json|[^/]*-credentials\.json|cert\.json|dump\.rdb|appendonlydir)(\/|$)|\.(?:pem|key|p12|pfx|mobileprovision|sqlite(?:-.*)?|db(?:-.*)?|har|cast|mp4|mov|log|jsonl|zip|tgz|gz)$/i;
+  /(^|\/)(?:\.env(?:\..*)?|\.local-data|\.superpowers|\.worktrees|\.cloudflared|\.ssh|artifacts|output|node_modules|dist|build|apps\/desktop\/out|[^/]+\.app|coverage|\.build|\.swiftpm|storybook-static|playwright-report|test-results|credentials[^/]*\.json|[^/]*-credentials\.json|cert\.json|dump\.rdb|appendonlydir)(\/|$)|\.(?:pem|key|p12|pfx|mobileprovision|sqlite(?:-.*)?|db(?:-.*)?|har|cast|mp4|mov|log|jsonl|zip|tgz|gz)$/i;
 
 export function isPrivatePath(file) {
   return file !== '.env.example' && privatePath.test(file);

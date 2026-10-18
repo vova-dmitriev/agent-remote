@@ -4,4 +4,5 @@ export const SHELL_IDS = {
   connection: "application-shell-connection",
   logout: "application-shell-logout",
   receipt: "application-shell-receipt",
+  openTab: "application-shell-open-tab",
 } as const

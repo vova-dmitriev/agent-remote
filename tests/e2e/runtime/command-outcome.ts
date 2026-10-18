@@ -1,7 +1,9 @@
 import { expect } from '@playwright/test';
 import { delivered, deviceFixture } from '../support/relay-fixture.js';
+import { CommandStatus, FrameType } from '../../../packages/protocol/src/index.js';
+import { FixtureCommandOutcome } from './command-outcome-values.js';
 
-let outcome: 'dispatched' | 'unknown' | 'held' = 'dispatched';
+let outcome: FixtureCommandOutcome = FixtureCommandOutcome.Dispatched;
 
 export function commandOutcome() {
   return outcome;
@@ -19,8 +21,8 @@ export async function releaseCommandOutcome() {
 
   sockets[0]!.send(
     JSON.stringify({
-      type: 'command_result',
-      result: { commandId: command.commandId, status: 'dispatched' },
+      type: FrameType.CommandResult,
+      result: { commandId: command.commandId, status: CommandStatus.Dispatched },
     }),
   );
 
@@ -33,5 +35,5 @@ export async function releaseCommandOutcome() {
           ])
         ).rows[0]?.status,
     )
-    .toBe('dispatched');
+    .toBe(CommandStatus.Dispatched);
 }

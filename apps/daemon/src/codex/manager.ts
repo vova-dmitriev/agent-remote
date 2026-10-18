@@ -1,4 +1,9 @@
-import { IntegrationState, TargetKind, SessionStatus } from '../../../../packages/protocol/src/index.js';
+import {
+  ErrorCode,
+  IntegrationState,
+  TargetKind,
+  SessionStatus,
+} from '../../../../packages/protocol/src/index.js';
 import { RuntimeEvent } from '../domain/runtime.js';
 import { CodexMethod } from '../domain/codex.js';
 import { type AttachmentService } from '../attachments/service.js';
@@ -7,16 +12,23 @@ import { join, isAbsolute } from 'node:path';
 import { mkdir, readFile, writeFile, rename, readdir } from 'node:fs/promises';
 import Sqlite from 'better-sqlite3';
 import { z } from 'zod';
-import { ensureManagedCodexSocket } from './launcher.js';
+import { ensureManagedCodexSocket, managedCodexChildState } from './launcher.js';
 import { bindCodex, type CodexClient } from './binding.js';
 import { connectCodexSocket } from './transport.js';
 import { DesktopIpcClient } from './desktop-ipc.js';
 import { DesktopCodexClient } from './desktop-client.js';
 import { object } from './events.js';
+import { retainConnectedBinding, type CodexBinding } from './lifecycle/bindings.js';
 import { type Monitor } from '../monitor/monitor.js';
 import { type AdapterRegistry } from '../adapters/registry.js';
 import { type UserInputBroker } from '../commands/user-input-broker.js';
 import { type PermissionBroker } from '../commands/permission-broker.js';
+import { startProfiledCodexRuntime } from '../sessions/execution/start-profiled-codex.js';
+import { ManagedCodexChildState } from './launch/types.js';
+import type { ProfiledExecutionLaunch } from '../sessions/execution/types.js';
+import type { CodexRpcClient } from './rpc-client.js';
+import { nativeProfileIdentity } from '../profiles/native/metadata.js';
+import { nativeProfileModels } from '../profiles/native/models.js';
 
 export const codexConnectionSchema = z.strictObject({
   kind: z.enum([TargetKind.CodexCli, TargetKind.CodexDesktop]),
@@ -33,6 +45,9 @@ interface Dependencies {
   permissionsEnabled: boolean;
   stateDirectory: string;
   codexHome?: string;
+  codexExecutable?: string;
+  codexPrefixArguments?: readonly string[];
+  executionNamespaceRoot?: string;
   attachments?: AttachmentService;
 }
 interface Connection {
@@ -41,8 +56,9 @@ interface Connection {
   requested: Set<string>;
   rpc?: CodexClient;
   ipc?: DesktopIpcClient;
-  bindings: Map<string, { close: () => void | Promise<void> }>;
+  bindings: Map<string, CodexBinding>;
   clients: Map<string, CodexClient>;
+  executionLeases: Map<string, ProfiledExecutionLaunch['executionLease']>;
 }
 export class CodexManager {
   private connections = new Map<string, Connection>();
@@ -84,13 +100,13 @@ export class CodexManager {
 
     return this.enqueue(async () => {
       if (this.closed) {
-        throw new Error('CODEX_DISCONNECTED');
+        throw new Error(ErrorCode.CODEX_DISCONNECTED);
       }
 
       const savedKey = JSON.stringify(selection);
 
       if (!this.saved.has(savedKey) && this.saved.size >= 10) {
-        throw new Error('CODEX_QUEUE_FULL');
+        throw new Error(ErrorCode.CODEX_QUEUE_FULL);
       }
 
       const entry = this.add(selection);
@@ -99,7 +115,7 @@ export class CodexManager {
       const count = entry.bindings.size;
 
       if (selection.threadId && !entry.bindings.has(selection.threadId)) {
-        throw new Error('CODEX_THREAD_NOT_LOADED');
+        throw new Error(ErrorCode.CODEX_THREAD_NOT_LOADED);
       }
 
       await mkdir(this.deps.stateDirectory, { recursive: true, mode: 0o700 });
@@ -114,16 +130,64 @@ export class CodexManager {
       return { connected: count, kind: selection.kind };
     });
   }
-  async createSession(cwd: string): Promise<string> {
+  async createSession(cwd: string, launch?: ProfiledExecutionLaunch): Promise<string> {
     return this.enqueue(async () => {
       if (this.closed || !this.deps.inputEnabled) {
-        throw new Error('CAPABILITY_UNAVAILABLE');
+        launch?.executionLease.releaseBeforeLaunch();
+        throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
       }
 
-      const socketPath = await ensureManagedCodexSocket(this.deps.stateDirectory);
+      const socketPath = launch
+        ? await startProfiledCodexRuntime(launch, {
+            ...(this.deps.codexExecutable ? { executable: this.deps.codexExecutable } : {}),
+            ...(this.deps.codexPrefixArguments ? { prefixArguments: this.deps.codexPrefixArguments } : {}),
+            ...(this.deps.executionNamespaceRoot ? { namespaceRoot: this.deps.executionNamespaceRoot } : {}),
+          })
+        : await ensureManagedCodexSocket(this.deps.stateDirectory);
+
+      if (launch) {
+        launch.assertCurrent();
+        launch.executionLease.bindSocket(socketPath);
+      }
+
       const entry = this.add({ kind: TargetKind.CodexCli, socketPath });
 
+      if (launch) {
+        entry.executionLeases.set(launch.executionLease.id, launch.executionLease);
+      }
+
       await this.refresh(entry);
+
+      if (launch) {
+        launch.assertCurrent();
+
+        const identity = await nativeProfileIdentity(
+          entry.rpc! as CodexRpcClient,
+          launch.environment.CODEX_HOME!,
+          launch.profile.authMode,
+          false,
+        );
+
+        if (
+          identity.accountRef !== launch.profile.identity?.accountRef ||
+          identity.workspaceRef !== launch.profile.identity?.workspaceRef
+        ) {
+          throw new Error(ErrorCode.PROFILE_MISMATCH);
+        }
+
+        const models = await nativeProfileModels(entry.rpc! as CodexRpcClient);
+        const model = models.find((candidate) => candidate.id === launch.selection.model);
+
+        if (!model) {
+          throw new Error(ErrorCode.PROFILE_MODEL_UNAVAILABLE);
+        }
+
+        if (launch.selection.effort && !model.efforts.includes(launch.selection.effort)) {
+          throw new Error(ErrorCode.PROFILE_EFFORT_UNAVAILABLE);
+        }
+
+        launch.assertCurrent();
+      }
 
       if (
         this.deps.monitor
@@ -134,22 +198,49 @@ export class CodexManager {
               session.integrationState !== IntegrationState.Disconnected,
           ).length >= 10
       ) {
-        throw new Error('SESSION_QUOTA');
+        throw new Error(ErrorCode.SESSION_QUOTA);
       }
 
       let threadId: string;
 
       try {
-        const response = object(await entry.rpc!.request('thread/start', { cwd }));
+        const response = object(
+          await entry.rpc!.request('thread/start', {
+            cwd,
+            ...(launch
+              ? {
+                  model: launch.selection.model,
+                  ...(launch.selection.effort
+                    ? { config: { model_reasoning_effort: launch.selection.effort } }
+                    : {}),
+                }
+              : {}),
+          }),
+        );
+
         const thread = object(response.thread);
 
         if (typeof thread.id !== 'string') {
           throw new Error();
         }
 
+        if (launch) {
+          const actualModel = response.model ?? thread.model;
+
+          if (actualModel !== launch.selection.model) {
+            throw new Error(ErrorCode.PROFILE_MISMATCH);
+          }
+
+          const actualEffort = response.reasoningEffort ?? thread.reasoningEffort;
+
+          if (launch.selection.effort && actualEffort !== launch.selection.effort) {
+            throw new Error(ErrorCode.PROFILE_EFFORT_UNAVAILABLE);
+          }
+        }
+
         threadId = thread.id;
       } catch {
-        throw new Error('UNKNOWN_AFTER_WRITE');
+        throw new Error(ErrorCode.UNKNOWN_AFTER_WRITE);
       }
 
       entry.requested.add(threadId);
@@ -167,13 +258,25 @@ export class CodexManager {
           );
 
         if (session) {
+          if (launch) {
+            try {
+              launch.assertCurrent();
+            } catch {
+              throw new Error(ErrorCode.UNKNOWN_AFTER_WRITE);
+            }
+
+            if (session.model !== launch.selection.model) {
+              throw new Error(ErrorCode.UNKNOWN_AFTER_WRITE);
+            }
+          }
+
           return session.id;
         }
       } catch {
         /* A created thread must never be automatically created again. */
       }
 
-      throw new Error('UNKNOWN_AFTER_WRITE');
+      throw new Error(ErrorCode.UNKNOWN_AFTER_WRITE);
     });
   }
   async close() {
@@ -211,7 +314,7 @@ export class CodexManager {
     }
 
     if (this.connections.size >= 10) {
-      throw new Error('CODEX_QUEUE_FULL');
+      throw new Error(ErrorCode.CODEX_QUEUE_FULL);
     }
 
     const connection: Connection = {
@@ -220,6 +323,7 @@ export class CodexManager {
       requested: new Set(selection.threadId ? [selection.threadId] : []),
       bindings: new Map(),
       clients: new Map(),
+      executionLeases: new Map(),
     };
 
     this.connections.set(key, connection);
@@ -307,7 +411,11 @@ export class CodexManager {
 
     if (selection.kind === TargetKind.CodexCli && !entry.rpc) {
       entry.rpc = await connectCodexSocket(selection.socketPath);
-      entry.rpc.once(RuntimeEvent.Disconnected, reset);
+
+      entry.rpc.once(RuntimeEvent.Disconnected, () => {
+        reset();
+        void this.releaseExitedExecutions(entry);
+      });
     }
 
     if (selection.kind === TargetKind.CodexDesktop && !entry.ipc) {
@@ -331,7 +439,9 @@ export class CodexManager {
     ];
 
     for (const id of ids.slice(0, 20)) {
-      if (this.closed || entry.bindings.has(id)) {
+      const retained = await retainConnectedBinding(entry, id);
+
+      if (this.closed || retained) {
         continue;
       }
 
@@ -376,5 +486,23 @@ export class CodexManager {
         }
       }
     }
+  }
+
+  private async releaseExitedExecutions(entry: Connection) {
+    const pid = [...entry.executionLeases.values()][0]?.processId();
+
+    if (
+      !entry.executionLeases.size ||
+      !pid ||
+      (await managedCodexChildState(pid)) !== ManagedCodexChildState.Exited
+    ) {
+      return;
+    }
+
+    for (const lease of entry.executionLeases.values()) {
+      lease.releaseAfterExit();
+    }
+
+    entry.executionLeases.clear();
   }
 }

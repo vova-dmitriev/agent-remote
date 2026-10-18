@@ -1,3 +1,4 @@
+import { ErrorCode } from '../../../../packages/protocol/src/index.js';
 import { RuntimeEvent } from '../domain/runtime.js';
 import { CodexMethod } from '../domain/codex.js';
 import { EventEmitter } from 'node:events';
@@ -34,11 +35,14 @@ const mutates = (method: string) =>
   ![
     CodexMethod.Initialize,
     CodexMethod.ThreadRead,
-    'thread/list',
+    CodexMethod.ThreadList,
     CodexMethod.ThreadLoadedList,
     CodexMethod.ThreadTurnsList,
     CodexMethod.ThreadItemsList,
-    'account/read',
+    CodexMethod.AccountRead,
+    CodexMethod.ModelList,
+    CodexMethod.AccountRateLimitsRead,
+    CodexMethod.ConfigRead,
   ].some((candidateValue) => candidateValue === method);
 
 export class CodexRpcClient extends EventEmitter {
@@ -68,11 +72,11 @@ export class CodexRpcClient extends EventEmitter {
   }
   request(method: string, params: unknown): Promise<unknown> {
     if (this.closed) {
-      return Promise.reject(new Error('CODEX_DISCONNECTED'));
+      return Promise.reject(new Error(ErrorCode.CODEX_DISCONNECTED));
     }
 
     if (this.pending.size >= 64) {
-      return Promise.reject(new Error('CODEX_QUEUE_FULL'));
+      return Promise.reject(new Error(ErrorCode.CODEX_QUEUE_FULL));
     }
 
     return new Promise((resolve, reject) => {
@@ -102,7 +106,7 @@ export class CodexRpcClient extends EventEmitter {
     }
 
     return new Promise<void>((resolve, reject) => {
-      const failed = () => finish(new Error('UNKNOWN_AFTER_WRITE'));
+      const failed = () => finish(new Error(ErrorCode.UNKNOWN_AFTER_WRITE));
       const timer = setTimeout(failed, this.options.timeoutMs ?? 15_000);
 
       timer.unref();
@@ -123,7 +127,7 @@ export class CodexRpcClient extends EventEmitter {
       try {
         this.write({ id, result }, finish);
       } catch (error) {
-        finish(error instanceof Error ? error : new Error('UNKNOWN_AFTER_WRITE'));
+        finish(error instanceof Error ? error : new Error(ErrorCode.UNKNOWN_AFTER_WRITE));
       }
     });
   }
@@ -153,7 +157,7 @@ export class CodexRpcClient extends EventEmitter {
   }
   private write(frame: unknown, complete?: (error?: Error | null) => void) {
     if (this.closed) {
-      throw new Error('CODEX_DISCONNECTED');
+      throw new Error(ErrorCode.CODEX_DISCONNECTED);
     }
 
     const line = JSON.stringify(frame) + '\n';
@@ -162,7 +166,7 @@ export class CodexRpcClient extends EventEmitter {
       Buffer.byteLength(line) > (this.options.maxFrameBytes ?? 4_194_304) ||
       this.options.input.writableLength > this.maximum
     ) {
-      throw new Error('CODEX_QUEUE_FULL');
+      throw new Error(ErrorCode.CODEX_QUEUE_FULL);
     }
 
     this.options.input.write(line, complete);

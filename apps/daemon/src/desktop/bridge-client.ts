@@ -1,3 +1,4 @@
+import { DaemonErrorCode } from '../error-codes.js';
 import { spawn } from 'node:child_process';
 import { readFileSync, existsSync } from 'node:fs';
 import { dirname, join, parse } from 'node:path';
@@ -20,7 +21,7 @@ export function installationRoot() {
     directory = dirname(directory);
   }
 
-  throw new Error('INSTALLATION_ROOT_NOT_FOUND');
+  throw new Error(DaemonErrorCode.INSTALLATION_ROOT_NOT_FOUND);
 }
 
 export class BridgeClient {

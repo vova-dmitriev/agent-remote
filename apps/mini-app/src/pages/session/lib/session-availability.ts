@@ -1,12 +1,6 @@
-import { ConnectionStatus, DeviceStatus, IntegrationState, BindingState, SessionStatus, type Session } from "@protocol"
-import type { SessionState } from "@/entities/session"
+import { ConnectionStatus, DeviceStatus, type Session } from "@protocol"
+import { sourceAvailable, type SessionState } from "@/entities/session"
 
 export function sessionAvailable(state: SessionState, session: Session) {
-  return (
-    state.connection === ConnectionStatus.Online &&
-    state.snapshot?.deviceStatus === DeviceStatus.Online &&
-    session.integrationState === IntegrationState.Ready &&
-    session.binding === BindingState.Verified &&
-    session.status !== SessionStatus.Ended
-  )
+  return state.connection === ConnectionStatus.Online && state.snapshot?.deviceStatus === DeviceStatus.Online && sourceAvailable(session)
 }

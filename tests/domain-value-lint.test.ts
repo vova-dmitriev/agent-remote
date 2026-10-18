@@ -1,5 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
+import { DaemonErrorCode } from '../apps/daemon/src/error-codes.js';
+import { ErrorCode, knownErrorCode } from '../packages/protocol/src/index.js';
 import { expect, it } from 'vitest';
 
 function violations(source: string, frontend: boolean) {
@@ -26,6 +28,35 @@ function violations(source: string, frontend: boolean) {
   const report = JSON.parse(result.stdout) as Array<{ messages: Array<{ ruleId: string | null }> }>;
 
   return report[0]!.messages.filter((message) => message.ruleId === 'domain/no-inline-values');
+}
+
+function errorCodeViolations(source: string, filename: string) {
+  const frontend = filename.startsWith('apps/mini-app/');
+  const config = frontend ? 'apps/mini-app/eslint.config.mjs' : 'eslint.config.mjs';
+
+  const result = spawnSync(
+    process.execPath,
+    [
+      resolve('apps/mini-app/node_modules/eslint/bin/eslint.js'),
+      '--stdin',
+      '--stdin-filename',
+      frontend ? filename.slice('apps/mini-app/'.length) : filename,
+      '--config',
+      resolve(config),
+      '--format',
+      'json',
+    ],
+    {
+      cwd: frontend ? resolve('apps/mini-app') : process.cwd(),
+      input: source,
+      encoding: 'utf8',
+      timeout: 15000,
+    },
+  );
+
+  const report = JSON.parse(result.stdout) as Array<{ messages: Array<{ ruleId: string | null }> }>;
+
+  return report[0]!.messages.filter((message) => message.ruleId === 'domain/no-inline-error-codes');
 }
 
 for (const frontend of [false, true]) {
@@ -70,3 +101,64 @@ for (const frontend of [false, true]) {
     }
   }, 30000);
 }
+
+it.each([
+  ['daemon', 'apps/daemon/src/example.ts'],
+  ['server', 'apps/server/src/example.ts'],
+  ['desktop', 'apps/desktop/src/example.ts'],
+  ['protocol', 'packages/protocol/src/example.ts'],
+  ['transport', 'packages/transport/src/example.ts'],
+  ['application client', 'apps/mini-app/src/shared/api/desktop/application-client.ts'],
+])(
+  'rejects raw uppercase Error/Fault codes in %s source',
+  (_name, filename) => {
+    for (const source of [
+      "throw new Error('CODEX_DISCONNECTED');",
+      'throw new Error(`CODEX_DISCONNECTED`);',
+      "throw new Error(('CODEX_DISCONNECTED' as const));",
+      "throw new Error(`${'CODEX_DISCONNECTED'}`);",
+      "throw new Error('CODEX_' + 'DISCONNECTED');",
+      "throw new globalThis.Error('CODEX_DISCONNECTED');",
+      "throw new (globalThis['Error'])('CODEX_DISCONNECTED');",
+      "throw new globalThis[`Error`]('CODEX_DISCONNECTED');",
+      "throw new globalThis['Err' + 'or']('CODEX_DISCONNECTED');",
+      "throw new ((globalThis as typeof globalThis).Error as typeof Error)('CODEX_DISCONNECTED');",
+      "throw new ((globalThis as typeof globalThis)['Err' + 'or'] as typeof Error)('CODEX_DISCONNECTED');",
+      "throw new Error(...['CODEX_DISCONNECTED']);",
+      "throw new Error(...(['CODEX_DISCONNECTED'] as const));",
+      "throw new Fault('NOT_FOUND', 404);",
+    ]) {
+      expect(errorCodeViolations(source, filename), source).not.toHaveLength(0);
+    }
+  },
+  30000,
+);
+
+it('accepts named error constants, human messages and platform event tokens', () => {
+  for (const [filename, source] of [
+    ['apps/daemon/src/example.ts', 'new Error(ErrorCode.NOT_FOUND);'],
+    ['apps/server/src/example.ts', 'new Fault(ServerFaultCode.InvalidRequest);'],
+    ['apps/desktop/src/example.ts', "new Error('Could not load project');"],
+    ['apps/desktop/src/example.ts', "new globalThis.Error('Could not load project');"],
+    ['apps/desktop/src/example.ts', "new (globalThis['Error'])('Could not load project');"],
+    ['apps/desktop/src/example.ts', "new DOMException('CODEX_DISCONNECTED');"],
+    ['apps/desktop/src/example.ts', "new (profile.Error)('CODEX_DISCONNECTED');"],
+    ['apps/desktop/src/example.ts', "new globalThis[constructorName]('CODEX_DISCONNECTED');"],
+    ['apps/desktop/src/example.ts', "new Error(...['Could not load project']);"],
+    ['packages/protocol/src/example.ts', "new Error('close');"],
+  ] as const) {
+    expect(errorCodeViolations(source, filename)).toEqual([]);
+  }
+}, 30000);
+
+it('rejects raw uppercase error codes in frontend source', () => {
+  expect(
+    errorCodeViolations("throw new Error('PROFILE_NOT_READY');", 'apps/mini-app/src/example.ts'),
+  ).not.toEqual([]);
+}, 30000);
+
+it('keeps private error values outside the protocol known-code fallback', () => {
+  expect(knownErrorCode(new Error(DaemonErrorCode.INVALID_CLAUDE_ARGS))).toBe(ErrorCode.REQUEST_FAILED);
+  expect(knownErrorCode(new Error(ErrorCode.WRITE_FAILED))).toBe(ErrorCode.WRITE_FAILED);
+  expect(knownErrorCode(new Error(ErrorCode.NOT_FOUND))).toBe(ErrorCode.NOT_FOUND);
+});

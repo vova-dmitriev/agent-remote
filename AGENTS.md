@@ -12,3 +12,10 @@
 - Before publication, run `npm run security:check` and `npm run security:test`. Install the checked-in Git hooks with `npm run security:install-hooks`; do not bypass findings. README screenshots must come from reviewed English Storybook fixtures, never real sessions. See `SECURITY.md`.
 - Run `npm run validate` without creating a commit. Pre-commit must validate the actual staged snapshot with `npm run validate:commit`; never bypass hooks or validate only the working copy for a commit.
 - Frontend changes must follow `apps/mini-app/AGENTS.md` and pass `npm run check:frontend`; the guarded build enforces source-quality gates.
+
+## CodeGraph
+
+- This repository has a local `.codegraph/` index. Use CodeGraph before text searches or source reads when locating code, understanding call paths or preparing an edit.
+- MCP: call `codegraph_explore` with `projectPath` set to this repository's absolute path. CLI: `codegraph explore "symbol names or question"` from the repository root.
+- Run `codegraph sync .` after code changes; use `codegraph status .` to check freshness. Initialize with `codegraph init .` only on a checkout that has no index.
+- Keep the generated database and its WAL/SHM files local. The generated `.codegraph/.gitignore` excludes them; never add graph databases, private output or credentials to Git.

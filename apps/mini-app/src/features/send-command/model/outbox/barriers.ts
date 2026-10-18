@@ -1,4 +1,4 @@
-import { SessionStatus } from "@protocol"
+import { advancePromptBarrier } from "@protocol"
 import { PromptStatus, type SessionStoreState } from "@/entities/session"
 import type { PromptBarrier } from "./types"
 
@@ -20,7 +20,6 @@ export function reconcilePromptBarriers(state: SessionStoreState, barriers: Map<
       continue
     }
 
-    if (session.status !== SessionStatus.Idle) barrier.observedBusy = true
-    else if (barrier.observedBusy || barrier.lastEventAt !== session.lastEventAt) barriers.delete(session.id)
+    if (advancePromptBarrier(session, barrier)) barriers.delete(session.id)
   }
 }

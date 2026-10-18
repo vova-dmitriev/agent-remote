@@ -1,3 +1,4 @@
+import { DaemonErrorCode } from '../error-codes.js';
 import {
   CodexItemStatus,
   CodexItemsView,
@@ -79,7 +80,7 @@ export async function bindCodex(options: CodexBindingOptions, deps: Dependencies
   const loaded = object(await rpc.request(CodexMethod.ThreadLoadedList, {}));
 
   if (!Array.isArray(loaded.data) || !loaded.data.includes(options.threadId)) {
-    throw new Error('CODEX_THREAD_NOT_LOADED');
+    throw new Error(ErrorCode.CODEX_THREAD_NOT_LOADED);
   }
 
   const metadata = object(
@@ -87,7 +88,7 @@ export async function bindCodex(options: CodexBindingOptions, deps: Dependencies
   );
 
   if (metadata.id !== options.threadId) {
-    throw new Error('CODEX_THREAD_MISMATCH');
+    throw new Error(DaemonErrorCode.CODEX_THREAD_MISMATCH);
   }
 
   const identity = createHash('sha256')
@@ -548,7 +549,7 @@ export async function bindCodex(options: CodexBindingOptions, deps: Dependencies
         }
 
         if (closed || activeTurn || session.status !== SessionStatus.Idle) {
-          throw new Error('SESSION_NOT_IDLE');
+          throw new Error(ErrorCode.SESSION_NOT_IDLE);
         }
 
         session.status = SessionStatus.Running;
@@ -567,7 +568,7 @@ export async function bindCodex(options: CodexBindingOptions, deps: Dependencies
           const turn = object(result.turn);
 
           if (typeof turn.id !== 'string') {
-            throw new Error('UNKNOWN_AFTER_WRITE');
+            throw new Error(ErrorCode.UNKNOWN_AFTER_WRITE);
           }
 
           if (
@@ -588,7 +589,7 @@ export async function bindCodex(options: CodexBindingOptions, deps: Dependencies
       },
       interrupt: async () => {
         if (!activeTurn) {
-          throw new Error('NO_ACTIVE_TURN');
+          throw new Error(ErrorCode.NO_ACTIVE_TURN);
         }
 
         await rpc.request(CodexMethod.TurnInterrupt, { threadId: options.threadId, turnId: activeTurn });
@@ -643,7 +644,7 @@ export async function bindCodex(options: CodexBindingOptions, deps: Dependencies
     const resumed = object(resumeResponse.thread);
 
     if (resumed.id !== options.threadId) {
-      throw new Error('CODEX_THREAD_MISMATCH');
+      throw new Error(DaemonErrorCode.CODEX_THREAD_MISMATCH);
     }
 
     if (!closed && modelRevision === initialModelRevision) {
@@ -774,7 +775,7 @@ export async function bindCodex(options: CodexBindingOptions, deps: Dependencies
       );
 
       if (history.id !== options.threadId) {
-        throw new Error('CODEX_THREAD_MISMATCH');
+        throw new Error(DaemonErrorCode.CODEX_THREAD_MISMATCH);
       }
 
       for (const raw of (Array.isArray(history.turns) ? history.turns : []).slice(-100)) {

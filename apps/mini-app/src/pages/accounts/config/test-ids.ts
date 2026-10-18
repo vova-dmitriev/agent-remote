@@ -1,0 +1,17 @@
+export const ACCOUNTS_PAGE_IDS = {
+  root: "accounts-page",
+  open: "accounts-open",
+  back: "accounts-back",
+  title: "accounts-title",
+  refresh: "accounts-refresh",
+  add: "accounts-add",
+  lastChecked: "accounts-last-checked",
+  content: "accounts-content",
+  feedback: "accounts-feedback",
+  loading: "accounts-loading",
+  error: "accounts-error",
+  empty: "accounts-empty",
+  offline: "accounts-offline",
+  login: "accounts-login",
+  recover: "accounts-recover",
+} as const

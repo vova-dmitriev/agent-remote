@@ -17,6 +17,7 @@ export function SessionFeed({
   onHistoryPage,
   messages,
   historyStatus = HistoryStatus.Ready,
+  available = true,
   tab,
   terminal,
   agent,
@@ -52,6 +53,7 @@ export function SessionFeed({
             terminal={terminal}
             agent={agent}
             historyStatus={historyStatus}
+            available={available}
             virtualizer={virtualizer}
           />
         </div>

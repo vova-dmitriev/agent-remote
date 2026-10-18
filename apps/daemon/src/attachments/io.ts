@@ -1,3 +1,4 @@
+import { ErrorCode } from '../../../../packages/protocol/src/index.js';
 import { ASCII_CONTROL_CHARACTERS } from '../validation/control-characters.js';
 import { constants } from 'node:fs';
 import { open, realpath, stat } from 'node:fs/promises';
@@ -9,11 +10,11 @@ export async function boundedBody(response: Response, maximum = MAX_ATTACHMENT_B
 
   if (length !== null && (!/^\d+$/u.test(length) || Number(length) > maximum)) {
     await response.body?.cancel();
-    throw new Error('ATTACHMENT_TOO_LARGE');
+    throw new Error(ErrorCode.ATTACHMENT_TOO_LARGE);
   }
 
   if (!response.body) {
-    throw new Error('ATTACHMENT_INTEGRITY_FAILED');
+    throw new Error(ErrorCode.ATTACHMENT_INTEGRITY_FAILED);
   }
 
   const reader = response.body.getReader(),
@@ -32,7 +33,7 @@ export async function boundedBody(response: Response, maximum = MAX_ATTACHMENT_B
       total += item.value.byteLength;
 
       if (total > maximum) {
-        throw new Error('ATTACHMENT_TOO_LARGE');
+        throw new Error(ErrorCode.ATTACHMENT_TOO_LARGE);
       }
 
       chunks.push(Buffer.from(item.value));
@@ -48,7 +49,7 @@ export async function boundedBody(response: Response, maximum = MAX_ATTACHMENT_B
 /** Only called for an explicit native media record, never model text/tool arguments. */
 export async function nativeFile(path: string): Promise<Buffer> {
   if (!isAbsolute(path) || path.startsWith('//') || ASCII_CONTROL_CHARACTERS.test(path)) {
-    throw new Error('ATTACHMENT_SOURCE_UNAVAILABLE');
+    throw new Error(ErrorCode.ATTACHMENT_SOURCE_UNAVAILABLE);
   }
 
   const canonical = await realpath(path);
@@ -62,7 +63,7 @@ export async function nativeFile(path: string): Promise<Buffer> {
       : normalized;
 
   if (canonical !== expected) {
-    throw new Error('ATTACHMENT_SOURCE_UNAVAILABLE');
+    throw new Error(ErrorCode.ATTACHMENT_SOURCE_UNAVAILABLE);
   }
 
   const file = await open(canonical, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
@@ -76,13 +77,13 @@ export async function nativeFile(path: string): Promise<Buffer> {
       !info.size ||
       info.size > MAX_ATTACHMENT_BYTES
     ) {
-      throw new Error('ATTACHMENT_SOURCE_UNAVAILABLE');
+      throw new Error(ErrorCode.ATTACHMENT_SOURCE_UNAVAILABLE);
     }
 
     const current = await stat(path);
 
     if (current.dev !== info.dev || current.ino !== info.ino || (await realpath(path)) !== canonical) {
-      throw new Error('ATTACHMENT_SOURCE_UNAVAILABLE');
+      throw new Error(ErrorCode.ATTACHMENT_SOURCE_UNAVAILABLE);
     }
 
     const bytes = Buffer.alloc(info.size);
@@ -92,7 +93,7 @@ export async function nativeFile(path: string): Promise<Buffer> {
       const read = await file.read(bytes, offset, bytes.length - offset, offset);
 
       if (!read.bytesRead) {
-        throw new Error('ATTACHMENT_SOURCE_UNAVAILABLE');
+        throw new Error(ErrorCode.ATTACHMENT_SOURCE_UNAVAILABLE);
       }
 
       offset += read.bytesRead;
@@ -101,7 +102,7 @@ export async function nativeFile(path: string): Promise<Buffer> {
     const after = await file.stat();
 
     if (after.size !== info.size || after.mtimeMs !== info.mtimeMs || after.ctimeMs !== info.ctimeMs) {
-      throw new Error('ATTACHMENT_SOURCE_UNAVAILABLE');
+      throw new Error(ErrorCode.ATTACHMENT_SOURCE_UNAVAILABLE);
     }
 
     return bytes;

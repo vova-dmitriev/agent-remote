@@ -8,7 +8,9 @@
       "@/*": ["./src/*"],
       "@protocol": ["../../packages/protocol/src/index.ts"],
       "@storybook-fixtures/*": ["./.storybook/fixtures/*"],
-      "@storybook-components/*": ["./.storybook/components/*"]
+      "@storybook-components/*": ["./.storybook/components/*"],
+      "@extension/*": ["../chrome-extension/src/*"],
+      "@transport/*": ["../../packages/transport/src/*"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", ".storybook/**/*.ts", ".storybook/**/*.tsx", "*.config.ts"]

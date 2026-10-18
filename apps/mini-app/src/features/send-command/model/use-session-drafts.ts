@@ -11,7 +11,9 @@ export function useSessionDrafts(sessionId: string | undefined) {
     setDrafts((current) => (current[id] === text ? { ...current, [id]: "" } : current))
   }
 
+  const restore = (id: string, text: string) => setDrafts((current) => ({ ...current, [id]: text }))
+
   const reset = useCallback(() => setDrafts({}), [])
 
-  return { prompt: sessionId ? (drafts[sessionId] ?? "") : "", setPrompt, clear, reset }
+  return { prompt: sessionId ? (drafts[sessionId] ?? "") : "", setPrompt, clear, restore, reset }
 }

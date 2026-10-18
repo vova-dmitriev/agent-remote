@@ -1,5 +1,5 @@
 import { createStore } from "zustand/vanilla"
-import { ConnectionStatus, FrameType } from "@protocol"
+import { ConnectionStatus, ErrorCode, FrameType, LOCAL_AUTH_ERROR_CODES } from "@protocol"
 import type { Connection } from "@/shared/api"
 import { ProviderFilterValue } from "@/entities/session/config/session-values"
 import { TransportRuntime } from "@/shared/lib/runtime"
@@ -21,10 +21,11 @@ function emptyData(connection: Connection = ConnectionStatus.Connecting): Sessio
   }
 }
 
-export function createSessionStore() {
+export function createSessionStore(initialProviderFilter: ProviderFilterValue = ProviderFilterValue.All) {
   return createStore<SessionStoreState>()((set, get) => ({
     runtime: new TransportRuntime(),
     ...emptyData(),
+    providerFilter: initialProviderFilter,
     setProviderFilter: (providerFilter) => set({ providerFilter }),
     ...createPromptEditing(set, get),
     enqueuePrompt: (item) => {
@@ -54,7 +55,17 @@ export function createSessionStore() {
     setResult: (update) => set((current) => ({ result: typeof update === "function" ? update(current.result) : update })),
     setConnection: (connection) => {
       if (connection === ConnectionStatus.Expired) get().runtime.clear()?.close()
-      set((current) => (connection === ConnectionStatus.Expired ? emptyData(connection) : { session: { ...current.session, connection } }))
+
+      set((current) =>
+        connection === ConnectionStatus.Expired
+          ? {
+              ...emptyData(connection),
+              error: [ErrorCode.TELEGRAM_AUTH_FAILED, ...LOCAL_AUTH_ERROR_CODES].some((code) => code === current.error)
+                ? current.error
+                : "",
+            }
+          : { session: { ...current.session, connection } },
+      )
     },
     setHistoryStatus: (sessionId, status) => set((current) => ({ session: { ...current.session, history: { sessionId, status } } })),
     receiveHistory: (sessionId, events) => set((current) => ({ session: reduceHistoryWindow(current.session, sessionId, events) })),

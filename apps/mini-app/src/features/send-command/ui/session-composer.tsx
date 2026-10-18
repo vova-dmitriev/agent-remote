@@ -30,7 +30,7 @@ export function SessionComposer({ controller, session, connection, deviceStatus 
           data-testid={COMMAND_IDS.prompt}
           value={controller.prompt}
           onChange={(event) => controller.setPrompt(event.target.value)}
-          placeholder={t(session.capabilities.prompt ? "composerPlaceholder" : "composerUnavailable")}
+          placeholder={t(state.promptDisabled ? "composerUnavailable" : "composerPlaceholder")}
           disabled={state.promptDisabled}
           onKeyDown={(event) => {
             if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing || event.keyCode === 229) return
@@ -63,7 +63,11 @@ export function SessionComposer({ controller, session, connection, deviceStatus 
           }
         />
       ) : null}
-      {!session.capabilities.prompt && !state.showNativeHint ? <p className="muted">{t("observeOnly")}</p> : null}
+      {state.unavailableHint && !state.showNativeHint ? (
+        <p className="muted" data-testid={COMMAND_IDS.availabilityHint}>
+          {t(state.unavailableHint)}
+        </p>
+      ) : null}
     </form>
   )
 }

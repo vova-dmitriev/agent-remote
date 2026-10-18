@@ -7,7 +7,7 @@ import { selectorRules } from "./eslint/rules.mjs"
 export default ts.config(
   { ignores: ["tests/e2e/support/testid.ts"] },
   {
-    files: ["tests/e2e/**/*.ts"],
+    files: ["tests/{e2e,extension-e2e}/**/*.ts"],
     extends: [js.configs.recommended, ...ts.configs.recommended],
     languageOptions: { globals: { ...globals.browser, ...globals.node } },
     rules: {

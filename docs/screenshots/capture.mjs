@@ -8,8 +8,27 @@ if (!['localhost', '127.0.0.1'].includes(origin.hostname) || !['6006', '6007'].i
 }
 
 const captures = [
-  { file: 'sessions.png', story: 'app-remote-application--sessions', width: 1100, height: 760 },
-  { file: 'conversation.png', story: 'app-remote-application--codex-session', width: 430, height: 600 },
+  {
+    file: 'sessions.png',
+    story: 'app-remote-application--sessions',
+    width: 1100,
+    height: 760,
+    root: 'application-shell',
+  },
+  {
+    file: 'conversation.png',
+    story: 'app-remote-application--codex-session',
+    width: 430,
+    height: 600,
+    root: 'application-shell',
+  },
+  {
+    file: 'accounts.png',
+    story: 'pages-accounts--accounts-and-keys',
+    width: 700,
+    height: 1000,
+    root: 'accounts-page',
+  },
 ];
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
 
@@ -40,7 +59,7 @@ try {
     url.searchParams.set('viewMode', 'story');
     url.searchParams.set('globals', 'language:en;theme:dark');
     await page.goto(url.href);
-    await page.getByTestId('application-shell').waitFor({ state: 'visible', timeout: 15000 });
+    await page.getByTestId(capture.root).waitFor({ state: 'visible', timeout: 15000 });
     await page.evaluate(() => document.fonts.ready);
     await page.waitForTimeout(500);
 

@@ -30,6 +30,7 @@ export default ts.config(
     plugins: { "react-hooks": hooks, domain },
     rules: {
       "domain/no-inline-values": "error",
+      "domain/no-inline-error-codes": "error",
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "error",
       "no-restricted-syntax": ["error", ...testIdRules],

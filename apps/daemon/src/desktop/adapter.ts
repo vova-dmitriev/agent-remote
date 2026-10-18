@@ -33,7 +33,7 @@ export function createDesktopSource(
   flags: { inputEnabled: boolean; permissionsEnabled: boolean },
 ) {
   if (mode === DesktopMode.Code && !desktop.claudeSessionId) {
-    throw new Error('DESKTOP_CODE_ID_UNVERIFIED');
+    throw new Error(ErrorCode.DESKTOP_CODE_ID_UNVERIFIED);
   }
 
   const connectorId = randomUUID();

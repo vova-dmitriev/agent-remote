@@ -9,5 +9,6 @@ export interface FeedContentProps {
   terminal: AppSnapshot["terminal"]
   agent: AgentName
   historyStatus: HistoryStatus
+  available: boolean
   virtualizer: ReturnType<typeof useFollowMessages>["virtualizer"]
 }

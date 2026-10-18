@@ -70,10 +70,19 @@ and dark/mobile layouts render the real reusable components. Picker interactions
 the no-assertions-in-stories rule. Transport ownership, cancellation and delivery outcomes
 are checked in `tests/e2e/attachments/` and the protocol/relay/companion suites.
 
-Current Storybook verification: 180 cases across 32 story files passed. Production source gates and TypeScript also passed with account preferences, dropdowns, safe session actions, history skeletons and grouped connections.
+Earlier Storybook verification: 180 cases across 32 story files passed. Production source gates and TypeScript also passed with account preferences, dropdowns, safe session actions, history skeletons and grouped connections.
 
 SessionAvailability includes online, offline, open details, English and dark states.
 SessionCard includes known/unknown/long native model values. Compact application
 shell stories omit the redundant app header inside conversations. All theme-aware
 stories use the shared cool neutral/blue palette tokens; browser accessibility
 checks cover contrast and keyboard/touch interactions remain in test/spec files.
+
+## Accounts and keys
+
+The shared Accounts page covers English, dark, empty, loading and offline states.
+It also covers recovery after a lost reply, an untrusted recipient and denied access.
+Profile cards show verified identities, disabled/removing profiles and operation progress.
+Creation, provider sign-in and credential entry use separate synthetic stories.
+
+Current verification: **291 cases across 52 story files passed**. README account screenshots come from `pages-accounts--accounts-and-keys`, with reserved `example.invalid` identities. Stories use no credentials, real provider sign-ins or production sessions. Browser and native tests separately verify encryption, uncertain-write recovery, cancellation and ownership.

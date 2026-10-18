@@ -1,3 +1,4 @@
+import { ErrorCode } from './error-codes.js';
 import { z } from 'zod';
 
 const id = z
@@ -59,7 +60,7 @@ export function validateUserInputAnswers(
   const parsed = userInputAnswersSchema.safeParse(raw);
 
   if (!parsed.success) {
-    throw new Error('INVALID_USER_INPUT');
+    throw new Error(ErrorCode.INVALID_USER_INPUT);
   }
 
   const answers = parsed.data;
@@ -70,7 +71,7 @@ export function validateUserInputAnswers(
   }
 
   if (keys.length !== request.questions.length) {
-    throw new Error('INVALID_USER_INPUT');
+    throw new Error(ErrorCode.INVALID_USER_INPUT);
   }
 
   for (const question of request.questions) {
@@ -80,7 +81,7 @@ export function validateUserInputAnswers(
       !value?.trim() ||
       (!question.isOther && question.options && !question.options.some((option) => option.label === value))
     ) {
-      throw new Error('INVALID_USER_INPUT');
+      throw new Error(ErrorCode.INVALID_USER_INPUT);
     }
   }
 

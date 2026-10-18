@@ -1,7 +1,28 @@
-import { ErrorCode } from "@protocol"
+import { DesktopBridgeError, ErrorCode } from "@protocol"
 import type { MessageKey, Translate } from "./types"
 
 const keys: Record<string, MessageKey> = {
+  [ErrorCode.PROFILE_NOT_READY]: "accountsNotReady",
+  [ErrorCode.PROFILE_MISMATCH]: "accountsChanged",
+  [ErrorCode.PROFILE_OPERATION_REUSED]: "accountsChanged",
+  [ErrorCode.PROFILE_LIMIT_REACHED]: "accountsLimit",
+  [ErrorCode.ENROLLMENT_KEY_UNTRUSTED]: "accountsKeyUntrusted",
+  [ErrorCode.ENROLLMENT_EXPIRED]: "accountsKeyExpired",
+  [ErrorCode.ENROLLMENT_INVALID]: "accountsKeyInvalid",
+  [ErrorCode.ENROLLMENT_REPLAYED]: "accountsChanged",
+  [ErrorCode.ENROLLMENT_UNAVAILABLE]: "accountsNotReady",
+  [ErrorCode.LOCAL_HOST_UNAVAILABLE]: "extensionInstallCompanion",
+  [ErrorCode.LOCAL_APPROVAL_REQUIRED]: "extensionApproveBrowser",
+  [ErrorCode.LOCAL_GRANT_REVOKED]: "extensionGrantRevoked",
+  [ErrorCode.LOCAL_VERSION_MISMATCH]: "extensionVersionMismatch",
+  [ErrorCode.LOCAL_COMPANION_MISMATCH]: "extensionVersionMismatch",
+  [ErrorCode.LOCAL_REVISION_CONFLICT]: "extensionRevisionConflict",
+  [ErrorCode.LOCAL_TRANSFER_EXPIRED]: "extensionTransferExpired",
+  [ErrorCode.LOCAL_PAYLOAD_TOO_LARGE]: "extensionPayloadTooLarge",
+  [ErrorCode.LOCAL_CLIENT_LIMIT]: "serviceBusy",
+  [ErrorCode.LOCAL_RUNTIME_UNTRUSTED]: "extensionVersionMismatch",
+  [ErrorCode.LOCAL_COMPANION_TIMEOUT]: "requestTimedOut",
+  [ErrorCode.LOCAL_COMPANION_START_FAILED]: "extensionInstallCompanion",
   [ErrorCode.LAUNCH_CONTEXT_UNAVAILABLE]: "launchContextUnavailable",
   [ErrorCode.CMUX_CONTEXT_UNAVAILABLE]: "cmuxContextUnavailable",
   [ErrorCode.INVALID_PROJECT]: "invalidProject",
@@ -112,6 +133,7 @@ const keys: Record<string, MessageKey> = {
   [ErrorCode.SNAPSHOT_UNAVAILABLE]: "historyUnavailable",
   [ErrorCode.DESKTOP_CODE_ID_UNVERIFIED]: "setupRequired",
   [ErrorCode.DESKTOP_UNAVAILABLE]: "sourceUnavailable",
+  [DesktopBridgeError.Unavailable]: "desktopBridgeUnavailable",
   [ErrorCode.HELPER_UNAVAILABLE]: "sourceUnavailable",
   [ErrorCode.HELPER_EXITED]: "sourceUnavailable",
   [ErrorCode.HELPER_CLOSED]: "sourceUnavailable",

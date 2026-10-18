@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { messages, snapshot, terminalSession } from "@storybook-fixtures/session"
 import { AgentName, SessionTab } from "@/entities/session"
-import { HistoryStatus, MessageRole } from "@protocol"
+import { HistoryStatus, Language, MessageRole } from "@protocol"
 import { SessionFeed } from "./session-feed"
 
 const meta = {
@@ -15,6 +15,7 @@ export const Terminal: StoryObj<typeof meta> = { args: { tab: SessionTab.Termina
 export const Loading: StoryObj<typeof meta> = { args: { messages: [], historyStatus: HistoryStatus.Loading } }
 export const ReloadingHistory: StoryObj<typeof meta> = { args: { historyStatus: HistoryStatus.Loading } }
 export const Empty: StoryObj<typeof meta> = { args: { messages: [] } }
+export const Disconnected: StoryObj<typeof meta> = { args: { messages: [], available: false }, globals: { language: Language.En } }
 export const Codex: StoryObj<typeof meta> = { args: { agent: AgentName.Codex } }
 export const LongConversation: StoryObj<typeof meta> = {
   args: {

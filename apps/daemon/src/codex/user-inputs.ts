@@ -1,3 +1,4 @@
+import { ErrorCode } from '../../../../packages/protocol/src/index.js';
 import { CodexMethod } from '../domain/codex.js';
 import {
   BindingState,
@@ -71,11 +72,11 @@ export class CodexUserInputs {
             this.session.binding !== BindingState.Verified ||
             this.session.integrationState !== IntegrationState.Ready
           ) {
-            throw new Error('USER_INPUT_EXPIRED');
+            throw new Error(ErrorCode.USER_INPUT_EXPIRED);
           }
 
           if (!this.session.capabilities.userInput) {
-            throw new Error('CAPABILITY_UNAVAILABLE');
+            throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
           }
 
           // Retain the native-id tombstone until the owner resolves it: never replay uncertain writes.

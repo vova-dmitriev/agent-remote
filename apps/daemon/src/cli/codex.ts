@@ -1,3 +1,4 @@
+import { DaemonErrorCode } from '../error-codes.js';
 import { CliAction } from '../domain/cli.js';
 import { TargetKind } from '../../../../packages/protocol/src/index.js';
 import { IpcMessageType } from '../domain/ipc.js';
@@ -18,7 +19,7 @@ export async function runCodex(args: string[]) {
     const kind = kinds[args[1] as keyof typeof kinds] ?? null;
 
     if (!kind) {
-      throw new Error('INVALID_CODEX_ARGS');
+      throw new Error(DaemonErrorCode.INVALID_CODEX_ARGS);
     }
 
     let threadId: string | undefined,
@@ -30,7 +31,7 @@ export async function runCodex(args: string[]) {
       } else if (!threadId && !args[index]!.startsWith('-')) {
         threadId = args[index];
       } else {
-        throw new Error('INVALID_CODEX_ARGS');
+        throw new Error(DaemonErrorCode.INVALID_CODEX_ARGS);
       }
     }
 
@@ -56,7 +57,7 @@ export async function runCodex(args: string[]) {
   }
 
   if (args.some((arg) => arg === '--remote' || arg.startsWith('--remote='))) {
-    throw new Error('INVALID_CODEX_ARGS');
+    throw new Error(DaemonErrorCode.INVALID_CODEX_ARGS);
   }
 
   const managedSocket = await ensureManagedCodexSocket(stateDirectory());
@@ -88,7 +89,7 @@ export async function runCodex(args: string[]) {
   });
 
   return new Promise<number>((resolve, reject) => {
-    child.once('error', () => reject(new Error('CODEX_START_FAILED')));
+    child.once('error', () => reject(new Error(DaemonErrorCode.CODEX_START_FAILED)));
     child.once('exit', (code) => resolve(code ?? 1));
   });
 }

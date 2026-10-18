@@ -5,6 +5,8 @@ export default [
     ignores: [
       '**/node_modules/**',
       'dist/**',
+      'apps/desktop/dist/**',
+      'apps/desktop/out/**',
       'artifacts/**',
       'output/**',
       '.superpowers/**',
@@ -17,6 +19,8 @@ export default [
   ...nodeSourceConfig([
     'apps/daemon/**/*.{ts,js,mjs}',
     'apps/server/src/**/*.{ts,js,mjs}',
+    'apps/chrome-extension/src/**/*.{ts,js,mjs}',
+    'apps/desktop/**/*.{ts,js,mjs,cjs}',
     'packages/**/*.{ts,js,mjs}',
     'scripts/**/*.{ts,js,mjs}',
     'eslint/**/*.mjs',

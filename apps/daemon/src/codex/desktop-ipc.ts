@@ -1,3 +1,6 @@
+import { DaemonErrorCode } from '../error-codes.js';
+import { ErrorCode } from '../../../../packages/protocol/src/index.js';
+
 import {
   CodexDesktopMethod,
   CodexDesktopHost,
@@ -40,7 +43,7 @@ export class DesktopIpcClient extends EventEmitter {
     await verifyLocalSocket(path);
     const socket = connect(path);
     const client = new DesktopIpcClient(socket, timeoutMs);
-    const timer = setTimeout(() => socket.destroy(new Error('CODEX_TIMEOUT')), timeoutMs);
+    const timer = setTimeout(() => socket.destroy(new Error(ErrorCode.CODEX_TIMEOUT)), timeoutMs);
 
     try {
       await new Promise<void>((resolve, reject) => {
@@ -58,7 +61,7 @@ export class DesktopIpcClient extends EventEmitter {
       const id = object(response.result).clientId;
 
       if (typeof id !== 'string') {
-        throw new Error('CODEX_PROTOCOL_ERROR');
+        throw new Error(ErrorCode.CODEX_PROTOCOL_ERROR);
       }
 
       client.clientId = id;
@@ -108,11 +111,11 @@ export class DesktopIpcClient extends EventEmitter {
     version = versions[method] ?? 1,
   ): Promise<Data> {
     if (this.closed) {
-      return Promise.reject(new Error('CODEX_DISCONNECTED'));
+      return Promise.reject(new Error(ErrorCode.CODEX_DISCONNECTED));
     }
 
     if (this.pending.size >= 64) {
-      return Promise.reject(new Error('CODEX_QUEUE_FULL'));
+      return Promise.reject(new Error(ErrorCode.CODEX_QUEUE_FULL));
     }
 
     return new Promise((resolve, reject) => {
@@ -151,13 +154,13 @@ export class DesktopIpcClient extends EventEmitter {
   }
   private send(frame: unknown) {
     if (this.closed) {
-      throw new Error('CODEX_DISCONNECTED');
+      throw new Error(ErrorCode.CODEX_DISCONNECTED);
     }
 
     const data = Buffer.from(JSON.stringify(frame));
 
     if (data.length > 1_048_576 || this.socket.writableLength > 1_048_576) {
-      throw new Error('CODEX_QUEUE_FULL');
+      throw new Error(ErrorCode.CODEX_QUEUE_FULL);
     }
 
     const header = Buffer.alloc(4);
@@ -201,7 +204,7 @@ export class DesktopIpcClient extends EventEmitter {
           if (frame.resultType === CodexDesktopResultType.Success) {
             pending.resolve(frame);
           } else {
-            pending.reject(new Error('CODEX_DESKTOP_REQUEST_FAILED'));
+            pending.reject(new Error(DaemonErrorCode.CODEX_DESKTOP_REQUEST_FAILED));
           }
         } else if (frame.type === CodexDesktopMessageType.ClientDiscoveryRequest) {
           this.send({
@@ -228,7 +231,7 @@ export class DesktopIpcClient extends EventEmitter {
 
     for (const pending of this.pending.values()) {
       clearTimeout(pending.timer);
-      pending.reject(new Error('UNKNOWN_AFTER_WRITE'));
+      pending.reject(new Error(ErrorCode.UNKNOWN_AFTER_WRITE));
     }
 
     this.pending.clear();

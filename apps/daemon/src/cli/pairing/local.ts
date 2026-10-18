@@ -1,3 +1,4 @@
+import { DaemonErrorCode } from '../../error-codes.js';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createInterface } from 'node:readline/promises';
@@ -43,7 +44,7 @@ export async function confirmOnMac(telegramId: string, signal: AbortSignal) {
   }
 
   if (!process.stdin.isTTY) {
-    throw new Error('PAIRING_CONFIRMATION_REQUIRES_TERMINAL');
+    throw new Error(DaemonErrorCode.PAIRING_CONFIRMATION_REQUIRES_TERMINAL);
   }
 
   const input = createInterface({ input: process.stdin, output: process.stdout });

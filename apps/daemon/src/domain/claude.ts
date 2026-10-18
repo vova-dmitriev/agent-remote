@@ -42,3 +42,10 @@ export const ClaudeHookType = {
 } as const;
 
 export type ClaudeHookType = (typeof ClaudeHookType)[keyof typeof ClaudeHookType];
+
+export const ClaudeRestartArgument = {
+  Continue: '--continue',
+  ContinueShort: '-c',
+  Fork: '--fork-session',
+} as const;
+export type ClaudeRestartArgument = (typeof ClaudeRestartArgument)[keyof typeof ClaudeRestartArgument];

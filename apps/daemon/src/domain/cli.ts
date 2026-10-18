@@ -1,5 +1,7 @@
 export const CliCommand = {
+  Profiles: 'profiles',
   Personal: 'personal',
+  Browser: 'browser',
   Pair: 'pair',
   Connect: 'connect',
   Start: 'start',
@@ -16,6 +18,7 @@ export const CliCommand = {
 export type CliCommand = (typeof CliCommand)[keyof typeof CliCommand];
 
 export const CliAction = {
+  Recipient: 'recipient',
   Bind: 'bind',
   Connect: 'connect',
   Install: 'install',

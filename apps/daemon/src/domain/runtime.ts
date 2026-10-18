@@ -9,6 +9,7 @@ export const RuntimeEvent = {
   Request: 'request',
   Disconnected: 'disconnected',
   Broadcast: 'broadcast',
+  CommandResult: 'command_result',
 } as const;
 
 export type RuntimeEvent = (typeof RuntimeEvent)[keyof typeof RuntimeEvent];

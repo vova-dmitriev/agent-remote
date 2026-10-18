@@ -1,3 +1,5 @@
+import { DaemonErrorCode } from './error-codes.js';
+import { SharedPrivateErrorCode } from '../../../packages/protocol/src/private-error-codes.js';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { mkdir, readFile, writeFile, rename, chmod } from 'node:fs/promises';
@@ -63,14 +65,14 @@ export function validateRelayUrl(value: string) {
   const url = new URL(value);
 
   if (url.username || url.password || url.search || url.hash) {
-    throw new Error('INVALID_RELAY_URL');
+    throw new Error(DaemonErrorCode.INVALID_RELAY_URL);
   }
 
   if (
     url.protocol !== 'https:' &&
     !(url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname))
   ) {
-    throw new Error('HTTPS_REQUIRED');
+    throw new Error(SharedPrivateErrorCode.HTTPS_REQUIRED);
   }
 
   return url.origin;

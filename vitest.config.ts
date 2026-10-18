@@ -5,6 +5,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./apps/mini-app/src', import.meta.url)),
+      '@transport': fileURLToPath(new URL('./packages/transport/src', import.meta.url)),
       '@protocol': fileURLToPath(new URL('./packages/protocol/src/index.ts', import.meta.url)),
     },
   },

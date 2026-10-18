@@ -17,6 +17,7 @@ export function nodeSourceConfig(files, ignores = []) {
     plugins: { domain },
     rules: {
       'domain/no-inline-values': 'error',
+      'domain/no-inline-error-codes': 'error',
       ...readabilityRules,
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': [

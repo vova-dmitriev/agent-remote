@@ -1,3 +1,4 @@
+import { ErrorCode } from '../../../../packages/protocol/src/index.js';
 import { type NativeMedia } from '../attachments/types.js';
 import { type HistoryMessage, type HistoryRead } from '../../../../packages/protocol/src/index.js';
 import { TranscriptActivity } from '../code/transcript-activity.js';
@@ -105,13 +106,13 @@ export class TranscriptSources {
     const source = this.sources.get(request.sessionId);
 
     if (!source || source.generation !== request.generation) {
-      throw new Error('SESSION_UNAVAILABLE');
+      throw new Error(ErrorCode.SESSION_UNAVAILABLE);
     }
 
     const page = await source.pages.page(request);
 
     if (this.sources.get(request.sessionId) !== source) {
-      throw new Error('STALE_SESSION');
+      throw new Error(ErrorCode.STALE_SESSION);
     }
 
     return page;

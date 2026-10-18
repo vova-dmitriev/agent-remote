@@ -1,4 +1,5 @@
 import { vocabulary } from './domain-vocabulary.mjs';
+import noInlineErrorCodes from './no-inline-error-codes.mjs';
 
 const domainName =
   /(?:status|state|connection|kind|type|role|direction|action|tab|mode|delivery|provider|decision|language|theme|transport|confidence)$/i;
@@ -172,7 +173,9 @@ export default {
         const filename = context.filename.replaceAll('\\', '/');
 
         if (
-          !/(?:apps\/(?:mini-app|daemon|server)\/src|packages\/protocol\/src)\//.test(filename) ||
+          !/(?:apps\/(?:mini-app|daemon|server|chrome-extension|desktop)\/src|packages\/protocol\/src)\//.test(
+            filename,
+          ) ||
           /\.(?:test|spec|stories)\./.test(filename)
         ) {
           return {};
@@ -192,5 +195,6 @@ export default {
         };
       },
     },
+    'no-inline-error-codes': noInlineErrorCodes,
   },
 };

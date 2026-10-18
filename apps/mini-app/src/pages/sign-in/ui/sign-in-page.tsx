@@ -1,9 +1,12 @@
 import { Sparkles } from "lucide-react"
 import { useTranslation } from "@/shared/lib/hooks"
 import { SIGN_IN_IDS } from "../config/test-ids"
+import { HostKind } from "@protocol"
+import { useHost } from "@/shared/lib/host"
 
 export function SignInPage() {
   const { t } = useTranslation()
+  const host = useHost()
 
   return (
     <section className="empty" data-testid={SIGN_IN_IDS.root}>
@@ -13,7 +16,7 @@ export function SignInPage() {
         <br />
         {t("signInSubtitle")}
       </h1>
-      <p>{t("signInHint")}</p>
+      <p>{t(host.kind === HostKind.Telegram ? "signInHint" : "extensionConnectHint")}</p>
     </section>
   )
 }

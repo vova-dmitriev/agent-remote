@@ -25,6 +25,9 @@ import { subagentSchema } from './subagents.js';
 import { validatePrompt } from './validation.js';
 import { attachmentsSchema } from './attachments.js';
 import { pendingUserInputSchema, userInputAnswersSchema } from './user-input.js';
+import { profileRequestSchema, profileReplySchema } from './profile-access.js';
+import { executionLaunchSelectionSchema } from './execution-profile.js';
+import { executionVersionSchema } from './execution-fields.js';
 
 const id = z.string().min(1).max(512);
 const time = z.number().int().nonnegative().safe();
@@ -132,16 +135,26 @@ export const actionSchema = z.discriminatedUnion('type', [
       delivery: z.enum(PromptDelivery).optional(),
     })
     .refine((action) => Boolean(action.text.trim() || action.attachments?.length), ErrorCode.EMPTY_PROMPT),
-  z.strictObject({
-    type: z.literal(CommandActionType.CreateSession),
-    provider: z.enum(AgentProvider),
-    cwd: z
-      .string()
-      .min(1)
-      .max(4096)
-      // eslint-disable-next-line no-control-regex -- Intentionally reject control characters at the wire boundary.
-      .regex(/^\/[^\u0000-\u001f\u007f]*$/u),
-  }),
+  z
+    .strictObject({
+      type: z.literal(CommandActionType.CreateSession),
+      provider: z.enum(AgentProvider),
+      cwd: z
+        .string()
+        .min(1)
+        .max(4096)
+        // eslint-disable-next-line no-control-regex -- Intentionally reject control characters at the wire boundary.
+        .regex(/^\/[^\u0000-\u001f\u007f]*$/u),
+      execution: z
+        .strictObject({
+          selection: executionLaunchSelectionSchema,
+          expectedVersion: executionVersionSchema,
+        })
+        .optional(),
+    })
+    .refine((action) => !action.execution || action.execution.selection.provider === action.provider, {
+      message: ErrorCode.PROFILE_MISMATCH,
+    }),
   z.strictObject({ type: z.literal(CommandActionType.RestartSession) }),
   z.strictObject({ type: z.literal(CommandActionType.Escape) }),
   z.strictObject({ type: z.literal(CommandActionType.Interrupt) }),
@@ -230,7 +243,23 @@ export const appFrameSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal(FrameType.Resume), deviceId: id, cursor: cursorSchema }),
   z.strictObject({ type: z.literal(FrameType.Command), command: clientCommandSchema }),
 ]);
+export const handoffSeedProofFrameSchema = z.strictObject({
+  type: z.literal(FrameType.HandoffSeedProof),
+  operationId: z.uuid(),
+  seedCommandId: z.uuid(),
+  checkpointId: z.uuid(),
+  checkpointDigest: z.string().regex(/^[a-f0-9]{64}$/),
+  targetExecutionId: z.uuid(),
+  targetGeneration: z.uuid(),
+  selection: executionLaunchSelectionSchema,
+});
 export const deviceFrameSchema = z.discriminatedUnion('type', [
+  z.strictObject({
+    type: z.literal(FrameType.ProfilesResult),
+    requestId: z.uuid(),
+    epoch: id,
+    reply: profileReplySchema,
+  }),
   historyDoneSchema,
   z.strictObject({
     type: z.literal(FrameType.HistoryItem),
@@ -248,8 +277,16 @@ export const deviceFrameSchema = z.discriminatedUnion('type', [
   }),
   z.strictObject({ type: z.literal(FrameType.Event), event: eventSchema }),
   z.strictObject({ type: z.literal(FrameType.CommandResult), result: resultSchema }),
+  handoffSeedProofFrameSchema,
 ]);
 export const serverFrameSchema = z.discriminatedUnion('type', [
+  z.strictObject({ type: z.literal(FrameType.ProfilesCancel), requestId: z.uuid(), epoch: id }),
+  z.strictObject({
+    type: z.literal(FrameType.ProfilesRequest),
+    requestId: z.uuid(),
+    epoch: id,
+    request: profileRequestSchema,
+  }),
   historyReadSchema,
   z.strictObject({ type: z.literal(FrameType.Authenticated), epoch: id.optional() }),
   z.strictObject({
@@ -283,6 +320,7 @@ export type AppSnapshot = z.infer<typeof snapshotSchema>;
 export type ServerFrame = z.infer<typeof serverFrameSchema>;
 export type AppFrame = z.infer<typeof appFrameSchema>;
 export type DeviceFrame = z.infer<typeof deviceFrameSchema>;
+export type HandoffSeedProofFrame = z.infer<typeof handoffSeedProofFrameSchema>;
 export const noCapabilities: CapabilitySet = {
   observe: false,
   history: false,

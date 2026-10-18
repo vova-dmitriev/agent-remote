@@ -11,3 +11,16 @@ export * from './file-changes.js';
 export * from './error-codes.js';
 export * from './values/index.js';
 export * from './prompt-delivery.js';
+export * from './execution-profile.js';
+export * from './conversation.js';
+export * from './context-checkpoint.js';
+export * from './handoff.js';
+export * from './local-client.js';
+export * from './desktop-bridge.js';
+export * from './local-limits.js';
+
+export { LOCAL_AUTH_ERROR_CODES } from './local-errors.js';
+export * from './profile-management.js';
+export * from './credential-enrollment.js';
+export * from './profile-access.js';
+export * from './profile-auth-url.js';

@@ -1,0 +1,2 @@
+export const PERSISTENCE_SAVE_DELAY_MS = 300
+export const RECEIPT_BATCH_SIZE = 3

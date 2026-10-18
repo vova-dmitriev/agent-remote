@@ -1,3 +1,6 @@
+import { DaemonErrorCode } from '../error-codes.js';
+import { ErrorCode } from '../../../../packages/protocol/src/index.js';
+
 import {
   PermissionDecision,
   type RemotePermissionDecision,
@@ -34,7 +37,7 @@ export class PermissionBroker {
 
   async open(source: PendingPermission): Promise<PermissionDecision> {
     if (this.closed) {
-      throw new Error('BROKER_CLOSED');
+      throw new Error(DaemonErrorCode.BROKER_CLOSED);
     }
 
     if (
@@ -46,15 +49,15 @@ export class PermissionBroker {
       }) ||
       !Number.isFinite(source.expiresAt)
     ) {
-      throw new Error('INVALID_PERMISSION_REQUEST');
+      throw new Error(ErrorCode.INVALID_PERMISSION_REQUEST);
     }
 
     if (this.entries.has(source.requestId)) {
-      throw new Error('DUPLICATE_REQUEST');
+      throw new Error(DaemonErrorCode.DUPLICATE_REQUEST);
     }
 
     if (this.entries.size >= this.maxPending) {
-      throw new Error('PERMISSION_QUEUE_FULL');
+      throw new Error(ErrorCode.PERMISSION_QUEUE_FULL);
     }
 
     const now = Date.now();
@@ -153,7 +156,7 @@ export function permissionHookOutput(decision: PermissionDecision) {
   }
 
   if (decision !== PermissionDecision.Allow && decision !== PermissionDecision.Deny) {
-    throw new Error('INVALID_PERMISSION_DECISION');
+    throw new Error(ErrorCode.INVALID_PERMISSION_DECISION);
   }
 
   return {

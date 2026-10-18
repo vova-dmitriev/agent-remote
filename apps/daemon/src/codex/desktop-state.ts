@@ -1,3 +1,4 @@
+import { ErrorCode } from '../../../../packages/protocol/src/index.js';
 import { CodexItemType } from '../domain/codex.js';
 import { JsonPatchOperation } from '../domain/codex-desktop.js';
 import { object, type Data } from './events.js';
@@ -52,7 +53,7 @@ export function desktopTurns(state: Data): Data[] {
 
 export function applyDesktopPatches(state: Data, patches: unknown[]): Data {
   if (patches.length > 10000) {
-    throw new Error('CODEX_PROTOCOL_ERROR');
+    throw new Error(ErrorCode.CODEX_PROTOCOL_ERROR);
   }
 
   for (const raw of patches) {
@@ -72,14 +73,14 @@ export function applyDesktopPatches(state: Data, patches: unknown[]): Data {
           ['__proto__', 'prototype', 'constructor'].includes(String(key)),
       )
     ) {
-      throw new Error('CODEX_PROTOCOL_ERROR');
+      throw new Error(ErrorCode.CODEX_PROTOCOL_ERROR);
     }
 
     let target: unknown = state;
 
     for (const key of path.slice(0, -1)) {
       if (!target || typeof target !== 'object' || !Object.hasOwn(target, key)) {
-        throw new Error('CODEX_PROTOCOL_ERROR');
+        throw new Error(ErrorCode.CODEX_PROTOCOL_ERROR);
       }
 
       target = (target as Data)[key];
@@ -88,7 +89,7 @@ export function applyDesktopPatches(state: Data, patches: unknown[]): Data {
     const key: string | number = path.at(-1);
 
     if (!target || typeof target !== 'object') {
-      throw new Error('CODEX_PROTOCOL_ERROR');
+      throw new Error(ErrorCode.CODEX_PROTOCOL_ERROR);
     }
 
     if (Array.isArray(target)) {
@@ -110,7 +111,7 @@ export function applyDesktopPatches(state: Data, patches: unknown[]): Data {
         key > target.length ||
         (patch.op !== JsonPatchOperation.Add && key === target.length)
       ) {
-        throw new Error('CODEX_PROTOCOL_ERROR');
+        throw new Error(ErrorCode.CODEX_PROTOCOL_ERROR);
       }
 
       if (patch.op === JsonPatchOperation.Remove) {

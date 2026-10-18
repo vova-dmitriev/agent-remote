@@ -1,3 +1,4 @@
+import { ErrorCode } from '../../../../packages/protocol/src/index.js';
 import { type Pool, type PoolClient } from 'pg';
 import {
   readingPositionResponseSchema,
@@ -33,7 +34,7 @@ export class ReadingPositionService {
     );
 
     if (!result.rows[0]) {
-      throw new Fault('NOT_FOUND', 404);
+      throw new Fault(ErrorCode.NOT_FOUND, 404);
     }
 
     return result.rows[0].device_id;
@@ -68,7 +69,7 @@ export class ReadingPositionService {
     const position = readingPositionSchema.parse(input);
 
     if (position.updatedAt > Date.now() + 60_000) {
-      throw new Fault('INVALID_REQUEST');
+      throw new Fault(ErrorCode.INVALID_REQUEST);
     }
 
     const saved = await this.db.transaction(async (tx) => {

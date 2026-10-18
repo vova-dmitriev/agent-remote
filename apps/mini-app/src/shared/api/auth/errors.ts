@@ -1,4 +1,4 @@
-import { ConnectionStatus, ErrorCode } from "@protocol"
+import { ConnectionStatus, ErrorCode, FrameType } from "@protocol"
 import type { SessionAuthentication } from "./session"
 import type { TransportHandlers } from "../types"
 
@@ -9,11 +9,7 @@ export function isAuthenticationError(error: unknown) {
   )
 }
 
-export async function startSessionAuthentication(
-  authentication: SessionAuthentication,
-  initData: string,
-  handlers: Pick<TransportHandlers, "onConnection">,
-) {
+export async function startSessionAuthentication(authentication: SessionAuthentication, initData: string, handlers: TransportHandlers) {
   handlers.onConnection(ConnectionStatus.Connecting)
 
   try {
@@ -21,7 +17,10 @@ export async function startSessionAuthentication(
   } catch (error) {
     const expired = isAuthenticationError(error)
 
+    const failure = expired ? new Error(ErrorCode.TELEGRAM_AUTH_FAILED) : error
+
+    handlers.onFrame({ type: FrameType.Error, code: failure instanceof Error ? failure.message : ErrorCode.REQUEST_FAILED })
     handlers.onConnection(expired ? ConnectionStatus.Expired : ConnectionStatus.Offline)
-    throw expired ? new Error(ErrorCode.TELEGRAM_AUTH_FAILED) : error
+    throw failure
   }
 }

@@ -1,0 +1,17 @@
+{
+  "name": "agent-remote-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/main/index.cjs",
+  "scripts": {
+    "build": "node ../../scripts/desktop/build.mjs",
+    "package": "npm --prefix ../.. run build && node ../../scripts/desktop/build.mjs && node ../../scripts/desktop/package.mjs && electron-forge make --config forge.config.cjs"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "8.0.1",
+    "@electron-forge/maker-zip": "8.0.1",
+    "electron": "44.9.0",
+    "esbuild": "0.28.2"
+  }
+}

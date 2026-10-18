@@ -1,3 +1,5 @@
+import { ErrorCode } from '../../protocol/src/index.js';
+
 interface Socket {
   readonly readyState: number;
   readonly bufferedAmount: number;
@@ -22,7 +24,7 @@ export class BoundedSender {
       pending.frames >= 256 ||
       Math.max(pending.bytes, socket.bufferedAmount) + bytes > 1048576
     ) {
-      socket.close(1013, 'QUEUE_FULL');
+      socket.close(1013, ErrorCode.QUEUE_FULL);
 
       return false;
     }
@@ -46,7 +48,7 @@ export class BoundedSender {
       }
 
       if (error && socket.readyState === 1) {
-        socket.close(1013, 'WRITE_FAILED');
+        socket.close(1013, ErrorCode.WRITE_FAILED);
       }
     };
 
@@ -55,7 +57,7 @@ export class BoundedSender {
 
       return true;
     } catch {
-      complete(new Error('WRITE_FAILED'));
+      complete(new Error(ErrorCode.WRITE_FAILED));
 
       return false;
     }

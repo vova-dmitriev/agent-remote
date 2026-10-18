@@ -1,3 +1,4 @@
+import { ErrorCode } from '../../../../packages/protocol/src/index.js';
 import { ConnectorId, TargetKind, type Session } from '../../../../packages/protocol/src/index.js';
 import { fileURLToPath } from 'node:url';
 import { type NativeProcess } from './native-process.js';
@@ -24,13 +25,13 @@ export async function restartClaudeSession(
     session.target.connectorId !== ConnectorId.Native ||
     !session.claudeSessionId
   ) {
-    throw new Error('CAPABILITY_UNAVAILABLE');
+    throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
   }
 
   const source = await options.resolve(session.claudeSessionId, session.cwd);
 
   if (!source) {
-    throw new Error('STALE_SESSION');
+    throw new Error(ErrorCode.STALE_SESSION);
   }
 
   const cwd = await (options.validate ?? validateProject)(source.cwd);

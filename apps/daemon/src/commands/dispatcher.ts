@@ -14,6 +14,7 @@ import {
   type AttachmentDescriptor,
   type Session,
 } from '../../../../packages/protocol/src/index.js';
+import { DispatchScheduler } from './scheduling/index.js';
 import { CommandStoreOutcome, RuntimeEvent } from '../domain/runtime.js';
 import { type PreparedAttachment } from '../attachments/types.js';
 import { type LocalStore } from '../monitor/store.js';
@@ -24,6 +25,7 @@ import { type PermissionBroker } from './permission-broker.js';
 
 export interface DispatcherOptions {
   deviceId: string;
+  scheduler?: DispatchScheduler;
   store: LocalStore;
   monitor: Monitor;
   adapters: AdapterRegistry;
@@ -34,6 +36,7 @@ export interface DispatcherOptions {
   restartSession?: (session: Session) => Promise<string>;
   createSession?: (
     action: Extract<Command['action'], { type: typeof CommandActionType.CreateSession }>,
+    authorize: () => boolean,
   ) => Promise<string>;
   prepareAttachments?: (
     session: Session,
@@ -46,11 +49,12 @@ export interface DispatcherOptions {
   ) => void | Promise<void>;
 }
 export class Dispatcher {
-  private queues = new Map<string, Promise<unknown>>();
-  private inFlight = new Map<string, Promise<CommandResult>>();
+  private scheduler: DispatchScheduler;
   private connected = true;
   private epoch = 0;
-  constructor(private options: DispatcherOptions) {}
+  constructor(private options: DispatcherOptions) {
+    this.scheduler = options.scheduler ?? new DispatchScheduler();
+  }
   setConnection(online: boolean) {
     if (online !== this.connected) {
       this.epoch++;
@@ -58,22 +62,22 @@ export class Dispatcher {
 
     this.connected = online;
   }
-  dispatch(raw: Command): Promise<CommandResult> {
+  dispatch(raw: Command, authorize: () => boolean = () => true): Promise<CommandResult> {
     const parsed = commandSchema.safeParse(raw);
 
     if (!parsed.success) {
       return Promise.resolve({
         commandId: typeof raw?.commandId === 'string' ? raw.commandId : 'invalid',
         status: CommandStatus.Rejected,
-        code: 'INVALID_COMMAND',
+        code: ErrorCode.INVALID_COMMAND,
       });
     }
 
     const command = parsed.data;
-    const current = this.inFlight.get(command.commandId);
+    const current = this.scheduler.inFlight.get(command.commandId);
 
     if (current) {
-      return current.then(() => this.dispatch(command));
+      return current.then(() => this.dispatch(command, authorize));
     }
 
     const queueKey = [CommandActionType.CreateSession, CommandActionType.RestartSession].some(
@@ -82,20 +86,20 @@ export class Dispatcher {
       ? 'create:' + this.options.deviceId
       : command.sessionId;
 
-    const previous = this.queues.get(queueKey) ?? Promise.resolve();
+    const previous = this.scheduler.queues.get(queueKey) ?? Promise.resolve();
     const epoch = this.epoch;
-    const result = previous.catch(() => {}).then(() => this.execute(command, epoch));
+    const result = previous.catch(() => {}).then(() => this.execute(command, epoch, authorize));
 
-    this.inFlight.set(command.commandId, result);
-    this.queues.set(queueKey, result);
+    this.scheduler.inFlight.set(command.commandId, result);
+    this.scheduler.queues.set(queueKey, result);
 
     const clean = () => {
-      if (this.inFlight.get(command.commandId) === result) {
-        this.inFlight.delete(command.commandId);
+      if (this.scheduler.inFlight.get(command.commandId) === result) {
+        this.scheduler.inFlight.delete(command.commandId);
       }
 
-      if (this.queues.get(queueKey) === result) {
-        this.queues.delete(queueKey);
+      if (this.scheduler.queues.get(queueKey) === result) {
+        this.scheduler.queues.delete(queueKey);
       }
     };
 
@@ -104,9 +108,9 @@ export class Dispatcher {
     return result;
   }
   async drain() {
-    await Promise.allSettled([...this.inFlight.values()]);
+    await Promise.allSettled([...this.scheduler.inFlight.values()]);
   }
-  private async execute(command: Command, epoch: number): Promise<CommandResult> {
+  private async execute(command: Command, epoch: number, authorize: () => boolean): Promise<CommandResult> {
     try {
       const prior = this.options.store.begin(command);
 
@@ -117,19 +121,23 @@ export class Dispatcher {
       return {
         commandId: command.commandId,
         status: CommandStatus.Rejected,
-        code: 'COMMAND_STORE_UNAVAILABLE',
+        code: ErrorCode.COMMAND_STORE_UNAVAILABLE,
       };
     }
 
     let result: CommandResult;
 
     try {
+      if (!authorize()) {
+        throw new Error(ErrorCode.LOCAL_GRANT_REVOKED);
+      }
+
       if (!this.connected || epoch !== this.epoch) {
-        throw new Error('DEVICE_OFFLINE');
+        throw new Error(ErrorCode.DEVICE_OFFLINE);
       }
 
       if (command.expiresAt <= Date.now() || command.expiresAt > Date.now() + 30000) {
-        throw new Error('COMMAND_EXPIRED');
+        throw new Error(ErrorCode.COMMAND_EXPIRED);
       }
 
       const session = this.options.monitor.session(command.sessionId),
@@ -141,7 +149,7 @@ export class Dispatcher {
         (!binding && command.action.type !== CommandActionType.RestartSession) ||
         JSON.stringify(command.target) !== JSON.stringify(session.target)
       ) {
-        throw new Error('NOT_FOUND');
+        throw new Error(ErrorCode.NOT_FOUND);
       }
 
       if (
@@ -149,7 +157,7 @@ export class Dispatcher {
         (command.action.type !== CommandActionType.RestartSession &&
           (session.binding !== BindingState.Verified || session.integrationState !== IntegrationState.Ready))
       ) {
-        throw new Error('STALE_SESSION');
+        throw new Error(ErrorCode.STALE_SESSION);
       }
 
       let capability: keyof typeof session.capabilities;
@@ -177,32 +185,36 @@ export class Dispatcher {
           ? !this.options.permissionsEnabled
           : !this.options.inputEnabled)
       ) {
-        throw new Error('CAPABILITY_UNAVAILABLE');
+        throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
       }
 
       if (
         command.action.type === CommandActionType.Prompt &&
         !canDeliverPrompt(session.status, command.action.delivery)
       ) {
-        throw new Error('SESSION_NOT_IDLE');
+        throw new Error(ErrorCode.SESSION_NOT_IDLE);
       }
 
       let prepared: PreparedAttachment[] | undefined;
 
       if (command.action.type === CommandActionType.Prompt && command.action.attachments?.length) {
         if (!session.capabilities.attachments || !this.options.prepareAttachments) {
-          throw new Error('CAPABILITY_UNAVAILABLE');
+          throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
         }
 
         prepared = await this.options.prepareAttachments(session, command.action.attachments);
 
         // Downloads cross await boundaries. Recheck every effect fence against live source state.
+        if (!authorize()) {
+          throw new Error(ErrorCode.LOCAL_GRANT_REVOKED);
+        }
+
         if (!this.connected || epoch !== this.epoch) {
-          throw new Error('DEVICE_OFFLINE');
+          throw new Error(ErrorCode.DEVICE_OFFLINE);
         }
 
         if (command.expiresAt <= Date.now()) {
-          throw new Error('COMMAND_EXPIRED');
+          throw new Error(ErrorCode.COMMAND_EXPIRED);
         }
 
         const current = this.options.monitor.session(command.sessionId),
@@ -217,32 +229,36 @@ export class Dispatcher {
           currentBinding.generation !== binding?.generation ||
           currentBinding.localProof !== binding?.localProof
         ) {
-          throw new Error('STALE_SESSION');
+          throw new Error(ErrorCode.STALE_SESSION);
         }
 
         if (!current.capabilities.prompt || !current.capabilities.attachments || !this.options.inputEnabled) {
-          throw new Error('CAPABILITY_UNAVAILABLE');
+          throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
         }
 
         if (!canDeliverPrompt(current.status, command.action.delivery)) {
-          throw new Error('SESSION_NOT_IDLE');
+          throw new Error(ErrorCode.SESSION_NOT_IDLE);
         }
 
         if (
           JSON.stringify(prepared.map((item) => attachmentSchema.parse(item.descriptor))) !==
           JSON.stringify(command.action.attachments)
         ) {
-          throw new Error('ATTACHMENT_INTEGRITY_FAILED');
+          throw new Error(ErrorCode.ATTACHMENT_INTEGRITY_FAILED);
         }
 
         await this.options.recordAttachments?.(current, command.action.text, prepared);
 
+        if (!authorize()) {
+          throw new Error(ErrorCode.LOCAL_GRANT_REVOKED);
+        }
+
         if (!this.connected || epoch !== this.epoch) {
-          throw new Error('DEVICE_OFFLINE');
+          throw new Error(ErrorCode.DEVICE_OFFLINE);
         }
 
         if (command.expiresAt <= Date.now()) {
-          throw new Error('COMMAND_EXPIRED');
+          throw new Error(ErrorCode.COMMAND_EXPIRED);
         }
 
         if (
@@ -251,25 +267,25 @@ export class Dispatcher {
           current.binding !== BindingState.Verified ||
           current.integrationState !== IntegrationState.Ready
         ) {
-          throw new Error('STALE_SESSION');
+          throw new Error(ErrorCode.STALE_SESSION);
         }
 
         if (!current.capabilities.prompt || !current.capabilities.attachments || !this.options.inputEnabled) {
-          throw new Error('CAPABILITY_UNAVAILABLE');
+          throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
         }
 
         if (this.options.monitor.binding(command.sessionId)?.localProof !== currentBinding.localProof) {
-          throw new Error('STALE_SESSION');
+          throw new Error(ErrorCode.STALE_SESSION);
         }
 
         if (!canDeliverPrompt(current.status, command.action.delivery)) {
-          throw new Error('SESSION_NOT_IDLE');
+          throw new Error(ErrorCode.SESSION_NOT_IDLE);
         }
       }
 
       if (command.action.type === CommandActionType.RestartSession) {
         if (!this.options.restartSession) {
-          throw new Error('CAPABILITY_UNAVAILABLE');
+          throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
         }
 
         const sessionId = await this.options.restartSession(session);
@@ -277,14 +293,14 @@ export class Dispatcher {
         result = { commandId: command.commandId, status: CommandStatus.Dispatched, sessionId };
       } else if (command.action.type === CommandActionType.CreateSession) {
         if (command.action.cwd !== session.cwd) {
-          throw new Error('INVALID_PROJECT');
+          throw new Error(ErrorCode.INVALID_PROJECT);
         }
 
         if (!this.options.createSession) {
-          throw new Error('CAPABILITY_UNAVAILABLE');
+          throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
         }
 
-        const sessionId = await this.options.createSession(command.action);
+        const sessionId = await this.options.createSession(command.action, authorize);
 
         result = { commandId: command.commandId, status: CommandStatus.Dispatched, sessionId };
       } else if (command.action.type === CommandActionType.UserInput) {
@@ -300,7 +316,7 @@ export class Dispatcher {
           );
 
         if (!pending || !this.options.userInputs) {
-          throw new Error('USER_INPUT_EXPIRED');
+          throw new Error(ErrorCode.USER_INPUT_EXPIRED);
         }
 
         await this.options.userInputs.submit(pending.requestId, command.generation, command.action.answers);
@@ -323,7 +339,7 @@ export class Dispatcher {
             command.action.decision,
           )
         ) {
-          throw new Error('PERMISSION_EXPIRED');
+          throw new Error(ErrorCode.PERMISSION_EXPIRED);
         }
 
         result = { commandId: command.commandId, status: CommandStatus.Dispatched };
@@ -334,11 +350,11 @@ export class Dispatcher {
             (candidateValue) => candidateValue === command.target.kind,
           )
         ) {
-          throw new Error('CAPABILITY_UNAVAILABLE');
+          throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
         }
 
         if (!binding) {
-          throw new Error('STALE_SESSION');
+          throw new Error(ErrorCode.STALE_SESSION);
         }
 
         const adapter = this.options.adapters.resolve(command.target);
@@ -363,7 +379,7 @@ export class Dispatcher {
         ].some((candidateValue) => candidateValue === code)
           ? CommandStatus.Unknown
           : CommandStatus.Rejected,
-        code: /^[A-Z_]+$/.test(code) ? code : 'ADAPTER_FAILED',
+        code: /^[A-Z_]+$/.test(code) ? code : ErrorCode.ADAPTER_FAILED,
       };
     }
 
@@ -373,7 +389,7 @@ export class Dispatcher {
       result = {
         commandId: command.commandId,
         status: CommandStatus.Unknown,
-        code: 'COMMAND_STORE_UNAVAILABLE',
+        code: ErrorCode.COMMAND_STORE_UNAVAILABLE,
       };
     }
 

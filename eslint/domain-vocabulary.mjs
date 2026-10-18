@@ -1,6 +1,12 @@
 import { readdirSync, readFileSync } from 'node:fs';
 
-const roots = ['packages/protocol/src', 'apps/daemon/src', 'apps/server/src', 'apps/mini-app/src'];
+const roots = [
+  'packages/protocol/src',
+  'apps/daemon/src',
+  'apps/server/src',
+  'apps/mini-app/src',
+  'apps/chrome-extension/src',
+];
 
 function declarations(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {

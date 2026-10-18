@@ -15,7 +15,7 @@ export function usePairDevice() {
   const mutation = useMutation({
     mutationFn: async ({ value, lease }: PairDeviceInput) => {
       if (!runtime.isCurrent(lease)) throw new Error(ErrorCode.NO_AUTHENTICATED_CLIENT)
-      await lease.client.request("/pair/claim", { method: "POST", body: JSON.stringify({ code: value.trim() }) })
+      await lease.client.claimDevice(value.trim())
 
       return lease
     },

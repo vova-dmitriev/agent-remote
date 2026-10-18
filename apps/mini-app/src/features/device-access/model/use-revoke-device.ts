@@ -15,7 +15,7 @@ export function useRevokeDevice(reset: () => void) {
     if (!lease) return setError(ErrorCode.NO_AUTHENTICATED_CLIENT)
 
     try {
-      await lease.client.request("/devices/" + encodeURIComponent(id), { method: "DELETE" })
+      await lease.client.revokeDevice(id)
       if (!runtime.isCurrent(lease)) return
       reset()
       await cache.invalidateQueries({ queryKey: deviceKeys.all })

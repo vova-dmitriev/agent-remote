@@ -4,6 +4,7 @@ import { ErrorCode, MAX_ATTACHMENTS, MAX_ATTACHMENT_BYTES, MAX_MESSAGE_ATTACHMEN
 import { useRuntime } from "@/shared/lib/runtime"
 import { PendingAttachmentStatus } from "../config/values"
 import { createPendingAttachment } from "../lib/pending-attachment"
+import { restoreAttachments } from "./persistence/restore-attachments"
 import type { PendingAttachment } from "./attachment-types"
 
 export function useAttachmentDrafts(selected: Session | undefined) {
@@ -102,10 +103,25 @@ export function useAttachmentDrafts(selected: Session | undefined) {
     if (selected) removeFrom(selected.id, [id])
   }
 
-  function retry(id: string) {
+  async function retry(id: string) {
     const item = selected && current.current[selected.id]?.find((candidate) => candidate.id === id)
 
-    if (selected && item) void upload(selected, item)
+    if (!selected || !item) return
+    if (item.reference && runtime.client?.attachments) {
+      const controller = new AbortController()
+      const lease = runtime.current()
+
+      transfers.current.set(id, controller)
+
+      try {
+        const restored = await restoreAttachments(runtime.client.attachments, selected.id, [item.reference], controller.signal)
+
+        if (runtime.isCurrent(lease) && !controller.signal.aborted)
+          change(selected.id, (items) => items.map((current) => (current.id === id ? restored[0]! : current)))
+      } finally {
+        transfers.current.delete(id)
+      }
+    } else void upload(selected, item)
   }
 
   const reset = useCallback(() => {
@@ -125,9 +141,12 @@ export function useAttachmentDrafts(selected: Session | undefined) {
     error,
     add,
     remove,
-    retry,
+    retry: (id: string) => {
+      void retry(id).catch(() => {})
+    },
     reset,
     complete: removeFrom,
+    restore: (sessionId: string, items: PendingAttachment[]) => change(sessionId, () => items),
     ready: items.every((item) => item.status === PendingAttachmentStatus.Ready),
   }
 }
