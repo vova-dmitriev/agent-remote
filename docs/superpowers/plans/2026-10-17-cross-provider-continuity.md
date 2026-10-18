@@ -12,7 +12,7 @@
 
 ## Execution status — 2026-10-18
 
-The user authorized implementation with `gpt-6-luna` at high reasoning effort, at most five agents total. The current harness permits four concurrent agents including the coordinator, so at most three workers run together. No commits, live sign-ins, paid inference or production deployment are authorized by this implementation wave.
+The user authorized implementation with `gpt-6-luna` at high reasoning effort, at most five agents total. The current harness permits four concurrent agents including the coordinator, so at most three workers run together. The user authorized commits on 2026-10-18. The reviewed foundation is committed as `2da6f44`; subsequent increments require staged-snapshot validation. Live sign-ins, paid inference, pushes and production deployment remain separate actions.
 
 Contracts and the Codex account-management foundation are implemented and tested. The Task 2 credential/runtime foundations exist; authenticated live-provider compatibility remains unverified. Task 3 currently adds authoritative profile-aware Codex creation and the shared profile/model chooser. Claude API-key isolation is investigated and implemented only through supported native interfaces; independent subscription isolation must remain unavailable until established. Tasks 4–8 remain pending.
 
@@ -21,7 +21,7 @@ The latest pre-wave baseline passed full validation (1,012 tests across 224 file
 ## Global constraints
 
 - Use synthetic temporary runtimes during implementation checks. No real chat prompts, credential inspection/export or account changes in tests.
-- Follow existing owner/device/generation/runtime fences, durable command IDs and unknown-write behavior. Never commit.
+- Follow existing owner/device/generation/runtime fences, durable command IDs and unknown-write behavior. Commit reviewed increments only after the installed pre-commit hook validates the staged snapshot; never bypass hooks or push without explicit authorization.
 - Stored credentials/checkpoint bodies stay local; profile queries expose opaque IDs and safe metadata. API-key enrollment is an explicit device-encrypted import, never a readback API; see the follow-up connection-management plan.
 - All domain values use dedicated named const objects and derived types. Frontend follows FSD, named props, static test IDs, RU/EN copy, 200-line source files and six-file directories.
 - No assertions in stories. No unconfigured billing fallback or global login replacement. Automatic fallback requires an enabled, persisted rule with explicit destination/billing/context scope; preserve bounded history, queue behavior and reading position.

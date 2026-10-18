@@ -6,7 +6,7 @@
   "main": "dist/main/index.cjs",
   "scripts": {
     "build": "node ../../scripts/desktop/build.mjs",
-    "package": "npm --prefix ../.. run build && node ../../scripts/desktop/build.mjs && node ../../scripts/desktop/package.mjs && electron-forge make --config forge.config.cjs"
+    "package": "npm --prefix ../.. run build && node ../../scripts/desktop/build.mjs && node ../../scripts/desktop/package.mjs && node ../../scripts/desktop/make.mjs"
   },
   "devDependencies": {
     "@electron-forge/cli": "8.0.1",

@@ -1,6 +1,6 @@
 # Account Management and Automatic Fallback Implementation Plan
 
-> **For agentic workers:** Use superpowers:executing-plans for approved implementation; use superpowers:subagent-driven-development only if explicitly selected. Implementation was explicitly authorized by the user on 2026-10-18, including Luna high subagents. Live sign-in, paid usage and deployment remain separate actions. Never commit.
+> **For agentic workers:** Use superpowers:executing-plans for approved implementation; use superpowers:subagent-driven-development only if explicitly selected. Implementation was explicitly authorized by the user on 2026-10-18, including Luna high subagents. Live sign-in, paid usage and deployment remain separate actions. The user authorized commits on 2026-10-18; validate each staged snapshot through the installed pre-commit hook. Pushes remain separately authorized.
 
 **Goal:** Persist connected subscription/API profiles, including at least two independently authenticated OpenAI/ChatGPT subscription accounts for Codex, manage them from a dedicated page, and continue work automatically through an explicitly configured fallback chain when quota is exhausted.
 
@@ -16,7 +16,7 @@ Tasks 1–2 have an integrated Codex management foundation: durable metadata and
 
 ## Global constraints
 
-- Implementation is authorized; never commit or use real credentials/sessions in automated tests. Keep all secret values out of source, fixtures, logs, URLs, relay persistence and browser persistence.
+- Implementation and reviewed commits are authorized; never bypass pre-commit validation or use real credentials/sessions in automated tests. Keep all secret values out of source, fixtures, logs, URLs, relay persistence and browser persistence.
 - Owner/device/generation/version checks precede reads and every side effect. Named const objects and derived types define every state, action, trigger and error code.
 - PostgreSQL/local journals are durable authorities; Redis is a cache. Logout/revoke clears UI and pending enrollment. Credential deletion requires acknowledged local completion.
 - Automatic inference requires an enabled policy authorizing the destination, model, context sharing and paid API use. Follow native access policies; do not replace global logins or assume different keys have independent quotas.
@@ -88,7 +88,7 @@ C. Automatic continuation, recovery and acceptance (Tasks 4–5), capability-gat
 
 - [ ] Write browser scenarios for persistent CRUD/defaults/rules, two retained OpenAI accounts with manual selection and automatic Codex subscription A→B without another sign-in, Claude→Claude, Claude→Codex, subscription→subscription/API, both keep-source and move-unsent queue/file policies, restored bookmarks, status spinner/event notice, budget stop, deletion/revoke and reset without unwanted return. Drive deterministic native peers and typed quota events, not real exhausted accounts.
 - [ ] Use separately authorized disposable profiles for native compatibility acceptance. Explicitly accept OpenAI subscription A→B with two separately authorized disposable accounts or controlled quota injection at the adapter boundary; never deliberately spend an account to exhaustion. Verify observed account, authentication mode, model, quota trigger and supported resume/handoff; never infer these from labels. Keep unsupported Desktop auto-switch capability disabled with a usable managed CLI alternative.
-- [ ] Run `npm run security:check`, `npm run security:test`, `npm run lint:fix`, source/frontend formatting checks, `npm run typecheck`, `npm test -- --maxWorkers=4`, `npm run build`, `npm run test-storybook`, `E2E_APP_PORT=4175 npm run test:e2e`. Inspect results and obtain independent review; never commit.
+- [ ] Run `npm run security:check`, `npm run security:test`, `npm run lint:fix`, source/frontend formatting checks, `npm run typecheck`, `npm test -- --maxWorkers=4`, `npm run build`, `npm run test-storybook`, `E2E_APP_PORT=4175 npm run test:e2e`. Inspect results, obtain independent review and commit reviewed increments through the installed staged-snapshot hook.
 - [ ] Release persistent management first, then quota visibility, then opt-in automatic policies only for verified native sources. Preserve pairing/public URL and perform read-only service health checks. No automatic sign-ins, purchases or paid usage occur merely because the management page is released.
 
 ## Planning result

@@ -24,7 +24,7 @@ npm run build:helper
 npm run package:desktop
 ```
 
-Packaging builds the shared application and Desktop bundles, prepares `apps/desktop/dist/desktop-companion`, verifies its manifest and runs Electron Forge. Forge output is under `apps/desktop/out/`. These directories and downloaded toolchains under `output/toolchains/` are ignored by Git.
+Packaging builds the shared application and Desktop bundles, prepares `apps/desktop/dist/desktop-companion`, verifies its manifest and runs Electron Forge under the verified pinned Node runtime. The build launcher also places that runtime first on its child process PATH, so Forge does not depend on the shell's Node version. Forge output is under `apps/desktop/out/`. These directories and downloaded toolchains under `output/toolchains/` are ignored by Git.
 
 The companion uses pinned Node 22.23.3, ABI 127, for macOS arm64 or x64. The downloader verifies the official archive checksum before extraction. Packaging verifies the runtime target, dependency files, helper, entry point and resource hashes. An arbitrary `DESKTOP_STANDALONE_NODE` override is unsupported. The independent companion runs under this Node runtime rather than Electron's ABI.
 
