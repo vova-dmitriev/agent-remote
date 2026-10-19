@@ -18,8 +18,7 @@ import {
   TargetKind,
 } from '@protocol';
 import { CommandStoreOutcome } from '../domain/runtime.js';
-import type { NativeSessionRegistration } from '../domain/ports/monitor.js';
-import type { LocalStorePort } from '../domain/ports/local-store.js';
+import type { LocalStorePort, NativeSessionRegistration } from '../domain/ports/local-store.js';
 import { cachedLocalHistory } from './local/local-history.js';
 import { localCommand } from './local/local-command.js';
 import Sqlite from 'better-sqlite3';

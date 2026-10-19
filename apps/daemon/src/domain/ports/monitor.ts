@@ -3,6 +3,7 @@ import { type AppSnapshot, type EventEnvelope, type Session, sessionSchema, type
 import { z } from 'zod';
 import type { ModelOrigin } from '../runtime.js';
 import type { Binding } from './binding.js';
+import type { NativeSessionRegistration } from './local-store.js';
 
 export const hookSchema = z.object({
   hook_event_name: z.string().min(1).max(128),
@@ -18,11 +19,6 @@ export const hookSchema = z.object({
   tool_input: z.unknown().optional(),
 });
 export type HookEnvelope = z.infer<typeof hookSchema>;
-
-export interface NativeSessionRegistration {
-  session: Session;
-  transcriptPath?: string;
-}
 
 /** Session state owned by the monitor, as seen by the modules that feed it. */
 export interface MonitorPort extends EventEmitter {

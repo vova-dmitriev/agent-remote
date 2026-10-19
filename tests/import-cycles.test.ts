@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, expect, it } from 'vitest';
 // @ts-expect-error untyped build script
-import { cycleRoots, findCycles, gatedCycleLevels } from '../scripts/check-cycles.mjs';
+import { CYCLE_LEVEL, cycleRoots, findCycles, gatedCycleLevels } from '../scripts/check-cycles.mjs';
 
 const roots: string[] = [];
 
@@ -32,7 +32,7 @@ it('reports a file-level cycle a -> b -> a', () => {
     'b.ts': "import type { A } from './a.js';\nexport const b = 1;\nexport type B = A;\n",
   });
 
-  expect(findCycles(root, 'file')).toEqual([['a.ts', 'b.ts']]);
+  expect(findCycles(root, CYCLE_LEVEL.file)).toEqual([['a.ts', 'b.ts']]);
 });
 
 it('reports a module-level cycle x/1 -> y/1, y/2 -> x/2', () => {
@@ -43,19 +43,57 @@ it('reports a module-level cycle x/1 -> y/1, y/2 -> x/2', () => {
     'y/2.ts': "import {\n  two,\n} from '../x/2.js';\nexport const value = two;\n",
   });
 
-  expect(findCycles(root, 'file')).toEqual([]);
-  expect(findCycles(root, 'module')).toEqual([['x', 'y']]);
+  expect(findCycles(root, CYCLE_LEVEL.file)).toEqual([]);
+  expect(findCycles(root, CYCLE_LEVEL.module)).toEqual([['x', 'y']]);
 });
 
-it('ignores alias imports, dynamic imports and strings that look like imports', () => {
+it('ignores alias imports and strings that look like imports', () => {
   const root = project({
-    'a.ts':
-      "import { x } from '@protocol';\nexport const load = () => import('./b.js');\nexport const a = x;\n",
+    'a.ts': "import { x } from '@protocol';\nimport './b.js';\nexport const a = x;\n",
     'b.ts': "import './c.js';\nexport const text = \"import { a } from './a.js'\";\n",
-    'c.ts': 'export {};\n',
+    'c.ts': 'export const text = "import(\'./a.js\')";\n',
   });
 
-  expect(findCycles(root, 'file')).toEqual([]);
+  expect(findCycles(root, CYCLE_LEVEL.file)).toEqual([]);
+});
+
+it('reports cycles through dynamic import() calls', () => {
+  const root = project({
+    'a.ts': "export const load = async () => (await import('./b.js')).b;\nexport const a = 1;\n",
+    'b.ts': "import { a } from './a.js';\nexport const b = a;\n",
+  });
+
+  expect(findCycles(root, CYCLE_LEVEL.file)).toEqual([['a.ts', 'b.ts']]);
+});
+
+it("reports cycles through import('…') type references", () => {
+  const root = project({
+    'a.ts': "export type A = import('./b.js').B;\n",
+    'b.ts': "import type { A } from './a.js';\nexport type B = { a?: A };\n",
+  });
+
+  expect(findCycles(root, CYCLE_LEVEL.file)).toEqual([['a.ts', 'b.ts']]);
+});
+
+it('reports a cycle made only of import type declarations', () => {
+  const root = project({
+    'a.ts': "import type { B } from './b.js';\nexport type A = B[];\n",
+    'b.ts': "import type { A } from './a.js';\nexport type B = { a?: A };\n",
+  });
+
+  expect(findCycles(root, CYCLE_LEVEL.file)).toEqual([['a.ts', 'b.ts']]);
+});
+
+it('resolves directory index imports and export * from', () => {
+  const root = project({
+    'a.ts': "export * from './lib/index.js';\nexport const a = 1;\n",
+    'lib/index.ts': "export * from './value.js';\n",
+    'lib/value.ts': "import { a } from '../a.js';\nexport const value = a;\n",
+    'c.ts': "import { value } from './lib';\nexport const c = value;\n",
+  });
+
+  expect(findCycles(root, CYCLE_LEVEL.file)).toEqual([['a.ts', 'lib/index.ts', 'lib/value.ts']]);
+  expect(findCycles(root, CYCLE_LEVEL.module)).toEqual([['a.ts', 'lib']]);
 });
 
 it.each(cycleRoots(process.cwd()) as string[])('finds no gated import cycles in %s', (sourceRoot) => {
@@ -68,10 +106,10 @@ it.each(cycleRoots(process.cwd()) as string[])('finds no gated import cycles in 
 
 it('gates every source root at file level', () => {
   for (const sourceRoot of cycleRoots(process.cwd()) as string[]) {
-    expect(gatedCycleLevels(sourceRoot)).toContain('file');
+    expect(gatedCycleLevels(sourceRoot)).toContain(CYCLE_LEVEL.file);
   }
 });
 
 it('gates the daemon at module level', () => {
-  expect(gatedCycleLevels('apps/daemon/src')).toEqual(['file', 'module']);
+  expect(gatedCycleLevels('apps/daemon/src')).toEqual([CYCLE_LEVEL.file, CYCLE_LEVEL.module]);
 });

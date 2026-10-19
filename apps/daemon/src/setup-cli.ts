@@ -15,6 +15,8 @@ import { startDaemon } from './main.js';
 import { startClaude } from './cli/wrapper.js';
 import { CodedError, hasErrorCode } from '@protocol';
 
+const sessionEntryPath = () => fileURLToPath(new URL('./entry/entry.js', import.meta.url));
+
 export async function runCli(argv = process.argv.slice(2)) {
   const [command, ...args] = argv;
 
@@ -27,7 +29,7 @@ export async function runCli(argv = process.argv.slice(2)) {
   }
 
   if (command === CliCommand.Browser) {
-    const { runBrowserCli } = await import('./runtime/browser-cli/index.js');
+    const { runBrowserCli } = await import('./cli/browser/index.js');
 
     await runBrowserCli(args);
 
@@ -71,6 +73,15 @@ export async function runCli(argv = process.argv.slice(2)) {
   }
 
   if (command === CliCommand.Start) {
+    const { claudeShellDirectory, refreshClaudeShellEntry } = await import('./cli/shell-integration.js');
+
+    // A stale terminal integration must not prevent the companion from starting.
+    await refreshClaudeShellEntry({ directory: claudeShellDirectory(), entry: sessionEntryPath() }).catch(
+      () => {
+        process.stderr.write(`${DaemonErrorCode.SHELL_INTEGRATION_REFRESH_FAILED}\n`);
+      },
+    );
+
     const daemon = await startDaemon().catch((error: unknown) => {
       if (hasErrorCode(error, DaemonErrorCode.HOOK_SOCKET_HELD_BY_COMPANION)) {
         process.stderr.write(
@@ -152,17 +163,17 @@ export async function runCli(argv = process.argv.slice(2)) {
   }
 
   if (command === 'shell' && args[0] === CliAction.Install) {
-    const { installClaudeShell } = await import('./cli/shell-integration.js');
+    const { claudeShellDirectory, installClaudeShell } = await import('./cli/shell-integration.js');
     const { execFile } = await import('node:child_process');
     const { promisify } = await import('node:util');
     const executable = (await promisify(execFile)('/usr/bin/which', ['claude'])).stdout.trim();
 
     const result = await installClaudeShell({
-      directory: process.env.CLAUDE_REMOTE_HOME ?? join(homedir(), '.claude-remote'),
+      directory: claudeShellDirectory(),
       rcPath: join(process.env.ZDOTDIR ?? homedir(), '.zshrc'),
       executable,
       node: process.execPath,
-      entry: fileURLToPath(new URL('./entry/entry.js', import.meta.url)),
+      entry: sessionEntryPath(),
     });
 
     process.stdout.write(

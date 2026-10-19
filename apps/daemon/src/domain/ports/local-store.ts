@@ -1,5 +1,18 @@
-import type { ClientCommand, Command, CommandResult, Cursor, EventEnvelope, HistoryRead } from '@protocol';
+import type {
+  ClientCommand,
+  Command,
+  CommandResult,
+  Cursor,
+  EventEnvelope,
+  HistoryRead,
+  Session,
+} from '@protocol';
 import type { CommandStoreOutcome } from '../runtime.js';
+
+export interface NativeSessionRegistration {
+  session: Session;
+  transcriptPath?: string;
+}
 
 export interface LocalHistoryPage {
   events: EventEnvelope[];

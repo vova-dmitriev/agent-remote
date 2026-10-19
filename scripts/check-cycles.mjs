@@ -43,19 +43,40 @@ function listSourceFiles(directory) {
   return files;
 }
 
-function staticSpecifiers(path) {
+const stringLiteralText = (node) => (node && ts.isStringLiteralLike(node) ? node.text : undefined);
+
+function moduleSpecifier(node) {
+  if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier) {
+    return stringLiteralText(node.moduleSpecifier);
+  }
+
+  if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+    return stringLiteralText(node.arguments[0]);
+  }
+
+  if (ts.isImportTypeNode(node) && ts.isLiteralTypeNode(node.argument)) {
+    return stringLiteralText(node.argument.literal);
+  }
+
+  return undefined;
+}
+
+/** Static declarations, string-literal `import()` calls and `import('…')` type references. */
+function importSpecifiers(path) {
   const source = ts.createSourceFile(path, readFileSync(path, 'utf8'), ts.ScriptTarget.Latest, false);
   const specifiers = [];
 
-  for (const statement of source.statements) {
-    if (
-      (ts.isImportDeclaration(statement) || ts.isExportDeclaration(statement)) &&
-      statement.moduleSpecifier &&
-      ts.isStringLiteral(statement.moduleSpecifier)
-    ) {
-      specifiers.push(statement.moduleSpecifier.text);
+  const visit = (node) => {
+    const specifier = moduleSpecifier(node);
+
+    if (specifier !== undefined) {
+      specifiers.push(specifier);
     }
-  }
+
+    ts.forEachChild(node, visit);
+  };
+
+  visit(source);
 
   return specifiers;
 }
@@ -71,12 +92,7 @@ function resolveRelative(fromFile, specifier) {
 
   const target = resolve(dirname(fromFile), specifier);
 
-  const candidates = [
-    target.replace(/\.(js|mjs)$/, (extension) => (extension === '.js' ? '.ts' : '.mts')),
-    target,
-    `${target}.ts`,
-    join(target, 'index.ts'),
-  ];
+  const candidates = [target.replace(/\.js$/, '.ts'), target, `${target}.ts`, join(target, 'index.ts')];
 
   return candidates.find((candidate) => isSourceFile(candidate) && isFile(candidate));
 }
@@ -147,7 +163,7 @@ export function findCycles(root, level) {
 
     graph.set(from, edges);
 
-    for (const specifier of staticSpecifiers(file)) {
+    for (const specifier of importSpecifiers(file)) {
       const target = resolveRelative(file, specifier);
 
       if (target && !relative(root, target).startsWith('..')) {
