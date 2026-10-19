@@ -4,8 +4,8 @@ import type { Request } from 'express';
 import { z } from 'zod';
 import { RELAY_CONFIG, type RelayConfig } from '../app/relay-config.js';
 import { Limiter, RateLimitKey, type Principal } from '../auth/security.js';
-import { CurrentPrincipal } from '../http/current-principal.js';
-import { PrincipalGuard } from '../http/principal.guard.js';
+import { CurrentPrincipal } from '../http/auth/current-principal.js';
+import { PrincipalGuard } from '../http/auth/principal.guard.js';
 import { DeviceService } from './service.js';
 
 const boundedId = z.string().min(1).max(512);
@@ -64,7 +64,6 @@ export class PairingController {
   async confirm(@Body() input: unknown) {
     const body = z.strictObject({ proof: boundedId, claimId: boundedId, approved: z.boolean() }).parse(input);
 
-    // A declined pairing has no device; the relay has always answered it with an empty object.
-    return (await this.devices.confirm(body.proof, body.claimId, body.approved)) ?? {};
+    return this.devices.confirm(body.proof, body.claimId, body.approved);
   }
 }

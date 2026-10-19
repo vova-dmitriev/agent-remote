@@ -1,6 +1,6 @@
 import { Inject, Injectable, type CanActivate, type ExecutionContext } from '@nestjs/common';
 import type { Request } from 'express';
-import { AuthService } from '../auth/auth-service.js';
+import { AuthService } from '../../auth/auth-service.js';
 import { bearer } from './bearer.js';
 import { rememberPrincipal } from './current-principal.js';
 

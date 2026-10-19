@@ -1,6 +1,6 @@
 import type { PoolClient } from 'pg';
 import { HandoffPhase, type HandoffOperation } from '@protocol';
-import { Fault } from '../../http/fault.js';
+import { Fault } from '../../http/errors/fault.js';
 import { ContinuityError, HandoffCommandKind, type PersistHandoffInput } from '../types.js';
 import { asOperation, type ContinuityRow } from './mapping.js';
 

@@ -1,8 +1,8 @@
 import { createParamDecorator, type ExecutionContext } from '@nestjs/common';
 import { ErrorCode } from '@protocol';
 import type { Request } from 'express';
-import type { Principal } from '../auth/security.js';
-import { Fault } from './fault.js';
+import type { Principal } from '../../auth/security.js';
+import { Fault } from '../errors/fault.js';
 
 const principals = new WeakMap<Request, Principal>();
 

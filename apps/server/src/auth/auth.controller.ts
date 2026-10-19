@@ -3,12 +3,12 @@ import { ErrorCode, HttpStatus } from '@protocol';
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { RELAY_CONFIG, type RelayConfig } from '../app/relay-config.js';
-import { bearer } from '../http/bearer.js';
-import { Fault } from '../http/fault.js';
+import { bearer } from '../http/auth/bearer.js';
+import { Fault } from '../http/errors/fault.js';
 import { AuthService } from './auth-service.js';
-import { BrowserSessions, readRefreshCookie, refreshCookie } from './browser-sessions.js';
+import { BrowserSessions, readRefreshCookie, refreshCookie } from './sessions/browser-sessions.js';
 import { Limiter, RateLimitKey, telegramIdentity } from './security.js';
-import { SessionRevocations } from './session-revocations.js';
+import { SessionRevocations } from './sessions/session-revocations.js';
 
 const REFRESH_IDENTITY_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 

@@ -1,7 +1,7 @@
 import { ErrorCode } from '@protocol';
-import { type Database } from '../db/database.js';
-import { hash, secret } from './security.js';
-import { Fault } from '../http/fault.js';
+import { type Database } from '../../db/database.js';
+import { hash, secret } from '../security.js';
+import { Fault } from '../../http/errors/fault.js';
 
 export class BrowserSessions {
   constructor(private db: Database) {}

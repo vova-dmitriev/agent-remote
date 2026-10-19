@@ -52,11 +52,11 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { z } from 'zod';
 import { type Database } from './db/database.js';
 import { type AuthService } from './auth/auth-service.js';
-import { type SessionRevocations } from './auth/session-revocations.js';
+import { type SessionRevocations } from './auth/sessions/session-revocations.js';
 import { type DeviceService, type DeviceRecord } from './devices/service.js';
 import { type Limiter, hash, type Principal } from './auth/security.js';
-import { Fault } from './http/fault.js';
-import { bearer } from './http/bearer.js';
+import { Fault } from './http/errors/fault.js';
+import { bearer } from './http/auth/bearer.js';
 import { type RelayConfig } from './app/relay-config.js';
 import { claimHandoffCreateCommandId, claimRelayCommandId } from './continuity/command-claims.js';
 import { ContinuityService } from './continuity/service.js';
@@ -780,7 +780,7 @@ export function createRelayRuntime({
     return row;
   });
 
-  revocations.subscribe((revoked) => {
+  const stopRevocations = revocations.subscribe((revoked) => {
     profileProxy.cancelAuth(revoked);
 
     for (const client of clients) {
@@ -1304,6 +1304,7 @@ export function createRelayRuntime({
     /** Stops sockets and jobs; the caller then closes the Nest application, drains the fence and closes storage. */
     shutdown() {
       closing = true;
+      stopRevocations();
       sourceHistory.close();
       profileProxy.close();
       continuityProxy.close();

@@ -23,7 +23,7 @@ import { randomUUID } from 'node:crypto';
 import { type WebSocket } from 'ws';
 import { type Database } from '../db/database.js';
 import { type Principal } from '../auth/security.js';
-import { Fault } from '../http/fault.js';
+import { Fault } from '../http/errors/fault.js';
 import { type HistoryPage } from './service.js';
 
 interface Connection {

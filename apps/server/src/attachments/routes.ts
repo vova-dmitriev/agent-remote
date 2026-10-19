@@ -11,8 +11,8 @@ import { type Database } from '../db/database.js';
 import { type AuthService } from '../auth/auth-service.js';
 import { type DeviceService } from '../devices/service.js';
 import { Limiter } from '../auth/security.js';
-import { Fault } from '../http/fault.js';
-import { bearer } from '../http/bearer.js';
+import { Fault } from '../http/errors/fault.js';
+import { bearer } from '../http/auth/bearer.js';
 import { AttachmentService, type AttachmentContext } from './service.js';
 
 const fail = (res: Response, error: unknown) => {

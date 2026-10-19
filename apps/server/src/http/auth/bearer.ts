@@ -1,6 +1,6 @@
 import { ErrorCode } from '@protocol';
 import type { IncomingMessage } from 'node:http';
-import { Fault } from './fault.js';
+import { Fault } from '../errors/fault.js';
 
 const BEARER_PREFIX = 'Bearer ';
 const MAX_AUTHORIZATION_LENGTH = 520;

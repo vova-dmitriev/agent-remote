@@ -1,8 +1,8 @@
 import { Body, Controller, Get, Inject, Patch, UseGuards } from '@nestjs/common';
 import type { PreferencePatch } from '@protocol';
 import type { Principal } from '../auth/security.js';
-import { CurrentPrincipal } from '../http/current-principal.js';
-import { PrincipalGuard } from '../http/principal.guard.js';
+import { CurrentPrincipal } from '../http/auth/current-principal.js';
+import { PrincipalGuard } from '../http/auth/principal.guard.js';
 import { PreferenceService } from './service.js';
 
 @Controller('preferences')

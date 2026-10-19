@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Inject, Param, Put, UseGuards } from '@nestjs/common';
 import type { Principal } from '../auth/security.js';
-import { CurrentPrincipal } from '../http/current-principal.js';
-import { PrincipalGuard } from '../http/principal.guard.js';
+import { CurrentPrincipal } from '../http/auth/current-principal.js';
+import { PrincipalGuard } from '../http/auth/principal.guard.js';
 import { ReadingPositionService } from './service.js';
 
 @Controller('sessions/:id/reading-position')

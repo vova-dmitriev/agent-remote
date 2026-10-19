@@ -2,7 +2,7 @@ import { Controller, Get, Inject } from '@nestjs/common';
 import { Database } from '../db/database.js';
 import { HealthStatus } from '../domain/http.js';
 import type { Messaging } from '../infrastructure/messaging.js';
-import { MESSAGING } from './core.module.js';
+import { MESSAGING } from '../app/relay-config.js';
 
 @Controller('health')
 export class HealthController {

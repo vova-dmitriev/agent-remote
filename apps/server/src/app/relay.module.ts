@@ -12,28 +12,32 @@ import type { ExpressAdapter } from '@nestjs/platform-express';
 import { AuthService } from '../auth/auth-service.js';
 import { AuthModule } from '../auth/auth.module.js';
 import { Limiter } from '../auth/security.js';
-import { SessionRevocations } from '../auth/session-revocations.js';
+import { SessionRevocations } from '../auth/sessions/session-revocations.js';
 import { Database } from '../db/database.js';
 import { DeviceFence } from '../devices/fence.js';
 import { PairingController } from '../devices/pairing.controller.js';
 import { DeviceService } from '../devices/service.js';
-import { FaultFilter } from '../http/fault.filter.js';
+import { FaultFilter } from '../http/errors/fault.filter.js';
 import type { Messaging } from '../infrastructure/messaging.js';
 import { PreferencesController } from '../preferences/preferences.controller.js';
 import { PreferenceService } from '../preferences/service.js';
 import { ReadingPositionController } from '../reading-position/reading-position.controller.js';
 import { ReadingPositionService } from '../reading-position/service.js';
 import { RELAY_RUNTIME, createRelayRuntime, type RelayRuntime } from '../relay-runtime.js';
-import { CoreModule, MESSAGING, type CoreResources } from './core.module.js';
-import { HealthController } from './health.controller.js';
-import { JsonBodyMiddleware } from './middleware.js';
-import { RELAY_CONFIG, type RelayConfig } from './relay-config.js';
+import { CoreModule, type CoreResources } from './core.module.js';
+import { HealthController } from '../health/health.controller.js';
+import { JsonBodyMiddleware } from '../http/pipeline/middleware.js';
+import { MESSAGING, RELAY_CONFIG, type RelayConfig } from './relay-config.js';
 
-// Attachment uploads read the raw body themselves; a JSON-typed upload must reach them unparsed.
-const RAW_BODY_ROUTES = [
-  { path: 'sessions/:sessionId/attachments', method: RequestMethod.POST },
-  { path: 'device/sessions/:sessionId/attachments', method: RequestMethod.POST },
-];
+// Attachment routes read the raw body themselves (a JSON-typed upload must reach them unparsed) and,
+// as before the Nest migration, never pass through the JSON parser.
+const RAW_BODY_ROUTES = ['sessions/:sessionId/attachments', 'device/sessions/:sessionId/attachments'].flatMap(
+  (path) => [
+    { path, method: RequestMethod.POST },
+    { path: path + '/:attachmentId', method: RequestMethod.GET },
+    { path: path + '/:attachmentId', method: RequestMethod.HEAD },
+  ],
+);
 
 @Module({})
 export class RelayModule implements NestModule, OnModuleInit {

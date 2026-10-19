@@ -11,3 +11,6 @@ export interface RelayConfig {
 }
 
 export const RELAY_CONFIG = Symbol('RELAY_CONFIG');
+
+/** Provides `Messaging | undefined` (see `infrastructure/messaging.ts`): undefined when the relay runs without Redis. */
+export const MESSAGING = Symbol('MESSAGING');

@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { attachmentRelayFixture } from './helpers/attachment-relay.js';
-import { BrowserSessions } from '../apps/server/src/auth/browser-sessions.js';
+import { BrowserSessions } from '../apps/server/src/auth/sessions/browser-sessions.js';
 import { initData } from './helpers/telegram.js';
 
 it('renews access using a server-side browser session and revokes all its access tokens on logout', async () => {

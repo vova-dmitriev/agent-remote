@@ -1,5 +1,5 @@
 import { ErrorCode, MessageRole } from '@protocol';
-import { Fault } from '../http/fault.js';
+import { Fault } from '../http/errors/fault.js';
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 
 export const hash = (value: string) => createHash('sha256').update(value).digest('hex');

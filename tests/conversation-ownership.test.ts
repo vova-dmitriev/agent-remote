@@ -4,7 +4,7 @@ import { Pool } from 'pg';
 import { afterEach, describe, expect, it } from 'vitest';
 import { ContinuityService } from '../apps/server/src/continuity/service.js';
 import { Database } from '../apps/server/src/db/database.js';
-import { Fault } from '../apps/server/src/http/fault.js';
+import { Fault } from '../apps/server/src/http/errors/fault.js';
 
 const fixtures: { db: Database; admin: Pool; schema: string }[] = [];
 

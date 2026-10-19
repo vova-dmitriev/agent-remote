@@ -1,5 +1,5 @@
 import { ErrorCode, FrameType, type ServerFrame, HttpStatus } from '@protocol';
-import { Fault } from '../../http/fault.js';
+import { Fault } from '../../http/errors/fault.js';
 import type { PendingProfileRequest, ProfileConnection } from '../types.js';
 
 export class ProfileRequestRegistry extends Map<string, PendingProfileRequest> {

@@ -11,7 +11,7 @@ import {
   HttpStatus,
 } from '@protocol';
 import { type Principal } from '../auth/security.js';
-import { Fault } from '../http/fault.js';
+import { Fault } from '../http/errors/fault.js';
 import type { DeviceService } from '../devices/service.js';
 import { ProfileProxyLimit } from './values.js';
 import { ProfileRequestRegistry } from './transport/pending.js';

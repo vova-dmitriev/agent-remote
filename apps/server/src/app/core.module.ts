@@ -1,15 +1,12 @@
 import { Global, Module, type DynamicModule } from '@nestjs/common';
 import { AuthService } from '../auth/auth-service.js';
-import { BrowserSessions } from '../auth/browser-sessions.js';
+import { BrowserSessions } from '../auth/sessions/browser-sessions.js';
 import { Limiter } from '../auth/security.js';
 import { Database } from '../db/database.js';
 import { DeviceFence } from '../devices/fence.js';
 import { DeviceService } from '../devices/service.js';
 import type { Messaging } from '../infrastructure/messaging.js';
-import { RELAY_CONFIG, type RelayConfig } from './relay-config.js';
-
-/** `Messaging | undefined`: undefined when the relay runs without Redis. */
-export const MESSAGING = Symbol('MESSAGING');
+import { MESSAGING, RELAY_CONFIG, type RelayConfig } from './relay-config.js';
 
 export interface CoreResources {
   config: RelayConfig;

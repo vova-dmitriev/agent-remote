@@ -7,7 +7,8 @@ import { DeviceFence } from '../devices/fence.js';
 import { DeviceService } from '../devices/service.js';
 import { createMessaging, type Messaging } from '../infrastructure/messaging.js';
 import { RELAY_RUNTIME, type RelayRuntime } from '../relay-runtime.js';
-import { securityHeaders } from './middleware.js';
+import { JsonExpressAdapter } from '../http/pipeline/json-express-adapter.js';
+import { securityHeaders } from '../http/pipeline/middleware.js';
 import type { RelayConfig } from './relay-config.js';
 import { RelayModule } from './relay.module.js';
 
@@ -43,6 +44,7 @@ export async function createRelay(config: RelayConfig): Promise<Relay> {
 
   const app = await NestFactory.create<NestExpressApplication>(
     RelayModule.register({ config, db, messaging }),
+    new JsonExpressAdapter(),
     {
       logger: false,
       bodyParser: false,
