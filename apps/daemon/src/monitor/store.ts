@@ -17,8 +17,8 @@ import {
   type ClientCommand,
 } from '@protocol';
 import { CommandStoreOutcome } from '../domain/runtime.js';
-import { cachedLocalHistory } from './local-history.js';
-import { localCommand } from './local-command.js';
+import { cachedLocalHistory } from './local/local-history.js';
+import { localCommand } from './local/local-command.js';
 import Sqlite from 'better-sqlite3';
 import { chmodSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';

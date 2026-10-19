@@ -1,4 +1,4 @@
-import { CodexItemType, CodexContentType } from '../domain/codex.js';
+import { CodexItemType, CodexContentType } from '../domain/codex/codex.js';
 import { MessageRole, truncateUtf8, type HistoryMessage } from '@protocol';
 
 export type Data = Record<string, unknown>;

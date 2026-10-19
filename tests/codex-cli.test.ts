@@ -6,7 +6,7 @@ const spawned = vi.hoisted(() => vi.fn());
 
 vi.mock('node:child_process', () => ({ spawn: spawned }));
 
-vi.mock('../apps/daemon/src/code/ipc.js', () => ({
+vi.mock('../apps/daemon/src/code/hooks/ipc.js', () => ({
   requestLocal: async () => ({ type: 'codex_result', result: { connected: 0 } }),
 }));
 

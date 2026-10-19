@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import type { Session } from '@protocol';
-import { attachmentSourceCurrent } from '../apps/daemon/src/attachments/source-current.js';
+import { attachmentSourceCurrent } from '../apps/daemon/src/attachments/content/source-current.js';
 
 it('exports observed history independently of input availability while rejecting stale, ended and disconnected sources', () => {
   const source = {

@@ -6,7 +6,7 @@ import { expect } from '@playwright/test';
 import { createRelay } from '../../../apps/server/src/relay.js';
 import { startDaemon } from '../../../apps/daemon/src/main.js';
 import { saveConfig, localSecret, socketPath } from '../../../apps/daemon/src/config.js';
-import { requestLocal } from '../../../apps/daemon/src/code/ipc.js';
+import { requestLocal } from '../../../apps/daemon/src/code/hooks/ipc.js';
 import { initData, testBotToken } from '../../helpers/telegram.js';
 import type { ClientCommand } from '@protocol';
 import { cliProvider } from './cli.js';

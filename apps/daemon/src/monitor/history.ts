@@ -1,8 +1,8 @@
 import { ErrorCode, type HistoryMessage, type HistoryRead } from '@protocol';
 import { type NativeMedia } from '../attachments/types.js';
 import { TranscriptActivity } from '../code/transcript-activity.js';
-import { TranscriptPages } from '../code/transcript-pages.js';
-import { TranscriptReader } from '../code/transcript-reader.js';
+import { TranscriptPages } from '../code/transcript/transcript-pages.js';
+import { TranscriptReader } from '../code/transcript/transcript-reader.js';
 
 export class MessageTracker {
   private seen = new Map<string, string>();

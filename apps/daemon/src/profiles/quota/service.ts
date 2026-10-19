@@ -10,8 +10,8 @@ import {
   QuotaSource,
 } from '@protocol';
 import type { ProfileRegistry } from '../registry.js';
-import { RuntimeProfileNative } from '../runtime/native.js';
-import { ProfileExecutionOwnership } from '../runtime/execution-ownership.js';
+import { RuntimeProfileNative } from '../runtime/native/native.js';
+import { ProfileExecutionOwnership } from '../runtime/execution/execution-ownership.js';
 import { readCodexQuota } from './codex-observation.js';
 
 function unsupported(profile: ExecutionProfileSummary): ProfileQuotaObservation {

@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { EventEmitter } from 'node:events';
-import { bindCodex } from '../apps/daemon/src/codex/binding.js';
+import { bindCodex } from '../apps/daemon/src/codex/binding/binding.js';
 import { LocalStore } from '../apps/daemon/src/monitor/store.js';
 import { Monitor } from '../apps/daemon/src/monitor/monitor.js';
 import { AdapterRegistry } from '../apps/daemon/src/adapters/registry.js';

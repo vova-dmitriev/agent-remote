@@ -7,7 +7,7 @@ import { encryptEnrollment } from '@transport/credentials/sealed-box.js';
 import { profileServiceFixture } from './profiles/service.fixture.js';
 import { codexSubscription, verifiedAccount } from './profiles/registry.fixture.js';
 import { deferred } from './profiles/runtime/deferred.js';
-import { RuntimeProfileNative } from '../apps/daemon/src/profiles/runtime/native.js';
+import { RuntimeProfileNative } from '../apps/daemon/src/profiles/runtime/native/native.js';
 
 afterEach(() => vi.restoreAllMocks());
 

@@ -1,7 +1,7 @@
 import { expect, it, vi } from 'vitest';
 import { ErrorCode } from '@protocol';
 import { CodexProfileNative } from '../apps/daemon/src/profiles/native/codex.js';
-import { RuntimeProfileNative } from '../apps/daemon/src/profiles/runtime/native.js';
+import { RuntimeProfileNative } from '../apps/daemon/src/profiles/runtime/native/native.js';
 import { codexSubscription } from './profiles/registry.fixture.js';
 import { profileServiceFixture } from './profiles/service.fixture.js';
 

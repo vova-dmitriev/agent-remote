@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { mkdtemp, mkdir, realpath, rm, symlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { nativeFile } from '../apps/daemon/src/attachments/io.js';
+import { nativeFile } from '../apps/daemon/src/attachments/relay/io.js';
 
 const directories: string[] = [];
 const bytes = Buffer.from([0xff, 0xd8, 0xff, 0x01]);

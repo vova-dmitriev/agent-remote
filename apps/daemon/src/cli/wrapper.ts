@@ -8,7 +8,7 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { PtySessionManager, type RemotePtyBinding } from '../code/pty-session-manager.js';
 import { parseClaudeArgs } from './arguments.js';
-import { lineReader, writeFrame } from '../code/ipc.js';
+import { lineReader, writeFrame } from '../code/hooks/ipc.js';
 
 const actionSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal(WrapperActionType.Bind), sessionId: z.string().min(1).max(512) }),

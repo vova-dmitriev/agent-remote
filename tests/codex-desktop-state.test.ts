@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { desktopTurns, applyDesktopPatches } from '../apps/daemon/src/codex/desktop-state.js';
+import { desktopTurns, applyDesktopPatches } from '../apps/daemon/src/codex/desktop/desktop-state.js';
 
 it('merges canonical turns and live overlays by exact turn identity', () => {
   const state = {

@@ -2,8 +2,11 @@ import { afterEach, expect, it } from 'vitest';
 import { chmod, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { parsePersonalTunnelConfig, startNamedTunnel } from '../apps/daemon/src/cli/personal-tunnel.js';
-import { ensurePersonalEnv, startQuickTunnel } from '../apps/daemon/src/cli/personal-runtime.js';
+import {
+  parsePersonalTunnelConfig,
+  startNamedTunnel,
+} from '../apps/daemon/src/cli/personal/personal-tunnel.js';
+import { ensurePersonalEnv, startQuickTunnel } from '../apps/daemon/src/cli/personal/personal-runtime.js';
 
 const tunnelId = '00000000-0000-4000-8000-000000000001';
 const directories: string[] = [];

@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { CodexSubagents } from '../apps/daemon/src/codex/subagents.js';
+import { CodexSubagents } from '../apps/daemon/src/codex/binding/subagents.js';
 import { subagentSchema } from '@protocol';
 
 it('tracks actual child lifecycle without confusing completed spawn calls with completed children', () => {

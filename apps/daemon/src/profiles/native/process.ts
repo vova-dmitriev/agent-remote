@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 import { ErrorCode, type ProfileAuthMode } from '@protocol';
-import { CodexRpcClient } from '../../codex/rpc-client.js';
+import { CodexRpcClient } from '../../codex/rpc/rpc-client.js';
 import { CodexProfileArgument, ProfileNativeLimits } from './values.js';
 import type { ProfileNativeOptions } from './types.js';
 import { closeProfileProcess } from './lifecycle/close.js';

@@ -16,7 +16,7 @@ const connectSocket = vi.hoisted(() => vi.fn());
 const launcher = vi.hoisted(() => ({ ensure: vi.fn(), exited: vi.fn() }));
 const native = vi.hoisted(() => ({ identity: vi.fn(), models: vi.fn() }));
 
-vi.mock('../apps/daemon/src/codex/transport.js', () => ({ connectCodexSocket: connectSocket }));
+vi.mock('../apps/daemon/src/codex/rpc/transport.js', () => ({ connectCodexSocket: connectSocket }));
 
 vi.mock('../apps/daemon/src/codex/launcher.js', () => ({
   ensureManagedCodexSocket: launcher.ensure,

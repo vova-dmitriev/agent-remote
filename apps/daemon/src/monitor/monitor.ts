@@ -21,9 +21,9 @@ import {
 } from '@protocol';
 import { ClaudeHookEvent } from '../domain/claude.js';
 import { RuntimeEvent, ModelOrigin } from '../domain/runtime.js';
-import { boundSnapshotChanges } from '../codex/file-changes.js';
-import { currentToolStep, clearCurrentStep } from './current-step.js';
-import { boundSubagentSnapshots } from './subagents.js';
+import { boundSnapshotChanges } from '../codex/binding/file-changes.js';
+import { currentToolStep, clearCurrentStep } from './activity/current-step.js';
+import { boundSubagentSnapshots } from './activity/subagents.js';
 import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import { z } from 'zod';

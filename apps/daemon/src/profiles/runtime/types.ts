@@ -1,7 +1,7 @@
 import type { ProfileServiceOptions } from '../lifecycle/types.js';
 import type { ProfileNativeOptions } from '../native/types.js';
 import type { CodexProfileNative } from '../native/codex.js';
-import type { RuntimeProfileCloseProofStatus } from './close-proof-values.js';
+import type { RuntimeProfileCloseProofStatus } from './native/close-proof-values.js';
 
 export interface RuntimeProfileHandle {
   opening: Promise<CodexProfileNative>;

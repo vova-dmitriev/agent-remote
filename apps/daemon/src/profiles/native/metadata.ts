@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { ErrorCode, ProfileAuthMode } from '@protocol';
-import { CodexMethod } from '../../domain/codex.js';
-import type { CodexRpcClient } from '../../codex/rpc-client.js';
+import { CodexMethod } from '../../domain/codex/codex.js';
+import type { CodexRpcClient } from '../../codex/rpc/rpc-client.js';
 import { readCodexCredentialIdentity } from '../credentials.js';
 import { CodexProfileAuthType, ProfileIdentityPrefix } from './values.js';
 

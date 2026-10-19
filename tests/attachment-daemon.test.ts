@@ -4,8 +4,8 @@ import { mkdtemp, readFile, stat, rm, symlink, writeFile } from 'node:fs/promise
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { AttachmentService } from '../apps/daemon/src/attachments/service.js';
-import { nativeCodexMedia, nativeClaudeMedia } from '../apps/daemon/src/attachments/native.js';
-import { attachmentPrompt, codexAttachmentInput } from '../apps/daemon/src/attachments/input.js';
+import { nativeCodexMedia, nativeClaudeMedia } from '../apps/daemon/src/attachments/content/native.js';
+import { attachmentPrompt, codexAttachmentInput } from '../apps/daemon/src/attachments/content/input.js';
 import type { AttachmentDescriptor, Session } from '@protocol';
 
 const bytes = Buffer.from('synthetic file contents');
@@ -161,7 +161,7 @@ describe('private daemon attachments', () => {
 
 describe('native media history retention', () => {
   it('keeps a media-only Claude JSONL message above the old one-MiB limit', async () => {
-    const { TranscriptReader } = await import('../apps/daemon/src/code/transcript-reader.js');
+    const { TranscriptReader } = await import('../apps/daemon/src/code/transcript/transcript-reader.js');
     const directory = await mkdtemp(join(tmpdir(), 'native-media-'));
 
     cleanup.push(() => rm(directory, { recursive: true, force: true }));
@@ -400,7 +400,7 @@ describe('native image path content guard', () => {
 });
 
 it('recognizes only PNG, JPEG, GIF and WebP signatures for native path export', async () => {
-  const { nativeImageMime } = await import('../apps/daemon/src/attachments/image-content.js');
+  const { nativeImageMime } = await import('../apps/daemon/src/attachments/content/image-content.js');
 
   expect(nativeImageMime(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))).toBe('image/png');
   expect(nativeImageMime(Buffer.from([0xff, 0xd8, 0xff]))).toBe('image/jpeg');

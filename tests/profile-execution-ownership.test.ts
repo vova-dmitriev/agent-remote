@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { expect, it } from 'vitest';
-import { ProfileExecutionOwnership } from '../apps/daemon/src/profiles/runtime/execution-ownership.js';
-import { ExecutionChildState } from '../apps/daemon/src/profiles/runtime/execution-values.js';
+import { ProfileExecutionOwnership } from '../apps/daemon/src/profiles/runtime/execution/execution-ownership.js';
+import { ExecutionChildState } from '../apps/daemon/src/profiles/runtime/execution/execution-values.js';
 import { ProfileService } from '../apps/daemon/src/profiles/service.js';
 import { RuntimeProfiles } from '../apps/daemon/src/profiles/runtime/service.js';
 import { profileServiceFixture } from './profiles/service.fixture.js';

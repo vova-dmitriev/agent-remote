@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { PassThrough, Writable } from 'node:stream';
 import { startClaude } from '../apps/daemon/src/cli/wrapper.js';
-import { startHookServer } from '../apps/daemon/src/code/hook-server.js';
+import { startHookServer } from '../apps/daemon/src/code/hooks/hook-server.js';
 import { localSecret, socketPath } from '../apps/daemon/src/config.js';
 import { LocalStore } from '../apps/daemon/src/monitor/store.js';
 import { Monitor } from '../apps/daemon/src/monitor/monitor.js';

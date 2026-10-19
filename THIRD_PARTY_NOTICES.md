@@ -6,7 +6,7 @@
 
 - Source: https://github.com/jsayubi/ccgram/tree/75b38e1bab4af411b40b4e589d050786eb65ceca
 - Files reviewed: `src/utils/pty-session-manager.ts`, `src/utils/transcript-reader.ts`, `permission-hook.ts`.
-- Local modules: `apps/daemon/src/code/{pty-session-manager,transcript-reader}.ts`, `apps/daemon/src/commands/permission-broker.ts`.
+- Local modules: `apps/daemon/src/code/pty-session-manager.ts`, `apps/daemon/src/code/transcript/transcript-reader.ts`, `apps/daemon/src/commands/permission-broker.ts`.
 - Changes: generation/lease binding, bounded incremental JSONL reader, one-shot transport-neutral broker; removed raw output logs, cwd/name matching, kill-on-name-collision, Telegram polling and persistent permission changes.
 
 MIT License

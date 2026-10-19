@@ -8,7 +8,7 @@ import { stripVTControlCharacters } from 'node:util';
 import { createRelay } from '../apps/server/src/relay.js';
 import { startDaemon } from '../apps/daemon/src/main.js';
 import { saveConfig } from '../apps/daemon/src/config.js';
-import { installHooks } from '../apps/daemon/src/code/install-hooks.js';
+import { installHooks } from '../apps/daemon/src/code/hooks/install-hooks.js';
 import { initData, testBotToken } from '../tests/helpers/telegram.js';
 
 const url =

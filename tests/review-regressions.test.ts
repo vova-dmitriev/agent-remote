@@ -9,7 +9,7 @@ import { Monitor } from '../apps/daemon/src/monitor/monitor.js';
 import { AdapterRegistry, SourceAdapter } from '../apps/daemon/src/adapters/registry.js';
 import { Dispatcher } from '../apps/daemon/src/commands/dispatcher.js';
 import { PermissionBroker } from '../apps/daemon/src/commands/permission-broker.js';
-import { installHooks } from '../apps/daemon/src/code/install-hooks.js';
+import { installHooks } from '../apps/daemon/src/code/hooks/install-hooks.js';
 import { createDesktopSource } from '../apps/daemon/src/desktop/adapter.js';
 import { BridgeClient } from '../apps/daemon/src/desktop/bridge-client.js';
 import type { Command } from '@protocol';
@@ -198,8 +198,8 @@ describe('review regressions', () => {
 });
 
 it('records unknown after the wrapper receives a prompt and disconnects before its receipt', async () => {
-  const { startHookServer } = await import('../apps/daemon/src/code/hook-server.js');
-  const { requestLocal, lineReader, writeFrame } = await import('../apps/daemon/src/code/ipc.js');
+  const { startHookServer } = await import('../apps/daemon/src/code/hooks/hook-server.js');
+  const { requestLocal, lineReader, writeFrame } = await import('../apps/daemon/src/code/hooks/ipc.js');
   const f = await fixture();
 
   const path = join(f.directory, 'hook.sock'),

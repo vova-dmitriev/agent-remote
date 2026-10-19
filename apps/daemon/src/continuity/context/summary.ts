@@ -10,8 +10,8 @@ import {
   normalizeFence,
 } from './values.js';
 import type { CheckpointSource, LocalContextCheckpoint, SourceFence } from './types.js';
-import { verifyAttachmentBlobs } from './attachments.js';
-import { readPrivateFile } from './storage.js';
+import { verifyAttachmentBlobs } from './storage/attachments.js';
+import { readPrivateFile } from './storage/storage.js';
 
 const validId = (id: string) =>
   /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(id);

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { expect, it } from 'vitest';
-import { RuntimeProfileRelay } from '../apps/daemon/src/profiles/runtime/relay.js';
+import { RuntimeProfileRelay } from '../apps/daemon/src/profiles/runtime/router/relay.js';
 import type { RuntimeProfiles } from '../apps/daemon/src/profiles/runtime/service.js';
 import type { DeviceFrame } from '@protocol';
 

@@ -2,8 +2,8 @@ import { expect, it } from 'vitest';
 import { mkdtemp, readFile, rm, stat, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { launchClaudeSession } from '../apps/daemon/src/sessions/launcher.js';
-import { restoreLaunch } from '../apps/daemon/src/sessions/restore-launch.js';
+import { launchClaudeSession } from '../apps/daemon/src/sessions/launch/launcher.js';
+import { restoreLaunch } from '../apps/daemon/src/sessions/launch/restore-launch.js';
 
 it('keeps exact arguments and environment in a private one-use payload, never in the terminal command', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'restore-context-')),

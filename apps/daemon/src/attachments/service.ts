@@ -30,12 +30,12 @@ import {
   ATTACHMENT_MAX_EXPORTED_DESCRIPTORS,
   ATTACHMENT_REQUEST_TIMEOUT_MS,
 } from './limits.js';
-import { AttachmentHistory } from './history.js';
-import { nativeImageMime } from './image-content.js';
-import { boundedBody, nativeFile } from './io.js';
+import { AttachmentHistory } from './content/history.js';
+import { nativeImageMime } from './content/image-content.js';
+import { boundedBody, nativeFile } from './relay/io.js';
 import { type NativeMedia, type PreparedAttachment } from './types.js';
-import type { LocalAttachmentBackend } from './local-backend.js';
-import { RelayAttachmentMirror } from './relay-mirror.js';
+import type { LocalAttachmentBackend } from './relay/local-backend.js';
+import { RelayAttachmentMirror } from './relay/relay-mirror.js';
 
 export type { NativeMedia, PreparedAttachment } from './types.js';
 interface Options {

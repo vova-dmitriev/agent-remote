@@ -1,5 +1,5 @@
 import { BoundProfileClient } from "@transport/profile-client"
-import { BoundContinuityClient } from "@transport/continuity-client"
+import { BoundContinuityClient } from "@transport/continuity/continuity-client"
 import { BoundProfileRoutingClient } from "@transport/profile-routing-client"
 import {
   HttpRequestMethod,

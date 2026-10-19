@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { ErrorCode, MAX_ATTACHMENT_BYTES, type Session } from '@protocol';
-import { attachmentSourceCurrent } from '../../attachments/source-current.js';
+import { attachmentSourceCurrent } from '../../attachments/content/source-current.js';
 import { MediaCatalog } from './catalog.js';
 import { MediaTransfers } from './transfers.js';
 import { validateUpload, type LocalMediaOptions } from './types.js';

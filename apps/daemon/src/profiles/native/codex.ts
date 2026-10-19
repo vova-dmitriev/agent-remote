@@ -8,8 +8,8 @@ import {
   type ExecutionProfileSummary,
   profileAuthUrlSchema,
 } from '@protocol';
-import { CodexMethod } from '../../domain/codex.js';
-import type { CodexRpcClient } from '../../codex/rpc-client.js';
+import { CodexMethod } from '../../domain/codex/codex.js';
+import type { CodexRpcClient } from '../../codex/rpc/rpc-client.js';
 import type { ProfileVerification } from '../types.js';
 import { openCodexProfileProcess } from './process.js';
 import { nativeProfileIdentity } from './metadata.js';

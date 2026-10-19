@@ -4,7 +4,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { AttachmentService } from '../apps/daemon/src/attachments/service.js';
-import { nativeClaudeMedia } from '../apps/daemon/src/attachments/native.js';
+import { nativeClaudeMedia } from '../apps/daemon/src/attachments/content/native.js';
 import type { AttachmentDescriptor, Session } from '@protocol';
 
 const bytes = Buffer.from('synthetic image bytes');

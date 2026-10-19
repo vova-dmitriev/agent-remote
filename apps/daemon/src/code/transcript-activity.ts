@@ -1,5 +1,5 @@
 import { ClaudeRecordType, ClaudeContentType } from '../domain/claude.js';
-import { openTranscript } from './transcript-file.js';
+import { openTranscript } from './transcript/transcript-file.js';
 
 function messageTime(row: Record<string, unknown>, sessionId: string | undefined): number {
   if (

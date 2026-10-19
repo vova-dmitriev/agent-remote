@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { LocalDatabase } from '../../../apps/daemon/src/local/state/database.js';
 import { RuntimeProfiles } from '../../../apps/daemon/src/profiles/runtime/service.js';
-import { RuntimeProfileRelay } from '../../../apps/daemon/src/profiles/runtime/relay.js';
+import { RuntimeProfileRelay } from '../../../apps/daemon/src/profiles/runtime/router/relay.js';
 import { FrameType, serverFrameSchema, type ProfileRequest } from '@protocol';
 import { deviceFixture } from '../support/relay-fixture.js';
 import { WebSocket } from 'ws';

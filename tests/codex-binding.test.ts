@@ -9,10 +9,10 @@ import { PermissionBroker } from '../apps/daemon/src/commands/permission-broker.
 import { LocalStore } from '../apps/daemon/src/monitor/store.js';
 import { Monitor } from '../apps/daemon/src/monitor/monitor.js';
 import { Dispatcher } from '../apps/daemon/src/commands/dispatcher.js';
-import { CodexModelReader } from '../apps/daemon/src/codex/model-reader.js';
-import { bindCodex } from '../apps/daemon/src/codex/binding.js';
-import { CodexApprovals } from '../apps/daemon/src/codex/approvals.js';
-import type { RpcFrame } from '../apps/daemon/src/codex/rpc-client.js';
+import { CodexModelReader } from '../apps/daemon/src/codex/history/model-reader.js';
+import { bindCodex } from '../apps/daemon/src/codex/binding/binding.js';
+import { CodexApprovals } from '../apps/daemon/src/codex/binding/approvals.js';
+import type { RpcFrame } from '../apps/daemon/src/codex/rpc/rpc-client.js';
 
 class Rpc extends EventEmitter {
   calls: { method: string; params: unknown }[] = [];

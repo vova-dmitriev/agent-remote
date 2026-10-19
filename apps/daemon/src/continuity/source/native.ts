@@ -14,8 +14,8 @@ import { sourceBase, mapMessage } from './base.js';
 import { sameFence } from '../context/values.js';
 import type { NativeCheckpointSourceOptions } from './types.js';
 import { CheckpointSourceError, NativeCheckpointSourceLimits, sourceFailure } from './values.js';
-import { TRANSCRIPT_POSITION_PREFIX } from '../../code/transcript-limits.js';
-import { openTranscript } from '../../code/transcript-file.js';
+import { TRANSCRIPT_POSITION_PREFIX } from '../../code/transcript/transcript-limits.js';
+import { openTranscript } from '../../code/transcript/transcript-file.js';
 import type { TranscriptSources } from '../../monitor/history.js';
 import type { LocalStore } from '../../monitor/store.js';
 

@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { desktopItemTime, historyTurnTimes } from '../apps/daemon/src/codex/history-times.js';
+import { desktopItemTime, historyTurnTimes } from '../apps/daemon/src/codex/history/history-times.js';
 
 it('uses Desktop native millisecond message timestamps and never invents a reconnect timestamp', () => {
   const turn = { turnStartedAtMs: 1000, agentMessageCompletedAtMsById: { answer: 2400 } };

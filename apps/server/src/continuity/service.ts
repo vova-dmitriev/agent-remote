@@ -11,8 +11,8 @@ import { ConversationContinuityService } from './services/conversations.js';
 import { HandoffContinuityService } from './services/handoffs.js';
 import { ExecutionActivationService } from './services/activation.js';
 import { HandoffTransitionService } from './services/transitions.js';
-import { AuthenticatedSeedProofService } from './services/seed-proof.js';
-import { AuthenticatedSeedIntentService } from './services/seed-intent.js';
+import { AuthenticatedSeedProofService } from './services/seed/seed-proof.js';
+import { AuthenticatedSeedIntentService } from './services/seed/seed-intent.js';
 
 export class ContinuityService {
   private readonly conversations: ConversationContinuityService;

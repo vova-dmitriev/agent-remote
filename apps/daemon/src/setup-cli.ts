@@ -9,8 +9,8 @@ import { homedir } from 'node:os';
 import { join, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadConfig, localSecret, socketPath, stateDirectory } from './config.js';
-import { requestLocal } from './code/ipc.js';
-import { installHooks, uninstallHooks } from './code/install-hooks.js';
+import { requestLocal } from './code/hooks/ipc.js';
+import { installHooks, uninstallHooks } from './code/hooks/install-hooks.js';
 import { startDaemon } from './main.js';
 import { startClaude } from './cli/wrapper.js';
 
@@ -18,7 +18,7 @@ export async function runCli(argv = process.argv.slice(2)) {
   const [command, ...args] = argv;
 
   if (command === CliCommand.Profiles) {
-    const { runProfilesCli } = await import('./profiles/runtime/cli.js');
+    const { runProfilesCli } = await import('./profiles/runtime/native/cli.js');
 
     await runProfilesCli(args, stateDirectory());
 
@@ -34,7 +34,7 @@ export async function runCli(argv = process.argv.slice(2)) {
   }
 
   if (command === CliCommand.Personal) {
-    const { startPersonal } = await import('./cli/personal.js');
+    const { startPersonal } = await import('./cli/personal/personal.js');
 
     await startPersonal();
 
@@ -95,7 +95,7 @@ export async function runCli(argv = process.argv.slice(2)) {
   }
 
   if (command === CliCommand.RestoreClaude) {
-    const { restoreLaunch } = await import('./sessions/restore-launch.js');
+    const { restoreLaunch } = await import('./sessions/launch/restore-launch.js');
     const context = await restoreLaunch(args[0] ?? '');
     const home = process.env.CLAUDE_REMOTE_HOME;
     const launchId = process.env.CLAUDE_REMOTE_LAUNCH_ID;

@@ -21,7 +21,7 @@ import {
 import { NativeProcesses } from './sessions/native-process.js';
 import { restartClaudeSession } from './sessions/restart-session.js';
 import { createManagedSession, waitManagedSession } from './sessions/create-session.js';
-import { attachmentSourceCurrent } from './attachments/source-current.js';
+import { attachmentSourceCurrent } from './attachments/content/source-current.js';
 import { AttachmentService } from './attachments/service.js';
 import { CodexManager } from './codex/manager.js';
 import { BridgeClient } from './desktop/bridge-client.js';
@@ -38,7 +38,7 @@ import { PermissionBroker } from './commands/permission-broker.js';
 import { DispatchScheduler } from './commands/scheduling/index.js';
 import { Dispatcher, type DispatcherOptions } from './commands/dispatcher.js';
 import { MessageTracker, TranscriptSources } from './monitor/history.js';
-import { startHookServer } from './code/hook-server.js';
+import { startHookServer } from './code/hooks/hook-server.js';
 import { RelayClient } from './relay-client.js';
 import { localSecret, socketPath, stateDirectory } from './config.js';
 
@@ -47,7 +47,7 @@ import { localClientSecret } from './local/bootstrap/identity.js';
 import { openLocalServices } from './local/bootstrap/services.js';
 import { NoRelay } from './local/bootstrap/no-relay.js';
 import { LocalController } from './local/controller/controller.js';
-import { RuntimeProfileRelay } from './profiles/runtime/relay.js';
+import { RuntimeProfileRelay } from './profiles/runtime/router/relay.js';
 import { startLocalServer } from './local/server/server.js';
 
 export async function startDaemon() {

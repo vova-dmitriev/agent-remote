@@ -1,4 +1,4 @@
-import { CodexLaunchArgument } from '../../domain/codex.js';
+import { CodexLaunchArgument } from '../../domain/codex/codex.js';
 
 export const CodexProfileAuthType = { Subscription: 'chatgpt', ApiKey: 'apiKey' } as const;
 export const ProfileIdentityPrefix = {

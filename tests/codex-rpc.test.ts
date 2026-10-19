@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PassThrough } from 'node:stream';
-import { CodexRpcClient } from '../apps/daemon/src/codex/rpc-client.js';
+import { CodexRpcClient } from '../apps/daemon/src/codex/rpc/rpc-client.js';
 
 function fixture(options: { timeoutMs?: number; maxFrameBytes?: number } = {}) {
   const input = new PassThrough(),

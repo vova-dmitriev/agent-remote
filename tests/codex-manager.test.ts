@@ -11,7 +11,7 @@ import { PermissionBroker } from '../apps/daemon/src/commands/permission-broker.
 
 const connectSocket = vi.hoisted(() => vi.fn());
 
-vi.mock('../apps/daemon/src/codex/transport.js', () => ({ connectCodexSocket: connectSocket }));
+vi.mock('../apps/daemon/src/codex/rpc/transport.js', () => ({ connectCodexSocket: connectSocket }));
 
 it('accepts local Codex selection and rejects network endpoints and remote process injection', () => {
   expect(

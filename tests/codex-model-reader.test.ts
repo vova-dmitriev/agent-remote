@@ -2,7 +2,7 @@ import { afterEach, beforeEach, expect, it } from 'vitest';
 import { appendFile, mkdtemp, mkdir, rm, symlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { CodexModelReader } from '../apps/daemon/src/codex/model-reader.js';
+import { CodexModelReader } from '../apps/daemon/src/codex/history/model-reader.js';
 
 let home: string, path: string;
 const metadata = (id: string) => JSON.stringify({ type: 'session_meta', payload: { id } }) + '\n';

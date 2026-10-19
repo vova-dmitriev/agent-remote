@@ -12,15 +12,15 @@ import { ProfileService } from '../service.js';
 import { ProfileAuthentication } from '../authentication/service.js';
 import { CredentialEnrollmentService } from '../enrollment/service.js';
 import { removeProfileCredentials } from '../lifecycle/cleanup.js';
-import { RuntimeProfileNative } from './native.js';
+import { RuntimeProfileNative } from './native/native.js';
 import type { RuntimeProfilesOptions } from './types.js';
 import { prepareExecutionLaunch } from '../../sessions/execution/plan.js';
-import { ProfileExecutionOwnership } from './execution-ownership.js';
+import { ProfileExecutionOwnership } from './execution/execution-ownership.js';
 import { managedCodexChildState } from '../../codex/launcher.js';
 import type { ProfiledExecutionLaunch } from '../../sessions/execution/types.js';
-import { RuntimeProfileRequestRouter } from './request-router.js';
-import { createRuntimeEnrollment } from './enrollment-adapter.js';
-import { waitForProfileInactive } from './wait-for-inactive.js';
+import { RuntimeProfileRequestRouter } from './router/request-router.js';
+import { createRuntimeEnrollment } from './native/enrollment-adapter.js';
+import { waitForProfileInactive } from './execution/wait-for-inactive.js';
 import { RuntimeProfileQuotaService } from '../quota/service.js';
 
 export class RuntimeProfiles {

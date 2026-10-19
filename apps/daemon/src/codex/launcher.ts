@@ -9,7 +9,7 @@ import {
   type ManagedCodexLaunchEvidence,
   type ManagedCodexLaunchOptions,
 } from './launch/types.js';
-import { CodexLaunchArgument } from '../domain/codex.js';
+import { CodexLaunchArgument } from '../domain/codex/codex.js';
 import { ErrorCode } from '@protocol';
 import { ManagedCodexPath } from './launch/values.js';
 import { managedCodexSocketPath } from './launch/paths.js';

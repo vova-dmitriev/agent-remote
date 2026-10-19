@@ -4,7 +4,7 @@
 
 | Модуль                                          | API                                                                                                                         | Поведение                                                                                                                                                                                                              |
 | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/daemon/src/code/transcript-reader.ts`     | `new TranscriptReader({ path, allowedRoot })`, `readNext()`                                                                 | Точный hook-provided JSONL path, realpath/root guard, file identity + prefix/cursor checks, rotate/truncate, partial UTF-8, сериализация чтений, ограниченные line/read/text/dedup buffers; только user/assistant text |
+| `apps/daemon/src/code/transcript/transcript-reader.ts`     | `new TranscriptReader({ path, allowedRoot })`, `readNext()`                                                                 | Точный hook-provided JSONL path, realpath/root guard, file identity + prefix/cursor checks, rotate/truncate, partial UTF-8, сериализация чтений, ограниченные line/read/text/dedup buffers; только user/assistant text |
 | `apps/daemon/src/commands/permission-broker.ts` | `open`, `pending`, `resolve`, `cancelSession`, `close`, `permissionHookOutput`                                              | Одна allow/deny на request+generation, максимум 45 секунд, timeout/disconnect → local; нет Always/updatedPermissions                                                                                                   |
 | `apps/daemon/src/code/pty-session-manager.ts`   | `start`, `confirmSession`, `sendPrompt`, `interrupt`, `writeLocal`, `resize`, `onData`, `disconnectRemote`, `stop`, `close` | Только собственный дочерний процесс; generation и сменяемый remote lease; разрыв удалённой связи сохраняет локальный процесс; stdout не хранится и не логируется                                                       |
 | `apps/daemon/src/cmux/client.ts`                | `readScreen`, `pasteAndSubmit`, `sendEscape`                                                                                | Все три UUID обязательны; shell:false; текст через stdin; snapshots ≤64 KiB/200 строк; timeout 5 секунд с SIGKILL для зависшего CLI                                                                                    |
@@ -13,7 +13,7 @@
 ## Пример локальной интеграции
 
 ```ts
-import { TranscriptReader } from './dist/apps/daemon/src/code/transcript-reader.js';
+import { TranscriptReader } from './dist/apps/daemon/src/code/transcript/transcript-reader.js';
 import { PermissionBroker, permissionHookOutput } from './dist/apps/daemon/src/commands/permission-broker.js';
 import { PtySessionManager } from './dist/apps/daemon/src/code/pty-session-manager.js';
 

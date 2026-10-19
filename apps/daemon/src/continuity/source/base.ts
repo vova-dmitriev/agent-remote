@@ -13,7 +13,7 @@ import {
   type AttachmentDescriptor,
   type Session,
 } from '@protocol';
-import { nativeFile } from '../../attachments/io.js';
+import { nativeFile } from '../../attachments/relay/io.js';
 import { isAbsolute } from 'node:path';
 
 const completedSubagents = new Set<string>([

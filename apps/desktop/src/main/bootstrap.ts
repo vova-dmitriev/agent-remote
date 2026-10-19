@@ -1,7 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import { DesktopBridgeError } from '@protocol';
 import type { DesktopCompanionFactory } from './companion-port.js';
-import { installDesktopIpc, type DesktopIpcController } from './ipc.js';
+import { installDesktopIpc, type DesktopIpcController } from './ipc/ipc.js';
 import { registerDesktopAssetScheme, registerDesktopAssets } from './protocol.js';
 import { createDesktopWindow } from './window.js';
 

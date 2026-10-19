@@ -1,8 +1,8 @@
 import { unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { collectContext } from './collector.js';
-import { persistAttachment } from './attachments.js';
-import { ensurePrivateDirectory, writePrivateFile } from './storage.js';
+import { persistAttachment } from './storage/attachments.js';
+import { ensurePrivateDirectory, writePrivateFile } from './storage/storage.js';
 import {
   assertCurrent,
   CheckpointDefaults,

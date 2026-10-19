@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
 import { type Monitor } from '../monitor/monitor.js';
 import { type CodexManager } from '../codex/manager.js';
-import { launchClaudeSession, validateProject } from './launcher.js';
+import { launchClaudeSession, validateProject } from './launch/launcher.js';
 import type { RuntimeProfiles } from '../profiles/runtime/service.js';
 
 export async function createManagedSession(

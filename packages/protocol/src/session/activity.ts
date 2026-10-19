@@ -1,4 +1,4 @@
-import { ActivityKind } from '../history/preferences-values.js';
+import { ActivityKind } from './values.js';
 import { z } from 'zod';
 
 export const ACTIVITY_KINDS = [

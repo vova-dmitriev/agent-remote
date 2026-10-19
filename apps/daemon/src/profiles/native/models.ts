@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { ErrorCode, ReasoningEffort, type ExecutionProfileSummary } from '@protocol';
-import { CodexMethod } from '../../domain/codex.js';
-import type { CodexRpcClient } from '../../codex/rpc-client.js';
+import { CodexMethod } from '../../domain/codex/codex.js';
+import type { CodexRpcClient } from '../../codex/rpc/rpc-client.js';
 import { ProfileNativeLimits } from './values.js';
 
 const schema = z.object({

@@ -3,7 +3,7 @@ import { createServer, type Socket } from 'node:net';
 import { mkdtemp, chmod, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { DesktopIpcClient } from '../apps/daemon/src/codex/desktop-ipc.js';
+import { DesktopIpcClient } from '../apps/daemon/src/codex/desktop/desktop-ipc.js';
 
 const cleanups: (() => Promise<unknown>)[] = [];
 

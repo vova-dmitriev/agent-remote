@@ -6,7 +6,7 @@ import { spawn } from 'node:child_process';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { localSecret, socketPath, stateDirectory } from '../config.js';
-import { requestLocal } from '../code/ipc.js';
+import { requestLocal } from '../code/hooks/ipc.js';
 import { codexConnectionSchema } from '../codex/manager.js';
 import { ensureManagedCodexSocket } from '../codex/launcher.js';
 

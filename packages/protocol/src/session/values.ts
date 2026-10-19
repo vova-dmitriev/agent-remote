@@ -56,3 +56,26 @@ export const NativeRestartState = {
 } as const;
 
 export type NativeRestartState = (typeof NativeRestartState)[keyof typeof NativeRestartState];
+
+export const ActivityKind = {
+  Command: 'command',
+  Read: 'read',
+  Write: 'write',
+  Search: 'search',
+  Web: 'web',
+  Tool: 'tool',
+} as const;
+
+export type ActivityKind = (typeof ActivityKind)[keyof typeof ActivityKind];
+
+export const SubagentStatus = {
+  Queued: 'queued',
+  Running: 'running',
+  WaitingInput: 'waiting_input',
+  Completed: 'completed',
+  Failed: 'failed',
+  Stopped: 'stopped',
+  Unknown: 'unknown',
+} as const;
+
+export type SubagentStatus = (typeof SubagentStatus)[keyof typeof SubagentStatus];

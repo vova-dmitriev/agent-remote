@@ -8,7 +8,7 @@ import { homedir } from 'node:os';
 import { setTimeout as delay } from 'node:timers/promises';
 import { z } from 'zod';
 import { installationRoot } from '../desktop/bridge-client.js';
-import { launchContextSchema, restartArguments } from './launch-context.js';
+import { launchContextSchema, restartArguments } from './launch/launch-context.js';
 
 const execute = promisify(execFile);
 

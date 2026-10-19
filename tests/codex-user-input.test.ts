@@ -6,8 +6,8 @@ import { AdapterRegistry } from '../apps/daemon/src/adapters/registry.js';
 import { LocalStore } from '../apps/daemon/src/monitor/store.js';
 import { Monitor } from '../apps/daemon/src/monitor/monitor.js';
 import { Dispatcher } from '../apps/daemon/src/commands/dispatcher.js';
-import { bindCodex } from '../apps/daemon/src/codex/binding.js';
-import type { RpcFrame } from '../apps/daemon/src/codex/rpc-client.js';
+import { bindCodex } from '../apps/daemon/src/codex/binding/binding.js';
+import type { RpcFrame } from '../apps/daemon/src/codex/rpc/rpc-client.js';
 
 const question = {
   id: 'q',
@@ -161,7 +161,7 @@ it('rejects obsolete source questions after source invalidation', async () => {
 
 it('CLI question response awaits the writable transport acknowledgement', async () => {
   const { Writable, PassThrough } = await import('node:stream');
-  const { CodexRpcClient } = await import('../apps/daemon/src/codex/rpc-client.js');
+  const { CodexRpcClient } = await import('../apps/daemon/src/codex/rpc/rpc-client.js');
   let acknowledge!: (error?: Error | null) => void;
   const sent: string[] = [];
 

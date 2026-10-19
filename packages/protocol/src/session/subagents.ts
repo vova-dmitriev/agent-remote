@@ -1,4 +1,4 @@
-import { SubagentStatus } from '../history/preferences-values.js';
+import { SubagentStatus } from './values.js';
 import { z } from 'zod';
 
 export const subagentSchema = z.strictObject({

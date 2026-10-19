@@ -7,8 +7,8 @@ import {
   type AttachmentDescriptor,
   type Session,
 } from '@protocol';
-import { nativeImageMime } from '../../attachments/image-content.js';
-import { attachmentSourceCurrent } from '../../attachments/source-current.js';
+import { nativeImageMime } from '../../attachments/content/image-content.js';
+import { attachmentSourceCurrent } from '../../attachments/content/source-current.js';
 import type { LocalPrincipal } from '../grants/types.js';
 import type { LocalDatabase } from '../state/database.js';
 

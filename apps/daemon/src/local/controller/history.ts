@@ -7,7 +7,7 @@ import {
   LocalOperation,
   type LocalAction,
 } from '@protocol';
-import { TRANSCRIPT_POSITION_PREFIX } from '../../code/transcript-limits.js';
+import { TRANSCRIPT_POSITION_PREFIX } from '../../code/transcript/transcript-limits.js';
 import { bytePage } from '../history/index.js';
 import type { LocalControllerOptions } from './types.js';
 

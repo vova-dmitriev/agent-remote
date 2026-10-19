@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { desktopTurns } from '../apps/daemon/src/codex/desktop-state.js';
+import { desktopTurns } from '../apps/daemon/src/codex/desktop/desktop-state.js';
 import { itemMessage, object } from '../apps/daemon/src/codex/events.js';
 
 const input = [{ type: 'text', text: 'Synthetic repeated prompt' }];

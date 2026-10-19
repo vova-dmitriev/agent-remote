@@ -12,7 +12,7 @@ import {
 } from '@protocol';
 import { randomUUID } from 'node:crypto';
 import type { DesktopCompanionConnector } from './companion-port.js';
-import type { DesktopWindowPort } from './ipc.js';
+import type { DesktopWindowPort } from './ipc/ipc.js';
 
 export interface ActiveDesktopLease {
   lease: DesktopBridgeLease;

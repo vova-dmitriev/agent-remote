@@ -1,9 +1,9 @@
 import { ErrorCode, ConnectorId, TargetKind, type Session } from '@protocol';
 import { fileURLToPath } from 'node:url';
 import { type NativeProcess } from './native-process.js';
-import { type LaunchContext } from './launch-context.js';
+import { type LaunchContext } from './launch/launch-context.js';
 import { prepareCmuxContext } from '../cmux/launch.js';
-import { launchClaudeSession, validateProject } from './launcher.js';
+import { launchClaudeSession, validateProject } from './launch/launcher.js';
 
 export async function restartClaudeSession(
   session: Session,

@@ -24,8 +24,8 @@ vi.mock('node:child_process', async (importOriginal) => ({
   },
 }));
 
-vi.mock('../apps/daemon/src/cli/personal-tunnel.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../apps/daemon/src/cli/personal-tunnel.js')>()),
+vi.mock('../apps/daemon/src/cli/personal/personal-tunnel.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../apps/daemon/src/cli/personal/personal-tunnel.js')>()),
   startNamedTunnel: async (_port: number, config: unknown) => {
     state.events.push('named-tunnel');
     state.tunnelConfig = config;
@@ -79,7 +79,7 @@ vi.mock('../apps/server/src/notifications/worker.js', () => ({
   },
 }));
 
-vi.mock('../apps/daemon/src/cli/personal-bot.js', () => ({
+vi.mock('../apps/daemon/src/cli/personal/personal-bot.js', () => ({
   personalBot: () => ({
     check: async () => {
       state.events.push('bot-check');
@@ -113,7 +113,7 @@ vi.mock('../apps/daemon/src/cli/pairing/connect.js', () => ({
   },
 }));
 
-import { startPersonal } from '../apps/daemon/src/cli/personal.js';
+import { startPersonal } from '../apps/daemon/src/cli/personal/personal.js';
 
 let root: string;
 const tunnelId = '00000000-0000-4000-8000-000000000001';
