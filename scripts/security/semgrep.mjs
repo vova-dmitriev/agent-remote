@@ -42,24 +42,12 @@ const SCANNED_EXTENSIONS = Object.freeze(['.js', '.jsx', '.mjs', '.cjs', '.ts', 
 const RENAMED_EXTENSIONS = Object.freeze(['.mts', '.cts']);
 const RENAMED_SUFFIX = '.ts';
 
-// Semgrep's built-in default ignores (measured on 1.181.0 when no .semgrepignore exists; .semgrep is excluded by flag).
-// Every other JavaScript/TypeScript file must appear in the scanned paths, or the scan is incomplete.
-const DEFAULT_IGNORED_DIRECTORIES = Object.freeze([
-  '.env',
-  '.npm',
-  '.semgrep',
-  '.tox',
-  '.venv',
-  '.yarn',
-  'build',
-  'dist',
-  'node_modules',
-  'test',
-  'tests',
-  'vendor',
-]);
-
-const DEFAULT_IGNORED_SUFFIX = '.min.js';
+// The gate owns the ignore list: a generated .semgrepignore at the root of the scan copy replaces Semgrep's built-in
+// defaults (which skip test/, tests/, vendor/, build/, dist/, *.min.js, ... at any depth). Only the top-level tests/
+// directory and the top-level .semgrep/ rules directory are out of scope; every other JavaScript/TypeScript file must
+// appear in the scanned paths, or the scan is incomplete.
+const OUT_OF_SCOPE = Object.freeze(['tests/', '.semgrep/']);
+const GENERATED_IGNORE = OUT_OF_SCOPE.map((directory) => `/${directory}\n`).join('');
 
 const semgrepFlags = [
   '--config',
@@ -70,8 +58,6 @@ const semgrepFlags = [
   '--disable-version-check',
   '--quiet',
   '--skip-unknown-extensions',
-  '--exclude',
-  '.semgrep',
   // No per-rule time limit: under host load the default 5 s limit skipped rules on large files (measured on
   // apps/daemon/src/codex/binding/binding.ts at load average 42) and Semgrep reports that only as a warning.
   '--timeout',
@@ -90,20 +76,25 @@ const SemgrepErrorType = Object.freeze({ PartialParsing: 'PartialParsing' });
 const scanName = (file) =>
   RENAMED_EXTENSIONS.some((extension) => file.endsWith(extension)) ? `${file}${RENAMED_SUFFIX}` : file;
 
-const realName = (file) =>
-  RENAMED_EXTENSIONS.some((extension) => file.endsWith(`${extension}${RENAMED_SUFFIX}`))
-    ? file.slice(0, -RENAMED_SUFFIX.length)
-    : file;
+// Scan name -> real name for every file of the scan copy; a renamed file may not collide with another file.
+function scanNames(files) {
+  const present = new Set(files);
+  const names = new Map();
 
-function isEligible(file) {
-  const segments = file.split('/');
+  for (const file of files) {
+    if (scanName(file) !== file && present.has(scanName(file))) {
+      throw new Error(`Cannot scan ${file}: ${scanName(file)} also exists. Scan did not run.`);
+    }
 
-  return (
-    SCANNED_EXTENSIONS.some((extension) => file.endsWith(extension)) &&
-    !file.endsWith(DEFAULT_IGNORED_SUFFIX) &&
-    !segments.slice(0, -1).some((segment) => DEFAULT_IGNORED_DIRECTORIES.includes(segment))
-  );
+    names.set(scanName(file), file);
+  }
+
+  return names;
 }
+
+const isEligible = (file) =>
+  SCANNED_EXTENSIONS.some((extension) => file.endsWith(extension)) &&
+  !OUT_OF_SCOPE.some((directory) => file.startsWith(directory));
 
 function requireDocker() {
   const probe = spawnSync('docker', ['version', '--format', '{{.Server.Version}}'], {
@@ -185,7 +176,10 @@ function stagedRepository(root, directory) {
     .split('\0')
     .filter((file) => file && !file.startsWith('.semgrep/') && basename(file) !== GITIGNORE);
 
+  const names = scanNames(changed);
+
   run('init', '--quiet');
+  writeFileSync(join(directory, SEMGREPIGNORE), GENERATED_IGNORE);
 
   for (const file of changed) {
     const previous = spawnSync('git', ['show', `HEAD:${file}`], { cwd: root, maxBuffer: 64 * 1024 * 1024 });
@@ -234,7 +228,7 @@ function stagedRepository(root, directory) {
     writeFileSync(join(directory, RULES_PATH), rules);
   }
 
-  return { changed, assessed: parseAssessed(read(ASSESSED_PATH)?.toString('utf8')) };
+  return { changed, names, assessed: parseAssessed(read(ASSESSED_PATH)?.toString('utf8')) };
 }
 
 // Worktree snapshot: check.mjs exported it already; .mts/.cts files are renamed for scanning.
@@ -243,19 +237,22 @@ function prepareSnapshot(snapshot) {
 
   rejectIgnoreFiles(files);
 
-  for (const file of files) {
-    if (scanName(file) !== file) {
-      if (existsSync(join(snapshot, scanName(file)))) {
-        throw new Error(`Cannot scan ${file}: ${scanName(file)} also exists. Scan did not run.`);
-      }
+  const names = scanNames(files);
 
-      renameSync(join(snapshot, file), join(snapshot, scanName(file)));
+  for (const [scanned, file] of names) {
+    if (scanned !== file) {
+      renameSync(join(snapshot, file), join(snapshot, scanned));
     }
   }
 
+  writeFileSync(join(snapshot, SEMGREPIGNORE), GENERATED_IGNORE);
+
   const assessedFile = join(snapshot, ASSESSED_PATH);
 
-  return parseAssessed(existsSync(assessedFile) ? readFileSync(assessedFile, 'utf8') : undefined);
+  return {
+    names,
+    assessed: parseAssessed(existsSync(assessedFile) ? readFileSync(assessedFile, 'utf8') : undefined),
+  };
 }
 
 // Sources are mounted read-only. Only the throwaway repository's .git is writable (Semgrep's baseline adds a
@@ -310,7 +307,9 @@ function scan(directory, report, extraFlags, targets, { writableGit = false } = 
   );
 }
 
-function readReport(result, report, scanned) {
+function readReport(result, report, scanned, names) {
+  const realName = (file) => names.get(file) ?? file;
+
   if (result.error || (result.status !== ExitCode.Clean && result.status !== ExitCode.Findings)) {
     // Scanner output can include source excerpts: never print it.
     throw new Error(
@@ -351,28 +350,35 @@ function readReport(result, report, scanned) {
 }
 
 // Every eligible file must have been scanned: catches size limits, ignore files and anything else that drops targets.
-function skippedTargets(directory, scanned) {
+function skippedTargets(directory, scanned, names) {
   const targets = new Set(scanned);
   const skipped = treeFiles(directory).filter((file) => isEligible(file) && !targets.has(file));
 
-  return skipped.length > 0 ? [`Semgrep skipped eligible files: ${skipped.map(realName).join(', ')}.`] : [];
+  return skipped.length > 0
+    ? [`Semgrep skipped eligible files: ${skipped.map((file) => names.get(file) ?? file).join(', ')}.`]
+    : [];
 }
 
 function scanSnapshot(snapshot, report) {
-  const assessed = prepareSnapshot(snapshot);
+  const { names, assessed } = prepareSnapshot(snapshot);
 
   verifyRules(snapshot);
 
-  const { incomplete, findings, targets } = readReport(scan(snapshot, report, [], ['.']), report, snapshot);
+  const { incomplete, findings, targets } = readReport(
+    scan(snapshot, report, [], ['.']),
+    report,
+    snapshot,
+    names,
+  );
 
   return {
-    incomplete: [...incomplete, ...skippedTargets(snapshot, targets)],
+    incomplete: [...incomplete, ...skippedTargets(snapshot, targets, names)],
     findings: withoutAssessed(findings, assessed),
   };
 }
 
-// Staged mode. Semgrep's baseline only inspects explicit targets, and explicit targets bypass its default ignore list
-// (tests/, build/, ...), so a plain scan of the staged tree first selects targets exactly as a worktree scan would.
+// Staged mode. Semgrep's baseline only inspects explicit targets, and explicit targets bypass ignore files, so a plain
+// scan of the staged tree first selects targets exactly as a worktree scan would.
 // Only when that scan finds something unassessed does a baseline scan against the HEAD versions decide which findings
 // are new.
 function scanStaged(root, temporary, report) {
@@ -380,7 +386,7 @@ function scanStaged(root, temporary, report) {
 
   mkdirSync(directory);
 
-  const { changed, assessed } = stagedRepository(root, directory);
+  const { changed, names, assessed } = stagedRepository(root, directory);
 
   verifyRules(directory);
 
@@ -390,8 +396,8 @@ function scanStaged(root, temporary, report) {
     return { incomplete: [], findings: [] };
   }
 
-  const selected = readReport(scan(directory, report, [], ['.']), report, directory);
-  const incomplete = [...selected.incomplete, ...skippedTargets(directory, selected.targets)];
+  const selected = readReport(scan(directory, report, [], ['.']), report, directory, names);
+  const incomplete = [...selected.incomplete, ...skippedTargets(directory, selected.targets, names)];
 
   if (incomplete.length > 0 || withoutAssessed(selected.findings, assessed).length === 0) {
     return { incomplete, findings: [] };
@@ -407,6 +413,7 @@ function scanStaged(root, temporary, report) {
     ),
     report,
     directory,
+    names,
   );
 
   const rescanned = new Set(baseline.targets);
@@ -416,7 +423,9 @@ function scanStaged(root, temporary, report) {
     incomplete: [
       ...baseline.incomplete,
       ...(missing.length > 0
-        ? [`Semgrep baseline scan skipped targets: ${missing.map(realName).join(', ')}.`]
+        ? [
+            `Semgrep baseline scan skipped targets: ${missing.map((file) => names.get(file) ?? file).join(', ')}.`,
+          ]
         : []),
     ],
     findings: newBeyondAssessed(baseline.findings, selected.findings, assessed),

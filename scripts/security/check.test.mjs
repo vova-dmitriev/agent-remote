@@ -11,7 +11,7 @@ import {
   existsSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, test } from 'node:test';
 import { isPrivatePath } from './policy.mjs';
@@ -239,12 +239,12 @@ test('staged scan reads the index, not an unstaged High finding in the working c
   assert.match(result.stdout, /Semgrep: staged scan passed/);
 });
 
-test('staged and worktree scans skip the same Semgrep default-ignored paths', () => {
+test('the top-level tests/ directory is out of scope in staged and worktree scans', () => {
   const directory = fixture();
 
   mkdirSync(join(directory, 'tests'), { recursive: true });
-  writeFileSync(join(directory, 'tests/fixture.ts'), unsafeEval('markerAlpha'));
-  execFileSync('git', ['add', 'tests/fixture.ts'], { cwd: directory });
+  writeFileSync(join(directory, 'tests/a.test.ts'), unsafeEval('markerAlpha'));
+  execFileSync('git', ['add', 'tests/a.test.ts'], { cwd: directory });
 
   for (const mode of ['staged', 'worktree']) {
     const result = scan(directory, mode);
@@ -592,6 +592,63 @@ test('.mts and .cts files are scanned and reported under their own names', () =>
     assert.equal(result.status, 1, mode);
     assert.match(result.stderr, /javascript_eval_rule-eval-with-expression: module\.mts:1\n/);
     assert.match(result.stderr, /javascript_eval_rule-eval-with-expression: common\.cts:1\n/);
+  }
+});
+
+test("paths in Semgrep's built-in default ignores are scanned unless they are the top-level tests/ or .semgrep/", () => {
+  const files = [
+    'apps/x/src/test/a.ts',
+    'vendor/a.js',
+    'a.min.js',
+    'scripts/build/a.mjs',
+    'pkg/.semgrep/a.ts',
+  ];
+
+  for (const mode of modes) {
+    const directory = fixture();
+
+    for (const file of files) {
+      mkdirSync(join(directory, dirname(file)), { recursive: true });
+      writeFileSync(join(directory, file), unsafeEval('markerAlpha'));
+    }
+
+    execFileSync('git', ['add', ...files], { cwd: directory });
+    const result = scan(directory, mode);
+
+    assert.equal(result.status, 1, mode);
+
+    for (const file of files) {
+      assert.match(
+        result.stderr,
+        new RegExp(`javascript_eval_rule-eval-with-expression: ${file.replaceAll('.', '\\.')}:1\n`),
+        `${mode} ${file}`,
+      );
+    }
+  }
+});
+
+test('staged .mts file colliding with a staged .mts.ts file fails the scan', () => {
+  const directory = fixture();
+
+  writeFileSync(join(directory, 'x.mts'), unsafeEval('markerAlpha'));
+  writeFileSync(join(directory, 'x.mts.ts'), 'export const clean = 1;\n');
+  execFileSync('git', ['add', 'x.mts', 'x.mts.ts'], { cwd: directory });
+  const result = scan(directory, 'staged');
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Cannot scan x\.mts: x\.mts\.ts also exists\. Scan did not run\./);
+});
+
+test('a genuine .mts.ts file is reported under its own name', () => {
+  for (const mode of modes) {
+    const directory = fixture();
+
+    writeFileSync(join(directory, 'real.mts.ts'), unsafeEval('markerAlpha'));
+    execFileSync('git', ['add', 'real.mts.ts'], { cwd: directory });
+    const result = scan(directory, mode);
+
+    assert.equal(result.status, 1, mode);
+    assert.match(result.stderr, /javascript_eval_rule-eval-with-expression: real\.mts\.ts:1\n/);
   }
 });
 
