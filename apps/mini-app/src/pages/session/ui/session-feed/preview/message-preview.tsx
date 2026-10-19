@@ -7,6 +7,7 @@ import { SESSION_FEED_IDS } from "@/pages/session/config/test-ids"
 import { displayMessage } from "@/pages/session/lib/message-content"
 import { previewText } from "@/pages/session/lib/preview-text"
 import { useMessagePreviewPosition } from "@/pages/session/model/use-message-preview-position"
+import { mutedTextClass } from "@/shared/ui/text"
 import type { MessagePreviewProps } from "./message-preview.types"
 
 export function MessagePreview({ id, message, anchor, agent, keep, leave }: MessagePreviewProps) {
@@ -34,7 +35,7 @@ export function MessagePreview({ id, message, anchor, agent, keep, leave }: Mess
           {message.role === MessageRole.User ? t("you") : agent}
         </strong>
         {!Number.isNaN(date.getTime()) ? (
-          <time className="text-[11px] text-muted-foreground" dateTime={date.toISOString()} data-testid={SESSION_FEED_IDS.previewTime}>
+          <time className={mutedTextClass} dateTime={date.toISOString()} data-testid={SESSION_FEED_IDS.previewTime}>
             {timeFormat.format(date)}
           </time>
         ) : null}

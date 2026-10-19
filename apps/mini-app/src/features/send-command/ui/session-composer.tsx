@@ -3,8 +3,9 @@ import { CommandActionType, ConnectionStatus, DeviceStatus } from "@protocol"
 import { useTranslation } from "@/shared/lib/hooks"
 import { Button } from "@/shared/ui/button"
 import { Textarea } from "@/shared/ui/textarea"
-import { Label } from "@/shared/ui/label"
+import { Label, formLabelClass } from "@/shared/ui/label"
 import { cn } from "@/shared/lib/utils"
+import { mutedTextClass } from "@/shared/ui/text"
 import { NativeInputHelp } from "./native-input/native-input-help"
 import { composerState } from "../lib/composer-state"
 import { COMMAND_IDS } from "../config/test-ids"
@@ -71,7 +72,7 @@ export function SessionComposer({ controller, session, connection, deviceStatus 
         />
       ) : null}
       {state.unavailableHint && !state.showNativeHint ? (
-        <p className="text-[11px] text-muted-foreground" data-testid={COMMAND_IDS.availabilityHint}>
+        <p className={mutedTextClass} data-testid={COMMAND_IDS.availabilityHint}>
           {t(state.unavailableHint)}
         </p>
       ) : null}
@@ -79,8 +80,10 @@ export function SessionComposer({ controller, session, connection, deviceStatus 
   )
 }
 
-const labelClass =
-  "mt-[20px] mb-[9px] block text-[12px] leading-[calc(1.25/0.875)] session:absolute session:size-px session:overflow-hidden session:whitespace-nowrap session:[clip-path:inset(50%)]"
+const labelClass = cn(
+  formLabelClass,
+  "session:absolute session:size-px session:overflow-hidden session:whitespace-nowrap session:[clip-path:inset(50%)]",
+)
 
 const promptClass =
   "rounded-[24px] pr-[50px] disabled:overflow-hidden session:max-h-[88px] session:min-h-[46px] session:resize-none session:overflow-y-auto session:py-[10px] session:pr-[50px] session:pl-[15px] session:text-[16px] session:leading-[24px] session:disabled:overflow-hidden session:short:max-h-[50px] session:short:min-h-[34px] session:short:py-[7px] session:short:pr-[48px] session:short:pl-[13px] session:short:leading-[20px]"

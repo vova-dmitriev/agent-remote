@@ -4,6 +4,8 @@ import { Button } from "@/shared/ui/button"
 import { Input } from "@/shared/ui/input"
 import { PROFILE_ENROLL_IDS } from "@/pages/accounts/config/enrollment/test-ids"
 import { useProfileEnrollment } from "@/pages/accounts/model/enrollment/use-profile-enrollment"
+import { cn } from "@/shared/lib/utils"
+import { formLabelClass } from "@/shared/ui/label"
 import type { ProfileEnrollmentProps } from "./profile-enrollment.types"
 
 export function ProfileEnrollment(props: ProfileEnrollmentProps) {
@@ -31,7 +33,7 @@ export function ProfileEnrollment(props: ProfileEnrollmentProps) {
           }}
         >
           <p className="text-sm text-muted-foreground">{t("accountsPinHint")}</p>
-          <label className="mt-[20px] mb-[9px] block space-y-1 text-[12px]">
+          <label className={cn(formLabelClass, "space-y-1")}>
             <span>{t("accountsPinLabel")}</span>
             <Input
               data-testid={PROFILE_ENROLL_IDS.pin}
@@ -46,7 +48,7 @@ export function ProfileEnrollment(props: ProfileEnrollmentProps) {
               required
             />
           </label>
-          <label className="mt-[20px] mb-[9px] block space-y-1 text-[12px]">
+          <label className={cn(formLabelClass, "space-y-1")}>
             <span>{t("accountsKeyLabel")}</span>
             <Input
               data-testid={PROFILE_ENROLL_IDS.key}

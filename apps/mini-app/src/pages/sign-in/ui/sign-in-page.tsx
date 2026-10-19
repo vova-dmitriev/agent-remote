@@ -3,6 +3,7 @@ import { useTranslation } from "@/shared/lib/hooks"
 import { SIGN_IN_IDS } from "../config/test-ids"
 import { HostKind } from "@protocol"
 import { useHost } from "@/shared/lib/host"
+import { emptyStateTextClass } from "@/shared/ui/text"
 
 export function SignInPage() {
   const { t } = useTranslation()
@@ -19,9 +20,7 @@ export function SignInPage() {
         <br />
         {t("signInSubtitle")}
       </h1>
-      <p className="mx-auto mt-[22px] max-w-[410px] leading-[1.7] text-muted-foreground">
-        {t(host.kind === HostKind.Telegram ? "signInHint" : "extensionConnectHint")}
-      </p>
+      <p className={emptyStateTextClass}>{t(host.kind === HostKind.Telegram ? "signInHint" : "extensionConnectHint")}</p>
     </section>
   )
 }

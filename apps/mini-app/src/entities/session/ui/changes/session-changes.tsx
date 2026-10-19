@@ -3,6 +3,7 @@ import { useTranslation } from "@/shared/lib/hooks"
 import { cn } from "@/shared/lib/utils"
 import { noticeVariants } from "@/shared/ui/notice"
 import { SESSION_CHANGES_IDS as IDS } from "@/entities/session/config/change-test-ids"
+import { sourceTextClass } from "../session-class"
 import { FileChange } from "./file-change/file-change"
 import { summaryClass } from "./summary-class"
 import type { SessionChangesProps } from "./session-changes.types"
@@ -22,9 +23,7 @@ export function SessionChanges({ changes }: SessionChangesProps) {
         {changes?.files.length ? <span className="ml-auto text-muted-foreground tabular-nums">{changes.files.length}</span> : null}
       </summary>
       <div className="max-h-[min(48dvh,32rem)] overflow-auto overscroll-contain px-[0.65rem] pb-[0.65rem]" data-testid={IDS.content}>
-        <p className="text-[11px] tracking-[0.4px] text-muted-foreground session:text-[10px] session:tracking-normal">
-          {t(changes ? "changesRecorded" : "changesUnavailable")}
-        </p>
+        <p className={sourceTextClass}>{t(changes ? "changesRecorded" : "changesUnavailable")}</p>
         {changes && !changes.files.length && !changes.truncated ? <p data-testid={IDS.notice}>{t("changesEmpty")}</p> : null}
         {changes?.truncated ? (
           <p className={noticeVariants()} data-testid={IDS.notice}>

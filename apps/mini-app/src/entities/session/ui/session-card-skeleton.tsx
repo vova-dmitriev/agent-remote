@@ -1,7 +1,7 @@
 import { cn } from "@/shared/lib/utils"
 import { Skeleton } from "@/shared/ui/skeleton"
 import { SESSION_CARD_IDS } from "../config/test-ids"
-import { sessionCardBodyClass, sessionCardClass } from "./session-card-class"
+import { sessionCardBodyClass, sessionCardClass } from "./session-class"
 
 export function SessionCardSkeleton() {
   return (

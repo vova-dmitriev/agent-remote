@@ -37,6 +37,6 @@ const messageClass =
 
 const roleClass: Record<MessageRole, string> = {
   [MessageRole.User]:
-    "ml-[45px] bg-[color-mix(in_srgb,var(--accent)_7%,var(--surface))] phone:ml-[20px] session:ml-auto session:max-w-[86%] session:bg-surface session:px-[16px] session:py-[12px]",
+    "ml-[45px] bg-highlight-subtle phone:ml-[20px] session:ml-auto session:max-w-[86%] session:bg-surface session:px-[16px] session:py-[12px]",
   [MessageRole.Assistant]: "session:bg-transparent session:px-0 session:py-[12px]",
 }

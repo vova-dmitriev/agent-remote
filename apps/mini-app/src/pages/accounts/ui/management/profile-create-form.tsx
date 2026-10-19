@@ -5,6 +5,8 @@ import { Input } from "@/shared/ui/input"
 import { PROFILE_MANAGE_IDS } from "@/pages/accounts/config/management/test-ids"
 import { useProfileCreate } from "@/pages/accounts/model/management/use-profile-create"
 import { PROFILE_PROVIDERS } from "@/pages/accounts/config/profile/providers"
+import { cn } from "@/shared/lib/utils"
+import { formLabelClass } from "@/shared/ui/label"
 import type { ProfileCreateFormProps } from "./profile-create-form.types"
 
 export function ProfileCreateForm({ disabled, submit }: ProfileCreateFormProps) {
@@ -21,7 +23,7 @@ export function ProfileCreateForm({ disabled, submit }: ProfileCreateFormProps) 
       }}
     >
       <h2 className="font-semibold">{t("accountsAdd")}</h2>
-      <label className="mt-[20px] mb-[9px] block text-[12px] leading-[calc(1.25/0.875)]">
+      <label className={formLabelClass}>
         <span>{t("accountsProvider")}</span>
         <select
           data-testid={PROFILE_MANAGE_IDS.provider}
@@ -42,7 +44,7 @@ export function ProfileCreateForm({ disabled, submit }: ProfileCreateFormProps) 
           {t("accountsClaudeUnsupported")}
         </p>
       ) : null}
-      <label className="mt-[20px] mb-[9px] block space-y-1 text-[12px]">
+      <label className={cn(formLabelClass, "space-y-1")}>
         <span>{t("accountsName")}</span>
         <Input
           data-testid={PROFILE_MANAGE_IDS.label}

@@ -2,7 +2,7 @@ import { Check, Copy } from "lucide-react"
 import { CopyStatus, useCopyCode, useTranslation } from "@/shared/lib/hooks"
 import { Button } from "@/shared/ui/button"
 import { Input } from "@/shared/ui/input"
-import { Label } from "@/shared/ui/label"
+import { Label, formLabelClass } from "@/shared/ui/label"
 import { PAIR_DEVICE_IDS } from "../config/test-ids"
 import type { PairDeviceProps } from "./pair-device.types"
 
@@ -43,7 +43,7 @@ export function PairDevice({ controller, online }: PairDeviceProps) {
         </summary>
         <p className={paragraphClass}>{t("pairExpiry")}</p>
         <form onSubmit={(event) => void controller.submit(event)}>
-          <Label className="mt-[20px] mb-[9px] block text-[12px] leading-[calc(1.25/0.875)]" htmlFor="pair-code">
+          <Label className={formLabelClass} htmlFor="pair-code">
             {t("pairCode")}
           </Label>
           <Input

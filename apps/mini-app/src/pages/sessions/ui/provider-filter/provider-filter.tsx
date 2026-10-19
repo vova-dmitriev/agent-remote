@@ -45,4 +45,4 @@ export function ProviderFilter({ value, onChange }: ProviderFilterProps) {
 }
 
 const filterClass =
-  "h-[30px] rounded-[9px] px-[14px] py-0 text-[12px] text-muted-foreground hover:text-muted-foreground aria-pressed:bg-accent aria-pressed:text-foreground aria-pressed:shadow-[inset_0_0_0_1px_var(--accent)]"
+  "h-[30px] rounded-[9px] px-[14px] py-0 text-[12px] text-muted-foreground hover:text-muted-foreground aria-pressed:bg-accent dark:hover:aria-pressed:bg-accent aria-pressed:text-foreground aria-pressed:shadow-[inset_0_0_0_1px_var(--accent)]"

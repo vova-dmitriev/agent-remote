@@ -1,5 +1,6 @@
 import type { ExecutionProfileSummary, ReasoningEffort } from "@protocol"
 import { useTranslation } from "@/shared/lib/hooks"
+import { formLabelClass } from "@/shared/ui/label"
 import { SESSION_CREATE_IDS } from "../config/test-ids"
 
 interface ModelEffortFieldsProps {
@@ -31,7 +32,7 @@ export function ModelEffortFields({
 
   return (
     <>
-      <label className="mt-[20px] mb-[9px] block text-[12px] leading-[calc(1.25/0.875)]">
+      <label className={formLabelClass}>
         {t("sessionModel")}
         <select
           className="mt-1 w-full rounded-md border border-border bg-background p-2"
@@ -54,7 +55,7 @@ export function ModelEffortFields({
         </select>
       </label>
       {modelId !== "" && (effort !== "" || selectedModel?.efforts.length) ? (
-        <label className="mt-[20px] mb-[9px] block text-[12px] leading-[calc(1.25/0.875)]">
+        <label className={formLabelClass}>
           {t("sessionEffort")}
           <select
             className="mt-1 w-full rounded-md border border-border bg-background p-2"

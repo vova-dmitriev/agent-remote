@@ -1,5 +1,6 @@
 import { useTranslation } from "@/shared/lib/hooks"
 import { SessionCard, SessionCardSkeleton } from "@/entities/session"
+import { emptyStateTextClass } from "@/shared/ui/text"
 import { ProviderFilter } from "./provider-filter/provider-filter"
 import { useSessionFilter } from "../model/use-session-filter"
 import { SESSIONS_PAGE_IDS } from "../config/test-ids"
@@ -33,7 +34,7 @@ export function SessionsPage({ sessions, connected, loading, onSelect, children,
         {connected && !loading && !sessions.length ? (
           <div className="p-[30px] text-center phone:px-0 phone:pt-[45px] phone:pb-[60px]" data-testid={SESSIONS_PAGE_IDS.empty}>
             <h2>{t("macConnected")}</h2>
-            <p className="mx-auto mt-[22px] max-w-[410px] leading-[1.7] text-muted-foreground">{t("connectSession")}</p>
+            <p className={emptyStateTextClass}>{t("connectSession")}</p>
           </div>
         ) : null}
       </div>

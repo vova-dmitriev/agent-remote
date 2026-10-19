@@ -3,6 +3,8 @@ import { useTranslation } from "@/shared/lib/hooks"
 import { feedbackText } from "@/shared/lib/i18n"
 import { Button } from "@/shared/ui/button"
 import { Input } from "@/shared/ui/input"
+import { cn } from "@/shared/lib/utils"
+import { formLabelClass } from "@/shared/ui/label"
 import { RENAME_SESSION_IDS as IDS } from "../config/test-ids"
 import { useTitleEditor } from "../model/use-title-editor"
 import type { SessionTitleProps } from "./session-title.types"
@@ -33,7 +35,7 @@ export function SessionTitle({ title, controller, disabled }: SessionTitleProps)
           aria-label={t("renameSession")}
         >
           <form className="grid gap-[10px]" onSubmit={(event) => void editor.submit(event)}>
-            <label className="mt-[20px] mb-[9px] block text-[12px] font-semibold" htmlFor="session-title">
+            <label className={cn(formLabelClass, "font-semibold")} htmlFor="session-title">
               {t("renameSession")}
             </label>
             <Input

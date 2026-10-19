@@ -8,6 +8,7 @@ import {
   sessionStatusLabel,
   sessionTitle,
   agentName,
+  sourceTextClass,
 } from "@/entities/session"
 import { feedbackText } from "@/shared/lib/i18n"
 import { useTranslation } from "@/shared/lib/hooks"
@@ -68,7 +69,7 @@ export function SessionPage({
                 (sessionTitle(session, 16) ?? t("selectedChat"))
               )}
             </h1>
-            <p className="text-[11px] tracking-[0.4px] text-muted-foreground session:text-[10px] session:tracking-normal">
+            <p className={sourceTextClass}>
               {t(sourceNames[session.target.kind])} ·{" "}
               <span className="text-[12px] text-muted-foreground session:p-0 session:text-[10px]" data-testid={SESSION_PAGE_IDS.status}>
                 {t(sessionStatusLabel(session, available))}

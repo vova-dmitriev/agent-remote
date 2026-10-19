@@ -4,6 +4,7 @@ import { Button } from "@/shared/ui/button"
 import { Textarea } from "@/shared/ui/textarea"
 import { COMMAND_IDS } from "@/features/send-command/config/test-ids"
 import { useQueuedPromptEditor } from "@/features/send-command/model/outbox/use-queued-prompt-editor"
+import { mutedTextClass } from "@/shared/ui/text"
 import type { QueuedPromptEditorProps } from "./queued-prompt-editor.types"
 
 export function QueuedPromptEditor({ item, queue }: QueuedPromptEditorProps) {
@@ -24,7 +25,7 @@ export function QueuedPromptEditor({ item, queue }: QueuedPromptEditorProps) {
         rows={2}
       />
       {editor.error ? (
-        <span className="text-[11px] text-muted-foreground" role="alert" data-testid={COMMAND_IDS.queuedEditError}>
+        <span className={mutedTextClass} role="alert" data-testid={COMMAND_IDS.queuedEditError}>
           {feedbackText(editor.error, t)}
         </span>
       ) : null}

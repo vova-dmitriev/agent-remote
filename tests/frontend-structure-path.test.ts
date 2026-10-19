@@ -73,6 +73,7 @@ it('rejects stylesheets outside the Tailwind allowlist', () => {
     }
 
     writeFileSync(join(app, 'features/x/ui/x.css'), '.x {}\n');
+    writeFileSync(join(app, 'features/x/globals.css'), '.x {}\n');
     writeFileSync(join(app, 'features/x/ui/y.scss'), '.y {}\n');
 
     let stderr = '';
@@ -88,7 +89,8 @@ it('rejects stylesheets outside the Tailwind allowlist', () => {
 
     expect(stderr).toContain('features/x/ui/x.css: stylesheet outside the allowlist');
     expect(stderr).toContain('features/x/ui/y.scss: stylesheet outside the allowlist');
-    expect(stderr).not.toContain('globals.css');
+    expect(stderr).toContain('features/x/globals.css: stylesheet outside the allowlist');
+    expect(stderr).not.toContain('app/styles/globals.css');
     expect(stderr).not.toContain('tokens.css');
     expect(stderr).not.toContain('markdown.css');
   } finally {

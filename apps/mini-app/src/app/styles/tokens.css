@@ -86,6 +86,7 @@
   --color-ring: var(--primary);
   --color-surface: var(--surface);
   --color-highlight: color-mix(in srgb, var(--primary) 9%, var(--surface));
+  --color-highlight-subtle: color-mix(in srgb, var(--accent) 7%, var(--surface));
   --color-status-muted: var(--status-muted);
   --color-status-ready: var(--status-ready);
   --color-status-busy: var(--status-busy);

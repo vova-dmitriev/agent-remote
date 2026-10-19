@@ -5,6 +5,7 @@ import { useTranslation } from "@/shared/lib/hooks"
 import { feedbackText, type MessageKey } from "@/shared/lib/i18n"
 import { Button } from "@/shared/ui/button"
 import { COMMAND_IDS } from "@/features/send-command/config/test-ids"
+import { mutedTextClass } from "@/shared/ui/text"
 import { QueuedPromptEditor } from "./editor/queued-prompt-editor"
 import type { PromptQueueItemProps } from "./prompt-queue-item.types"
 
@@ -42,11 +43,11 @@ export function PromptQueueItem({ item, queue }: PromptQueueItemProps) {
         </span>
       )}
       {item.status === PromptStatus.Failed && item.code ? (
-        <span className="text-[11px] text-muted-foreground" data-testid={COMMAND_IDS.queuedError}>
+        <span className={mutedTextClass} data-testid={COMMAND_IDS.queuedError}>
           {feedbackText(item.code, t)}
         </span>
       ) : null}
-      <span className="text-[11px] text-muted-foreground" data-testid={COMMAND_IDS.queuedStatus}>
+      <span className={mutedTextClass} data-testid={COMMAND_IDS.queuedStatus}>
         {t(statusKeys[item.status])}
       </span>
       {item.status === PromptStatus.Queued ? (
