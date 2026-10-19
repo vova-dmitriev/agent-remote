@@ -188,6 +188,9 @@ export class Monitor extends EventEmitter {
         ...(session?.title ? { title: session.title } : {}),
         ...(session?.model ? { model: session.model } : {}),
         ...(session?.lastMessageAt !== undefined ? { lastMessageAt: session.lastMessageAt } : {}),
+        ...(session?.subagents && session.claudeSessionId === hook.session_id
+          ? { subagents: session.subagents }
+          : {}),
         claudeSessionId: hook.session_id,
         generation: randomUUID(),
         status:
