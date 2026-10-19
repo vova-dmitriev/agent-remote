@@ -11,7 +11,7 @@ import {
 } from '@protocol';
 
 import { DesktopMode } from '../../domain/desktop.js';
-import { IpcMessageType, WrapperActionType } from '../../domain/ipc.js';
+import { IpcMessageType, PrimaryHookMessageTypes, WrapperActionType } from '../../domain/ipc.js';
 import { RuntimeEvent, SourceVersion } from '../../domain/runtime.js';
 import { ClaudeHookEvent } from '../../domain/claude.js';
 import { attachmentPrompt } from '../../attachments/content/input.js';
@@ -28,9 +28,16 @@ import { lineReader, writeFrame } from './ipc.js';
 
 type WrapperReply = DispatchReceipt & { text?: string };
 
-interface Options {
+export interface HookSocketOptions {
   path: string;
   token: string;
+  /** Message types this socket accepts; others get the rejection reply with no side effects. */
+  allowedTypes?: readonly IpcMessageType[];
+  /** Enables ReleaseHookSocket: the socket unbinds, replies, then this runs once the requester disconnects. */
+  onRelease?: () => void;
+}
+
+interface Options extends HookSocketOptions {
   monitor: Monitor;
   adapters: AdapterRegistry;
   permissions: PermissionBroker;
@@ -42,12 +49,13 @@ interface Options {
 }
 
 const authenticated = z.object({
-  token: z.string().max(512),
+  token: z.string().min(1).max(512),
   type: z.enum([
     IpcMessageType.Hook,
     IpcMessageType.Wrapper,
     IpcMessageType.DesktopBind,
     IpcMessageType.CodexConnect,
+    IpcMessageType.ReleaseHookSocket,
   ]),
   wrapperId: z.string().uuid().optional(),
   cmux: cmuxContextSchema.optional(),
@@ -57,7 +65,14 @@ const authenticated = z.object({
   codex: codexConnectionSchema.optional(),
 });
 
+const RejectionReply: Partial<Record<string, IpcMessageType>> = {
+  [IpcMessageType.DesktopBind]: IpcMessageType.DesktopResult,
+  [IpcMessageType.CodexConnect]: IpcMessageType.CodexResult,
+  [IpcMessageType.ReleaseHookSocket]: IpcMessageType.ReleaseResult,
+};
+
 export async function startHookServer(options: Options) {
+  const allowedTypes: readonly IpcMessageType[] = options.allowedTypes ?? PrimaryHookMessageTypes;
   let closing = false;
   const sockets = new Set<Socket>();
 
@@ -157,6 +172,10 @@ export async function startHookServer(options: Options) {
         busy = true;
         const message = authenticated.parse(raw);
 
+        if (!allowedTypes.includes(message.type)) {
+          throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
+        }
+
         const token = Buffer.from(message.token),
           expected = Buffer.from(options.token);
 
@@ -165,6 +184,21 @@ export async function startHookServer(options: Options) {
         }
 
         clearTimeout(authTimer);
+
+        if (message.type === IpcMessageType.ReleaseHookSocket) {
+          const onRelease = options.onRelease;
+
+          if (!onRelease) {
+            throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
+          }
+
+          await binding.unbind();
+          writeFrame(socket, { type: IpcMessageType.ReleaseResult });
+          socket.once('close', () => onRelease());
+          socket.end();
+
+          return;
+        }
 
         if (message.type === IpcMessageType.CodexConnect) {
           if (!message.codex || !options.onCodexConnect) {
@@ -357,19 +391,11 @@ export async function startHookServer(options: Options) {
                 ? error.message
                 : 'DESKTOP_UNAVAILABLE';
 
+            const reply = RejectionReply[String((raw as { type?: string })?.type)];
+
             writeFrame(
               socket,
-              [IpcMessageType.DesktopBind, IpcMessageType.CodexConnect].some(
-                (candidateValue) => candidateValue === String((raw as { type?: string })?.type),
-              )
-                ? {
-                    type:
-                      (raw as { type?: string })?.type === IpcMessageType.CodexConnect
-                        ? IpcMessageType.CodexResult
-                        : IpcMessageType.DesktopResult,
-                    code,
-                  }
-                : { type: IpcMessageType.HookResult, output: {} },
+              reply ? { type: reply, code } : { type: IpcMessageType.HookResult, output: {} },
             );
 
             socket.end();
@@ -381,7 +407,7 @@ export async function startHookServer(options: Options) {
     });
   });
 
-  const release = await bindHookSocket(server, options.path);
+  const binding = await bindHookSocket(server, options.path);
 
   return {
     async close() {
@@ -391,7 +417,7 @@ export async function startHookServer(options: Options) {
         socket.destroy();
       }
 
-      await release();
+      await binding.close();
     },
   };
 }

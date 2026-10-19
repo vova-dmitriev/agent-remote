@@ -127,6 +127,9 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
     adapters,
     dispatcher: localDispatcher,
     readers,
+  }).catch(async (error: unknown) => {
+    await hookServer.close();
+    throw error;
   });
 
   const relay = config.relay
@@ -190,5 +193,11 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
     dispatcher.setConnection(false);
   });
 
-  return { monitor, close, legacyHookSocket: hookServer.legacyHookSocket };
+  return {
+    monitor,
+    close,
+    get legacyHookSocket() {
+      return hookServer.legacyHookSocket;
+    },
+  };
 }

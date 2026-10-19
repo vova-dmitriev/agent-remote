@@ -2,7 +2,8 @@ import { DaemonErrorCode } from './error-codes.js';
 import { SharedPrivateErrorCode } from '@protocol/private';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { mkdir, readFile, writeFile, rename, chmod } from 'node:fs/promises';
+import { constants } from 'node:fs';
+import { mkdir, open, readFile, writeFile, rename, chmod } from 'node:fs/promises';
 import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { CodedError } from '@protocol';
@@ -33,31 +34,57 @@ export async function saveConfig(config: DaemonConfig) {
   await chmod(path, 0o600);
 }
 
-export async function localSecret(dir = stateDirectory()) {
-  await mkdir(dir, { recursive: true, mode: 0o700 });
-  const path = join(dir, 'local.key');
+const LocalKey = { FileName: 'local.key', MaxBytes: 128, Pattern: /^[a-f0-9]{64}$/ } as const;
+
+/** Reads an existing local.key: never through a symlink, owned by the user, 0600, 64 hex chars. */
+export async function readLocalSecret(dir: string) {
+  const unavailable = () => new CodedError(DaemonErrorCode.LOCAL_KEY_UNAVAILABLE);
+
+  const handle = await open(join(dir, LocalKey.FileName), constants.O_RDONLY | constants.O_NOFOLLOW).catch(
+    () => {
+      throw unavailable();
+    },
+  );
 
   try {
-    return (await readFile(path, 'utf8')).trim();
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-      throw error;
+    const info = await handle.stat();
+
+    if (
+      !info.isFile() ||
+      (process.getuid && info.uid !== process.getuid()) ||
+      (info.mode & 0o777) !== 0o600 ||
+      info.size > LocalKey.MaxBytes
+    ) {
+      throw unavailable();
     }
 
-    const value = randomBytes(32).toString('hex');
+    const value = (await handle.readFile('utf8')).trim();
 
-    try {
-      await writeFile(path, value, { mode: 0o600, flag: 'wx' });
+    if (!LocalKey.Pattern.test(value)) {
+      throw unavailable();
+    }
 
-      return value;
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
-        return (await readFile(path, 'utf8')).trim();
-      }
+    return value;
+  } finally {
+    await handle.close();
+  }
+}
 
+export async function localSecret(dir = stateDirectory()) {
+  await mkdir(dir, { recursive: true, mode: 0o700 });
+  const value = randomBytes(32).toString('hex');
+
+  try {
+    await writeFile(join(dir, LocalKey.FileName), value, { mode: 0o600, flag: 'wx' });
+
+    return value;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
       throw error;
     }
   }
+
+  return readLocalSecret(dir);
 }
 
 export const hookSocketPath = (directory: string) => join(directory, 'hooks.sock');

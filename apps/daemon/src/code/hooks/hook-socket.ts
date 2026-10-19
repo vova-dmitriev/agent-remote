@@ -1,3 +1,4 @@
+import type { Stats } from 'node:fs';
 import type { Server } from 'node:net';
 import { chmod, link, lstat, unlink } from 'node:fs/promises';
 import { randomBytes } from 'node:crypto';
@@ -25,13 +26,19 @@ async function prepareHookSocket(path: string) {
 
 const closeServer = (server: Server) => new Promise<void>((resolve) => server.close(() => resolve()));
 
+export interface HookSocketBinding {
+  /** Stops accepting and unlinks `path` while it is still this server's socket; open connections stay. */
+  unbind(): Promise<void>;
+  /** Unbinds and waits until every open connection has closed. */
+  close(): Promise<void>;
+}
+
 /**
- * Binds `server` at `path` and returns a release that closes it and unlinks `path` only while
- * it is still this server's socket. libuv unlinks the bound name on close whatever it points
- * to, so the server binds a private staging name (no longer than the final name) and the
- * socket is hard-linked into place; link() never replaces a socket that appeared meanwhile.
+ * Binds `server` at `path`. libuv unlinks the bound name on close whatever it points to, so
+ * the server binds a private staging name (no longer than the final name) and the socket is
+ * hard-linked into place; link() never replaces a socket that appeared meanwhile.
  */
-export async function bindHookSocket(server: Server, path: string): Promise<() => Promise<void>> {
+export async function bindHookSocket(server: Server, path: string): Promise<HookSocketBinding> {
   await prepareHookSocket(path);
   const staging = join(dirname(path), `.${randomBytes(4).toString('hex')}`);
 
@@ -44,25 +51,44 @@ export async function bindHookSocket(server: Server, path: string): Promise<() =
     });
   });
 
-  let owned: Awaited<ReturnType<typeof lstat>>;
+  let owned: Stats | undefined;
+  let linked = false;
 
   try {
     await chmod(staging, 0o600);
     owned = await lstat(staging);
     await link(staging, path);
+    linked = true;
     await unlink(staging);
   } catch (error) {
     await closeServer(server);
+
+    if (linked && owned) {
+      await removeOwnedSocket(path, owned).catch(() => {});
+    }
+
     throw (error as NodeJS.ErrnoException).code === 'EEXIST'
       ? new CodedError(DaemonErrorCode.DAEMON_ALREADY_RUNNING)
       : error;
   }
 
-  return async () => {
-    await closeServer(server);
+  const socket = owned;
+  let closed: Promise<void> | undefined;
 
-    try {
-      await removeOwnedSocket(path, owned);
-    } catch {}
+  const unbind = async () => {
+    if (closed) {
+      return;
+    }
+
+    closed = closeServer(server);
+    await removeOwnedSocket(path, socket).catch(() => {});
+  };
+
+  return {
+    unbind,
+    async close() {
+      await unbind();
+      await closed;
+    },
   };
 }

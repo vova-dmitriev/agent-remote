@@ -13,7 +13,7 @@ import { requestLocal } from './code/hooks/ipc.js';
 import { installHooks, uninstallHooks } from './code/hooks/install-hooks.js';
 import { startDaemon } from './main.js';
 import { startClaude } from './cli/wrapper.js';
-import { CodedError } from '@protocol';
+import { CodedError, hasErrorCode } from '@protocol';
 
 export async function runCli(argv = process.argv.slice(2)) {
   const [command, ...args] = argv;
@@ -71,7 +71,15 @@ export async function runCli(argv = process.argv.slice(2)) {
   }
 
   if (command === CliCommand.Start) {
-    const daemon = await startDaemon();
+    const daemon = await startDaemon().catch((error: unknown) => {
+      if (hasErrorCode(error, DaemonErrorCode.HOOK_SOCKET_HELD_BY_COMPANION)) {
+        process.stderr.write(
+          `${DaemonErrorCode.HOOK_SOCKET_HELD_BY_COMPANION}: ${socketPath()} занят Desktop companion (Agent Remote Desktop), и он не освободил сокет. Закрой Agent Remote Desktop и повтори remote start.\n`,
+        );
+      }
+
+      throw error;
+    });
 
     process.stdout.write('Companion запущен.\n');
 

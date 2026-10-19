@@ -7,8 +7,10 @@ import type { Monitor } from '../../monitor/monitor.js';
 import { MessageTracker, type TranscriptSources } from '../../monitor/history.js';
 import type { AdapterRegistry } from '../../adapters/registry.js';
 import type { PermissionBroker } from '../../commands/permission-broker.js';
-import { startHookServer } from '../../code/hooks/hook-server.js';
-import { startLegacyHookSocket } from '../../code/hooks/legacy-socket.js';
+import { hasErrorCode } from '@protocol';
+import { DaemonErrorCode } from '../../error-codes.js';
+import { startHookServer, type HookSocketOptions } from '../../code/hooks/hook-server.js';
+import { requestHookSocketRelease, startLegacyHookSocket } from '../../code/hooks/legacy-socket.js';
 import type { DesktopBindingEntry } from '../source-poller.js';
 
 type HookWiringDeps = {
@@ -31,10 +33,9 @@ export async function startHookWiring(deps: HookWiringDeps) {
   const { monitor, adapters, desktopBridge, desktopBindings, readers, inputEnabled, permissionsEnabled } =
     deps;
 
-  const listen = (path: string, token: string) =>
+  const listen = (socket: HookSocketOptions) =>
     startHookServer({
-      path,
-      token,
+      ...socket,
       monitor,
       adapters,
       permissions: deps.permissions,
@@ -72,7 +73,22 @@ export async function startHookWiring(deps: HookWiringDeps) {
       },
     });
 
-  const primary = await listen(deps.path, deps.token);
+  // The CLI daemon has precedence on its own path: a desktop companion's legacy listener yields it.
+  const listenPrimary = async () => {
+    try {
+      return await listen({ path: deps.path, token: deps.token });
+    } catch (error) {
+      if (!hasErrorCode(error, DaemonErrorCode.DAEMON_ALREADY_RUNNING)) {
+        throw error;
+      }
+
+      await requestHookSocketRelease(deps.path, deps.token);
+
+      return listen({ path: deps.path, token: deps.token });
+    }
+  };
+
+  const primary = await listenPrimary();
 
   // Desktop companion only: the CLI daemon owns the legacy path itself.
   const legacy = deps.legacyClaudeHooks
@@ -84,7 +100,9 @@ export async function startHookWiring(deps: HookWiringDeps) {
   }
 
   return {
-    legacyHookSocket: legacy.state,
+    get legacyHookSocket() {
+      return legacy.state;
+    },
     async close() {
       await legacy.close();
       await primary.close();
