@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { HttpStatus } from '@protocol';
 import { createHash } from 'node:crypto';
 import { mkdtemp, readFile, stat, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -242,7 +243,9 @@ describe('attachment retention and export recovery', () => {
     let available = false;
 
     f.fetcher.mockImplementation(async () =>
-      available ? new Response(JSON.stringify(descriptor)) : new Response(null, { status: 404 }),
+      available
+        ? new Response(JSON.stringify(descriptor))
+        : new Response(null, { status: HttpStatus.NotFound }),
     );
 
     const message = { id: 'source', role: 'assistant' as const, text: 'Keeps text', occurredAt: 1 };

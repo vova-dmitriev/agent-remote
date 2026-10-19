@@ -7,7 +7,7 @@ import refresh from "eslint-plugin-react-refresh"
 import storybook from "eslint-plugin-storybook"
 import { readabilityRules } from "./eslint/readability.mjs"
 import components from "./eslint/one-component.mjs"
-import { testIdRules, selectorRules, storyRules } from "./eslint/rules.mjs"
+import { testIdRules, selectorRules, storyRules, numericValueRules } from "./eslint/rules.mjs"
 
 export default ts.config(
   { ignores: ["node_modules/**", "storybook-static/**", ".storybook/public/**"] },
@@ -39,7 +39,7 @@ export default ts.config(
       "domain/no-inline-error-codes": "error",
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "error",
-      "no-restricted-syntax": ["error", ...testIdRules],
+      "no-restricted-syntax": ["error", ...testIdRules, ...numericValueRules],
     },
   },
   {
@@ -48,5 +48,9 @@ export default ts.config(
     plugins: { "react-refresh": refresh, frontend: components },
     rules: { "react-refresh/only-export-components": "error", "frontend/one-component": "error", "frontend/named-props": "error" },
   },
-  { files: ["src/**/*.stories.tsx"], rules: { "no-restricted-syntax": ["error", ...testIdRules, ...selectorRules, ...storyRules] } },
+  {
+    files: ["src/**/*.stories.tsx"],
+    rules: { "no-restricted-syntax": ["error", ...testIdRules, ...selectorRules, ...storyRules, ...numericValueRules] },
+  },
+  { files: [".storybook/**/*.ts", "tests/**/*.{ts,tsx}"], rules: { "no-restricted-syntax": ["error", ...numericValueRules] } },
 )

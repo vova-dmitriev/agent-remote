@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { HttpStatus } from '@protocol';
 import { Pool } from 'pg';
 import { afterEach, describe, expect, it } from 'vitest';
 import { ContinuityService } from '../apps/server/src/continuity/service.js';
@@ -84,13 +85,13 @@ describe('owner-scoped continuity metadata', () => {
 
     await expect(
       f.service.getConversation(principal(otherOwner), scope(otherDevice, otherGeneration), conversationId),
-    ).rejects.toMatchObject({ status: 404 });
+    ).rejects.toMatchObject({ status: HttpStatus.NotFound });
 
     await f.db.pool.query('UPDATE devices SET revoked_at=20 WHERE id=$1', [f.device]);
 
     await expect(
       f.service.getConversation(principal(f.owner), scope(f.device, f.generation), conversationId),
-    ).rejects.toMatchObject({ status: 404 });
+    ).rejects.toMatchObject({ status: HttpStatus.NotFound });
   });
 
   it('replays identical starts, rejects conflicting reuse, and keeps unknown source active', async () => {
@@ -126,7 +127,7 @@ describe('owner-scoped continuity metadata', () => {
         ...start,
         request: { ...request, checkpointDigest: 'b'.repeat(64) },
       }),
-    ).rejects.toMatchObject({ status: 409 });
+    ).rejects.toMatchObject({ status: HttpStatus.Conflict });
 
     await expect(
       f.service.setTerminal(principal(f.owner), scope(f.device, f.generation), first.id, 1, 'unknown'),

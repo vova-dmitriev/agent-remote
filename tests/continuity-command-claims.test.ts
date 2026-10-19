@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { HttpStatus } from '@protocol';
 import { Pool } from 'pg';
 import { afterEach, describe, expect, it } from 'vitest';
 import { claimRelayCommandId } from '../apps/server/src/continuity/command-claims.js';
@@ -91,7 +92,7 @@ describe('handoff command ID claims', () => {
       [f.owner, commandId, f.device, randomUUID(), 'prompt', 'prior', 'dispatched'],
     );
 
-    await expect(f.start(commandId)).rejects.toMatchObject({ status: 409 });
+    await expect(f.start(commandId)).rejects.toMatchObject({ status: HttpStatus.Conflict });
 
     await expect(f.service.getConversation(f.principal, f.scope, f.conversationId)).resolves.toMatchObject({
       activeExecutionId: f.sourceId,
@@ -123,7 +124,7 @@ describe('handoff command ID claims', () => {
       claimRelayCommandId(tx, normalFirst.owner, normalFirst.device, firstId, 'f'.repeat(64), 10),
     );
 
-    await expect(normalFirst.start(firstId)).rejects.toMatchObject({ status: 409 });
+    await expect(normalFirst.start(firstId)).rejects.toMatchObject({ status: HttpStatus.Conflict });
 
     const handoffFirst = await setup();
     const secondId = randomUUID();
@@ -134,7 +135,7 @@ describe('handoff command ID claims', () => {
       handoffFirst.db.transaction((tx) =>
         claimRelayCommandId(tx, handoffFirst.owner, handoffFirst.device, secondId, 'e'.repeat(64), 10),
       ),
-    ).rejects.toMatchObject({ status: 409 });
+    ).rejects.toMatchObject({ status: HttpStatus.Conflict });
   });
 
   it('rejects Ready passed through an unsafe phase cast before mutation', async () => {

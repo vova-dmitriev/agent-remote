@@ -1,4 +1,5 @@
 import { expect, it } from 'vitest';
+import { HttpStatus } from '@protocol';
 import { CommandSubmission } from '../apps/mini-app/src/shared/api/commands.js';
 import type { ClientCommand, CommandResult } from '@protocol';
 
@@ -59,7 +60,7 @@ it('checks exact pending IDs without reposting on missing status and retries onl
     calls.push(`${method} ${method === 'POST' ? body!.commandId : path}`);
 
     if (method === 'GET') {
-      throw Object.assign(new Error('NOT_FOUND'), { status: 404 });
+      throw Object.assign(new Error('NOT_FOUND'), { status: HttpStatus.NotFound });
     }
 
     return { commandId: body!.commandId, status: 'accepted' };

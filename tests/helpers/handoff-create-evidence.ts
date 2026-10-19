@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { expect } from 'vitest';
-import { CommandStatus, type HandoffOperation } from '@protocol';
+import { CommandStatus, type HandoffOperation, HttpStatus } from '@protocol';
 import type { ContinuityService } from '../../apps/server/src/continuity/service.js';
 import type { ContinuityReadScope, InitialExecution } from '../../apps/server/src/continuity/types.js';
 import { readyTargetSnapshot, waitFrame, type HandoffProofFixture } from './handoff-proof-fixture.js';
@@ -33,7 +33,7 @@ export async function dispatchAndCheckCreateEvidence(input: {
         execution: { selection: operation.selection, expectedVersion: operation.expectedProfileVersion },
       },
     }),
-  ).rejects.toMatchObject({ code: 'CONTINUITY_COMMAND_ID_RESERVED', status: 409 });
+  ).rejects.toMatchObject({ code: 'CONTINUITY_COMMAND_ID_RESERVED', status: HttpStatus.Conflict });
 
   const create = relay.dispatchHandoffCreate(principal, operation.id);
   const frame = await waitFrame(socket, (value) => value.type === 'command');

@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import { AgentProvider, ErrorCode, HttpRequestMethod } from '@protocol';
+import { AgentProvider, ErrorCode, HttpRequestMethod, HttpStatus } from '@protocol';
 import { withCodexApiKey, readCodexCredentialIdentity, credentialReference } from '../credentials.js';
 import { profileApiBody } from './body.js';
-import { ProfileApiEndpoint, ProfileApiLimit, ProfileApiRequest, ProfileApiStatus } from './values.js';
+import { ProfileApiEndpoint, ProfileApiLimit, ProfileApiRequest } from './values.js';
 import type { ProfileApiFetch } from './types.js';
 
 const catalogSchema = z.object({
@@ -30,15 +30,12 @@ export async function verifyCodexApiCredential(directory: string, fetcher: Profi
     if (!response.ok) {
       await response.body?.cancel().catch(() => {});
 
-      if (
-        response.status === ProfileApiStatus.Unauthorized ||
-        response.status === ProfileApiStatus.Forbidden
-      ) {
+      if (response.status === HttpStatus.Unauthorized || response.status === HttpStatus.Forbidden) {
         throw new Error(ErrorCode.PROFILE_NOT_READY);
       }
 
       throw new Error(
-        response.status === ProfileApiStatus.RateLimited ? ErrorCode.RATE_LIMITED : ErrorCode.REQUEST_FAILED,
+        response.status === HttpStatus.TooManyRequests ? ErrorCode.RATE_LIMITED : ErrorCode.REQUEST_FAILED,
       );
     }
 

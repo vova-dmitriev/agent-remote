@@ -7,7 +7,7 @@ import {
   waitFrame,
   type HandoffProofFixture,
 } from './helpers/handoff-proof-fixture.js';
-import { CommandActionType, CommandStatus } from '@protocol';
+import { CommandActionType, CommandStatus, HttpStatus } from '@protocol';
 import { dispatchAndCheckCreateEvidence } from './helpers/handoff-create-evidence.js';
 
 let fixture: HandoffProofFixture;
@@ -95,7 +95,7 @@ describe('authenticated device seed proof', () => {
         generation: targetGeneration,
         action: { type: 'prompt', text: 'reserved command must not dispatch' },
       }),
-    ).rejects.toMatchObject({ code: 'CONTINUITY_COMMAND_ID_RESERVED', status: 409 });
+    ).rejects.toMatchObject({ code: 'CONTINUITY_COMMAND_ID_RESERVED', status: HttpStatus.Conflict });
 
     const intent = {
       type: 'handoff_seed_intent',
@@ -187,7 +187,7 @@ describe('authenticated device seed proof', () => {
 
     await expect(
       service.activateExecution(principal, scope, conversationId, operation.id, 3, 2),
-    ).rejects.toMatchObject({ status: 409 });
+    ).rejects.toMatchObject({ status: HttpStatus.Conflict });
 
     await relay.db.pool.query('UPDATE devices SET generation=$2 WHERE id=$1', [
       device.deviceId,

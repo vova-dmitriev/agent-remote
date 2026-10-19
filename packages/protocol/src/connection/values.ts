@@ -80,3 +80,24 @@ export type MessageRole = (typeof MessageRole)[keyof typeof MessageRole];
 /** Reserved connector identities; other connector IDs remain opaque strings. */
 export const ConnectorId = { Native: 'native' } as const;
 export type ConnectorId = (typeof ConnectorId)[keyof typeof ConnectorId];
+
+export const SocketCloseCode = {
+  PolicyViolation: 1008,
+  TryAgainLater: 1013,
+  Offline: 4000,
+  Unauthorized: 4001,
+  Replaced: 4002,
+  Revoked: 4003,
+} as const;
+export type SocketCloseCode = (typeof SocketCloseCode)[keyof typeof SocketCloseCode];
+
+export const SocketCloseReason = {
+  Offline: 'OFFLINE',
+  Unauthorized: 'UNAUTHORIZED',
+  AuthTimeout: 'AUTH_TIMEOUT',
+  TokenExpired: 'TOKEN_EXPIRED',
+  Replaced: 'REPLACED',
+  Revoked: 'REVOKED',
+  InvalidFrame: 'INVALID_FRAME',
+} as const;
+export type SocketCloseReason = (typeof SocketCloseReason)[keyof typeof SocketCloseReason];

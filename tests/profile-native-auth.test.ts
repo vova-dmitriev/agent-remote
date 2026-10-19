@@ -1,4 +1,5 @@
 import { writeFileSync } from 'node:fs';
+import { HttpStatus } from '@protocol';
 import { resolve, join } from 'node:path';
 import { expect, it, vi } from 'vitest';
 import { CodexProfileNative } from '../apps/daemon/src/profiles/native/codex.js';
@@ -128,7 +129,10 @@ it.each([
 });
 
 it('does not report API readiness from a native cached login when the provider rejects its key', async () => {
-  const apiFetch = vi.fn(async () => new Response('synthetic-secret-provider-body', { status: 401 }));
+  const apiFetch = vi.fn(
+    async () => new Response('synthetic-secret-provider-body', { status: HttpStatus.Unauthorized }),
+  );
+
   const { native, registry, profile } = await fixture({}, true, apiFetch);
 
   try {

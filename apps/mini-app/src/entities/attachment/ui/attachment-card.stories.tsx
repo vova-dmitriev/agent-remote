@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { delay, http, HttpResponse } from "msw"
 import { userEvent } from "storybook/test"
-import { AttachmentKind, ThemePreference, Language } from "@protocol"
+import { AttachmentKind, ThemePreference, Language, HttpStatus } from "@protocol"
 import { attachment, attachmentAccess, attachmentUrl } from "@storybook-fixtures/attachment/access"
 import { syntheticImageBytes } from "@storybook-fixtures/attachment/media"
 import { AttachmentCard } from "./attachment-card"
@@ -62,7 +62,7 @@ export const Loading: Story = {
   },
 }
 export const Expired: Story = {
-  parameters: { msw: { handlers: [http.get(attachmentUrl + "*", () => new HttpResponse(null, { status: 410 }))] } },
+  parameters: { msw: { handlers: [http.get(attachmentUrl + "*", () => new HttpResponse(null, { status: HttpStatus.Gone }))] } },
 }
 export const Failed: Story = { parameters: { msw: { handlers: [http.get(attachmentUrl + "*", () => HttpResponse.error())] } } }
 export const DarkEnglish: Story = { globals: { theme: ThemePreference.Dark, language: Language.En } }

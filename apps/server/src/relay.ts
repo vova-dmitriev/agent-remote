@@ -28,6 +28,8 @@ import {
   type ConnectorDescriptor,
   profileRequestSchema,
   ProfileRequestKind,
+  SocketCloseCode,
+  SocketCloseReason,
 } from '@protocol';
 import { HealthStatus, HttpMethod } from './domain/http.js';
 import { type IncomingMessage } from 'node:http';
@@ -725,7 +727,7 @@ export async function createRelay(config: RelayConfig) {
 
     for (const client of clients) {
       if (revoked.includes(hash(client.token))) {
-        client.socket.close(4001, 'UNAUTHORIZED');
+        client.socket.close(SocketCloseCode.Unauthorized, SocketCloseReason.Unauthorized);
       }
     }
 
@@ -825,7 +827,7 @@ export async function createRelay(config: RelayConfig) {
         live.delete(id);
         profileProxy.disconnect(connection);
         continuityProxy.disconnect(connection);
-        connection.socket.close(4003, 'REVOKED');
+        connection.socket.close(SocketCloseCode.Revoked, SocketCloseReason.Revoked);
       }
 
       fanout(p.userId, id, { type: FrameType.DeviceStatus, deviceId: id, status: DeviceStatus.Offline });
@@ -966,13 +968,16 @@ export async function createRelay(config: RelayConfig) {
     let queued = 0,
       queuedBytes = 0;
 
-    const timeout = setTimeout(() => socket.close(4001, 'AUTH_TIMEOUT'), 5000);
+    const timeout = setTimeout(
+      () => socket.close(SocketCloseCode.Unauthorized, SocketCloseReason.AuthTimeout),
+      5000,
+    );
 
     socket.on('message', (raw) => {
       const bytes = Buffer.byteLength(raw as Buffer);
 
       if (queued >= 256 || queuedBytes + bytes > 1048576) {
-        socket.close(1013, 'QUEUE_FULL');
+        socket.close(SocketCloseCode.TryAgainLater, ErrorCode.QUEUE_FULL);
 
         return;
       }
@@ -1058,7 +1063,7 @@ export async function createRelay(config: RelayConfig) {
           send(socket, { type: FrameType.Error, code: fault(error).code });
 
           if (!client) {
-            socket.close(4001, 'UNAUTHORIZED');
+            socket.close(SocketCloseCode.Unauthorized, SocketCloseReason.Unauthorized);
           }
         })
         .finally(() => {
@@ -1085,13 +1090,16 @@ export async function createRelay(config: RelayConfig) {
     let queued = 0,
       queuedBytes = 0;
 
-    const timeout = setTimeout(() => socket.close(4001, 'AUTH_TIMEOUT'), 5000);
+    const timeout = setTimeout(
+      () => socket.close(SocketCloseCode.Unauthorized, SocketCloseReason.AuthTimeout),
+      5000,
+    );
 
     socket.on('message', (raw) => {
       const bytes = Buffer.byteLength(raw as Buffer);
 
       if (queued >= 256 || queuedBytes + bytes > 1048576) {
-        socket.close(1013, 'QUEUE_FULL');
+        socket.close(SocketCloseCode.TryAgainLater, ErrorCode.QUEUE_FULL);
 
         return;
       }
@@ -1131,7 +1139,7 @@ export async function createRelay(config: RelayConfig) {
                 continuityProxy.disconnect(previous);
               }
 
-              previous?.socket.close(4002, 'REPLACED');
+              previous?.socket.close(SocketCloseCode.Replaced, SocketCloseReason.Replaced);
               clearTimeout(timeout);
               send(socket, { type: FrameType.Authenticated, epoch: connection.epoch });
             });
@@ -1372,7 +1380,7 @@ export async function createRelay(config: RelayConfig) {
           send(socket, { type: FrameType.Error, code: fault(error).code });
 
           if (!connection || fault(error).code === ErrorCode.STALE_EPOCH) {
-            socket.close(4001, 'UNAUTHORIZED');
+            socket.close(SocketCloseCode.Unauthorized, SocketCloseReason.Unauthorized);
           }
         })
         .finally(() => {
@@ -1395,13 +1403,15 @@ export async function createRelay(config: RelayConfig) {
   const timer = setInterval(() => {
     for (const connection of live.values()) {
       if (connection.lastSeen < Date.now() - 30000) {
-        connection.socket.close(4000, 'OFFLINE');
+        connection.socket.close(SocketCloseCode.Offline, SocketCloseReason.Offline);
         void offline(connection).catch(() => {});
       }
     }
 
     for (const client of clients) {
-      void auth.authenticate(client.token).catch(() => client.socket.close(4001, 'TOKEN_EXPIRED'));
+      void auth
+        .authenticate(client.token)
+        .catch(() => client.socket.close(SocketCloseCode.Unauthorized, SocketCloseReason.TokenExpired));
     }
   }, 1000);
 

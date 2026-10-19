@@ -1,4 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
+import { HttpStatus } from '@protocol';
 import { AppTransport } from '../apps/mini-app/src/shared/api/transport.js';
 
 class Socket {
@@ -32,7 +33,7 @@ it('reloads with stale Telegram initData using its cookie and renews access with
     'fetch',
     vi.fn(async (path: string) => {
       if (path.endsWith('/auth/telegram')) {
-        return Response.json({ code: 'UNAUTHORIZED' }, { status: 401 });
+        return Response.json({ code: 'UNAUTHORIZED' }, { status: HttpStatus.Unauthorized });
       }
 
       if (path.endsWith('/auth/refresh')) {

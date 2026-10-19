@@ -103,6 +103,7 @@ export async function startNamedTunnel(
           'credentials-file': validated.credentialsFile,
           ingress: [
             { hostname: new URL(validated.origin).hostname, service: `http://127.0.0.1:${port}` },
+            // ponytail: cloudflared ingress syntax, not an HTTP status we own
             { service: 'http_status:404' },
           ],
         },

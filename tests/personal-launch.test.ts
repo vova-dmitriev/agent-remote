@@ -1,4 +1,5 @@
 import { it, expect } from 'vitest';
+import { HttpStatus } from '@protocol';
 import { mkdtemp, writeFile, readFile, stat, chmod, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -167,7 +168,7 @@ it('does not rename an already named bot when Telegram rate limits name writes',
 
     return method === 'getMyName'
       ? Response.json({ ok: true, result: { name: 'Agent Remote' } })
-      : Response.json({ ok: false, error_code: 429 }, { status: 429 });
+      : Response.json({ ok: false, error_code: 429 }, { status: HttpStatus.TooManyRequests });
   });
 
   await expect(bot.setName()).resolves.toBeUndefined();

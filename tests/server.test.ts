@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { HttpStatus } from '@protocol';
 import { randomBytes, randomUUID, createHash } from 'node:crypto';
 import { Pool } from 'pg';
 import { createRelay } from '../apps/server/src/relay.js';
@@ -105,13 +106,13 @@ describe('real PostgreSQL relay', () => {
     ]);
 
     expect(claims.map((r) => r.status).sort()).toEqual([200, 409]);
-    const winner = claims[0]!.status === 200 ? tokenA : tokenB;
+    const winner = claims[0]!.status === HttpStatus.Ok ? tokenA : tokenB;
 
     if (winner === tokenB) {
       [tokenA, tokenB] = [tokenB, tokenA];
     }
 
-    const claim = (await claims.find((r) => r.status === 200)!.json()) as { claimId: string };
+    const claim = (await claims.find((r) => r.status === HttpStatus.Ok)!.json()) as { claimId: string };
 
     expect(
       (await post('/device/pair/confirm', { proof: 'wrong', claimId: claim.claimId, approved: true })).status,

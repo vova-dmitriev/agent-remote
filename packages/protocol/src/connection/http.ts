@@ -4,6 +4,7 @@ export type HttpRequestMethod = (typeof HttpRequestMethod)[keyof typeof HttpRequ
 export const HttpStatus = {
   Ok: 200,
   NoContent: 204,
+  MultipleChoices: 300,
   BadRequest: 400,
   Unauthorized: 401,
   Forbidden: 403,

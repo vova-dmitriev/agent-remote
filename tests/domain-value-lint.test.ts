@@ -186,6 +186,12 @@ it.each([
   'res.status(404).end();',
   'const gone = response.status === 410;',
   'const response = new Response(null, { status: 405 });',
+  'res.status(ok ? 204 : 404).end();',
+  'throw new Fault(code, cond ? 413 : 400);',
+  'res.sendStatus(404);',
+  'res.statusCode = 404;',
+  'if (res.statusCode >= 400) fail();',
+  'if (response.status < 200) fail();',
 ])(
   'rejects numeric HTTP statuses: %s',
   (source) => {
@@ -199,10 +205,43 @@ it.each([
   'res.status(HttpStatus.NotFound).end();',
   'const gone = response.status === HttpStatus.Gone;',
   'const response = new Response(null, { status: HttpStatus.MethodNotAllowed });',
+  "job.status('active');",
+  'res.status(ok ? HttpStatus.NoContent : HttpStatus.NotFound).end();',
+  'if (res.statusCode >= HttpStatus.BadRequest) fail();',
+  'res.statusCode = HttpStatus.NotFound;',
 ])(
   'accepts HttpStatus constants: %s',
   (source) => {
     expect(ruleViolations(source, 'apps/server/src/example.ts', 'no-restricted-syntax')).toEqual([]);
+  },
+  30000,
+);
+
+it.each(["socket.close(4001, 'UNAUTHORIZED');", 'if (event.code === 4003) retry();'])(
+  'rejects numeric WebSocket close codes: %s',
+  (source) => {
+    expect(ruleViolations(source, 'apps/daemon/src/example.ts', 'no-restricted-syntax')).not.toHaveLength(0);
+  },
+  30000,
+);
+
+it.each([
+  'socket.close(SocketCloseCode.Unauthorized, SocketCloseReason.Unauthorized);',
+  'if (event.code === SocketCloseCode.Revoked) retry();',
+])(
+  'accepts WebSocket close code constants: %s',
+  (source) => {
+    expect(ruleViolations(source, 'apps/daemon/src/example.ts', 'no-restricted-syntax')).toEqual([]);
+  },
+  30000,
+);
+
+it.each(['const matches = response.status === 404;', 'socket.close(4001, "UNAUTHORIZED");'])(
+  'rejects numeric statuses and close codes in the frontend: %s',
+  (source) => {
+    expect(
+      ruleViolations(source, 'apps/mini-app/src/shared/api/example.ts', 'no-restricted-syntax'),
+    ).not.toHaveLength(0);
   },
   30000,
 );

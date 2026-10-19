@@ -1,4 +1,4 @@
-import { ConnectionStatus, FrameType, serverFrameSchema, type HistoryPageDirection } from "@protocol"
+import { ConnectionStatus, FrameType, SocketCloseCode, serverFrameSchema, type HistoryPageDirection } from "@protocol"
 import { createAppSocket } from "./socket"
 import { logoutSession } from "./auth/logout"
 import { isAuthenticationError, startSessionAuthentication } from "./auth/errors"
@@ -106,7 +106,7 @@ export class AppTransport extends RelayOperations implements ApplicationClient {
     socket.onclose = (event) => {
       if (this.stopped || socket !== this.socket) return
       this.handlers.onConnection(ConnectionStatus.Offline)
-      if (event.code === 4001 || Date.now() >= this.expiresAt) void this.authentication.renew()
+      if (event.code === SocketCloseCode.Unauthorized || Date.now() >= this.expiresAt) void this.authentication.renew()
       else this.retry = setTimeout(() => this.connect(), 1500)
     }
   }

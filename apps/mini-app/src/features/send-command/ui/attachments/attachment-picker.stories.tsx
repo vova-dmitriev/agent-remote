@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { delay, http, HttpResponse } from "msw"
 import { userEvent } from "storybook/test"
-import { AttachmentKind, ThemePreference, Language, ErrorCode } from "@protocol"
+import { AttachmentKind, ThemePreference, Language, ErrorCode, HttpStatus } from "@protocol"
 import { AttachmentComposerStory } from "@storybook-components/attachment-composer-story"
 import { syntheticImageBytes } from "@storybook-fixtures/attachment/media"
 import { COMMAND_IDS } from "@/features/send-command"
@@ -57,13 +57,24 @@ export const Uploading: Story = {
   play: SelectedImage.play!,
 }
 export const Failed: Story = {
-  parameters: { msw: { handlers: [http.post(uploadUrl, () => HttpResponse.json({ code: ErrorCode.ATTACHMENT_QUOTA }, { status: 413 }))] } },
+  parameters: {
+    msw: {
+      handlers: [
+        http.post(uploadUrl, () => HttpResponse.json({ code: ErrorCode.ATTACHMENT_QUOTA }, { status: HttpStatus.PayloadTooLarge })),
+      ],
+    },
+  },
   play: SelectedImage.play!,
 }
 export const Retry: Story = {
   parameters: {
     msw: {
-      handlers: [http.post(uploadUrl, () => HttpResponse.json({ code: ErrorCode.UPLOAD_BUSY }, { status: 429 }), { once: true }), success],
+      handlers: [
+        http.post(uploadUrl, () => HttpResponse.json({ code: ErrorCode.UPLOAD_BUSY }, { status: HttpStatus.TooManyRequests }), {
+          once: true,
+        }),
+        success,
+      ],
     },
   },
   play: async ({ canvas }) => {

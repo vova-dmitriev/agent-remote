@@ -1,7 +1,7 @@
-import { ErrorCode, LOCAL_LIMITS } from '@protocol';
+import { ErrorCode, HttpStatus, LOCAL_LIMITS } from '@protocol';
 
 export function localError(code: string) {
-  return Object.assign(new Error(code), code === ErrorCode.NOT_FOUND ? { status: 404 } : {});
+  return Object.assign(new Error(code), code === ErrorCode.NOT_FOUND ? { status: HttpStatus.NotFound } : {});
 }
 
 interface Pending {

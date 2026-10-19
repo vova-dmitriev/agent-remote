@@ -1,4 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
+import { HttpStatus } from '@protocol';
 import { createHash } from 'node:crypto';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -176,7 +177,7 @@ it('revalidates cached native exports and rebuilds evicted bytes with source pos
   const native = nativeClaudeMedia(source)[0]!;
 
   await f.service.export(session, 'm:0', native, { messageId: 'm', position: 'position:synthetic' });
-  f.fetcher.mockResolvedValueOnce(new Response(null, { status: 404 }));
+  f.fetcher.mockResolvedValueOnce(new Response(null, { status: HttpStatus.NotFound }));
 
   await expect(
     f.service.export(session, 'm:0', native, { messageId: 'm', position: 'position:synthetic' }),

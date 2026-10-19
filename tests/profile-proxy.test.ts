@@ -1,4 +1,5 @@
 import { expect, it } from 'vitest';
+import { HttpStatus, ErrorCode } from '@protocol';
 import type { WebSocket } from 'ws';
 import { ProfileProxy } from '../apps/server/src/profiles/proxy.js';
 import { Fault } from '../apps/server/src/http/fault.js';
@@ -23,14 +24,14 @@ function fixture() {
 
   const authorize = async () => {
     if (!authorized) {
-      throw new Fault('UNAUTHORIZED', 401);
+      throw new Fault(ErrorCode.UNAUTHORIZED, HttpStatus.Unauthorized);
     }
   };
 
   const devices = {
     owned: async (principal: { userId: string }, deviceId: string) => {
       if (principal.userId !== 'owner-a' || deviceId !== 'mac-a') {
-        throw new Fault('NOT_FOUND', 404);
+        throw new Fault(ErrorCode.NOT_FOUND, HttpStatus.NotFound);
       }
 
       return { ...connection.device, revoked_at: null, last_seen_at: '', snapshot: null, connectors: [] };

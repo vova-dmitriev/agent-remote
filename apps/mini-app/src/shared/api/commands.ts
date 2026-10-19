@@ -1,4 +1,4 @@
-import { CommandActionType, CommandStatus, ErrorCode, type ClientCommand, type CommandResult } from "@protocol"
+import { CommandActionType, CommandStatus, ErrorCode, HttpStatus, type ClientCommand, type CommandResult } from "@protocol"
 import { COMMAND_PENDING_LIMIT, COMMAND_RECEIPT_LIMIT } from "./command-constants"
 import type { CommandRequest } from "./commands.types"
 
@@ -91,7 +91,7 @@ export class CommandSubmission {
           const known = this.knownResult(attempted.commandId)
 
           if (known) return known
-          if ((error as { status?: number }).status !== 404) throw new Error(ErrorCode.COMMAND_STATUS_UNKNOWN)
+          if ((error as { status?: number }).status !== HttpStatus.NotFound) throw new Error(ErrorCode.COMMAND_STATUS_UNKNOWN)
         }
       }
 
@@ -107,7 +107,7 @@ export class CommandSubmission {
         if (known) return known
         const status = (error as { status?: number }).status
 
-        if (status && status >= 400 && status < 500) {
+        if (status && status >= HttpStatus.BadRequest && status < HttpStatus.InternalServerError) {
           this.pending.delete(attempted.commandId)
           throw error
         }

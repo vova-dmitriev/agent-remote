@@ -1,4 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
+import { HttpStatus } from '@protocol';
 import { AppTransport } from '../apps/mini-app/src/shared/api/transport.js';
 import type { ServerFrame } from '@protocol';
 
@@ -216,7 +217,7 @@ it.each(['network', 'forbidden'])(
     if (kind === 'network') {
       pending[0]!.reject(new TypeError('Synthetic network failure'));
     } else {
-      pending[0]!.resolve(new Response('', { status: 403 }));
+      pending[0]!.resolve(new Response('', { status: HttpStatus.Forbidden }));
     }
 
     await expect(history).rejects.toThrow(kind === 'network' ? 'HISTORY_RELOAD_FAILED' : 'ACCESS_DENIED');

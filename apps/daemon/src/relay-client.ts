@@ -1,5 +1,11 @@
 import { RuntimeEvent } from './domain/runtime.js';
-import { FrameType, serverFrameSchema, type DeviceFrame } from '@protocol';
+import {
+  FrameType,
+  SocketCloseCode,
+  SocketCloseReason,
+  serverFrameSchema,
+  type DeviceFrame,
+} from '@protocol';
 import { BoundedSender } from '@transport/bounded-sender.js';
 import { EventEmitter } from 'node:events';
 import { WebSocket } from 'ws';
@@ -54,7 +60,7 @@ export class RelayClient extends EventEmitter {
           this.emit(RuntimeEvent.Frame, frame);
         }
       } catch {
-        socket.close(1008, 'INVALID_FRAME');
+        socket.close(SocketCloseCode.PolicyViolation, SocketCloseReason.InvalidFrame);
       }
     });
 

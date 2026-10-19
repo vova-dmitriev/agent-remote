@@ -1,12 +1,12 @@
-import { ErrorCode } from "@protocol"
+import { ErrorCode, HttpStatus } from "@protocol"
 
 const statusCodes: Record<number, string> = {
-  401: ErrorCode.UNAUTHORIZED,
-  403: ErrorCode.ACCESS_DENIED,
-  404: ErrorCode.NOT_FOUND,
-  408: ErrorCode.REQUEST_TIMEOUT,
-  413: ErrorCode.PROMPT_TOO_LARGE,
-  429: ErrorCode.RATE_LIMITED,
+  [HttpStatus.Unauthorized]: ErrorCode.UNAUTHORIZED,
+  [HttpStatus.Forbidden]: ErrorCode.ACCESS_DENIED,
+  [HttpStatus.NotFound]: ErrorCode.NOT_FOUND,
+  [HttpStatus.RequestTimeout]: ErrorCode.REQUEST_TIMEOUT,
+  [HttpStatus.PayloadTooLarge]: ErrorCode.PROMPT_TOO_LARGE,
+  [HttpStatus.TooManyRequests]: ErrorCode.RATE_LIMITED,
 }
 
 export async function fetchResponse(url: string, options: RequestInit) {
@@ -24,7 +24,10 @@ export async function fetchResponse(url: string, options: RequestInit) {
 export async function responseError(response: Response) {
   const body: unknown = await response.json().catch(() => null)
   const code = body && typeof body === "object" && "code" in body && typeof body.code === "string" ? body.code : undefined
-  const fallback = statusCodes[response.status] ?? (response.status >= 500 ? ErrorCode.SERVICE_UNAVAILABLE : ErrorCode.REQUEST_FAILED)
+
+  const fallback =
+    statusCodes[response.status] ??
+    (response.status >= HttpStatus.InternalServerError ? ErrorCode.SERVICE_UNAVAILABLE : ErrorCode.REQUEST_FAILED)
 
   return Object.assign(new Error(code || fallback), { status: response.status })
 }

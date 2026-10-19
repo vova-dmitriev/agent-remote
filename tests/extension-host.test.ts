@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ErrorCode, FrameType, LocalKind, LocalOperation } from '@protocol';
+import { ErrorCode, FrameType, LocalKind, LocalOperation, HttpStatus } from '@protocol';
 import { broker } from './extension-client.fixture.js';
 
 afterEach(() => vi.useRealTimers());
@@ -34,7 +34,12 @@ describe('extension viewer connection', () => {
 
     await viewer.ready();
     const request = viewer.connection.request({ operation: LocalOperation.Receipt, commandId: 'missing' });
-    const rejected = expect(request).rejects.toMatchObject({ message: ErrorCode.NOT_FOUND, status: 404 });
+
+    const rejected = expect(request).rejects.toMatchObject({
+      message: ErrorCode.NOT_FOUND,
+      status: HttpStatus.NotFound,
+    });
+
     const message = viewer.sent.at(-1)!;
 
     expect(message.lease).toBe('lease-1');

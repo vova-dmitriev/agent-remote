@@ -1,6 +1,7 @@
 import domain from '../../eslint/domain-values.mjs';
 import { createRequire } from 'node:module';
 import { readabilityRules } from '../mini-app/eslint/readability.mjs';
+import { numericValueRules } from '../mini-app/eslint/rules.mjs';
 
 // The workspace already installs the shared ESLint toolchain with the mini app.
 const require = createRequire(new URL('../mini-app/package.json', import.meta.url));
@@ -36,6 +37,7 @@ export function nodeSourceConfig(files, ignores = []) {
           ],
         },
       ],
+      'no-restricted-syntax': ['error', ...numericValueRules],
       'no-nested-ternary': 'error',
       'max-statements-per-line': ['error', { max: 1 }],
       curly: ['error', 'all'],
@@ -44,21 +46,3 @@ export function nodeSourceConfig(files, ignores = []) {
 }
 
 export default nodeSourceConfig(['apps/daemon/src/**/*.ts']);
-
-// HTTP status literals are linted for the server only until the other packages migrate to HttpStatus.
-export function httpStatusConfig(files) {
-  return ts.config({
-    files,
-    rules: {
-      'no-restricted-syntax': [
-        'error',
-        ...[
-          "NewExpression[callee.name='Fault'] > Literal.arguments",
-          "CallExpression[callee.property.name='status'] > Literal",
-          'BinaryExpression[operator=/^[!=]==$/]:has(MemberExpression[property.name=/^(status|statusCode|error_code)$/]) > Literal[raw=/^[1-5]\\d\\d$/]',
-          "Property[key.name='status'] > Literal[raw=/^[1-5]\\d\\d$/]",
-        ].map((selector) => ({ selector, message: 'Use HttpStatus / derive from the error code.' })),
-      ],
-    },
-  });
-}

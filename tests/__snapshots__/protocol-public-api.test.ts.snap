@@ -91,6 +91,8 @@ exports[`keeps the public @protocol export set stable 1`] = `
   "ReasoningEffort",
   "RemotePermissionDecision",
   "SessionStatus",
+  "SocketCloseCode",
+  "SocketCloseReason",
   "StatusConfidence",
   "SubagentStatus",
   "THEME_PREFERENCES",

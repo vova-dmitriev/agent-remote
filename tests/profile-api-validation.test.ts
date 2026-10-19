@@ -1,4 +1,5 @@
 import { writeFileSync } from 'node:fs';
+import { HttpStatus } from '@protocol';
 import { join } from 'node:path';
 import { expect, it, vi } from 'vitest';
 import { verifyCodexApiCredential } from '../apps/daemon/src/profiles/api/codex.js';
@@ -43,7 +44,10 @@ it.each([401, 403])(
 
 it('does not classify an ordinary 429 as exhausted quota or accept a cached native account', async () => {
   await expect(
-    verifyCodexApiCredential(fixture(), async () => new Response(secret, { status: 429 })),
+    verifyCodexApiCredential(
+      fixture(),
+      async () => new Response(secret, { status: HttpStatus.TooManyRequests }),
+    ),
   ).rejects.toThrow(/^RATE_LIMITED$/);
 });
 

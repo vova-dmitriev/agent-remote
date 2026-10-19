@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { LocalMediaRepository } from '../../apps/daemon/src/local/media/repository.js';
 import { AttachmentService } from '../../apps/daemon/src/attachments/service.js';
 import { localFixture } from './local-runtime.js';
-import { LocalOperation, type AttachmentDescriptor } from '@protocol';
+import { LocalOperation, type AttachmentDescriptor, HttpStatus } from '@protocol';
 
 export const syntheticBytes = Buffer.from('Synthetic local/relay attachment');
 
@@ -63,7 +63,7 @@ export async function attachmentLocalRelay(paired = false) {
     const found = relayed.get(id);
 
     if (!found || (missingHead && init.method === 'HEAD')) {
-      return new Response(null, { status: 404 });
+      return new Response(null, { status: HttpStatus.NotFound });
     }
 
     return new Response(init.method === 'HEAD' ? null : new Uint8Array(found.bytes));

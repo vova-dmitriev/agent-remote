@@ -1,4 +1,4 @@
-import { ErrorCode, attachmentSchema, type AttachmentDescriptor } from "@protocol"
+import { ErrorCode, HttpStatus, attachmentSchema, type AttachmentDescriptor } from "@protocol"
 import { fetchResponse, responseError } from "./request-error"
 
 export interface AttachmentAccess {
@@ -75,7 +75,7 @@ export class AttachmentTransfer implements AttachmentAccess {
         try {
           const body: unknown = JSON.parse(xhr.responseText)
 
-          if (xhr.status < 200 || xhr.status >= 300) {
+          if (xhr.status < HttpStatus.Ok || xhr.status >= HttpStatus.MultipleChoices) {
             const code = body && typeof body === "object" && "code" in body ? String(body.code) : ErrorCode.ATTACHMENT_UPLOAD_FAILED
 
             reject(new Error(code))

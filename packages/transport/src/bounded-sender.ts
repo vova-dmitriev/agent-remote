@@ -1,4 +1,4 @@
-import { ErrorCode } from '@protocol';
+import { ErrorCode, SocketCloseCode } from '@protocol';
 
 interface Socket {
   readonly readyState: number;
@@ -24,7 +24,7 @@ export class BoundedSender {
       pending.frames >= 256 ||
       Math.max(pending.bytes, socket.bufferedAmount) + bytes > 1048576
     ) {
-      socket.close(1013, ErrorCode.QUEUE_FULL);
+      socket.close(SocketCloseCode.TryAgainLater, ErrorCode.QUEUE_FULL);
 
       return false;
     }
@@ -48,7 +48,7 @@ export class BoundedSender {
       }
 
       if (error && socket.readyState === 1) {
-        socket.close(1013, ErrorCode.WRITE_FAILED);
+        socket.close(SocketCloseCode.TryAgainLater, ErrorCode.WRITE_FAILED);
       }
     };
 

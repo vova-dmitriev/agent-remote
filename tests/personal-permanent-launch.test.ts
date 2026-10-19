@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { HttpStatus } from '@protocol';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -222,7 +223,7 @@ it('closes the relay and tunnel when public HTTPS health never succeeds', async 
   vi.stubGlobal('fetch', async () => {
     reachedHealth();
 
-    return Response.json({ status: 'unavailable' }, { status: 503 });
+    return Response.json({ status: 'unavailable' }, { status: HttpStatus.ServiceUnavailable });
   });
 
   vi.useFakeTimers();

@@ -3,6 +3,7 @@ import { Pool } from 'pg';
 import { randomUUID, randomBytes, createHash } from 'node:crypto';
 import { writeFile, mkdir } from 'node:fs/promises';
 import { WebSocket } from 'ws';
+import { HttpStatus } from '@protocol';
 import { initData, testBotToken } from '../tests/helpers/telegram.js';
 
 const url =
@@ -107,7 +108,7 @@ try {
     headers: { authorization: 'Bearer ' + b.token },
   });
 
-  if (foreign.status !== 404) {
+  if (foreign.status !== HttpStatus.NotFound) {
     throw new Error('IMAGE_OWNER_ISOLATION_FAILED');
   }
 

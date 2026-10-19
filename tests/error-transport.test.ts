@@ -1,4 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
+import { HttpStatus } from '@protocol';
 import { AppTransport } from '../apps/mini-app/src/shared/api/transport.js';
 
 const transport = () =>
@@ -40,19 +41,29 @@ it.each([
 it('preserves server error codes and HTTP status for command retry decisions', async () => {
   vi.stubGlobal(
     'fetch',
-    vi.fn().mockResolvedValue(Response.json({ code: 'STALE_SESSION' }, { status: 409 })),
+    vi.fn().mockResolvedValue(Response.json({ code: 'STALE_SESSION' }, { status: HttpStatus.Conflict })),
   );
 
-  await expect(transport().devices()).rejects.toMatchObject({ message: 'STALE_SESSION', status: 409 });
+  await expect(transport().devices()).rejects.toMatchObject({
+    message: 'STALE_SESSION',
+    status: HttpStatus.Conflict,
+  });
 });
 
 it('handles malformed error payloads without showing serialized server data', async () => {
   vi.stubGlobal(
     'fetch',
-    vi.fn().mockResolvedValue(Response.json({ code: { token: 'synthetic-private' } }, { status: 503 })),
+    vi
+      .fn()
+      .mockResolvedValue(
+        Response.json({ code: { token: 'synthetic-private' } }, { status: HttpStatus.ServiceUnavailable }),
+      ),
   );
 
-  await expect(transport().devices()).rejects.toMatchObject({ message: 'SERVICE_UNAVAILABLE', status: 503 });
+  await expect(transport().devices()).rejects.toMatchObject({
+    message: 'SERVICE_UNAVAILABLE',
+    status: HttpStatus.ServiceUnavailable,
+  });
 });
 
 it.each([

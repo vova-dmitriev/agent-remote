@@ -1,5 +1,6 @@
 import {
   ErrorCode,
+  HttpStatus,
   MessageRole,
   ATTACHMENT_TTL_MS,
   MAX_ATTACHMENTS,
@@ -590,7 +591,7 @@ export class AttachmentService {
     if (!response.ok) {
       await response.body?.cancel();
       throw new Error(
-        response.status === 404 || response.status === 410
+        response.status === HttpStatus.NotFound || response.status === HttpStatus.Gone
           ? AttachmentErrorCode.Unavailable
           : AttachmentErrorCode.TransferFailed,
       );

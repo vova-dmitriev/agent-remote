@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { extname } from 'node:path';
 import { protocol } from 'electron';
+import { HttpStatus } from '@protocol';
 import { DESKTOP_ASSET_PROTOCOL } from './config/links.js';
 import { resolveDesktopAsset } from './protocol/asset-path.js';
 
@@ -40,19 +41,19 @@ export function registerDesktopAssetScheme(): void {
 export async function registerDesktopAssets(root: string): Promise<void> {
   await protocol.handle(DESKTOP_ASSET_PROTOCOL.slice(0, -1), async (request) => {
     if (request.method !== 'GET' && request.method !== 'HEAD') {
-      return new Response(null, { status: 405 });
+      return new Response(null, { status: HttpStatus.MethodNotAllowed });
     }
 
     const file = await resolveDesktopAsset(root, request.url);
 
     if (!file) {
-      return new Response(null, { status: 404 });
+      return new Response(null, { status: HttpStatus.NotFound });
     }
 
     const content = request.method === 'HEAD' ? null : new Uint8Array(await readFile(file));
 
     return new Response(content, {
-      status: 200,
+      status: HttpStatus.Ok,
       headers: {
         'content-type': mimeTypes[extname(file)] ?? 'application/octet-stream',
         'content-security-policy': csp,

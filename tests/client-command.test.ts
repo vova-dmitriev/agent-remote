@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { HttpStatus } from '@protocol';
 import { CommandSubmission } from '../apps/mini-app/src/shared/api/commands.js';
 import type { ClientCommand } from '@protocol';
 
@@ -64,7 +65,7 @@ describe('uncertain browser command recovery', () => {
 
     const client = new CommandSubmission(async (method, _path, body) => {
       if (method === 'GET') {
-        throw Object.assign(new Error('NOT_FOUND'), { status: 404 });
+        throw Object.assign(new Error('NOT_FOUND'), { status: HttpStatus.NotFound });
       }
 
       bodies.push(body!);
