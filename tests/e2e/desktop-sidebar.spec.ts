@@ -1,15 +1,17 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { SESSION_SIDEBAR_IDS } from '../../apps/mini-app/src/widgets/session-sidebar/config/test-ids.js';
 import { SHELL_IDS } from '../../apps/mini-app/src/widgets/application-shell/config/test-ids.js';
 import { SESSION_PAGE_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
 import { SESSIONS_PAGE_IDS } from '../../apps/mini-app/src/pages/sessions/config/test-ids.js';
 import { DESKTOP_IDS } from '../../apps/mini-app/src/app/config/test-ids.js';
+import { AppRoute, sessionRoute, subagentRoute } from '../../apps/mini-app/src/shared/lib/routes/app-route.js';
 import { byTestId } from './support/testid.js';
 import { installDesktopBridge } from './support/desktop-bridge.js';
 import { sessionSnapshot } from './support/session-fixtures.js';
 
 const deviceId = 'desktop-e2e-device';
 const DESKTOP_PAGE = '/desktop.html';
+const routeOf = (page: Page) => new URL(page.url()).hash;
 
 test.use({ viewport: { width: 1280, height: 800 }, isMobile: false, hasTouch: false });
 
@@ -30,12 +32,48 @@ test('shows the session sidebar with a placeholder pane and opens a row in the m
   await expect(page.getByTestId(SESSION_PAGE_IDS.root)).toBeVisible();
   await expect(page.getByTestId(SESSION_PAGE_IDS.title)).toContainText('Synthetic sprint fixes');
   await expect(row).toHaveAttribute('aria-selected', 'true');
-  // Electron trusts bridge IPC only from the exact bundle URL, so selection must never rewrite it.
-  expect(new URL(page.url()).hash).toBe('');
-  await expect(page.getByTestId(SESSION_SIDEBAR_IDS.root)).toBeVisible();
+  await expect.poll(() => routeOf(page)).toBe(sessionRoute('terminal-session'));
+
+  await page.reload();
+  await expect(page.getByTestId(SESSION_PAGE_IDS.title)).toContainText('Synthetic sprint fixes');
+  await expect(row).toHaveAttribute('aria-selected', 'true');
 
   await page.getByTestId(SESSION_PAGE_IDS.back).click();
   await expect(page.getByTestId(DESKTOP_IDS.placeholder)).toBeVisible();
+  await expect.poll(() => routeOf(page)).toBe(AppRoute.Root);
+});
+
+test('follows back and forward through the session history', async ({ page }) => {
+  const terminal = byTestId(page, SESSION_SIDEBAR_IDS.row, { 'session-id': 'terminal-session' });
+  const codex = byTestId(page, SESSION_SIDEBAR_IDS.row, { 'session-id': 'codex-cli-session' });
+
+  await terminal.click();
+  await expect(terminal).toHaveAttribute('aria-selected', 'true');
+  await codex.click();
+  await expect(codex).toHaveAttribute('aria-selected', 'true');
+  await expect.poll(() => routeOf(page)).toBe(sessionRoute('codex-cli-session'));
+
+  await page.goBack();
+  await expect(terminal).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByTestId(SESSION_PAGE_IDS.title)).toContainText('Synthetic sprint fixes');
+  await page.goBack();
+  await expect(page.getByTestId(DESKTOP_IDS.placeholder)).toBeVisible();
+  await page.goForward();
+  await expect(terminal).toHaveAttribute('aria-selected', 'true');
+});
+
+test('opens a deep link, keeps the parent selected for a subagent route and replaces an unknown session', async ({ page }) => {
+  const terminal = byTestId(page, SESSION_SIDEBAR_IDS.row, { 'session-id': 'terminal-session' });
+
+  await page.goto(DESKTOP_PAGE + subagentRoute('terminal-session', 'synthetic-agent'));
+  await expect(page.getByTestId(SESSION_PAGE_IDS.title)).toContainText('Synthetic sprint fixes');
+  await expect(terminal).toHaveAttribute('aria-selected', 'true');
+  expect(routeOf(page)).toBe(subagentRoute('terminal-session', 'synthetic-agent'));
+
+  await page.goto('about:blank');
+  await page.goto(DESKTOP_PAGE + sessionRoute('missing-session'));
+  await expect(page.getByTestId(DESKTOP_IDS.placeholder)).toBeVisible();
+  await expect.poll(() => routeOf(page)).toBe(AppRoute.Root);
 });
 
 test('opens the new-session pane from the sidebar and returns to the placeholder from the brand', async ({ page }) => {

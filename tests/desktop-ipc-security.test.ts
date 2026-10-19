@@ -27,21 +27,32 @@ describe('desktop main IPC boundary', () => {
     await openProfileAuth(fixture.event(), authUrl);
     expect(fixture.openExternal).toHaveBeenCalledWith(authUrl);
 
+    await openProfileAuth(
+      fixture.event({ mainFrameUrl: `${DESKTOP_ASSET_URL}#/sessions/synthetic-session` }),
+      authUrl,
+    );
+
+    expect(fixture.openExternal).toHaveBeenCalledTimes(2);
+
+    // Events are built at call time: the live main frame is one shared object whose URL each event sets.
     for (const [event, url] of [
-      [fixture.event({ url: `${DESKTOP_ASSET_URL}?query=1` }), authUrl],
-      [fixture.event({ sender: {} as never }), authUrl],
-      [fixture.event({ frameParent: {} }), authUrl],
-      [fixture.event({ differentFrame: true }), authUrl],
-      [fixture.event({ missingFrame: true }), authUrl],
-      [fixture.event(), 'https://auth.openai.com.attacker.test/'],
-      [fixture.event(), 'file:///etc/passwd'],
+      [() => fixture.event({ url: `${DESKTOP_ASSET_URL}?query=1` }), authUrl],
+      [() => fixture.event({ mainFrameUrl: `${DESKTOP_ASSET_URL}?query=1#/` }), authUrl],
+      [() => fixture.event({ mainFrameUrl: `${DESKTOP_ASSET_URL}/..#/` }), authUrl],
+      [() => fixture.event({ mainFrameUrl: 'agent-remote://user@bundle/desktop.html#/' }), authUrl],
+      [() => fixture.event({ sender: {} as never }), authUrl],
+      [() => fixture.event({ frameParent: {} }), authUrl],
+      [() => fixture.event({ differentFrame: true }), authUrl],
+      [() => fixture.event({ missingFrame: true }), authUrl],
+      [() => fixture.event(), 'https://auth.openai.com.attacker.test/'],
+      [() => fixture.event(), 'file:///etc/passwd'],
     ] as const) {
-      await expect(openProfileAuth(event, url)).rejects.toThrow();
+      await expect(openProfileAuth(event(), url)).rejects.toThrow();
     }
 
     fixture.destroyWindow();
     await expect(openProfileAuth(fixture.event(), authUrl)).rejects.toThrow();
-    expect(fixture.openExternal).toHaveBeenCalledTimes(1);
+    expect(fixture.openExternal).toHaveBeenCalledTimes(2);
   });
 
   it('serves only fixed assets under the trusted root and rejects traversal or symlinks', async () => {

@@ -3,6 +3,7 @@ import { ApplicationShell, DesktopHeader } from "@/widgets/application-shell"
 import { SessionSidebar, useSidebarCollapsed } from "@/widgets/session-sidebar"
 import { CommandNotice } from "@/features/send-command"
 import { DESKTOP_IDS } from "@/app/config/test-ids"
+import { useSessionRoute } from "@/app/model/navigation/use-session-route"
 import { ApplicationContent } from "../application-content"
 import { DesktopNewSession } from "./desktop-new-session"
 import { DesktopPlaceholder } from "./desktop-placeholder"
@@ -21,6 +22,8 @@ export function DesktopLayout({ model, view, back, logout }: DesktopLayoutProps)
     model.setResult("")
     void selection.select(session)
   }
+
+  useSessionRoute({ selectedId: state.selectedId, sessions, ready: online && !!state.snapshot, open, close: back })
 
   return (
     <div className="flex h-dvh flex-col bg-background text-foreground" data-testid={DESKTOP_IDS.root}>

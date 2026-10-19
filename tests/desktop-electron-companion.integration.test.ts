@@ -179,6 +179,8 @@ process.once('SIGTERM', async () => { await daemon.close(); process.exit(0); });
     await expect.poll(() => page.locator('#root > *').count()).toBeGreaterThan(0);
     expect(new URL(page.url()).protocol).toBe('agent-remote:');
     expect(await page.evaluate(() => typeof window.Telegram)).toBe('undefined');
+    // The desktop shell keeps its route in the fragment; bridge IPC must stay trusted with it.
+    await expect.poll(() => new URL(page.url()).hash).toBe('#/');
 
     await verifyDesktopAuthLinkPolicy(page, externalLog);
 
