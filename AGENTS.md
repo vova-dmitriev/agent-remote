@@ -1,7 +1,7 @@
 # Workspace instructions
 
 - Create commits only when the user explicitly requests them. Never push without explicit authorization.
-- Define owned states, statuses, actions and discriminants in dedicated named `as const` objects with derived union types. Reuse their members in schemas, assignments and comparisons; do not duplicate inline string unions or domain literals. Shared wire vocabulary belongs in `packages/protocol/src/values/`; provider-specific vocabulary stays in its domain module.
+- Define owned states, statuses, actions and discriminants in dedicated named `as const` objects with derived union types. Reuse their members in schemas, assignments and comparisons; do not duplicate inline string unions or domain literals. Shared wire vocabulary belongs in the owning domain's `*values.ts` under `packages/protocol/src/<domain>/`; provider-specific vocabulary stays in its domain module.
 - Keep responses terse and concrete; preserve technical details.
 - Follow the plans and specifications linked from README.md. Creating this repository does not authorize implementing or deploying the application.
 - Support multiple users with ownership checks on every data and command path.

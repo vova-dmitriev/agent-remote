@@ -12,7 +12,7 @@ function emittedTarget(specifier) {
   }
 
   if (specifier === '@protocol/private') {
-    return `${protocolSource}/private-error-codes.js`;
+    return `${protocolSource}/errors/private-error-codes.js`;
   }
 
   const subpath = specifier.slice('@transport/'.length);

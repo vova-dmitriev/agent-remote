@@ -25,7 +25,7 @@ describe('rewriteAliases', () => {
       dist,
     );
 
-    expect(out).toContain("'../../../packages/protocol/src/private-error-codes.js'");
+    expect(out).toContain("'../../../packages/protocol/src/errors/private-error-codes.js'");
     expect(out).toContain("'../../../packages/transport/src/native/fragments.js'");
   });
 

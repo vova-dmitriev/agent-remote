@@ -23,7 +23,7 @@
       "project": ["src/**/*.ts"],
       "paths": {
         "@/*": ["../mini-app/src/*"],
-        "@protocol/private": ["../../packages/protocol/src/private-error-codes.ts"],
+        "@protocol/private": ["../../packages/protocol/src/errors/private-error-codes.ts"],
         "@protocol": ["../../packages/protocol/src/index.ts"],
         "@transport/*": ["../../packages/transport/src/*"],
       },

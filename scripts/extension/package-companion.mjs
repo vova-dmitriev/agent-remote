@@ -22,7 +22,10 @@ export async function packageCompanion(options) {
   }
 
   const output = resolve(options.outputDirectory);
-  const limits = await import(pathToFileURL(join(source, 'dist/packages/protocol/src/local-limits.js')).href);
+
+  const limits = await import(
+    pathToFileURL(join(source, 'dist/packages/protocol/src/local/local-limits.js')).href
+  );
 
   if (
     !isAbsolute(options.outputDirectory) ||

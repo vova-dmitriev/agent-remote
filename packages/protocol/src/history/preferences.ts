@@ -1,4 +1,4 @@
-import { Language, ThemePreference } from './values/index.js';
+import { Language, ThemePreference } from './preferences-values.js';
 import { z } from 'zod';
 
 export const LANGUAGE_PREFERENCES = [Language.Ru, Language.En] as const;

@@ -11,7 +11,7 @@ if (!root || !resolve(root)) {
 }
 
 const limits = await import(
-  pathToFileURL(join(repository, 'dist/packages/protocol/src/local-limits.js')).href
+  pathToFileURL(join(repository, 'dist/packages/protocol/src/local/local-limits.js')).href
 );
 
 const app = JSON.parse(await readFile(join(repository, 'apps/desktop/package.json'), 'utf8'));

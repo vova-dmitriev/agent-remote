@@ -21,7 +21,7 @@ export async function createPackageFixture(directory: string) {
   const paths = [
     'apps/daemon/bin',
     'dist/apps/daemon/src',
-    'dist/packages/protocol/src',
+    'dist/packages/protocol/src/local',
     'dist/packages/transport/src',
     'node_modules/synthetic-dependency',
   ];
@@ -52,7 +52,7 @@ export async function createPackageFixture(directory: string) {
   );
 
   await writeFile(
-    join(sourceDirectory, 'dist/packages/protocol/src/local-limits.js'),
+    join(sourceDirectory, 'dist/packages/protocol/src/local/local-limits.js'),
     'export const LOCAL_LIMITS={protocolVersion:1};',
   );
 

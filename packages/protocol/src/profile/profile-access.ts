@@ -1,14 +1,14 @@
 import { z } from 'zod';
-import { profileAuthUrlSchema } from './profile-auth-url.js';
-import { ErrorCode } from './error-codes.js';
+import { profileAuthUrlSchema } from '../credentials/profile-auth-url.js';
+import { ErrorCode } from '../errors/error-codes.js';
 import { profileQuotaObservationSchema } from './profile-quota.js';
-import { ProfileAction, ProfileRequestKind, ProfileLimits } from './values/profile-management.js';
+import { ProfileAction, ProfileRequestKind, ProfileLimits } from './management-values.js';
 import { profileMutationSchema, profileOperationSchema, profileListSchema } from './profile-management.js';
 import {
   beginEnrollmentSchema,
   encryptedEnrollmentSchema,
   enrollmentChallengeSchema,
-} from './credential-enrollment.js';
+} from '../credentials/credential-enrollment.js';
 
 export const profileAuthenticationSchema = z.strictObject({
   operationId: z.uuid(),

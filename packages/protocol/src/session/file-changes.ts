@@ -1,4 +1,4 @@
-import { FileChangeKind } from './values/index.js';
+import { FileChangeKind } from '../history/values.js';
 import { z } from 'zod';
 
 export const sessionFileChangeSchema = z.strictObject({

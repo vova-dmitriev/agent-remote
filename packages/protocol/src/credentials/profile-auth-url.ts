@@ -1,9 +1,5 @@
 import { z } from 'zod';
-import {
-  ProfileAuthUrlHost,
-  ProfileAuthUrlMaxLength,
-  ProfileAuthUrlProtocol,
-} from './values/profile-auth-url.js';
+import { ProfileAuthUrlHost, ProfileAuthUrlMaxLength, ProfileAuthUrlProtocol } from './auth-url-values.js';
 
 export function isProfileAuthUrl(value: string): boolean {
   try {

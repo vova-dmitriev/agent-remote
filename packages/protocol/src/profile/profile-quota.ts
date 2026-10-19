@@ -1,19 +1,19 @@
 import { z } from 'zod';
-import { AgentProvider } from './values/command.js';
-import { ProfileAuthMode } from './values/execution.js';
+import { AgentProvider } from '../session/command-values.js';
+import { ProfileAuthMode } from '../execution/values.js';
 import {
   CodexRateLimitReachedType,
   QuotaEvidenceKind,
   QuotaObservationStatus,
   QuotaSource,
   QuotaScopeKind,
-} from './values/profile-routing.js';
-import { ProfileRoutingIssue } from './values/profile-routing.js';
+} from './routing-values.js';
+import { ProfileRoutingIssue } from './routing-values.js';
 import {
   executionIdSchema as id,
   executionTimeSchema as time,
   executionVersionSchema as version,
-} from './execution-fields.js';
+} from '../execution/execution-fields.js';
 
 const quotaEvidenceSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal(QuotaEvidenceKind.UsageAllowed), allowed: z.literal(true) }),

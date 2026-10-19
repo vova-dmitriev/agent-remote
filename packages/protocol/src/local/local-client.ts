@@ -1,12 +1,12 @@
 import { z } from 'zod';
-import { clientCommandSchema, serverFrameSchema } from './schemas.js';
-import { readingPositionSchema } from './reading-position.js';
-import { preferencePatchSchema } from './preferences.js';
-import { HistoryCursorPrefix, HistoryDirection } from './values/history.js';
-import { LocalKind, LocalOperation } from './values/local-client.js';
+import { clientCommandSchema, serverFrameSchema } from '../session/schemas.js';
+import { readingPositionSchema } from '../history/reading-position.js';
+import { preferencePatchSchema } from '../history/preferences.js';
+import { HistoryCursorPrefix, HistoryDirection } from '../history/values.js';
+import { LocalKind, LocalOperation } from './client-values.js';
 import { LOCAL_LIMITS } from './local-limits.js';
-import { MAX_ATTACHMENT_BYTES, attachmentsSchema } from './attachments.js';
-import { profileRequestSchema } from './profile-access.js';
+import { MAX_ATTACHMENT_BYTES, attachmentsSchema } from '../history/attachments.js';
+import { profileRequestSchema } from '../profile/profile-access.js';
 
 const id = z.string().min(1).max(512);
 const attachmentId = z.uuid();

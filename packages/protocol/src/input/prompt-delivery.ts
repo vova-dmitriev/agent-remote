@@ -1,5 +1,5 @@
-import { PromptDelivery } from './values/command.js';
-import { SessionStatus } from './values/session.js';
+import { PromptDelivery } from '../session/command-values.js';
+import { SessionStatus } from '../session/values.js';
 
 export interface PromptTurnBarrier {
   lastEventAt: number;

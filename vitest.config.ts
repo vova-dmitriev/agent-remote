@@ -7,7 +7,7 @@ export default defineConfig({
       {
         find: '@protocol/private',
         replacement: fileURLToPath(
-          new URL('./packages/protocol/src/private-error-codes.ts', import.meta.url),
+          new URL('./packages/protocol/src/errors/private-error-codes.ts', import.meta.url),
         ),
       },
       {

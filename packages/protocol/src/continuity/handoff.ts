@@ -1,13 +1,13 @@
 import { z } from 'zod';
-import { ErrorCode } from './error-codes.js';
-import { executionLaunchSelectionSchema } from './execution-profile.js';
-import { HandoffPhase } from './values/execution.js';
+import { ErrorCode } from '../errors/error-codes.js';
+import { executionLaunchSelectionSchema } from '../execution/execution-profile.js';
+import { HandoffPhase } from '../execution/values.js';
 import {
   checkpointDigestSchema,
   executionIdSchema as id,
   executionTimeSchema as time,
   executionVersionSchema as version,
-} from './execution-fields.js';
+} from '../execution/execution-fields.js';
 
 export const handoffRequestSchema = z.strictObject({
   ownerId: id,

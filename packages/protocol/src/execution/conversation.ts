@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { AgentProvider } from './values/command.js';
-import { ExecutionMode } from './values/execution.js';
+import { AgentProvider } from '../session/command-values.js';
+import { ExecutionMode } from './values.js';
 import {
   executionIdSchema as id,
   executionTimeSchema as time,

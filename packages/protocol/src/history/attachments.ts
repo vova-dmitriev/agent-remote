@@ -1,4 +1,4 @@
-import { AttachmentKind } from './values/index.js';
+import { AttachmentKind } from './values.js';
 import { z } from 'zod';
 
 export const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;

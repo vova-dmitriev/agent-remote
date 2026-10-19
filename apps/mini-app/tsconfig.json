@@ -6,7 +6,7 @@
     "noEmit": true,
     "paths": {
       "@/*": ["./src/*"],
-      "@protocol/private": ["../../packages/protocol/src/private-error-codes.ts"],
+      "@protocol/private": ["../../packages/protocol/src/errors/private-error-codes.ts"],
       "@protocol": ["../../packages/protocol/src/index.ts"],
       "@storybook-fixtures/*": ["./.storybook/fixtures/*"],
       "@storybook-components/*": ["./.storybook/components/*"],

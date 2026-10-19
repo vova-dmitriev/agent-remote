@@ -1,10 +1,14 @@
 import { z } from 'zod';
-import { ErrorCode } from './error-codes.js';
-import { AgentProvider } from './values/command.js';
-import { ProfileAuthMode } from './values/execution.js';
-import { ProfileAction, ProfileOperationPhase, ProfileLimits } from './values/profile-management.js';
-import { executionProfileSummarySchema } from './execution-profile.js';
-import { executionIdSchema, executionVersionSchema, executionTimeSchema } from './execution-fields.js';
+import { ErrorCode } from '../errors/error-codes.js';
+import { AgentProvider } from '../session/command-values.js';
+import { ProfileAuthMode } from '../execution/values.js';
+import { ProfileAction, ProfileOperationPhase, ProfileLimits } from './management-values.js';
+import { executionProfileSummarySchema } from '../execution/execution-profile.js';
+import {
+  executionIdSchema,
+  executionVersionSchema,
+  executionTimeSchema,
+} from '../execution/execution-fields.js';
 
 export const profileCreateInputSchema = z.strictObject({
   label: z.string().trim().min(1).max(128),

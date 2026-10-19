@@ -1,11 +1,11 @@
 import { z } from 'zod';
-import { CheckpointApprovalKind, CheckpointCoverage } from './values/execution.js';
+import { CheckpointApprovalKind, CheckpointCoverage } from '../execution/values.js';
 import {
   checkpointDigestSchema,
   executionIdSchema as id,
   executionTimeSchema as time,
   executionVersionSchema as version,
-} from './execution-fields.js';
+} from '../execution/execution-fields.js';
 
 export const checkpointApprovalSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal(CheckpointApprovalKind.Manual), approvedAt: time }),

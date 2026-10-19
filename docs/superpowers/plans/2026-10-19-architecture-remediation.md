@@ -480,6 +480,7 @@ Run once (not committed): `perl -0pi -e 's/new Fault\(\s*((?:ErrorCode|Continuit
 - Modify: `package.json` (remove `"express": "5.3.0"` from `dependencies`), `pnpm-lock.yaml` (via `pnpm install`)
 - Modify: every remaining `import express` (only type imports `import type { Request, Response } from 'express'` may remain; runtime parsers come from `@nestjs/platform-express`-provided `express` through `app.getHttpAdapter()` or `useBodyParser`)
 - Modify: `README.md` architecture paragraph if it names files that moved; `docs/superpowers/specs/2026-10-16-telegram-cmux-design.md` unchanged
+- Modify: `Dockerfile` build stage — it runs `npm run build` (which lints) but never copies `eslint/`, root `eslint.config.mjs`, `tests/extension-e2e` and other lint inputs; found broken before this plan (Task 3). Copy exactly what `build` reads; the runtime stage stays `node_modules` + `dist` + `package.json`.
 
 **Interfaces:** none.
 

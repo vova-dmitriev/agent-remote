@@ -1,4 +1,4 @@
-import { ErrorCode } from './error-codes.js';
+import { ErrorCode } from '../errors/error-codes.js';
 import { z } from 'zod';
 
 const id = z

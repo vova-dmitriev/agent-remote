@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import { LOCAL_LIMITS } from './local-limits.js';
 import { localActionSchema } from './local-client.js';
-import { LocalOperation } from './values/local-client.js';
-import { serverFrameSchema } from './schemas.js';
-import { DesktopBridgeKind, DesktopBridgeVersion } from './values/desktop-bridge.js';
+import { LocalOperation } from './client-values.js';
+import { serverFrameSchema } from '../session/schemas.js';
+import { DesktopBridgeKind, DesktopBridgeVersion } from './bridge-values.js';
 
 const id = z.uuid();
 const epoch = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);

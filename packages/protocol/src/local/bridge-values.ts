@@ -24,4 +24,4 @@ export const DesktopBridgeGlobal = { Name: 'desktopBridge' } as const;
 export const DesktopBridgeError = { Unavailable: 'DESKTOP_BRIDGE_UNAVAILABLE' } as const;
 export type DesktopBridgeError = (typeof DesktopBridgeError)[keyof typeof DesktopBridgeError];
 
-import { LOCAL_LIMITS } from '../local-limits.js';
+import { LOCAL_LIMITS } from './local-limits.js';

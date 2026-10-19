@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { AgentProvider } from './values/command.js';
-import { ReasoningEffort } from './values/execution.js';
+import { AgentProvider } from '../session/command-values.js';
+import { ReasoningEffort } from '../execution/values.js';
 import {
   FallbackContextScope,
   FallbackMode,
@@ -8,8 +8,8 @@ import {
   FallbackTrigger,
   ProfileRoutingIssue,
   ProfileRoutingLimits,
-} from './values/profile-routing.js';
-import { executionIdSchema as id, executionVersionSchema as version } from './execution-fields.js';
+} from './routing-values.js';
+import { executionIdSchema as id, executionVersionSchema as version } from '../execution/execution-fields.js';
 import { profileQuotaObservationSchema, type ProfileQuotaObservation } from './profile-quota.js';
 
 const routingVersion = z.number().int().nonnegative().safe();

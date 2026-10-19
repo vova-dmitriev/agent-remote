@@ -1,16 +1,16 @@
 import { z } from 'zod';
-import { AgentProvider } from './values/command.js';
-import { ExecutionMode, CheckpointCoverage } from './values/execution.js';
-import { ContinuityCompatibilityReason, ContinuityLocalRequestKind } from './values/continuity.js';
-import { ErrorCode } from './error-codes.js';
+import { AgentProvider } from '../session/command-values.js';
+import { ExecutionMode, CheckpointCoverage } from '../execution/values.js';
+import { ContinuityCompatibilityReason, ContinuityLocalRequestKind } from './values.js';
+import { ErrorCode } from '../errors/error-codes.js';
 import { contextCheckpointSummarySchema } from './context-checkpoint.js';
-import { conversationSchema, executionLinkSchema } from './conversation.js';
+import { conversationSchema, executionLinkSchema } from '../execution/conversation.js';
 import { handoffOperationSchema, startHandoffRequestSchema } from './handoff.js';
 import {
   checkpointDigestSchema,
   executionIdSchema as id,
   executionVersionSchema as version,
-} from './execution-fields.js';
+} from '../execution/execution-fields.js';
 
 export const continuityCheckpointSelectionSchema = z.strictObject({
   selectedMessageIds: z.array(id).max(500),

@@ -17,7 +17,7 @@ await rm(outputDirectory, { recursive: true, force: true });
 const manifest = await packageDesktopRuntime({ outputDirectory, nodePath });
 
 const limits = await import(
-  pathToFileURL(join(repository, 'dist/packages/protocol/src/local-limits.js')).href
+  pathToFileURL(join(repository, 'dist/packages/protocol/src/local/local-limits.js')).href
 );
 
 await verifyDesktopRuntime({

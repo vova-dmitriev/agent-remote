@@ -1,4 +1,5 @@
-import { FrameType, HistoryDirection } from './values/index.js';
+import { FrameType } from '../connection/values.js';
+import { HistoryDirection } from './values.js';
 import { z } from 'zod';
 
 export const HISTORY_PAGE_MESSAGES = 100;

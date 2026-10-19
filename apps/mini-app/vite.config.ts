@@ -10,7 +10,7 @@ export default defineConfig({
     alias: [
       {
         find: "@protocol/private",
-        replacement: fileURLToPath(new URL("../../packages/protocol/src/private-error-codes.ts", import.meta.url)),
+        replacement: fileURLToPath(new URL("../../packages/protocol/src/errors/private-error-codes.ts", import.meta.url)),
       },
       { find: /^@protocol$/, replacement: fileURLToPath(new URL("../../packages/protocol/src/index.ts", import.meta.url)) },
       { find: "@transport", replacement: fileURLToPath(new URL("../../packages/transport/src", import.meta.url)) },

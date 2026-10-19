@@ -1,6 +1,10 @@
 import { z } from 'zod';
-import { CredentialEnrollmentAlgorithm, CredentialEnrollmentLimits } from './values/credential-enrollment.js';
-import { executionIdSchema, executionVersionSchema, executionTimeSchema } from './execution-fields.js';
+import { CredentialEnrollmentAlgorithm, CredentialEnrollmentLimits } from './values.js';
+import {
+  executionIdSchema,
+  executionVersionSchema,
+  executionTimeSchema,
+} from '../execution/execution-fields.js';
 
 export const enrollmentChallengeSchema = z.strictObject({
   version: z.literal(CredentialEnrollmentLimits.Version),

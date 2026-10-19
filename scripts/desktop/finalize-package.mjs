@@ -117,7 +117,11 @@ export async function finalizePackagedDesktop({ outputPaths, platform, arch }) {
   }
 
   const app = JSON.parse(await readFile(join(desktopDirectory, 'package.json'), 'utf8'));
-  const limits = await import(pathToFileURL(join(repository, 'dist/packages/protocol/src/local-limits.js')));
+
+  const limits = await import(
+    pathToFileURL(join(repository, 'dist/packages/protocol/src/local/local-limits.js'))
+  );
+
   const outputRoot = await realpath(outputDirectory);
   const results = [];
 

@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { ErrorCode } from './error-codes.js';
-import { AgentProvider } from './values/command.js';
-import { CapabilitySupport, ProfileAuthMode, ProfileStatus, ReasoningEffort } from './values/execution.js';
+import { ErrorCode } from '../errors/error-codes.js';
+import { AgentProvider } from '../session/command-values.js';
+import { CapabilitySupport, ProfileAuthMode, ProfileStatus, ReasoningEffort } from './values.js';
 import {
   executionIdSchema as id,
   executionTimeSchema as time,

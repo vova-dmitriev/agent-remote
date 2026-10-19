@@ -1,34 +1,36 @@
 import {
   AgentProvider,
-  AttachmentMode,
-  BindingState,
   CommandActionType,
   CommandStatus,
   PromptDelivery,
-  ConnectorTransport,
-  DeviceStatus,
-  FrameType,
-  IntegrationState,
-  MessageRole,
-  NativeRestartState,
   RemotePermissionDecision,
+} from './command-values.js';
+import {
+  BindingState,
+  DeviceStatus,
+  IntegrationState,
+  NativeRestartState,
   SessionStatus,
   StatusConfidence,
-  TargetKind,
-} from './values/index.js';
-import { ErrorCode } from './error-codes.js';
+} from './values.js';
+import { ConnectorTransport, FrameType, MessageRole, TargetKind } from '../connection/values.js';
+import { AttachmentMode } from '../history/values.js';
+import { ErrorCode } from '../errors/error-codes.js';
 import { z } from 'zod';
 import { sessionChangesSchema } from './file-changes.js';
 import { sessionActivitySchema } from './activity.js';
-import { historyReadSchema, historyDoneSchema } from './history-window.js';
+import { historyReadSchema, historyDoneSchema } from '../history/history-window.js';
 import { subagentSchema } from './subagents.js';
-import { validatePrompt } from './validation.js';
-import { attachmentsSchema } from './attachments.js';
-import { pendingUserInputSchema, userInputAnswersSchema } from './user-input.js';
-import { profileRequestSchema, profileReplySchema } from './profile-access.js';
-import { executionLaunchSelectionSchema } from './execution-profile.js';
-import { executionVersionSchema } from './execution-fields.js';
-import { continuityLocalRequestSchema, continuityLocalResponseSchema } from './continuity-access.js';
+import { validatePrompt } from '../errors/validation.js';
+import { attachmentsSchema } from '../history/attachments.js';
+import { pendingUserInputSchema, userInputAnswersSchema } from '../input/user-input.js';
+import { profileRequestSchema, profileReplySchema } from '../profile/profile-access.js';
+import { executionLaunchSelectionSchema } from '../execution/execution-profile.js';
+import { executionVersionSchema } from '../execution/execution-fields.js';
+import {
+  continuityLocalRequestSchema,
+  continuityLocalResponseSchema,
+} from '../continuity/continuity-access.js';
 
 const id = z.string().min(1).max(512);
 const time = z.number().int().nonnegative().safe();
