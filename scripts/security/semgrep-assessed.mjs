@@ -1,6 +1,8 @@
-// Findings of the vendored SecObserve ruleset that were reviewed and accepted.
-// `# nosemgrep` is ignored by the gate (--disable-nosem), so each acceptance is keyed by rule and path
-// here, with a fingerprint of the matched lines (whitespace-normalised SHA-256 prefix), and mirrored in SECURITY.md. A second finding of the same rule in the same file has another fingerprint and is blocked.
+// Findings of the vendored SecObserve ruleset that were reviewed and accepted, mirrored in SECURITY.md.
+// `# nosemgrep` is ignored by the gate (--disable-nosem), so each acceptance is keyed here by rule id, path and
+// a fingerprint of the matched code: SHA-256 prefix of the source lines Semgrep matched, whitespace-normalised, so
+// it survives moves and re-indentation but not edits. Each entry accepts exactly one finding: a second finding of
+// the same rule in the same file, even with identical code, is blocked.
 import { createHash } from 'node:crypto';
 
 export const SemgrepRule = Object.freeze({
@@ -41,11 +43,38 @@ export function fingerprint(source, startLine, endLine) {
   return createHash('sha256').update(matched).digest('hex').slice(0, 16);
 }
 
-export function isAssessed(finding) {
-  return assessedFindings.some(
-    (entry) =>
-      entry.ruleId === finding.ruleId &&
-      entry.path === finding.path &&
-      entry.fingerprint === finding.fingerprint,
+const keyOf = ({ ruleId, path, fingerprint }) => JSON.stringify([ruleId, path, fingerprint]);
+
+function countByKey(items) {
+  const counts = new Map();
+
+  for (const item of items) {
+    counts.set(keyOf(item), (counts.get(keyOf(item)) ?? 0) + 1);
+  }
+
+  return counts;
+}
+
+// Full scan: each assessed entry absorbs one matching finding; the rest are reported.
+export function withoutAssessed(findings) {
+  const allowance = countByKey(assessedFindings);
+
+  return findings.filter((finding) => {
+    const left = allowance.get(keyOf(finding)) ?? 0;
+
+    allowance.set(keyOf(finding), left - 1);
+
+    return left <= 0;
+  });
+}
+
+// Baseline scan: a new finding is accepted only if its rule, path and fingerprint occur in the scanned files
+// (`scope`, all findings without baseline) no more often than they are assessed. Same verdict as a full scan.
+export function newBeyondAssessed(newFindings, scope) {
+  const allowance = countByKey(assessedFindings);
+  const occurrences = countByKey(scope);
+
+  return newFindings.filter(
+    (finding) => (occurrences.get(keyOf(finding)) ?? 0) > (allowance.get(keyOf(finding)) ?? 0),
   );
 }

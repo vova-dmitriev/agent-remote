@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { git } from './snapshot.mjs';
-import { isAssessed, fingerprint } from './semgrep-assessed.mjs';
+import { fingerprint, newBeyondAssessed, withoutAssessed } from './semgrep-assessed.mjs';
 import { ScanMode } from './policy.mjs';
 
 // Official image, pinned by digest (semgrep/semgrep:1.181.0). No Python toolchain is installed.
@@ -10,9 +10,11 @@ export const SEMGREP_IMAGE =
   'semgrep/semgrep@sha256:81474464c1f07483ba0682a44787fd93c91397419762a04abe2bafaae396304b';
 export const RULES_PATH = '.semgrep/secobserve-high.yml';
 export const DOCKER_REQUIRED = 'Semgrep requires Docker. Scan did not run.';
+export const IMAGE_UNAVAILABLE = `Semgrep image ${SEMGREP_IMAGE} is not present and could not be pulled. Run "docker pull ${SEMGREP_IMAGE}" with network access. Scan did not run.`;
 
 const ExitCode = Object.freeze({ Clean: 0, Findings: 1 });
 const DOCKER_CHECK_TIMEOUT_MS = 30_000;
+const IMAGE_PULL_TIMEOUT_MS = 10 * 60_000;
 const SEMGREP_TIMEOUT_MS = 15 * 60_000;
 
 const semgrepFlags = [
@@ -26,7 +28,15 @@ const semgrepFlags = [
   '--skip-unknown-extensions',
   '--exclude',
   '.semgrep',
+  // No per-rule time limit: under host load the default 5 s limit skipped rules on large files (measured on
+  // apps/daemon/src/codex/binding/binding.ts at load average 42) and Semgrep reports that only as a warning.
+  '--timeout',
+  '0',
 ];
+
+// Semgrep error types. Partial parsing still scans the rest of the file; every other error means a file or rule was
+// not scanned, so the gate fails closed.
+const SemgrepErrorType = Object.freeze({ PartialParsing: 'PartialParsing' });
 
 function requireDocker() {
   const probe = spawnSync('docker', ['version', '--format', '{{.Server.Version}}'], {
@@ -36,6 +46,29 @@ function requireDocker() {
 
   if (probe.error || probe.status !== 0) {
     throw new Error(DOCKER_REQUIRED);
+  }
+}
+
+// The scan itself runs with --pull=never and no network; a missing image is pulled once by its digest or the step fails.
+function requireImage() {
+  const present = spawnSync('docker', ['image', 'inspect', '--format', '{{.Id}}', SEMGREP_IMAGE], {
+    stdio: 'ignore',
+    timeout: DOCKER_CHECK_TIMEOUT_MS,
+  });
+
+  if (present.status === 0) {
+    return;
+  }
+
+  process.stdout.write(`Semgrep: pulling ${SEMGREP_IMAGE}.\n`);
+
+  const pulled = spawnSync('docker', ['pull', '--quiet', SEMGREP_IMAGE], {
+    stdio: 'ignore',
+    timeout: IMAGE_PULL_TIMEOUT_MS,
+  });
+
+  if (pulled.error || pulled.status !== 0) {
+    throw new Error(IMAGE_UNAVAILABLE);
   }
 }
 
@@ -98,18 +131,29 @@ function stagedRepository(root, directory) {
   return changed;
 }
 
-function scan(directory, report, extraFlags, targets) {
+// Sources are mounted read-only. Only the throwaway repository's .git is writable (Semgrep's baseline adds a
+// temporary git worktree there) and the report directory receives the JSON report.
+function scan(directory, report, extraFlags, targets, { writableGit = false } = {}) {
   const uid = process.getuid?.();
   const user = uid === undefined ? [] : ['--user', `${uid}:${process.getgid()}`];
   const reportDirectory = dirname(report);
+  const gitMount = writableGit ? ['-v', `${join(directory, '.git')}:/src/.git`] : [];
 
   return spawnSync(
     'docker',
     [
       'run',
       '--rm',
+      '--pull=never',
       '--network',
       'none',
+      '--read-only',
+      '--tmpfs',
+      '/tmp',
+      '--cap-drop',
+      'ALL',
+      '--security-opt',
+      'no-new-privileges',
       ...user,
       '-e',
       'HOME=/tmp',
@@ -120,7 +164,8 @@ function scan(directory, report, extraFlags, targets) {
       '-e',
       'GIT_CONFIG_VALUE_0=/src',
       '-v',
-      `${directory}:/src`,
+      `${directory}:/src:ro`,
+      ...gitMount,
       '-v',
       `${reportDirectory}:/out`,
       '-w',
@@ -138,43 +183,7 @@ function scan(directory, report, extraFlags, targets) {
   );
 }
 
-export function runSemgrep(root, mode, temporary) {
-  requireDocker();
-
-  const reportDirectory = join(temporary, 'semgrep-report');
-  const report = join(reportDirectory, 'semgrep-report.json');
-
-  mkdirSync(reportDirectory);
-
-  let result;
-  let scanned;
-
-  if (mode === ScanMode.Staged) {
-    const directory = join(temporary, 'semgrep-staged');
-
-    scanned = directory;
-
-    mkdirSync(directory);
-    const changed = stagedRepository(root, directory);
-
-    if (changed.length === 0) {
-      process.stdout.write('Semgrep: no staged files to scan.\n');
-
-      return;
-    }
-
-    // Explicit targets: Semgrep's baseline only inspects the targets it is given.
-    result = scan(
-      directory,
-      report,
-      ['--baseline-commit', 'HEAD'],
-      changed.map((file) => `./${file}`),
-    );
-  } else {
-    scanned = join(temporary, 'snapshot');
-    result = scan(scanned, report, [], ['.']);
-  }
-
+function readReport(result, report, scanned) {
   if (result.error || (result.status !== ExitCode.Clean && result.status !== ExitCode.Findings)) {
     // Scanner output can include source excerpts: never print it.
     throw new Error(
@@ -184,9 +193,24 @@ export function runSemgrep(root, mode, temporary) {
 
   const output = JSON.parse(readFileSync(report, 'utf8'));
   const normalize = (path) => path.replace(/^\.\//, '');
+  const incomplete = [];
 
-  const findings = output.results
-    .map((entry) => ({
+  for (const error of output.errors ?? []) {
+    const raw = Array.isArray(error.path) ? error.path[0] : error.path;
+    const path = raw ? normalize(raw) : 'unknown file';
+    const type = Array.isArray(error.type) ? error.type[0] : error.type;
+
+    if (type === SemgrepErrorType.PartialParsing) {
+      process.stderr.write(`Semgrep partial parse: ${path}\n`);
+    } else {
+      incomplete.push(`${path} (${type})`);
+    }
+  }
+
+  return {
+    targets: (output.paths?.scanned ?? []).map(normalize),
+    incomplete,
+    findings: output.results.map((entry) => ({
       ruleId: entry.check_id.split('.').at(-1),
       path: normalize(entry.path),
       line: entry.start.line,
@@ -195,20 +219,77 @@ export function runSemgrep(root, mode, temporary) {
         entry.start.line,
         entry.end.line,
       ),
-    }))
-    .filter((finding) => !isAssessed(finding));
+    })),
+  };
+}
 
-  for (const error of output.errors ?? []) {
-    const path = Array.isArray(error.path) ? error.path[0] : error.path;
+function scanSnapshot(snapshot, report) {
+  const { incomplete, findings } = readReport(scan(snapshot, report, [], ['.']), report, snapshot);
 
-    process.stderr.write(`Semgrep parse warning: ${path ? normalize(path) : 'unknown file'}\n`);
+  return { incomplete, findings: withoutAssessed(findings) };
+}
+
+// Staged mode. Semgrep's baseline only inspects explicit targets, and explicit targets bypass its default ignore list
+// (tests/, build/, ...), so a plain scan of the staged tree first selects targets exactly as a worktree scan would.
+// Only when that scan finds something does a baseline scan against the HEAD versions decide which findings are new.
+function scanStaged(root, temporary, report) {
+  const directory = join(temporary, 'semgrep-staged');
+
+  mkdirSync(directory);
+
+  if (stagedRepository(root, directory).length === 0) {
+    process.stdout.write('Semgrep: no staged files to scan.\n');
+
+    return { incomplete: [], findings: [] };
+  }
+
+  const selected = readReport(scan(directory, report, [], ['.']), report, directory);
+
+  if (selected.incomplete.length > 0 || withoutAssessed(selected.findings).length === 0) {
+    return { incomplete: selected.incomplete, findings: [] };
+  }
+
+  const baseline = readReport(
+    scan(
+      directory,
+      report,
+      ['--baseline-commit', 'HEAD'],
+      selected.targets.map((file) => `./${file}`),
+      { writableGit: true },
+    ),
+    report,
+    directory,
+  );
+
+  return {
+    incomplete: baseline.incomplete,
+    findings: newBeyondAssessed(baseline.findings, selected.findings),
+  };
+}
+
+export function runSemgrep(root, mode, temporary) {
+  requireDocker();
+  requireImage();
+
+  const reportDirectory = join(temporary, 'semgrep-report');
+  const report = join(reportDirectory, 'semgrep-report.json');
+
+  mkdirSync(reportDirectory);
+
+  const snapshot = join(temporary, 'snapshot');
+
+  const { findings, incomplete } =
+    mode === ScanMode.Staged ? scanStaged(root, temporary, report) : scanSnapshot(snapshot, report);
+
+  for (const finding of findings) {
+    process.stderr.write(`${finding.ruleId}: ${finding.path}:${finding.line}\n`);
+  }
+
+  if (incomplete.length > 0) {
+    throw new Error(`Semgrep could not scan: ${incomplete.join(', ')}. Scan incomplete.`);
   }
 
   if (findings.length > 0) {
-    for (const finding of findings) {
-      process.stderr.write(`${finding.ruleId}: ${finding.path}:${finding.line}\n`);
-    }
-
     throw new Error(`Semgrep found ${findings.length} new High/Critical findings. Source suppressed.`);
   }
 

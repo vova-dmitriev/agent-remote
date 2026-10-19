@@ -199,7 +199,7 @@ test('assessed Semgrep findings name an existing file and a vendored rule', () =
   }
 });
 
-test('staged High finding is blocked, even with nosemgrep, and no source is printed', () => {
+test('staged High finding is blocked, even with nosemgrep and a sanitized working copy, and no source is printed', () => {
   const directory = fixture();
 
   writeFileSync(
@@ -208,6 +208,7 @@ test('staged High finding is blocked, even with nosemgrep, and no source is prin
   );
 
   execFileSync('git', ['add', 'vulnerable.ts'], { cwd: directory });
+  writeFileSync(join(directory, 'vulnerable.ts'), 'export const sanitized = 1;\n');
   const result = scan(directory, 'staged');
 
   assert.equal(result.status, 1, result.stderr);
@@ -217,6 +218,48 @@ test('staged High finding is blocked, even with nosemgrep, and no source is prin
   for (const output of [result.stderr, result.stdout]) {
     assert.equal(/eval\(|marker(Alpha|Beta)|1\+/.test(output), false);
   }
+});
+
+test('staged scan reads the index, not an unstaged High finding in the working copy', () => {
+  const directory = fixture();
+
+  writeFileSync(join(directory, 'vulnerable.ts'), 'export const clean = 1;\n');
+  execFileSync('git', ['add', 'vulnerable.ts'], { cwd: directory });
+  writeFileSync(join(directory, 'vulnerable.ts'), unsafeEval('markerAlpha'));
+  const result = scan(directory, 'staged');
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Semgrep: staged scan passed/);
+});
+
+test('staged and worktree scans skip the same Semgrep default-ignored paths', () => {
+  const directory = fixture();
+
+  mkdirSync(join(directory, 'tests'), { recursive: true });
+  writeFileSync(join(directory, 'tests/fixture.ts'), unsafeEval('markerAlpha'));
+  execFileSync('git', ['add', 'tests/fixture.ts'], { cwd: directory });
+
+  for (const mode of ['staged', 'worktree']) {
+    const result = scan(directory, mode);
+
+    assert.equal(result.status, 0, `${mode}: ${result.stderr}`);
+    assert.match(result.stdout, new RegExp(`Semgrep: ${mode} scan passed`));
+  }
+});
+
+test('installed pre-commit hook rejects a staged High finding without creating a commit', () => {
+  const directory = fixture();
+
+  mkdirSync(join(directory, 'scripts'), { recursive: true });
+  cpSync(join(repository, 'scripts/security'), join(directory, 'scripts/security'), { recursive: true });
+  cpSync(join(repository, '.githooks'), join(directory, '.githooks'), { recursive: true });
+  writeFileSync(join(directory, 'vulnerable.ts'), unsafeEval('markerAlpha'));
+  execFileSync('git', ['add', 'vulnerable.ts'], { cwd: directory });
+  const result = spawnSync('sh', ['.githooks/pre-commit'], { cwd: directory, encoding: 'utf8' });
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /javascript_eval_rule-eval-with-expression: vulnerable\.ts:1\n/);
+  assert.equal(spawnSync('git', ['rev-parse', '--verify', 'HEAD'], { cwd: directory }).status !== 0, true);
 });
 
 test('a finding already in HEAD does not block a commit that leaves it untouched', () => {
@@ -271,28 +314,155 @@ test('missing Docker fails the Semgrep step instead of skipping it', () => {
   assert.match(result.stderr, /Semgrep requires Docker\. Scan did not run\./);
 });
 
-test('an assessed finding passes, but a second finding of the same rule in the same file is blocked', () => {
+function assessedFixture() {
   const directory = fixture();
   const assessed = 'scripts/smoke-image.ts';
 
   mkdirSync(join(directory, 'scripts'), { recursive: true });
   cpSync(join(repository, assessed), join(directory, assessed));
-  const unchanged = scan(directory, 'worktree');
 
-  assert.equal(unchanged.status, 0, unchanged.stderr);
+  return { directory, assessed, original: readFileSync(join(directory, assessed), 'utf8') };
+}
 
-  const original = readFileSync(join(directory, assessed), 'utf8');
+const ssrfFindings = (output) => output.split('\n').filter((line) => line.startsWith('rules_lgpl'));
+
+test('an assessed finding passes after its code moves and is re-indented', () => {
+  const { directory, assessed, original } = assessedFixture();
+
+  assert.equal(scan(directory, 'worktree').status, 0);
+
+  const moved = original.replace(
+    '    const response = await fetch(origin + path, {',
+    '    const response =\tawait   fetch(origin + path, {',
+  );
+
+  assert.notEqual(moved, original);
+  writeFileSync(join(directory, assessed), `// moved\n\n\n${moved}`);
+  const result = scan(directory, 'worktree');
+
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test('a new finding in an assessed file is blocked, including a nosemgrep line and an identical copy', () => {
+  const { directory, assessed, original } = assessedFixture();
 
   writeFileSync(
     join(directory, assessed),
-    `${original}\nexport async function second(path: string, body: unknown) {\n  return fetch(path, { body: JSON.stringify(body) });\n}\n`,
+    `${original}\nexport async function second(path: string, body: unknown) {\n  return fetch(path, { body: JSON.stringify(body) }); // nosemgrep\n}\n`,
   );
 
-  const result = scan(directory, 'worktree');
+  const changed = scan(directory, 'worktree');
+
+  assert.equal(changed.status, 1);
+  assert.match(changed.stderr, /rules_lgpl_javascript_ssrf_rule-node-ssrf: scripts\/smoke-image\.ts:\d+\n/);
+  assert.equal(ssrfFindings(changed.stderr).length, 1);
+
+  const start = original.indexOf('  async function request<T>');
+  const end = original.indexOf('\n  }\n', start) + '\n  }\n'.length;
+  const copy = original.slice(start, end).replace('function request<T>', 'function requestCopy<T>');
+
+  writeFileSync(join(directory, assessed), `${original.slice(0, end)}\n${copy}${original.slice(end)}`);
+  const duplicated = scan(directory, 'worktree');
+
+  assert.equal(duplicated.status, 1);
+  assert.equal(ssrfFindings(duplicated.stderr).length, 1);
+});
+
+test('staged: an identical copy of assessed code is blocked; the re-indented assessed line is not', () => {
+  const { directory, assessed, original } = assessedFixture();
+
+  execFileSync('git', ['add', '.'], { cwd: directory });
+  commit(directory);
+
+  const start = original.indexOf('  async function request<T>');
+  const end = original.indexOf('\n  }\n', start) + '\n  }\n'.length;
+  const copy = original.slice(start, end).replace('function request<T>', 'function requestCopy<T>');
+
+  writeFileSync(join(directory, assessed), `${original.slice(0, end)}\n${copy}${original.slice(end)}`);
+  execFileSync('git', ['add', assessed], { cwd: directory });
+  const duplicated = scan(directory, 'staged');
+
+  assert.equal(duplicated.status, 1);
+  assert.equal(ssrfFindings(duplicated.stderr).length, 1);
+
+  writeFileSync(
+    join(directory, assessed),
+    `// moved\n${original.replace('    const response = await fetch(origin + path, {', '    const response =\tawait   fetch(origin + path, {')}`,
+  );
+
+  execFileSync('git', ['add', assessed], { cwd: directory });
+  const moved = scan(directory, 'staged');
+
+  assert.equal(moved.status, 0, moved.stderr);
+});
+
+function dockerStub(behavior) {
+  const tools = mkdtempSync(join(tmpdir(), 'repository-security-tools-'));
+
+  directories.push(tools);
+
+  for (const tool of ['git', 'gitleaks']) {
+    symlinkSync(execFileSync('which', [tool], { encoding: 'utf8' }).trim(), join(tools, tool));
+  }
+
+  // Synthetic Docker CLI: answers the probes and writes a canned Semgrep report to the /out mount.
+  writeFileSync(
+    join(tools, 'docker'),
+    `#!${process.execPath}
+const { writeFileSync } = require('node:fs');
+const behavior = ${JSON.stringify(behavior)};
+const args = process.argv.slice(2);
+if (args[0] === 'version') process.exit(0);
+if (args[0] === 'image') process.exit(behavior.image ? 0 : 1);
+if (args[0] === 'pull') process.exit(1);
+const out = args[args.findIndex((arg) => arg.endsWith(':/out'))].slice(0, -':/out'.length);
+writeFileSync(out + '/semgrep-report.json', JSON.stringify({ results: [], errors: behavior.errors }));
+`,
+    { mode: 0o755 },
+  );
+
+  return { ...process.env, PATH: tools };
+}
+
+test('a missing Semgrep image that cannot be pulled fails the step with a clear message', () => {
+  const directory = fixture();
+
+  writeFileSync(join(directory, 'clean.ts'), 'export const clean = 1;\n');
+  execFileSync('git', ['add', 'clean.ts'], { cwd: directory });
+  const result = scan(directory, 'staged', dockerStub({ image: false, errors: [] }));
 
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /rules_lgpl_javascript_ssrf_rule-node-ssrf: scripts\/smoke-image\.ts:\d+\n/);
-  assert.equal(result.stderr.split('\n').filter((line) => line.startsWith('rules_lgpl')).length, 1);
+
+  assert.match(
+    result.stderr,
+    /Semgrep image semgrep\/semgrep@sha256:[0-9a-f]{64} is not present and could not be pulled\./,
+  );
+
+  assert.match(result.stderr, /Scan did not run\./);
+});
+
+test('a Semgrep timeout fails closed; a partial parse is reported but does not fail', () => {
+  const directory = fixture();
+
+  writeFileSync(join(directory, 'clean.ts'), 'export const clean = 1;\n');
+
+  const timeout = scan(
+    directory,
+    'worktree',
+    dockerStub({ image: true, errors: [{ type: 'Timeout', level: 'warn', path: 'clean.ts' }] }),
+  );
+
+  assert.equal(timeout.status, 1);
+  assert.match(timeout.stderr, /Semgrep could not scan: clean\.ts \(Timeout\)\. Scan incomplete\./);
+
+  const partial = scan(
+    directory,
+    'worktree',
+    dockerStub({ image: true, errors: [{ type: ['PartialParsing', []], level: 'warn', path: 'clean.ts' }] }),
+  );
+
+  assert.equal(partial.status, 0, partial.stderr);
+  assert.match(partial.stderr, /Semgrep partial parse: clean\.ts/);
 });
 
 test('staged Semgrep scan inside a hook environment never touches the real repository', () => {
