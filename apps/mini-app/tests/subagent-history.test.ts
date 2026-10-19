@@ -9,8 +9,15 @@ import {
   type EventEnvelope,
   type HistoryMessage,
 } from "@protocol"
+import { HistoryPageSkip } from "../src/shared/api"
 import { SubagentHistory } from "../src/entities/session/api/subagent-history"
-import { foldToolResults, mergeSubagentPage, oldestCursor, railActiveId, railMessages } from "../src/pages/session/lib/subagent-history"
+import {
+  foldToolResults,
+  mergeSubagentPage,
+  oldestCursor,
+  railActiveId,
+  railEntries,
+} from "../src/pages/session/lib/history/subagent-history"
 import { SUBAGENT_MESSAGE_LIMIT } from "../src/pages/session/config/subagent"
 
 let seq = 0
@@ -80,11 +87,14 @@ it("replaces the window when a latest page shares no item with it, so missed pol
 
 it("gives tool lines no rail marker and maps a tool line being read to the nearest message", () => {
   const items = [text("ask", 1), call("use-1", "tool-1", 2), call("use-2", "tool-2", 3), text("answer", 4)]
-
-  expect(railMessages(items).map((m) => m.id)).toEqual(["ask", "answer"])
+  const rail = railEntries(items, [0, 100, 140, 180])
   const plain = [text("x", 1)]
+  const starts = [0]
 
-  expect(railMessages(plain)).toBe(plain)
+  expect(rail.messages.map((message) => message.id)).toEqual(["ask", "answer"])
+  expect(rail.starts).toEqual([0, 180])
+  expect(railEntries(plain, starts)).toEqual({ messages: plain, starts })
+  expect(railEntries(plain, starts).messages).toBe(plain)
   expect(railActiveId(items, "use-2")).toBe("ask")
   expect(railActiveId([call("use-0", "tool-0", 0), ...items], "use-0")).toBe("ask")
   expect(railActiveId(items, "answer")).toBe("answer")
@@ -151,9 +161,9 @@ it("keeps subagent cursors apart and drops a response that is no longer current"
   const history = new SubagentHistory(request)
 
   await history.page("session", "first", HistoryDirection.Latest, () => true)
-  expect(await history.page("session", "second", HistoryDirection.Before, () => true)).toBeNull()
+  expect(await history.page("session", "second", HistoryDirection.Before, () => true)).toBe(HistoryPageSkip.Stale)
   expect(await history.page("session", "first", HistoryDirection.Latest, () => false)).toBeNull()
   history.reset()
-  expect(await history.page("session", "first", HistoryDirection.Before, () => true)).toBeNull()
+  expect(await history.page("session", "first", HistoryDirection.Before, () => true)).toBe(HistoryPageSkip.Stale)
   expect(request).toHaveBeenCalledTimes(1)
 })

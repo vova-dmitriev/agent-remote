@@ -2,6 +2,7 @@ import { expect } from '@playwright/test';
 import { test, deviceFixture, delivered, setCommandOutcome, publishMessages } from './support/relay-fixture.js';
 import { identity } from './support/identity.js';
 import { byTestId } from './support/testid.js';
+import { jumpNear } from './support/rail.js';
 import { sessionSnapshot } from './support/session-fixtures.js';
 import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
 import { SESSION_FEED_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
@@ -23,8 +24,8 @@ test('restarts the original native conversation on Mac and enables its input wit
   await page.goto('/');
   await byTestId(page,SESSION_CARD_IDS.root,{'session-id':'terminal-session'}).click();
   await expect(page.getByTestId(COMMAND_IDS.prompt)).toBeDisabled();
-  await byTestId(page,SESSION_FEED_IDS.marker,{'message-id':'restart-read-25'}).click();
-  const message=byTestId(page,SESSION_FEED_IDS.message,{'message-id':'restart-read-25'});
+  const target=await jumpNear(page,'restart-read-25');
+  const message=byTestId(page,SESSION_FEED_IDS.message,{'message-id':target});
 
   await expect(message).toBeVisible();
   const before=await message.evaluate(node=>node.getBoundingClientRect().top);

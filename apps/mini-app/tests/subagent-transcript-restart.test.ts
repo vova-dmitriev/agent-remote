@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest"
-import { ErrorCode } from "@protocol"
+import { ErrorCode, HistoryDirection } from "@protocol"
+import { HistoryPageOutcome } from "../src/entities/session/config/session-values"
+import { HistoryPageSkip } from "../src/shared/api"
 import { SubagentTranscript } from "../src/pages/session/model/subagent/subagent-transcript"
 import { SUBAGENT_POLL_INTERVAL_MS, SubagentHistoryStatus } from "../src/pages/session/config/subagent"
 import { gatedRead, ids, page, visibility } from "./subagent-transcript-fixture"
@@ -41,6 +43,23 @@ it("performs a read when the user retries while a read is in flight", async () =
   gates[1]!.resolve(page("a"))
   await vi.advanceTimersByTimeAsync(0)
   expect(transcript.getSnapshot()).toMatchObject({ status: SubagentHistoryStatus.Ready, error: "" })
+  expect(ids(transcript)).toEqual(["a"])
+  transcript.stop()
+})
+
+it("treats skipped and stale pages as no-ops and reports them like the parent feed", async () => {
+  const results = [page("a"), HistoryPageSkip.Busy, HistoryPageSkip.Exhausted, HistoryPageSkip.Stale, null]
+  const transcript = new SubagentTranscript(async () => results.shift() ?? null, visibility)
+
+  transcript.start(false)
+  await vi.advanceTimersByTimeAsync(0)
+  const loaded = transcript.getSnapshot()
+
+  expect(await transcript.page(HistoryDirection.Before)).toBe(HistoryPageOutcome.Busy)
+  expect(await transcript.page(HistoryDirection.Before)).toBe(HistoryPageOutcome.Declined)
+  expect(await transcript.page(HistoryDirection.Before)).toBe(HistoryPageOutcome.Stale)
+  expect(await transcript.page(HistoryDirection.Latest)).toBe(HistoryPageOutcome.Stale)
+  expect(transcript.getSnapshot()).toBe(loaded)
   expect(ids(transcript)).toEqual(["a"])
   transcript.stop()
 })

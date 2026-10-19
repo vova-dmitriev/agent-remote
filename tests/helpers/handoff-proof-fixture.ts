@@ -1,7 +1,7 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
-import { createRelay } from '../../apps/server/src/relay.js';
-import { initData, testBotToken } from '../helpers/telegram.js';
+import { createRelay } from '../../apps/server/src/app/create-relay.js';
+import { initData, testBotToken } from './telegram.js';
 import type { AppSnapshot, Session } from '@protocol';
 import { WebSocket } from 'ws';
 

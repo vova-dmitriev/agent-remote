@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { Redis } from 'ioredis';
-import { createRelay } from '../apps/server/src/relay.js';
+import { createRelay } from '../apps/server/src/app/create-relay.js';
 import { NotificationWorker } from '../apps/server/src/notifications/worker.js';
 import { databaseFixture } from './helpers/database.js';
 import { redisProxy } from './helpers/redis-proxy.js';

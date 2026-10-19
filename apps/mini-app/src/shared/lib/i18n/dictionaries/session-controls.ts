@@ -1,4 +1,49 @@
+/** App navigation: header settings menu and the desktop session sidebar. */
+const navigationEN = {
+  settings: "Settings",
+  sidebarSessions: "Sessions",
+  sidebarDevice: "This Mac",
+  sidebarSearch: "Search sessions",
+  sidebarShortcut: "⌘K",
+  sidebarClearSearch: "Clear search",
+  sidebarToday: "Today",
+  sidebarYesterday: "Yesterday",
+  sidebarEarlier: "Earlier",
+  sidebarNow: "now",
+  sidebarNoMatches: "No sessions match “{{query}}”",
+  sidebarNoMatchesHint: "Search by title, project or model. Esc clears the search.",
+  sidebarCollapse: "Collapse sidebar",
+  sidebarExpand: "Expand sidebar",
+  sidebarNoSelection: "Select a session",
+  sidebarNoSelectionHint: "Pick a session on the left or start a new one.",
+  newSessionHint: "New sessions start in a project that already has a session on your Mac.",
+} as const
+
+const navigationRU = {
+  settings: "Настройки",
+  sidebarSessions: "Сессии",
+  sidebarDevice: "Этот Mac",
+  sidebarSearch: "Поиск сессий",
+  sidebarShortcut: "⌘K",
+  sidebarClearSearch: "Очистить поиск",
+  sidebarToday: "Сегодня",
+  sidebarYesterday: "Вчера",
+  sidebarEarlier: "Ранее",
+  sidebarNow: "сейчас",
+  sidebarNoMatches: "Нет сессий по запросу «{{query}}»",
+  sidebarNoMatchesHint: "Ищи по названию, проекту или модели. Esc очищает поиск.",
+  sidebarCollapse: "Свернуть панель",
+  sidebarExpand: "Развернуть панель",
+  sidebarNoSelection: "Выбери сессию",
+  sidebarNoSelectionHint: "Выбери сессию слева или начни новую.",
+  newSessionHint: "Новая сессия запускается в проекте, где на Mac уже есть сессия.",
+} as const
+
 export const sessionControlsEN = {
+  ...navigationEN,
+  jumpToMessages: "Messages {{first}}–{{last}}",
+  loadEarlierMessages: "Load earlier messages",
+  loadLaterMessages: "Load later messages",
   editQueuedPrompt: "Edit",
   sendQueuedNow: "Send now",
   queuedPromptEditor: "Edit queued message",
@@ -58,6 +103,10 @@ export const sessionControlsEN = {
 }
 
 export const sessionControlsRU = {
+  ...navigationRU,
+  jumpToMessages: "Сообщения {{first}}–{{last}}",
+  loadEarlierMessages: "Загрузить более ранние сообщения",
+  loadLaterMessages: "Загрузить более поздние сообщения",
   editQueuedPrompt: "Изменить",
   sendQueuedNow: "Отправить сейчас",
   queuedPromptEditor: "Изменить сообщение в очереди",

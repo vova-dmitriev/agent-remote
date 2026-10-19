@@ -1,4 +1,4 @@
-import { ConnectionStatus } from "@protocol"
+import { ConnectionStatus, HostKind, type Session } from "@protocol"
 import { AttachmentProvider } from "@/entities/attachment"
 import { useApplicationView } from "./model/navigation/use-application-view"
 import { useSubagentView } from "./model/navigation/use-subagent-view"
@@ -7,10 +7,17 @@ import { CommandNotice } from "@/features/send-command"
 import { StartupSkeleton } from "./startup-skeleton"
 import { ApplicationContent } from "./composition/application-content"
 import { useApplication } from "./model/use-application"
+import { useDesktopLayout } from "./model/navigation/use-desktop-layout"
+import { DesktopLayout } from "./composition/desktop/desktop-layout"
+import { HomeView } from "./home-view"
+import { useSessionRoute } from "./model/navigation/use-session-route"
+import { useHost } from "@/shared/lib/host"
 
 export function RemoteApplication() {
   const model = useApplication()
   const view = useApplicationView()
+  const desktop = useDesktopLayout()
+  const host = useHost()
   const { state, selected, selection, commands } = model
   const subagent = useSubagentView(state.selectedId)
 
@@ -20,7 +27,35 @@ export function RemoteApplication() {
     selection.back(state.deviceId)
   }
 
+  const logout = () => {
+    view.closeAccounts()
+    void model.logout()
+  }
+
+  const open = (session: Session) => {
+    view.closeAccounts()
+    model.setResult("")
+    void selection.select(session)
+  }
+
+  useSessionRoute({
+    enabled: host.kind === HostKind.Desktop,
+    selectedId: state.selectedId,
+    sessions: state.snapshot?.sessions ?? [],
+    ready: state.connection === ConnectionStatus.Online && !!state.snapshot,
+    open,
+    close: back,
+  })
+
   if (!model.preferencesReady && !model.error) return <StartupSkeleton />
+
+  if (desktop && state.connection !== ConnectionStatus.Expired) {
+    return (
+      <AttachmentProvider access={model.attachments}>
+        <DesktopLayout model={model} view={view} subagent={subagent} back={back} logout={logout} open={open} />
+      </AttachmentProvider>
+    )
+  }
 
   return (
     <AttachmentProvider access={model.attachments}>
@@ -29,10 +64,8 @@ export function RemoteApplication() {
         connection={state.connection}
         result={model.result}
         onHome={back}
-        onLogout={() => {
-          view.closeAccounts()
-          void model.logout()
-        }}
+        onAccounts={model.devices.length && state.connection !== ConnectionStatus.Expired ? view.openAccounts : undefined}
+        onLogout={logout}
       >
         <CommandNotice error={model.error} busy={commands.busy} retry={() => void commands.retry()} />
         <ApplicationContent
@@ -40,8 +73,8 @@ export function RemoteApplication() {
           accounts={view.accounts}
           subagent={subagent}
           back={back}
-          openAccounts={view.openAccounts}
           closeAccounts={view.closeAccounts}
+          home={<HomeView model={model} />}
         />
       </ApplicationShell>
     </AttachmentProvider>

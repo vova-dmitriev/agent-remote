@@ -2,7 +2,7 @@ import { ErrorCode, HttpStatus } from '@protocol';
 import { describe, expect, it } from 'vitest';
 import { AttachmentFaultCode } from '../apps/server/src/attachments/errors.js';
 import { ContinuityError } from '../apps/server/src/continuity/types.js';
-import { Fault } from '../apps/server/src/http/fault.js';
+import { Fault } from '../apps/server/src/http/errors/fault.js';
 
 describe('Fault status', () => {
   it.each([

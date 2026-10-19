@@ -2,10 +2,9 @@ import { ConnectionStatus, DeviceStatus, HistoryStatus } from "@protocol"
 import { AccountsPage } from "@/pages/accounts"
 import { SignInPage } from "@/pages/sign-in"
 import { SessionPage, SubagentPage } from "@/pages/session"
-import { HomeView } from "@/app/home-view"
 import type { ApplicationContentProps } from "./application-content.types"
 
-export function ApplicationContent({ model, accounts, subagent, back, openAccounts, closeAccounts }: ApplicationContentProps) {
+export function ApplicationContent({ model, accounts, subagent, back, closeAccounts, home, sessionBack = true }: ApplicationContentProps) {
   const { state, selected, selection, commands } = model
 
   if (state.connection === ConnectionStatus.Expired) return <SignInPage />
@@ -17,8 +16,11 @@ export function ApplicationContent({ model, accounts, subagent, back, openAccoun
         onBack={closeAccounts}
       />
     )
-  if (!selected) return <HomeView model={model} openAccounts={openAccounts} />
-  if (subagent.agentId)
+  if (!selected) return home
+  // Subagent transcripts need both the client and the session's source; otherwise a subagent route keeps the parent.
+  const subagents = subagent.supported && !!selected.capabilities.subagentHistory
+
+  if (subagent.agentId && subagents)
     return (
       <SubagentPage
         key={[selected.id, subagent.agentId, selected.generation].join(":")}
@@ -40,9 +42,10 @@ export function ApplicationContent({ model, accounts, subagent, back, openAccoun
       tab={selection.tab}
       setTab={selection.setTab}
       onBack={back}
+      showBack={sessionBack}
       rename={model.rename}
       controller={commands}
-      onOpenSubagent={subagent.supported ? (agentId) => subagent.open(selected.id, agentId) : undefined}
+      onOpenSubagent={subagents ? (agentId) => subagent.open(selected.id, agentId) : undefined}
     />
   )
 }

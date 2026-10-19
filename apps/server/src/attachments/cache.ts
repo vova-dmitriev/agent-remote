@@ -1,5 +1,5 @@
 import { type PoolClient } from 'pg';
-import { Fault } from '../http/fault.js';
+import { Fault } from '../http/errors/fault.js';
 import { ATTACHMENT_OWNER_QUOTA_BYTES } from './limits.js';
 import { AttachmentFaultCode } from './errors.js';
 

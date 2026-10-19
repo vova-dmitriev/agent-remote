@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useSyncExternalStore } from "react"
 import { ErrorCode } from "@protocol"
 import { useRuntime } from "@/shared/lib/runtime"
-import { foldToolResults } from "@/pages/session/lib/subagent-history"
+import { foldToolResults } from "@/pages/session/lib/history/subagent-history"
 import { SubagentTranscript } from "./subagent-transcript"
 
 export interface SubagentHistoryOptions {

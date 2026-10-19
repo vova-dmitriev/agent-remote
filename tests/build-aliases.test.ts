@@ -65,7 +65,7 @@ describe('buildNode', () => {
       [
         '--input-type=module',
         '-e',
-        "await import('./dist/apps/daemon/src/setup-cli.js'); await import('./dist/apps/server/src/relay.js')",
+        "await import('./dist/apps/daemon/src/setup-cli.js'); await import('./dist/apps/server/src/app/create-relay.js')",
       ],
       { stdio: 'pipe' },
     );

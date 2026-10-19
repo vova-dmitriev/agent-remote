@@ -13,7 +13,7 @@ import { ATTACHMENT_REUSE_EXPIRY_MARGIN_MS } from './limits.js';
 import { AttachmentFaultCode } from './errors.js';
 import { z } from 'zod';
 import { pruneAttachmentBlobs, reserveAttachmentBytes } from './cache.js';
-import { Fault } from '../http/fault.js';
+import { Fault } from '../http/errors/fault.js';
 import { type Database } from '../db/database.js';
 import { describeAttachment } from './media.js';
 

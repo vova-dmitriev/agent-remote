@@ -2,7 +2,7 @@ import { ServerErrorCode } from './error-codes.js';
 import { SharedPrivateErrorCode } from '@protocol/private';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createRelay } from './relay.js';
+import { createRelay } from './app/create-relay.js';
 import { NotificationWorker } from './notifications/worker.js';
 
 async function main() {

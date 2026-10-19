@@ -24,6 +24,7 @@ export function ThemeSwitcher() {
       label={t("theme")}
       triggerLabel={selected.label}
       icon={selected.icon}
+      compactChevron
       onChange={setPreference}
       ids={THEME_SWITCHER_IDS}
       options={options}

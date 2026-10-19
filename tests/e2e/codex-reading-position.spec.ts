@@ -2,6 +2,7 @@ import { expect } from '@playwright/test';
 import { test, publishMessages } from './support/relay-fixture.js';
 import { identity } from './support/identity.js';
 import { byTestId } from './support/testid.js';
+import { jumpNear, railMarker } from './support/rail.js';
 import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
 import { SESSION_PAGE_IDS, SESSION_FEED_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
 
@@ -23,14 +24,16 @@ test('Codex preserves a line inside a long message after a smooth rail jump and 
   const open = () => byTestId(page, SESSION_CARD_IDS.root, { 'session-id': 'codex-desktop-session' }).click();
 
   await open();
-  await byTestId(page, SESSION_FEED_IDS.marker, { 'message-id': 'codex-read-425' }).click();
+  // The long message shares a rail target with short neighbours; the jump lands on that target's first message.
+  const target = await jumpNear(page, 'codex-read-425');
+  const landed = byTestId(page, SESSION_FEED_IDS.virtualRow, { 'message-id': target });
   const row = byTestId(page, SESSION_FEED_IDS.virtualRow, { 'message-id': 'codex-read-425' });
   const feed = page.getByTestId(SESSION_FEED_IDS.root);
 
   await expect
     .poll(async () =>
       Math.abs(
-        (await row.evaluate((node) => node.getBoundingClientRect().top)) -
+        (await landed.evaluate((node) => node.getBoundingClientRect().top)) -
           (await feed.evaluate((node) => node.getBoundingClientRect().top)) -
           22,
       ),
@@ -54,28 +57,17 @@ test('Codex preserves a line inside a long message after a smooth rail jump and 
     .poll(async () => Math.abs((await row.evaluate((node) => node.getBoundingClientRect().top)) - position))
     .toBeLessThan(3);
 
-  await expect(byTestId(page, SESSION_FEED_IDS.marker, { 'message-id': 'codex-read-425' })).toHaveAttribute(
-    'aria-current',
-    'true',
-  );
+  const marker = railMarker(page, 'codex-read-425');
+  const markers = page.getByTestId(SESSION_FEED_IDS.marker);
 
-  const marker = byTestId(page, SESSION_FEED_IDS.marker, { 'message-id': 'codex-read-425' });
-  const rail = page.getByTestId(SESSION_FEED_IDS.rail);
-
-  await expect
-    .poll(async () => {
-      const selected = await marker.boundingBox();
-      const viewport = await rail.boundingBox();
-
-      return selected && viewport
-        ? Math.min(selected.y - viewport.y, viewport.y + viewport.height - selected.y - selected.height)
-        : 0;
-    })
-    .toBeGreaterThanOrEqual(24);
+  await expect(marker).toHaveAttribute('aria-current', 'true');
+  const index = await markers.evaluateAll((nodes) => nodes.findIndex((node) => node.getAttribute('aria-current') === 'true'));
+  const next = markers.nth(index + 1);
+  const nextId = (await next.getAttribute('data-message-id'))!;
 
   await marker.press('ArrowDown');
-  await expect(byTestId(page, SESSION_FEED_IDS.marker, { 'message-id': 'codex-read-426' })).toBeFocused();
-  await expect(byTestId(page, SESSION_FEED_IDS.message, { 'message-id': 'codex-read-426' })).toBeVisible();
+  await expect(next).toBeFocused();
+  await expect(byTestId(page, SESSION_FEED_IDS.message, { 'message-id': nextId })).toBeVisible();
 });
 
 test('a fresh Mini App restores the server bookmark without browser storage', async ({ page, browser }) => {
@@ -94,9 +86,9 @@ test('a fresh Mini App restores the server bookmark without browser storage', as
   await identity(page, '801', 'en');
   await page.goto('/');
   await byTestId(page, SESSION_CARD_IDS.root, { 'session-id': 'codex-desktop-session' }).click();
-  await byTestId(page, SESSION_FEED_IDS.marker, { 'message-id': 'server-read-120' }).click();
+  const target = await jumpNear(page, 'server-read-120');
 
-  const row = byTestId(page, SESSION_FEED_IDS.virtualRow, { 'message-id': 'server-read-120' }),
+  const row = byTestId(page, SESSION_FEED_IDS.virtualRow, { 'message-id': target }),
     feed = page.getByTestId(SESSION_FEED_IDS.root);
 
   await expect(row).toBeVisible();
@@ -143,7 +135,7 @@ test('a fresh Mini App restores the server bookmark without browser storage', as
     await identity(reopened, '801', 'en');
     await reopened.goto('/');
     await byTestId(reopened, SESSION_CARD_IDS.root, { 'session-id': 'codex-desktop-session' }).click();
-    const restored = byTestId(reopened, SESSION_FEED_IDS.virtualRow, { 'message-id': 'server-read-120' });
+    const restored = byTestId(reopened, SESSION_FEED_IDS.virtualRow, { 'message-id': target });
 
     await expect(restored).toBeAttached();
 
@@ -153,9 +145,7 @@ test('a fresh Mini App restores the server bookmark without browser storage', as
       )
       .toBeLessThan(3);
 
-    await expect(
-      byTestId(reopened, SESSION_FEED_IDS.marker, { 'message-id': 'server-read-120' }),
-    ).toHaveAttribute('aria-current', 'true');
+    await expect(railMarker(reopened, target)).toHaveAttribute('aria-current', 'true');
   } finally {
     await context.close();
   }

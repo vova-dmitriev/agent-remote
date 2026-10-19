@@ -7,6 +7,7 @@ import { SESSION_AVAILABILITY_IDS } from '../../apps/mini-app/src/entities/sessi
 import { test, publishMessages } from './support/relay-fixture.js';
 import { identity } from './support/identity.js';
 import { byTestId } from './support/testid.js';
+import { expectLoadedMessages } from './support/rail.js';
 import { controlledAppSocket } from './product/browser.js';
 
 const message = (id: string, text: string, occurredAt = Date.now()) => ({
@@ -47,7 +48,7 @@ test('reconnect reloads authoritative history including messages missed while th
     'online',
   );
 
-  await expect(page.getByTestId(SESSION_FEED_IDS.marker)).toHaveCount(2);
+  await expectLoadedMessages(page, 2);
 
   await expect(page.getByTestId(SESSION_FEED_IDS.text)).toHaveText([
     'Before reconnect',
@@ -77,14 +78,14 @@ test('history HTTP loads the latest page first and fetches older messages on dem
   await identity(page, '801', 'en');
   await page.goto('/');
   await byTestId(page, SESSION_CARD_IDS.root, { 'session-id': 'terminal-session' }).click();
-  await expect(page.getByTestId(SESSION_FEED_IDS.marker)).toHaveCount(100);
+  await expectLoadedMessages(page, 100);
   expect(pages).toHaveLength(1);
   await loadEarlierMessages(page,205);
-  await expect(page.getByTestId(SESSION_FEED_IDS.marker)).toHaveCount(205);
+  await expectLoadedMessages(page, 205);
 
   const ids = await page
     .getByTestId(SESSION_FEED_IDS.marker)
-    .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-message-id')));
+    .evaluateAll((nodes) => nodes.flatMap((node) => node.getAttribute('data-message-ids')!.split(' ')));
 
   expect(ids).toEqual(messages.map((item) => item.id));
   expect(new Set(ids).size).toBe(205);
@@ -116,7 +117,7 @@ test('a late history response cannot replace the newly selected session', async 
   await expect(page.getByTestId(SESSION_FEED_IDS.text)).toHaveText('Current chat content');
   release();
   await expect(page.getByTestId(SESSION_FEED_IDS.text)).toHaveText('Current chat content');
-  await expect(page.getByTestId(SESSION_FEED_IDS.marker)).toHaveCount(1);
+  await expectLoadedMessages(page, 1);
 });
 
 test('history failure preserves selection and recovers by selecting the session again', async ({ page }) => {

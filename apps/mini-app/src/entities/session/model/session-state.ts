@@ -18,6 +18,7 @@ import {
 } from "@protocol"
 import type { Connection, HistoryStatus } from "@/shared/api"
 import { SessionActionType } from "../config/session-values"
+import { withLastMessageAt } from "../lib/snapshot-recency"
 import { sourceAvailable } from "../lib/availability"
 
 export interface SessionState {
@@ -118,14 +119,7 @@ export function reduceSessionState(
 
     return {
       ...state,
-      snapshot: state.snapshot
-        ? {
-            ...state.snapshot,
-            sessions: state.snapshot.sessions.map((session) =>
-              session.id === id ? { ...session, lastMessageAt: Math.max(session.lastMessageAt ?? 0, parsed.data.occurredAt) } : session,
-            ),
-          }
-        : null,
+      snapshot: withLastMessageAt(state.snapshot, id, parsed.data.occurredAt),
       messages: { ...state.messages, [id]: kept },
       messageVersions: { ...state.messageVersions, [id]: versions },
     }

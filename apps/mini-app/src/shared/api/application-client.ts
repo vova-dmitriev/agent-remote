@@ -14,7 +14,7 @@ import type {
   ProfileRoutingAccess,
 } from "@protocol"
 import type { AttachmentAccess } from "./attachment-access"
-import type { Device } from "./types"
+import type { Device, HistoryPageSkip } from "./types"
 
 export interface ApplicationOperations {
   getPreferences(): Promise<AccountPreferences>
@@ -64,14 +64,17 @@ export interface ApplicationClient extends ApplicationOperations {
   selectTarget(deviceId: string, sessionId: string | null): void
   resetTarget(): void
   history(sessionId: string, latest?: boolean): Promise<EventEnvelope[] | null>
-  historyPage(sessionId: string, direction: HistoryPageDirection, edge?: string): Promise<EventEnvelope[] | null>
-  /** One page of a subagent's own transcript, kept apart from the parent feed; absent where the host cannot read it. */
+  historyPage(sessionId: string, direction: HistoryPageDirection, edge?: string): Promise<EventEnvelope[] | HistoryPageSkip>
+  /**
+   * One page of a subagent's own transcript, kept apart from the parent feed; absent where the host cannot read it.
+   * Latest returns null when the response is no longer current; Before/After return a skip reason like `historyPage`.
+   */
   subagentHistory?(
     sessionId: string,
     agentId: string,
     direction: HistoryNavigationDirection,
     edge?: string,
-  ): Promise<EventEnvelope[] | null>
+  ): Promise<EventEnvelope[] | HistoryPageSkip | null>
   send(command: ClientCommand): Promise<CommandResult>
   retryPending(commandId?: string): Promise<CommandResult>
   checkPending(commandId: string): Promise<CommandResult>

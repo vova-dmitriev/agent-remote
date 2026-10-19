@@ -5,7 +5,7 @@ import { mkdir, writeFile, access } from 'node:fs/promises';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
 import { setTimeout as delay } from 'node:timers/promises';
-import { createRelay } from '../../../../server/src/relay.js';
+import { createRelay } from '../../../../server/src/app/create-relay.js';
 import { NotificationWorker } from '../../../../server/src/notifications/worker.js';
 import { installationRoot } from '../../desktop/bridge-client.js';
 import { loadConfig } from '../../config.js';

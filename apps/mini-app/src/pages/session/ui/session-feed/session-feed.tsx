@@ -6,10 +6,12 @@ import { Button } from "@/shared/ui/button"
 import { cn } from "@/shared/lib/utils"
 import { SESSION_FEED_IDS } from "@/pages/session/config/test-ids"
 import { useFollowMessages } from "@/pages/session/model/use-follow-messages"
+import { useHistoryEdges } from "@/pages/session/model/history/use-history-edges"
+import { useRailMap } from "@/pages/session/model/rail/use-rail-map"
 import { navigationScrollBehavior } from "@/pages/session/lib/message-navigation"
-import { railActiveId, railMessages } from "@/pages/session/lib/subagent-history"
+import { railActiveId, railEntries } from "@/pages/session/lib/history/subagent-history"
 import type { SessionFeedProps } from "@/pages/session/model/types/session-feed.types"
-import { MessageRail } from "./message-rail"
+import { MessageRail } from "./rail/message-rail"
 import { HistorySkeleton } from "./loading/history-skeleton"
 import { FeedContent } from "./content/feed-content"
 
@@ -23,23 +25,27 @@ export function SessionFeed({
   tab,
   terminal,
   agent,
+  newestAt,
 }: SessionFeedProps) {
-  const { scroll, content, settled, onScroll, onUserScroll, atBottom, activeId, jump, latest, virtualizer } = useFollowMessages(
+  const edges = useHistoryEdges(messages, onHistoryPage, newestAt)
+
+  const { scroll, content, settled, onScroll, onUserScroll, atBottom, activeId, jump, seek, latest, virtualizer } = useFollowMessages(
     messages,
     tab === SessionTab.History,
     readingScope,
     historyStatus === HistoryStatus.Ready,
-    onHistoryPage,
+    edges.page,
   )
 
   const { t } = useTranslation()
   const showMessages = tab === SessionTab.History && messages.length > 0
+  const map = useRailMap(virtualizer, scroll, content, showMessages && settled)
   const loading = tab === SessionTab.History && !messages.length && historyStatus === HistoryStatus.Loading
 
   return (
     <div className="relative isolate session:min-h-0 session:flex-1" data-testid={SESSION_FEED_IDS.frame} aria-busy={loading}>
       <div
-        className={cn(feedClass, showMessages && "py-0 pr-[35px] session:py-0")}
+        className={cn(feedClass, showMessages && "py-0 pl-[47px] session:py-0")}
         data-testid={SESSION_FEED_IDS.root}
         ref={scroll}
         style={showMessages && !settled ? { visibility: "hidden" } : undefined}
@@ -66,7 +72,17 @@ export function SessionFeed({
         </div>
       ) : null}
       {showMessages && settled ? (
-        <MessageRail messages={railMessages(messages)} activeId={railActiveId(messages, activeId)} jump={jump} agent={agent} />
+        <MessageRail
+          {...map}
+          {...railEntries(messages, map.starts)}
+          activeId={railActiveId(messages, activeId)}
+          jump={jump}
+          seek={seek}
+          older={edges.older}
+          newer={edges.newer}
+          loadPage={edges.page}
+          agent={agent}
+        />
       ) : null}
       {!atBottom ? (
         <Button

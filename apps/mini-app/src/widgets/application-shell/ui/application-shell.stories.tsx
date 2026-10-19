@@ -1,10 +1,19 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
+import { userEvent } from "storybook/test"
 import { ConnectionStatus, CommandStatus, ThemePreference, Language, ErrorCode } from "@protocol"
+import { SHELL_IDS } from "../config/test-ids"
 import { ApplicationShell } from "./application-shell"
 
 const meta = {
   component: ApplicationShell,
-  args: { connection: ConnectionStatus.Online, result: "", onHome: () => {}, onLogout: () => {}, children: "Synthetic page content" },
+  args: {
+    connection: ConnectionStatus.Online,
+    result: "",
+    onHome: () => {},
+    onLogout: () => {},
+    onAccounts: () => {},
+    children: "Synthetic page content",
+  },
 } satisfies Meta<typeof ApplicationShell>
 
 export default meta
@@ -20,3 +29,9 @@ export const English: StoryObj<typeof meta> = { globals: { language: Language.En
 
 export const CompactSession: StoryObj<typeof meta> = { args: { compact: true } }
 export const CompactSessionDark: StoryObj<typeof meta> = { args: { compact: true }, globals: { theme: ThemePreference.Dark } }
+
+export const SettingsMenuOpen: StoryObj<typeof meta> = {
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByTestId(SHELL_IDS.settings))
+  },
+}

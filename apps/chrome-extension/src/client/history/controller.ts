@@ -1,5 +1,5 @@
 import { HistoryCursorPrefix, FrameType, type HistoryPageDirection, type ServerFrame } from '@protocol';
-import type { ApplicationOperations, TransportHandlers } from '@/shared/api';
+import { HistoryPageSkip, type ApplicationOperations, type TransportHandlers } from '@/shared/api';
 import {
   HistoryStream,
   HistoryWindow,
@@ -119,7 +119,7 @@ export class ExtensionHistory {
     const generation = this.generations.get(sessionId);
 
     if (!generation) {
-      return Promise.resolve(null);
+      return Promise.resolve(HistoryPageSkip.Stale);
     }
 
     return this.window.page(

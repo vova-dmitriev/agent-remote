@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test';
 import { test, delivered, publishMessages } from '../support/relay-fixture.js';
 import { byTestId } from '../support/testid.js';
+import { railMarker } from '../support/rail.js';
 import { COMMAND_IDS } from '../../../apps/mini-app/src/features/send-command/config/test-ids.js';
 import { UPLOAD_IDS } from '../../../apps/mini-app/src/features/send-command/ui/attachments/test-ids.js';
 import { ATTACHMENT_IDS } from '../../../apps/mini-app/src/entities/attachment/config/test-ids.js';
@@ -34,7 +35,7 @@ test('renders native file wrappers as ordinary image/file attachments and only t
   await message.getByTestId(ATTACHMENT_IDS.open).click();
   await expect(page.getByTestId(ATTACHMENT_IDS.dialog)).toBeVisible();
   await page.getByTestId(ATTACHMENT_IDS.close).click();
-  await byTestId(page, SESSION_FEED_IDS.marker, { 'message-id':'envelope' }).hover();
+  await railMarker(page, 'envelope').hover();
   await expect(page.getByTestId(SESSION_FEED_IDS.previewText)).toHaveText('Review these files.');
   await page.screenshot({path:'artifacts/attachment-envelope-mobile.png'});
 });

@@ -37,3 +37,5 @@ export async function createMessaging(url: string, identity: string) {
     },
   };
 }
+
+export type Messaging = Awaited<ReturnType<typeof createMessaging>>;

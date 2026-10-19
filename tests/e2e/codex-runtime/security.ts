@@ -8,7 +8,6 @@ import { SHELL_IDS } from '../../../apps/mini-app/src/widgets/application-shell/
 import { SESSION_PAGE_IDS } from '../../../apps/mini-app/src/pages/session/config/test-ids.js';
 import { setSessionLanguage } from '../support/session-language.js';
 import type { Runtime } from './runtime.js';
-import { NotificationDelivery } from '../../../apps/server/src/notifications/delivery.js';
 
 export async function verifyNotification(runtime: Runtime) {
   const { relay, principal } = runtime;
@@ -29,15 +28,12 @@ export async function verifyNotification(runtime: Runtime) {
     })
     .toBe(true);
 
-  const sent: Array<{ chat_id: string; text: string; reply_markup: unknown }> = [];
+  const sent = (await relay.notifications.deliver('https://example.invalid', id!)) as Array<{
+    chat_id: string;
+    text: string;
+    reply_markup: unknown;
+  }>;
 
-  const delivery = new NotificationDelivery(relay.db, 'https://example.invalid', async (body) => {
-    sent.push(body as (typeof sent)[number]);
-
-    return { ok: true };
-  });
-
-  await delivery.deliver(Date.now(), id);
   expect(sent).toHaveLength(1);
   expect(sent[0]!.chat_id).toBe('801');
   expect(sent[0]!.text).toContain(runtime.provider.model.title);

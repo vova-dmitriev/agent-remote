@@ -1,5 +1,6 @@
-import type { HistoryMessage, HistoryNavigationDirection, Session } from "@protocol"
+import type { HistoryMessage, Session } from "@protocol"
 import type { SubagentHistoryStatus } from "@/pages/session/config/subagent"
+import type { HistoryPageLoader } from "@/pages/session/model/types/session-feed.types"
 
 export interface SubagentViewProps {
   session: Session
@@ -12,5 +13,5 @@ export interface SubagentViewProps {
   error: string
   onBack: () => void
   onRetry?: (() => void) | undefined
-  onHistoryPage?: ((direction: HistoryNavigationDirection) => void | Promise<void>) | undefined
+  onHistoryPage?: HistoryPageLoader | undefined
 }

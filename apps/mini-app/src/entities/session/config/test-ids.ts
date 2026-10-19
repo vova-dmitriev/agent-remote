@@ -5,4 +5,5 @@ export const SESSION_CARD_IDS = {
   title: "session-card-title",
   status: "session-card-status",
   skeleton: "session-card-skeleton",
+  statusDot: "session-status-dot",
 } as const

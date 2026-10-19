@@ -8,4 +8,6 @@ export interface SessionCreationProps {
   online: boolean
   create: (session: Session, provider: AgentProvider, execution?: ProfileExecution) => void
   profileData?: ProfileList
+  /** Renders the form without its toggle, e.g. in the desktop "New session" pane. */
+  inline?: boolean
 }

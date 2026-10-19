@@ -20,21 +20,3 @@ export function previewDismissal() {
     },
   }
 }
-
-interface MessageRailViewport {
-  scrollTop: number
-  clientHeight: number
-  scrollHeight: number
-}
-
-interface MessageRailMarker {
-  offsetTop: number
-  offsetHeight: number
-}
-
-export function messageRailScrollOffset(root: MessageRailViewport, node: MessageRailMarker): number {
-  if (node.offsetTop >= root.scrollTop && node.offsetTop + node.offsetHeight <= root.scrollTop + root.clientHeight) return root.scrollTop
-  const centered = node.offsetTop - (root.clientHeight - node.offsetHeight) / 2
-
-  return Math.max(0, Math.min(centered, root.scrollHeight - root.clientHeight))
-}
