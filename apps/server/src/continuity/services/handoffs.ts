@@ -5,7 +5,7 @@ import { Fault } from '../../http/errors/fault.js';
 import type { Database } from '../../db/database.js';
 import { ContinuityRepository } from '../repository.js';
 import { ContinuityError, type ContinuityReadScope, type StartHandoffInput } from '../types.js';
-import { CommandClaimKind, reserveHandoffCommandIds } from '../command-claims.js';
+import { CommandClaimKind, reserveHandoffCommandIds } from '../../commands/command-claims.js';
 import { fingerprint, uuid } from './values.js';
 
 export class HandoffContinuityService {

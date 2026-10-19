@@ -1,11 +1,15 @@
 import { Global, Module, type DynamicModule } from '@nestjs/common';
+import { AttachmentService } from '../attachments/service.js';
 import { AuthService } from '../auth/auth-service.js';
 import { BrowserSessions } from '../auth/sessions/browser-sessions.js';
 import { Limiter } from '../auth/security.js';
+import { ContinuityService } from '../continuity/service.js';
 import { Database } from '../db/database.js';
 import { DeviceFence } from '../devices/fence.js';
 import { DeviceService } from '../devices/service.js';
 import type { Messaging } from '../infrastructure/messaging.js';
+import { Notifier } from '../notifications/notify.js';
+import { SessionLabels } from '../sessions/labels.js';
 import { MESSAGING, RELAY_CONFIG, type RelayConfig } from './relay-config.js';
 
 export interface CoreResources {
@@ -43,6 +47,22 @@ export class CoreModule {
           inject: [Database],
           useFactory: (database: Database) => new BrowserSessions(database),
         },
+        {
+          provide: SessionLabels,
+          inject: [Database],
+          useFactory: (database: Database) => new SessionLabels(database),
+        },
+        {
+          provide: ContinuityService,
+          inject: [Database],
+          useFactory: (database: Database) => new ContinuityService(database),
+        },
+        {
+          provide: AttachmentService,
+          inject: [Database],
+          useFactory: (database: Database) => new AttachmentService(database),
+        },
+        Notifier,
       ],
       exports: [
         RELAY_CONFIG,
@@ -53,6 +73,10 @@ export class CoreModule {
         DeviceService,
         DeviceFence,
         BrowserSessions,
+        SessionLabels,
+        ContinuityService,
+        AttachmentService,
+        Notifier,
       ],
     };
   }

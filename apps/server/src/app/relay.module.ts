@@ -9,21 +9,30 @@ import {
 } from '@nestjs/common';
 import { APP_FILTER, HttpAdapterHost } from '@nestjs/core';
 import type { ExpressAdapter } from '@nestjs/platform-express';
+import { AttachmentService } from '../attachments/service.js';
 import { AuthService } from '../auth/auth-service.js';
 import { AuthModule } from '../auth/auth.module.js';
 import { Limiter } from '../auth/security.js';
-import { SessionRevocations } from '../auth/sessions/session-revocations.js';
+import { CommandDispatcher } from '../commands/command-dispatcher.js';
+import { CommandsModule } from '../commands/commands.module.js';
+import { ContinuityProxy } from '../continuity/proxy.js';
+import { ContinuityService } from '../continuity/service.js';
 import { Database } from '../db/database.js';
-import { DeviceFence } from '../devices/fence.js';
+import { DevicesModule } from '../devices/devices.module.js';
 import { PairingController } from '../devices/pairing.controller.js';
 import { DeviceService } from '../devices/service.js';
+import { SourceHistory } from '../history/source.js';
 import { FaultFilter } from '../http/errors/fault.filter.js';
 import type { Messaging } from '../infrastructure/messaging.js';
 import { PreferencesController } from '../preferences/preferences.controller.js';
 import { PreferenceService } from '../preferences/service.js';
+import { ProfileProxy } from '../profiles/proxy.js';
 import { ReadingPositionController } from '../reading-position/reading-position.controller.js';
 import { ReadingPositionService } from '../reading-position/service.js';
+import { RealtimeModule } from '../realtime/realtime.module.js';
+import { RelayHub } from '../realtime/relay-hub.js';
 import { RELAY_RUNTIME, createRelayRuntime, type RelayRuntime } from '../relay-runtime.js';
+import { SessionsModule } from '../sessions/sessions.module.js';
 import { CoreModule, type CoreResources } from './core.module.js';
 import { HealthController } from '../health/health.controller.js';
 import { JsonBodyMiddleware } from '../http/pipeline/middleware.js';
@@ -50,7 +59,14 @@ export class RelayModule implements NestModule, OnModuleInit {
   static register(resources: CoreResources): DynamicModule {
     return {
       module: RelayModule,
-      imports: [CoreModule.forRoot(resources), AuthModule],
+      imports: [
+        CoreModule.forRoot(resources),
+        AuthModule,
+        RealtimeModule,
+        DevicesModule,
+        SessionsModule,
+        CommandsModule,
+      ],
       controllers: [HealthController, PairingController, PreferencesController, ReadingPositionController],
       providers: [
         { provide: APP_FILTER, useClass: FaultFilter },
@@ -71,23 +87,45 @@ export class RelayModule implements NestModule, OnModuleInit {
           inject: [
             RELAY_CONFIG,
             Database,
-            MESSAGING,
             AuthService,
             DeviceService,
             Limiter,
-            DeviceFence,
-            SessionRevocations,
+            RelayHub,
+            AttachmentService,
+            ContinuityService,
+            SourceHistory,
+            ProfileProxy,
+            ContinuityProxy,
+            CommandDispatcher,
           ],
           useFactory: (
             config: RelayConfig,
             db: Database,
-            messaging: Messaging | undefined,
             auth: AuthService,
             devices: DeviceService,
             limiter: Limiter,
-            fence: DeviceFence,
-            revocations: SessionRevocations,
-          ) => createRelayRuntime({ config, db, messaging, auth, devices, limiter, fence, revocations }),
+            hub: RelayHub,
+            attachments: AttachmentService,
+            continuity: ContinuityService,
+            sourceHistory: SourceHistory,
+            profileProxy: ProfileProxy,
+            continuityProxy: ContinuityProxy,
+            dispatcher: CommandDispatcher,
+          ) =>
+            createRelayRuntime({
+              config,
+              db,
+              auth,
+              devices,
+              limiter,
+              hub,
+              attachments,
+              continuity,
+              sourceHistory,
+              profileProxy,
+              continuityProxy,
+              dispatcher,
+            }),
         },
       ],
     };

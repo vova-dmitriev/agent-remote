@@ -1,12 +1,16 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import { AttachmentService } from '../attachments/service.js';
 import { AuthService } from '../auth/auth-service.js';
+import { CommandDispatcher } from '../commands/command-dispatcher.js';
 import { Database } from '../db/database.js';
+import { DeviceState } from '../devices/device-state.js';
 import { DeviceFence } from '../devices/fence.js';
 import { DeviceService } from '../devices/service.js';
 import { createMessaging, type Messaging } from '../infrastructure/messaging.js';
-import { RELAY_RUNTIME, type RelayRuntime } from '../relay-runtime.js';
+import { Notifier } from '../notifications/notify.js';
+import { RelayHub } from '../realtime/relay-hub.js';
 import { JsonExpressAdapter } from '../http/pipeline/json-express-adapter.js';
 import { securityHeaders } from '../http/pipeline/middleware.js';
 import type { RelayConfig } from './relay-config.js';
@@ -17,12 +21,12 @@ export interface Relay {
   messaging: Messaging | undefined;
   auth: AuthService;
   devices: DeviceService;
-  attachments: RelayRuntime['attachments'];
-  command: RelayRuntime['command'];
-  dispatchHandoffCreate: RelayRuntime['dispatchHandoffCreate'];
-  replay: RelayRuntime['replay'];
-  live: RelayRuntime['live'];
-  notify: RelayRuntime['notify'];
+  attachments: AttachmentService;
+  command: CommandDispatcher['command'];
+  dispatchHandoffCreate: CommandDispatcher['dispatchHandoffCreate'];
+  replay: DeviceState['replay'];
+  live: RelayHub['live'];
+  notify: Notifier['notify'];
   listen(port?: number, host?: string): Promise<string>;
   close(): Promise<void>;
 }
@@ -52,24 +56,25 @@ export async function createRelay(config: RelayConfig): Promise<Relay> {
   );
 
   app.use(securityHeaders);
+  // Starts the maintenance jobs and attaches the WebSocket hub now, as before the Nest migration, not on `listen()`.
+  await app.init();
 
-  const runtime = app.get<RelayRuntime>(RELAY_RUNTIME);
+  const hub = app.get(RelayHub);
+  const dispatcher = app.get(CommandDispatcher);
   const fence = app.get(DeviceFence);
   const server = app.getHttpServer();
-
-  runtime.attach(server);
 
   return {
     db,
     messaging,
     auth: app.get(AuthService),
     devices: app.get(DeviceService),
-    attachments: runtime.attachments,
-    command: runtime.command,
-    dispatchHandoffCreate: runtime.dispatchHandoffCreate,
-    replay: runtime.replay,
-    live: runtime.live,
-    notify: runtime.notify,
+    attachments: app.get(AttachmentService),
+    command: dispatcher.command,
+    dispatchHandoffCreate: dispatcher.dispatchHandoffCreate,
+    replay: app.get(DeviceState).replay,
+    live: hub.live,
+    notify: app.get(Notifier).notify,
     async listen(port = 3000, host = '127.0.0.1') {
       await app.listen(port, host);
       const address = server.address();
@@ -77,7 +82,7 @@ export async function createRelay(config: RelayConfig): Promise<Relay> {
       return `http://${host}:${typeof address === 'object' && address ? address.port : port}`;
     },
     async close() {
-      runtime.shutdown();
+      await hub.shutdown();
       await app.close();
       await fence.drain();
       await messaging?.close();

@@ -5,7 +5,14 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { createRelay } from '../apps/server/src/relay.js';
 import { NotificationWorker } from '../apps/server/src/notifications/worker.js';
 import { initData, testBotToken } from './helpers/telegram.js';
-import type { Session, AppSnapshot, ServerFrame, ClientCommand } from '@protocol';
+import {
+  SocketCloseCode,
+  SocketCloseReason,
+  type Session,
+  type AppSnapshot,
+  type ServerFrame,
+  type ClientCommand,
+} from '@protocol';
 
 const url =
     process.env.TEST_DATABASE_URL ??
@@ -248,6 +255,25 @@ describe('actual HTTP/WebSocket owner isolation and events', () => {
     expect(response.status).toBe(200);
     expect(relay.live.has(deviceA.deviceId)).toBe(false);
     await expect(relay.devices.authenticate(deviceA.token)).rejects.toThrow('UNAUTHORIZED');
+  });
+
+  it('closes the app socket of a logged-out token as unauthorized', async () => {
+    const token = (await relay.auth.login(initData('303'))).token;
+    const app = ws('/ws/app', token);
+
+    await app.next((f) => f.type === 'authenticated');
+
+    const closed = new Promise<[number, string]>((resolve) =>
+      app.socket.once('close', (code, reason) => resolve([code, String(reason)])),
+    );
+
+    const response = await fetch(origin + '/auth/logout', {
+      method: 'POST',
+      headers: { authorization: 'Bearer ' + token },
+    });
+
+    expect(response.status).toBe(200);
+    expect(await closed).toEqual([SocketCloseCode.Unauthorized, SocketCloseReason.Unauthorized]);
   });
 
   it('registers only private /start and notifies only its owner without prompt text', async () => {
