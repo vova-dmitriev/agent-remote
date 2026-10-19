@@ -1,4 +1,4 @@
-import { ConnectionStatus } from "@protocol"
+import { ConnectionStatus, HostKind, type Session } from "@protocol"
 import { AttachmentProvider } from "@/entities/attachment"
 import { useApplicationView } from "./model/navigation/use-application-view"
 import { ApplicationShell } from "@/widgets/application-shell"
@@ -9,11 +9,14 @@ import { useApplication } from "./model/use-application"
 import { useDesktopLayout } from "./model/navigation/use-desktop-layout"
 import { DesktopLayout } from "./composition/desktop/desktop-layout"
 import { HomeView } from "./home-view"
+import { useSessionRoute } from "./model/navigation/use-session-route"
+import { useHost } from "@/shared/lib/host"
 
 export function RemoteApplication() {
   const model = useApplication()
   const view = useApplicationView()
   const desktop = useDesktopLayout()
+  const host = useHost()
   const { state, selected, selection, commands } = model
 
   const back = () => {
@@ -26,12 +29,27 @@ export function RemoteApplication() {
     void model.logout()
   }
 
+  const open = (session: Session) => {
+    view.closeAccounts()
+    model.setResult("")
+    void selection.select(session)
+  }
+
+  useSessionRoute({
+    enabled: host.kind === HostKind.Desktop,
+    selectedId: state.selectedId,
+    sessions: state.snapshot?.sessions ?? [],
+    ready: state.connection === ConnectionStatus.Online && !!state.snapshot,
+    open,
+    close: back,
+  })
+
   if (!model.preferencesReady && !model.error) return <StartupSkeleton />
 
   if (desktop && state.connection !== ConnectionStatus.Expired) {
     return (
       <AttachmentProvider access={model.attachments}>
-        <DesktopLayout model={model} view={view} back={back} logout={logout} />
+        <DesktopLayout model={model} view={view} back={back} logout={logout} open={open} />
       </AttachmentProvider>
     )
   }

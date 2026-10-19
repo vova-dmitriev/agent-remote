@@ -8,4 +8,6 @@ export interface ApplicationContentProps {
   closeAccounts: () => void
   /** Shown while no session is selected: the session list, or the desktop placeholder / new-session pane. */
   home: ReactNode
+  /** The session page back arrow; hidden in the desktop sidebar layout. */
+  sessionBack?: boolean
 }

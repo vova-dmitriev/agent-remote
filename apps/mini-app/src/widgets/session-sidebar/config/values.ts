@@ -27,3 +27,6 @@ export const SIDEBAR_DATE_AFTER_DAYS = 7
 
 /** Per-viewer collapse state; the value is the string form of a boolean. */
 export const SIDEBAR_COLLAPSED_STORAGE_KEY = "agent-remote:sidebar-collapsed"
+
+/** Relative times ("4m") refresh on this tick; grouping and labels change at most once a minute. */
+export const SIDEBAR_CLOCK_TICK_MS = 60_000

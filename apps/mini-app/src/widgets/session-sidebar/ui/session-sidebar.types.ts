@@ -9,6 +9,8 @@ export interface SessionSidebarProps {
   deviceOnline: boolean
   /** Reference time for grouping and relative labels; fixed in stories for deterministic output. */
   now?: number
+  /** Sessions with a pending permission or question; they wear the attention tone. */
+  awaitingIds?: ReadonlySet<string>
   onOpen: (session: Session) => void
   onExpand: () => void
   onNewSession: () => void
@@ -30,6 +32,7 @@ export interface SidebarProviderChipsProps {
 export interface SidebarRailProps {
   sessions: Session[]
   activeId: string | null
+  awaitingIds: ReadonlySet<string>
   onOpen: (session: Session) => void
   onSearch: () => void
   onNewSession: () => void

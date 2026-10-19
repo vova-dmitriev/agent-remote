@@ -10,8 +10,11 @@ export function projectName(session: Session): string | null {
   return session.cwd?.split("/").filter(Boolean).pop() ?? null
 }
 
+/** Untitled rows show the whole source id; the row truncates it with an ellipsis and keeps it in `title`. */
+const ROW_ID_FALLBACK_LENGTH = 64
+
 export function rowTitle(session: Session): string | null {
-  return sessionTitle(session, 12)
+  return sessionTitle(session, ROW_ID_FALLBACK_LENGTH)
 }
 
 /** Title, project, model and provider name are searchable; the provider makes "codex" / "claude" useful queries. */

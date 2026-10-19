@@ -8,7 +8,7 @@ import { sessionCardBodyClass, sessionCardClass } from "./session-class"
 import { SessionStatusDot } from "./status-dot/status-dot"
 import type { SessionCardProps } from "./session-card.types"
 
-export function SessionCard({ session, onSelect }: SessionCardProps) {
+export function SessionCard({ session, onSelect, awaitingInput = false }: SessionCardProps) {
   const { t } = useTranslation()
 
   return (
@@ -43,7 +43,7 @@ export function SessionCard({ session, onSelect }: SessionCardProps) {
           {t(sessionStatusLabel(session))}
         </span>
       </div>
-      <SessionStatusDot session={session} />
+      <SessionStatusDot session={session} awaitingInput={awaitingInput} />
     </Button>
   )
 }

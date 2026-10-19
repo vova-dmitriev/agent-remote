@@ -1,29 +1,26 @@
-import { ConnectionStatus, DeviceStatus, type Session } from "@protocol"
 import { ApplicationShell, DesktopHeader } from "@/widgets/application-shell"
-import { SessionSidebar, useSidebarCollapsed } from "@/widgets/session-sidebar"
+import { useSidebarCollapsed } from "@/widgets/session-sidebar"
 import { CommandNotice } from "@/features/send-command"
+import { useStableCallback } from "@/shared/lib/hooks"
 import { DESKTOP_IDS } from "@/app/config/test-ids"
-import { useSessionRoute } from "@/app/model/navigation/use-session-route"
 import { ApplicationContent } from "../application-content"
 import { DesktopNewSession } from "./desktop-new-session"
 import { DesktopPlaceholder } from "./desktop-placeholder"
+import { DesktopSidebar } from "./desktop-sidebar"
 import type { DesktopLayoutProps } from "./desktop-layout.types"
 
 /** Desktop host at ≥ 960 px: app bar, session sidebar and the selected session (or a placeholder) in the main pane. */
-export function DesktopLayout({ model, view, back, logout }: DesktopLayoutProps) {
-  const { state, selected, selection, commands } = model
+export function DesktopLayout({ model, view, back, logout, open }: DesktopLayoutProps) {
+  const { state, selected, commands } = model
   const sidebar = useSidebarCollapsed()
-  const sessions = state.snapshot?.sessions ?? []
-  const online = state.connection === ConnectionStatus.Online
   const onAccounts = model.devices.length ? view.openAccounts : undefined
+  const onOpen = useStableCallback(open)
+  const onExpand = useStableCallback(() => sidebar.setCollapsed(false))
 
-  const open = (session: Session) => {
-    view.closeAccounts()
-    model.setResult("")
-    void selection.select(session)
-  }
-
-  useSessionRoute({ selectedId: state.selectedId, sessions, ready: online && !!state.snapshot, open, close: back })
+  const onNewSession = useStableCallback(() => {
+    back()
+    view.openNewSession()
+  })
 
   return (
     <div className="flex h-dvh flex-col bg-background text-foreground" data-testid={DESKTOP_IDS.root}>
@@ -36,17 +33,12 @@ export function DesktopLayout({ model, view, back, logout }: DesktopLayoutProps)
         onLogout={logout}
       />
       <div className="flex min-h-0 flex-1">
-        <SessionSidebar
-          sessions={sessions}
-          activeId={view.accounts ? null : (selected?.id ?? null)}
+        <DesktopSidebar
+          accounts={view.accounts}
           collapsed={sidebar.collapsed}
-          deviceOnline={online && state.snapshot?.deviceStatus === DeviceStatus.Online}
-          onOpen={open}
-          onExpand={() => sidebar.setCollapsed(false)}
-          onNewSession={() => {
-            back()
-            view.openNewSession()
-          }}
+          onOpen={onOpen}
+          onExpand={onExpand}
+          onNewSession={onNewSession}
         />
         <div className="min-w-0 flex-1 overflow-y-auto [--tg-viewport-height:calc(100dvh-3rem)]">
           <ApplicationShell
@@ -63,6 +55,7 @@ export function DesktopLayout({ model, view, back, logout }: DesktopLayoutProps)
               accounts={view.accounts}
               back={back}
               closeAccounts={view.closeAccounts}
+              sessionBack={false}
               home={view.newSession ? <DesktopNewSession model={model} /> : <DesktopPlaceholder />}
             />
           </ApplicationShell>

@@ -4,7 +4,7 @@ import { SignInPage } from "@/pages/sign-in"
 import { SessionPage } from "@/pages/session"
 import type { ApplicationContentProps } from "./application-content.types"
 
-export function ApplicationContent({ model, accounts, back, closeAccounts, home }: ApplicationContentProps) {
+export function ApplicationContent({ model, accounts, back, closeAccounts, home, sessionBack = true }: ApplicationContentProps) {
   const { state, selected, selection, commands } = model
 
   if (state.connection === ConnectionStatus.Expired) return <SignInPage />
@@ -29,6 +29,7 @@ export function ApplicationContent({ model, accounts, back, closeAccounts, home 
       tab={selection.tab}
       setTab={selection.setTab}
       onBack={back}
+      showBack={sessionBack}
       rename={model.rename}
       controller={commands}
     />

@@ -13,6 +13,7 @@ export const SESSION_SIDEBAR_IDS = {
   row: "session-sidebar-row",
   rowTitle: "session-sidebar-row-title",
   empty: "session-sidebar-empty",
+  emptyClear: "session-sidebar-empty-clear",
   rail: "session-sidebar-rail",
   railSearch: "session-sidebar-rail-search",
   railNewSession: "session-sidebar-rail-new",

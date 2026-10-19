@@ -42,6 +42,18 @@ describe('trusted desktop origin', () => {
       'file:///bundle/desktop.html',
       ' agent-remote://bundle/desktop.html',
       'agent-remote://bundle/desktop.html\n#/',
+      'AGENT-REMOTE://bundle/desktop.html',
+      'Agent-Remote://bundle/desktop.html#/',
+      'agent-remote:\\\\bundle\\desktop.html#/',
+      'agent-remote://bundle\\desktop.html#/',
+      'agent-remote://bundle:443/desktop.html#/',
+      'agent-remote://bundle:/desktop.html#/',
+      'agent-remote://bundle./desktop.html',
+      'agent-remote://bundle./desktop.html#/',
+      'javascript:alert(1)#agent-remote://bundle/desktop.html',
+      'javascript://bundle/desktop.html#/',
+      'data:text/html,agent-remote://bundle/desktop.html#/',
+      'data:text/html;base64,PGgxPmhpPC9oMT4=#/',
       '',
     ]) {
       expect(isTrustedDesktopUrl(url), url).toBe(false);

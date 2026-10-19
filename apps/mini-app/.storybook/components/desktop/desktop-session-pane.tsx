@@ -29,6 +29,7 @@ export function DesktopSessionPane({ session, sessions, onBack }: DesktopSession
           tab={tab}
           setTab={setTab}
           onBack={onBack}
+          showBack={false}
           controller={controller}
         />
       </ApplicationShell>

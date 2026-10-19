@@ -9,7 +9,7 @@ import { rowDomId } from "@/widgets/session-sidebar/lib/row-dom-id"
 import { SidebarRow } from "./sidebar-row"
 import type { SidebarListProps } from "./list.types"
 
-export function SidebarList({ sections, activeId, cursorId, query, now, onOpen, onKeyDown, onClear }: SidebarListProps) {
+export function SidebarList({ sections, activeId, cursorId, query, now, awaitingIds, onOpen, onKeyDown, onClear }: SidebarListProps) {
   const { t } = useTranslation()
 
   if (!sections.length && !query.trim()) {
@@ -26,7 +26,7 @@ export function SidebarList({ sections, activeId, cursorId, query, now, onOpen, 
         <SearchX aria-hidden="true" size={22} className="text-muted-foreground" />
         <p className="max-w-full text-[13px] font-medium break-words">{t("sidebarNoMatches", { query: query.trim() })}</p>
         <p className="text-xs text-muted-foreground">{t("sidebarNoMatchesHint")}</p>
-        <Button variant="ghost" size="sm" className="mt-1 text-xs!" onClick={onClear}>
+        <Button variant="ghost" size="sm" className="mt-1 text-xs!" data-testid={SESSION_SIDEBAR_IDS.emptyClear} onClick={onClear}>
           {t("sidebarClearSearch")}
         </Button>
       </div>
@@ -63,6 +63,7 @@ export function SidebarList({ sections, activeId, cursorId, query, now, onOpen, 
               session={session}
               active={session.id === activeId}
               cursor={session.id === cursorId}
+              awaitingInput={awaitingIds.has(session.id)}
               query={query}
               now={now}
               onOpen={onOpen}

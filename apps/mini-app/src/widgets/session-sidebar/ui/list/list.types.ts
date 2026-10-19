@@ -8,6 +8,7 @@ export interface SidebarListProps {
   cursorId: string | null
   query: string
   now: number
+  awaitingIds: ReadonlySet<string>
   onOpen: (session: Session) => void
   onKeyDown: (event: KeyboardEvent<HTMLElement>) => void
   onClear: () => void
@@ -17,6 +18,7 @@ export interface SidebarRowProps {
   session: Session
   active: boolean
   cursor: boolean
+  awaitingInput: boolean
   query: string
   now: number
   onOpen: (session: Session) => void
@@ -29,4 +31,5 @@ export interface HighlightMatchProps {
 
 export interface ProviderIconProps {
   session: Session
+  awaitingInput: boolean
 }

@@ -17,4 +17,6 @@ export const WaitingPermission: Story = { args: { session: { ...terminalSession,
 export const WaitingInput: Story = { args: { session: { ...terminalSession, status: SessionStatus.WaitingInput } } }
 export const Unavailable: Story = { args: { session: { ...terminalSession, integrationState: IntegrationState.Disconnected } } }
 export const Ended: Story = { args: { session: { ...terminalSession, status: SessionStatus.Ended } } }
+export const UnknownStatus: Story = { args: { session: { ...terminalSession, status: SessionStatus.Unknown } } }
+export const AwaitingInput: Story = { args: { awaitingInput: true } }
 export const UnavailableDark: Story = { ...Unavailable, globals: { theme: ThemePreference.Dark } }

@@ -1,9 +1,9 @@
-import { useEffect, useEffectEvent, useRef, useState, type KeyboardEvent } from "react"
+import { useEffect, useEffectEvent, useMemo, useRef, useState, type KeyboardEvent } from "react"
 import type { Session } from "@protocol"
 import { useProviderFilter } from "@/entities/session"
+import { useStableCallback } from "@/shared/lib/hooks"
 import { SidebarKey } from "../config/values"
-import { filterSessions } from "../lib/sidebar-search"
-import { groupByRecency } from "../lib/sidebar-groups"
+import { createSectionsMemo } from "../lib/sidebar-sections"
 import { rowDomId } from "../lib/row-dom-id"
 
 interface SidebarModelOptions {
@@ -22,8 +22,9 @@ export function useSessionSidebar({ sessions, activeId, now, collapsed, onOpen, 
   const [cursorId, setCursorId] = useState<string | null>(null)
   const searchRef = useRef<HTMLInputElement | null>(null)
   const focusRequested = useRef(false)
-  const sections = groupByRecency(filterSessions(sessions, query, provider), now)
-  const order = sections.flatMap((section) => section.sessions)
+  const [sectionsFor] = useState(createSectionsMemo)
+  const sections = sectionsFor({ sessions, query, provider, now })
+  const order = useMemo(() => sections.flatMap((section) => section.sessions), [sections])
   const cursor = order.find((session) => session.id === cursorId) ?? (query.trim() ? order[0] : undefined)
 
   const move = (step: number) => {
@@ -37,10 +38,10 @@ export function useSessionSidebar({ sessions, activeId, now, collapsed, onOpen, 
     document.getElementById(rowDomId(next.id))?.scrollIntoView({ block: "nearest" })
   }
 
-  const open = (session: Session) => {
+  const open = useStableCallback((session: Session) => {
     setCursorId(null)
     onOpen(session)
-  }
+  })
 
   const clear = () => {
     setQuery("")

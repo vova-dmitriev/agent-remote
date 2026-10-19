@@ -4,23 +4,28 @@ import { Button } from "@/shared/ui/button"
 import { cn } from "@/shared/lib/utils"
 import { SESSION_SIDEBAR_IDS } from "../config/test-ids"
 import { useSessionSidebar } from "../model/use-session-sidebar"
+import { useSidebarClock } from "../model/use-sidebar-clock"
 import { SidebarSearch } from "./sidebar-search"
 import { SidebarProviderChips } from "./sidebar-provider-chips"
 import { SidebarRail } from "./sidebar-rail"
 import { SidebarList } from "./list/sidebar-list"
 import type { SessionSidebarProps } from "./session-sidebar.types"
 
+const NO_SESSIONS: ReadonlySet<string> = new Set()
+
 export function SessionSidebar({
   sessions,
   activeId,
   collapsed,
   deviceOnline,
-  now = Date.now(),
+  now: fixedNow,
+  awaitingIds = NO_SESSIONS,
   onOpen,
   onExpand,
   onNewSession,
 }: SessionSidebarProps) {
   const { t } = useTranslation()
+  const now = useSidebarClock(fixedNow)
   const model = useSessionSidebar({ sessions, activeId, now, collapsed, onOpen, onExpand })
 
   if (collapsed) {
@@ -28,6 +33,7 @@ export function SessionSidebar({
       <SidebarRail
         sessions={model.order}
         activeId={activeId}
+        awaitingIds={awaitingIds}
         onOpen={model.open}
         onSearch={model.requestSearch}
         onNewSession={onNewSession}
@@ -73,6 +79,7 @@ export function SessionSidebar({
         cursorId={model.cursorId}
         query={model.query}
         now={now}
+        awaitingIds={awaitingIds}
         onOpen={model.open}
         onKeyDown={model.onKeyDown}
         onClear={model.clear}

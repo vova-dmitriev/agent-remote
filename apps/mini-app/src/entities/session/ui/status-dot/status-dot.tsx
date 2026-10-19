@@ -6,8 +6,8 @@ import { statusToneClass } from "@/entities/session/ui/session-class"
 import type { SessionStatusDotProps } from "./status-dot.types"
 
 /** Session status mark: running pulses blue, waiting is amber, idle solid grey, unavailable a hollow ring. */
-export function SessionStatusDot({ session, className }: SessionStatusDotProps) {
-  const tone = sessionStatusTone(session)
+export function SessionStatusDot({ session, awaitingInput = false, className }: SessionStatusDotProps) {
+  const tone = sessionStatusTone(session, awaitingInput)
 
   return (
     <span

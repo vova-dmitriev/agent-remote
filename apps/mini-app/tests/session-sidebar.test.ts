@@ -7,6 +7,7 @@ import { createLanguageInstance } from "../src/shared/lib/i18n/index.js"
 import { SessionCard } from "../src/entities/session/ui/session-card.js"
 import { SessionStatusTone, ProviderFilterValue } from "../src/entities/session/config/session-values.js"
 import { sessionStatusTone } from "../src/entities/session/lib/status-tone.js"
+import { sessionsAwaitingInput, sortByRecency } from "../src/entities/session/lib/selectors.js"
 import { filterSessions, matchParts } from "../src/widgets/session-sidebar/lib/sidebar-search.js"
 import { groupByRecency } from "../src/widgets/session-sidebar/lib/sidebar-groups.js"
 import { relativeTime } from "../src/widgets/session-sidebar/lib/sidebar-format.js"
@@ -28,6 +29,7 @@ it("maps every status to one tone: running, waiting, idle and unavailable", () =
   expect(sessionStatusTone({ ...terminal, status: SessionStatus.Idle })).toBe(SessionStatusTone.Idle)
   expect(sessionStatusTone({ ...terminal, status: SessionStatus.Ended })).toBe(SessionStatusTone.Unavailable)
   expect(sessionStatusTone({ ...terminal, integrationState: IntegrationState.Disconnected })).toBe(SessionStatusTone.Unavailable)
+  expect(sessionStatusTone({ ...terminal, status: SessionStatus.Unknown })).toBe(SessionStatusTone.Unavailable)
 
   const observeOnly = {
     ...terminal,
@@ -39,12 +41,29 @@ it("maps every status to one tone: running, waiting, idle and unavailable", () =
   expect(sessionStatusTone(observeOnly)).toBe(SessionStatusTone.Running)
 })
 
+it("marks a session with a pending permission or question for attention even when its status lags", () => {
+  const snapshot = sessionSnapshot("device")
+  const awaiting = sessionsAwaitingInput(snapshot)
+  const [withPermission] = snapshot.sessions as [Session]
+
+  expect(withPermission.status).toBe(SessionStatus.Idle)
+  expect(awaiting.has(withPermission.id)).toBe(true)
+  expect(sessionStatusTone(withPermission, awaiting.has(withPermission.id))).toBe(SessionStatusTone.Attention)
+  expect(sessionStatusTone({ ...withPermission, status: SessionStatus.Running }, true)).toBe(SessionStatusTone.Attention)
+  expect(sessionStatusTone({ ...withPermission, status: SessionStatus.Ended }, true)).toBe(SessionStatusTone.Unavailable)
+  expect(awaiting.has(chat.id)).toBe(false)
+
+  const staleGeneration = { ...snapshot, permissions: snapshot.permissions.map((item) => ({ ...item, generation: "old" })) }
+
+  expect(sessionsAwaitingInput(staleGeneration).size).toBe(0)
+})
+
 it("renders the shared tone on the session card", () => {
   const html = renderToStaticMarkup(
     createElement(
       I18nextProvider,
       { i18n: createLanguageInstance(Language.En) },
-      createElement(SessionCard, { session: { ...terminal, status: SessionStatus.WaitingPermission }, onSelect: () => {} }),
+      createElement(SessionCard, { session: { ...terminal, status: SessionStatus.Idle }, awaitingInput: true, onSelect: () => {} }),
     ),
   )
 
@@ -84,4 +103,13 @@ it("formats compact relative times and falls back to a date after a week", () =>
   expect(relativeTime(NOW - 180 * MINUTE, NOW, Language.En)).toBe("3h")
   expect(relativeTime(NOW - 2 * 1_440 * MINUTE, NOW, Language.En)).toBe("2d")
   expect(relativeTime(NOW - 10 * 1_440 * MINUTE, NOW, Language.En)).toBe("Oct 9")
+})
+
+it("orders every list by the last message and never by status events", () => {
+  const statusOnly = { ...chat, lastMessageAt: undefined, lastEventAt: NOW }
+  const older = at(terminal, 30)
+  const newer = at(codexCli, 5)
+
+  expect(sortByRecency([statusOnly, older, newer]).map((session) => session.id)).toEqual([codexCli.id, terminal.id, chat.id])
+  expect(groupByRecency([statusOnly], NOW).map((section) => section.group)).toEqual([SidebarGroup.Earlier])
 })

@@ -7,7 +7,7 @@ import { rowTitle } from "../lib/sidebar-search"
 import { ProviderIcon } from "./list/provider-icon"
 import type { SidebarRailProps } from "./session-sidebar.types"
 
-export function SidebarRail({ sessions, activeId, onOpen, onSearch, onNewSession }: SidebarRailProps) {
+export function SidebarRail({ sessions, activeId, awaitingIds, onOpen, onSearch, onNewSession }: SidebarRailProps) {
   const { t } = useTranslation()
 
   return (
@@ -54,7 +54,7 @@ export function SidebarRail({ sessions, activeId, onOpen, onSearch, onNewSession
               className={cn("relative", session.id === activeId && "bg-accent")}
               onClick={() => onOpen(session)}
             >
-              <ProviderIcon session={session} />
+              <ProviderIcon session={session} awaitingInput={awaitingIds.has(session.id)} />
             </Button>
           )
         })}
