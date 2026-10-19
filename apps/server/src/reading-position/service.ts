@@ -25,8 +25,8 @@ export class ReadingPositionService {
     private cache?: RedisCache,
   ) {}
 
-  private async owned(principal: Principal, sessionId: string, tx?: PoolClient) {
-    const deviceId = await this.positions.sessionDevice(principal.userId, sessionId, tx);
+  private async owned(principal: Principal, sessionId: string, options?: { tx: PoolClient; lock: boolean }) {
+    const deviceId = await this.positions.sessionDevice(principal.userId, sessionId, options);
 
     if (!deviceId) {
       throw new Fault(ErrorCode.NOT_FOUND);
@@ -65,7 +65,7 @@ export class ReadingPositionService {
     }
 
     const saved = await this.positions.transaction(async (tx) => {
-      const deviceId = await this.owned(principal, sessionId, tx);
+      const deviceId = await this.owned(principal, sessionId, { tx, lock: true });
 
       const current =
         (await this.positions.saveNewer(tx, principal.userId, deviceId, sessionId, position)) ??

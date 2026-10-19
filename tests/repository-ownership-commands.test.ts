@@ -18,15 +18,6 @@ afterAll(async () => {
   await f?.close();
 });
 
-/** Runs a foreign write, which may also be refused by a foreign key, and returns owner A's rows before and after. */
-async function unchanged(table: string, write: () => Promise<unknown>) {
-  const before = await f.snapshotOf(table);
-
-  await write().catch(() => undefined);
-
-  return { before, after: await f.snapshotOf(table) };
-}
-
 describe('AttachmentRepository', () => {
   const attachments = () => new AttachmentRepository(f.db);
   const scopeA = () => ({ ownerId: f.ownerA, deviceId: f.deviceA, sessionId: f.sessionA });
@@ -72,7 +63,7 @@ describe('AttachmentRepository', () => {
   });
 
   it('setSource', async () => {
-    const { before, after } = await unchanged('attachments', () =>
+    const { before, after } = await f.untouched('attachments', () =>
       inTransaction((repository, tx) =>
         repository.setSource(tx, f.ownerB, f.attachmentA, 'foreign', 'position:b'),
       ),
@@ -82,7 +73,7 @@ describe('AttachmentRepository', () => {
   });
 
   it('keepSource', async () => {
-    const { before, after } = await unchanged('attachments', () =>
+    const { before, after } = await f.untouched('attachments', () =>
       inTransaction((repository, tx) => repository.keepSource(tx, f.ownerB, f.attachmentA, 'foreign', null)),
     );
 
@@ -95,7 +86,7 @@ describe('AttachmentRepository', () => {
   });
 
   it('delete', async () => {
-    const { before, after } = await unchanged('attachments', () =>
+    const { before, after } = await f.untouched('attachments', () =>
       inTransaction((repository, tx) => repository.delete(tx, f.ownerB, f.attachmentA)),
     );
 
@@ -103,7 +94,7 @@ describe('AttachmentRepository', () => {
   });
 
   it('deleteExpired', async () => {
-    const { before, after } = await unchanged('attachments', () =>
+    const { before, after } = await f.untouched('attachments', () =>
       inTransaction((repository, tx) => repository.deleteExpired(tx, f.ownerB, Number.MAX_SAFE_INTEGER)),
     );
 
@@ -141,7 +132,7 @@ describe('AttachmentRepository', () => {
   });
 
   it('pruneBlobs', async () => {
-    const { before, after } = await unchanged('attachment_blobs', () =>
+    const { before, after } = await f.untouched('attachment_blobs', () =>
       inTransaction((repository, tx) => repository.pruneBlobs(tx, f.ownerB)),
     );
 
@@ -160,7 +151,7 @@ describe('AttachmentRepository', () => {
   });
 
   it('evict', async () => {
-    const blobs = await unchanged('attachment_blobs', () =>
+    const blobs = await f.untouched('attachment_blobs', () =>
       inTransaction((repository, tx) => repository.evict(tx, f.ownerB, [f.blobA])),
     );
 
@@ -188,7 +179,7 @@ describe('CommandRepository', () => {
   });
 
   it('setOutcome', async () => {
-    const { before, after } = await unchanged('command_audit', () =>
+    const { before, after } = await f.untouched('command_audit', () =>
       commands().setOutcome(f.ownerB, f.commandA, 'rejected', 'DEVICE_OFFLINE'),
     );
 

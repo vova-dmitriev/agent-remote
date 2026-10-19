@@ -138,6 +138,7 @@ describe('ordered PostgreSQL migration journal', () => {
       '004_continuity_command_proofs',
       '005_handoff_create_evidence',
       '006_attachment_cache',
+      '007_profile_routing',
     ]);
 
     expect(
@@ -158,6 +159,7 @@ describe('ordered PostgreSQL migration journal', () => {
       '004_continuity_command_proofs',
       '005_handoff_create_evidence',
       '006_attachment_cache',
+      '007_profile_routing',
     ]);
 
     expect(
@@ -169,6 +171,47 @@ describe('ordered PostgreSQL migration journal', () => {
     );
 
     expect(evidence.rows.map((row) => row.column_name)).toContain('create_selection');
+  });
+
+  it('creates the profile routing tables on a fresh schema and journals them once', async () => {
+    const db = await fixture();
+
+    await db.migrate();
+
+    const tables = await db.pool.query(
+      "SELECT to_regclass('profile_routing_settings') AS settings,to_regclass('profile_quota_observations') AS observations",
+    );
+
+    expect(tables.rows[0]).toEqual({
+      settings: 'profile_routing_settings',
+      observations: 'profile_quota_observations',
+    });
+
+    const journal = () =>
+      db.pool.query(
+        "SELECT checksum,applied_at FROM server_schema_migrations WHERE version='007_profile_routing'",
+      );
+
+    const first = (await journal()).rows;
+
+    expect(first).toHaveLength(1);
+
+    await db.migrate();
+
+    expect((await journal()).rows).toEqual(first);
+  });
+
+  it('adopts profile routing tables created by hand before the journal knew them', async () => {
+    const db = await fixture();
+
+    await db.migrate();
+    await db.pool.query("DELETE FROM server_schema_migrations WHERE version='007_profile_routing'");
+    await db.migrate();
+
+    expect(
+      (await db.pool.query("SELECT 1 FROM server_schema_migrations WHERE version='007_profile_routing'"))
+        .rowCount,
+    ).toBe(1);
   });
 
   it('repeats safely, rejects checksum drift, and serializes concurrent migration runs', async () => {

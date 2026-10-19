@@ -16,10 +16,16 @@ export class ReadingPositionRepository {
     return this.db.transaction(operation);
   }
 
-  /** The device of an owned session on a live device; `tx` locks the device row against revocation. */
-  async sessionDevice(ownerId: string, sessionId: string, tx?: PoolClient): Promise<string | undefined> {
+  /**
+   * The device of an owned session on a live device. `lock` holds the device row against revocation until `tx`
+   * ends, so it needs a transaction.
+   */
+  async sessionDevice(
+    ownerId: string,
+    sessionId: string,
+    { tx, lock = false }: { tx?: PoolClient; lock?: boolean } = {},
+  ): Promise<string | undefined> {
     const executor: Pool | PoolClient = tx ?? this.db.pool;
-    const lock = tx !== undefined;
 
     const result = await executor.query<{ device_id: string }>(
       `SELECT s.device_id FROM sessions s JOIN devices d ON d.owner_id=s.owner_id AND d.id=s.device_id

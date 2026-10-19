@@ -1,5 +1,4 @@
 import { expect, it } from 'vitest';
-import { readFile } from 'node:fs/promises';
 import { databaseFixture } from './helpers/database.js';
 import { ProfileRoutingRepository } from '../apps/server/src/profiles/routing/repository.js';
 import {
@@ -19,16 +18,10 @@ import {
 it('persists fenced routing settings and only current ready-profile quota observations', async () => {
   const fixture = await databaseFixture();
 
-  const migration = await readFile(
-    new URL('../apps/server/src/db/migrations/007_profile_routing.sql', import.meta.url),
-    'utf8',
-  );
-
   const repository = new ProfileRoutingRepository(fixture.db);
   const profileId = '11111111-1111-4111-8111-111111111111';
 
   try {
-    await fixture.db.pool.query(migration);
     await fixture.db.pool.query("INSERT INTO users(id,telegram_id,created_at) VALUES('owner','991',0)");
 
     await fixture.db.pool.query(

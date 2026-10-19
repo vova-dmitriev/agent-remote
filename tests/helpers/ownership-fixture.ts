@@ -2,6 +2,9 @@ import { randomUUID } from 'node:crypto';
 import { ContinuityService } from '../../apps/server/src/continuity/service.js';
 import { databaseFixture } from './database.js';
 
+/** PostgreSQL SQLSTATE codes the ownership tests expect. */
+export const PgErrorCode = { ForeignKeyViolation: '23503' } as const;
+
 /**
  * Owner A with a live device, a session and one row in every owner-scoped table; owner B with nothing.
  * Repository ownership tests call each method as B with A's ids and expect nothing back and nothing changed.
@@ -157,5 +160,17 @@ export async function ownershipFixture() {
       (await db.pool.query(`SELECT * FROM ${table} WHERE owner_id=$1 ORDER BY 1,2,3`, [ids.ownerA])).rows,
     );
 
-  return { ...ids, db, snapshotOf, close: database.close };
+  /**
+   * Runs a foreign write and returns owner A's rows of `table` before and after it.
+   * A write error propagates: a write expected to be refused asserts its own rejection.
+   */
+  const untouched = async (table: string, write: () => Promise<unknown>) => {
+    const before = await snapshotOf(table);
+
+    await write();
+
+    return { before, after: await snapshotOf(table) };
+  };
+
+  return { ...ids, db, snapshotOf, untouched, close: database.close };
 }

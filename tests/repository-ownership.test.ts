@@ -5,9 +5,12 @@ import { HistoryRepository } from '../apps/server/src/history/repository.js';
 import { PreferenceRepository } from '../apps/server/src/preferences/repository.js';
 import { ReadingPositionRepository } from '../apps/server/src/reading-position/repository.js';
 import { SessionRepository } from '../apps/server/src/sessions/repository.js';
-import { ownershipFixture } from './helpers/ownership-fixture.js';
+import { PgErrorCode, ownershipFixture } from './helpers/ownership-fixture.js';
 
 // Every owner-scoped repository method, called as owner B with owner A's ids, returns nothing and changes nothing.
+// A foreign insert keyed by (owner, device) cannot attach a row to A's device: PostgreSQL refuses it.
+
+const refused = { code: PgErrorCode.ForeignKeyViolation };
 
 let f: Awaited<ReturnType<typeof ownershipFixture>>;
 
@@ -18,15 +21,6 @@ beforeAll(async () => {
 afterAll(async () => {
   await f?.close();
 });
-
-/** Runs a foreign write, which may also be refused by a foreign key, and returns owner A's rows before and after. */
-async function unchanged(table: string, write: () => Promise<unknown>) {
-  const before = await f.snapshotOf(table);
-
-  await write().catch(() => undefined);
-
-  return { before, after: await f.snapshotOf(table) };
-}
 
 describe('SessionRepository', () => {
   const sessions = () => new SessionRepository(f.db);
@@ -57,15 +51,17 @@ describe('SessionRepository', () => {
   });
 
   it('saveLabel', async () => {
-    const { before, after } = await unchanged('session_labels', () =>
-      f.db.transaction((tx) => sessions().saveLabel(tx, f.ownerB, f.deviceA, 'source-a', 'Foreign')),
+    const { before, after } = await f.untouched('session_labels', () =>
+      expect(
+        f.db.transaction((tx) => sessions().saveLabel(tx, f.ownerB, f.deviceA, 'source-a', 'Foreign')),
+      ).rejects.toMatchObject(refused),
     );
 
     expect(after).toBe(before);
   });
 
   it('setTitle', async () => {
-    const { before, after } = await unchanged('sessions', () =>
+    const { before, after } = await f.untouched('sessions', () =>
       f.db.transaction((tx) => sessions().setTitle(tx, f.ownerB, f.deviceA, f.sessionA, 'Foreign')),
     );
 
@@ -73,7 +69,7 @@ describe('SessionRepository', () => {
   });
 
   it('replaceAll', async () => {
-    const { before, after } = await unchanged('sessions', () =>
+    const { before, after } = await f.untouched('sessions', () =>
       f.db.transaction((tx) => sessions().replaceAll(tx, f.ownerB, f.deviceA, [])),
     );
 
@@ -100,19 +96,19 @@ describe('DeviceRepository', () => {
   });
 
   it('revoke', async () => {
-    const { before, after } = await unchanged('devices', () => devices().revoke(f.ownerB, f.deviceA, 1));
+    const { before, after } = await f.untouched('devices', () => devices().revoke(f.ownerB, f.deviceA, 1));
 
     expect(after).toBe(before);
   });
 
   it('touch', async () => {
-    const { before, after } = await unchanged('devices', () => devices().touch(f.ownerB, f.deviceA, 99));
+    const { before, after } = await f.untouched('devices', () => devices().touch(f.ownerB, f.deviceA, 99));
 
     expect(after).toBe(before);
   });
 
   it('saveSnapshot', async () => {
-    const { before, after } = await unchanged('devices', () =>
+    const { before, after } = await f.untouched('devices', () =>
       f.db.transaction((tx) => devices().saveSnapshot(tx, f.ownerB, f.deviceA, { owner: 'b' }, [])),
     );
 
@@ -142,11 +138,13 @@ describe('PreferenceRepository', () => {
   });
 
   it('save', async () => {
-    const { before, after } = await unchanged('user_preferences', () =>
-      preferences().save(f.ownerB, 'ru', 'light'),
+    const { before, after } = await f.untouched('user_preferences', async () =>
+      expect(await preferences().save(f.ownerB, 'ru', 'light')).toEqual({ language: 'ru', theme: 'light' }),
     );
 
     expect(after).toBe(before);
+    expect(await preferences().find(f.ownerA)).toEqual({ language: 'en', theme: 'dark' });
+    expect(await preferences().find(f.ownerB)).toEqual({ language: 'ru', theme: 'light' });
   });
 });
 
@@ -158,7 +156,7 @@ describe('ReadingPositionRepository', () => {
     expect(await positions().sessionDevice(f.ownerB, f.sessionA)).toBeUndefined();
 
     expect(
-      await f.db.transaction((tx) => positions().sessionDevice(f.ownerB, f.sessionA, tx)),
+      await f.db.transaction((tx) => positions().sessionDevice(f.ownerB, f.sessionA, { tx, lock: true })),
     ).toBeUndefined();
   });
 
@@ -168,14 +166,16 @@ describe('ReadingPositionRepository', () => {
   });
 
   it('saveNewer', async () => {
-    const { before, after } = await unchanged('reading_positions', () =>
-      f.db.transaction((tx) =>
-        positions().saveNewer(tx, f.ownerB, f.deviceA, f.sessionA, {
-          messageId: 'foreign',
-          offset: 0,
-          updatedAt: Date.now(),
-        }),
-      ),
+    const { before, after } = await f.untouched('reading_positions', () =>
+      expect(
+        f.db.transaction((tx) =>
+          positions().saveNewer(tx, f.ownerB, f.deviceA, f.sessionA, {
+            messageId: 'foreign',
+            offset: 0,
+            updatedAt: Date.now(),
+          }),
+        ),
+      ).rejects.toMatchObject(refused),
     );
 
     expect(after).toBe(before);
@@ -188,24 +188,26 @@ describe('HistoryRepository', () => {
   const foreign = () => ({ ownerId: f.ownerB, deviceId: f.deviceA, sessionId: f.sessionA });
 
   it('insertEvent', async () => {
-    const { before, after } = await unchanged('events', () =>
-      f.db.transaction((tx) =>
-        history().insertEvent(tx, f.ownerB, {
-          deviceId: f.deviceA,
-          streamId: f.streamA,
-          seq: 1,
-          eventId: 'event-a',
-          sessionId: f.sessionA,
-          occurredAt: 1,
-        } as never),
-      ),
+    const { before, after } = await f.untouched('events', () =>
+      expect(
+        f.db.transaction((tx) =>
+          history().insertEvent(tx, f.ownerB, {
+            deviceId: f.deviceA,
+            streamId: f.streamA,
+            seq: 1,
+            eventId: 'event-a',
+            sessionId: f.sessionA,
+            occurredAt: 1,
+          } as never),
+        ),
+      ).rejects.toMatchObject(refused),
     );
 
     expect(after).toBe(before);
   });
 
   it('bumpRevision', async () => {
-    const { before, after } = await unchanged('devices', () =>
+    const { before, after } = await f.untouched('devices', () =>
       f.db.transaction((tx) => history().bumpRevision(tx, f.ownerB, f.deviceA)),
     );
 
@@ -213,8 +215,10 @@ describe('HistoryRepository', () => {
   });
 
   it('recordActivity', async () => {
-    const { before, after } = await unchanged('session_activity', () =>
-      f.db.transaction((tx) => history().recordActivity(tx, f.ownerB, f.deviceA, f.sessionA, 99)),
+    const { before, after } = await f.untouched('session_activity', () =>
+      expect(
+        f.db.transaction((tx) => history().recordActivity(tx, f.ownerB, f.deviceA, f.sessionA, 99)),
+      ).rejects.toMatchObject(refused),
     );
 
     expect(after).toBe(before);

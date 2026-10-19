@@ -8,6 +8,7 @@ export const MigrationVersion = {
   ContinuityCommandProofs: '004_continuity_command_proofs',
   HandoffCreateEvidence: '005_handoff_create_evidence',
   AttachmentCache: '006_attachment_cache',
+  ProfileRouting: '007_profile_routing',
 } as const;
 export type MigrationVersion = (typeof MigrationVersion)[keyof typeof MigrationVersion];
 export const MigrationError = {
@@ -31,6 +32,7 @@ const legacyTables: Record<MigrationVersion, readonly string[]> = {
   [MigrationVersion.ContinuityCommandProofs]: ['command_id_claims', 'handoff_seed_proofs'],
   [MigrationVersion.HandoffCreateEvidence]: [],
   [MigrationVersion.AttachmentCache]: [],
+  [MigrationVersion.ProfileRouting]: ['profile_routing_settings', 'profile_quota_observations'],
 };
 
 const digest = (sql: string) => createHash('sha256').update(sql).digest('hex');
