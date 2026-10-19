@@ -51,5 +51,5 @@ export const numericValueRules = [
   `BinaryExpression[operator=/^([!=]==?|[<>]=?)$/]:has(MemberExpression[property.name=${statusNames}]) > ${httpStatusLiteral}`,
   `Property[key.name=/^(status|statusCode)$/] ${httpStatusLiteral}`,
   "CallExpression[callee.property.name='close'] > Literal[raw=/^\\d{4}$/]",
-  "BinaryExpression:has(MemberExpression[property.name='code']) > Literal[raw=/^4\\d{3}$/]",
+  "BinaryExpression:has(:matches(MemberExpression[property.name='code'], Identifier[name='code'])) > Literal[raw=/^4\\d{3}$/]",
 ].map((selector) => ({ selector, message: "Use HttpStatus / SocketCloseCode / SocketCloseReason from @protocol." }))

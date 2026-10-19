@@ -217,7 +217,11 @@ it.each([
   30000,
 );
 
-it.each(["socket.close(4001, 'UNAUTHORIZED');", 'if (event.code === 4003) retry();'])(
+it.each([
+  "socket.close(4001, 'UNAUTHORIZED');",
+  'if (event.code === 4003) retry();',
+  'if (code === 4003) stop();',
+])(
   'rejects numeric WebSocket close codes: %s',
   (source) => {
     expect(ruleViolations(source, 'apps/daemon/src/example.ts', 'no-restricted-syntax')).not.toHaveLength(0);
@@ -228,6 +232,7 @@ it.each(["socket.close(4001, 'UNAUTHORIZED');", 'if (event.code === 4003) retry(
 it.each([
   'socket.close(SocketCloseCode.Unauthorized, SocketCloseReason.Unauthorized);',
   'if (event.code === SocketCloseCode.Revoked) retry();',
+  'if (code === SocketCloseCode.Revoked) stop();',
 ])(
   'accepts WebSocket close code constants: %s',
   (source) => {

@@ -76,7 +76,7 @@ export class RelayClient extends EventEmitter {
       this.socket = undefined;
       this.emit(RuntimeEvent.Offline);
 
-      if (code === 4003) {
+      if (code === SocketCloseCode.Revoked) {
         this.stopped = true;
         this.emit(RuntimeEvent.Revoked);
 
