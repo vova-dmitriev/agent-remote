@@ -5,7 +5,7 @@ import type { Principal } from '../auth/security.js';
 import { ContinuityProxy } from '../continuity/proxy.js';
 import { CurrentPrincipal } from '../http/auth/current-principal.js';
 import { PrincipalGuard } from '../http/auth/principal.guard.js';
-import { ProfileProxy } from '../profiles/proxy.js';
+import { ProfileProxy } from '../profiles/transport/proxy.js';
 import { RelayHub } from '../realtime/relay-hub.js';
 import { DeviceState } from './device-state.js';
 import { DeviceFence } from './fence.js';

@@ -46,18 +46,27 @@ export async function createRelay(config: RelayConfig): Promise<Relay> {
     throw error;
   }
 
-  const app = await NestFactory.create<NestExpressApplication>(
-    RelayModule.register({ config, db, messaging }),
-    new JsonExpressAdapter(),
-    {
-      logger: false,
-      bodyParser: false,
-    },
-  );
+  let app: NestExpressApplication | undefined;
 
-  app.use(securityHeaders);
-  // Starts the maintenance jobs and attaches the WebSocket hub now, as before the Nest migration, not on `listen()`.
-  await app.init();
+  try {
+    app = await NestFactory.create<NestExpressApplication>(
+      RelayModule.register({ config, db, messaging }),
+      new JsonExpressAdapter(),
+      {
+        logger: false,
+        bodyParser: false,
+        // Rethrow a provider or hook failure instead of exiting the process, so it is released below.
+        abortOnError: false,
+      },
+    );
+
+    app.use(securityHeaders);
+    // Starts the maintenance jobs and attaches the WebSocket hub now, as before the Nest migration, not on `listen()`.
+    await app.init();
+  } catch (error) {
+    await release(app, messaging, db);
+    throw error;
+  }
 
   const hub = app.get(RelayHub);
   const dispatcher = app.get(CommandDispatcher);
@@ -89,4 +98,23 @@ export async function createRelay(config: RelayConfig): Promise<Relay> {
       await db.close();
     },
   };
+}
+
+/** Releases what a failed start acquired: the application's hooks stop its timers and subscriptions, then storage closes. */
+async function release(
+  app: NestExpressApplication | undefined,
+  messaging: Messaging | undefined,
+  db: Database,
+) {
+  try {
+    await app?.close();
+  } catch {
+    // The start already failed; closing storage below still matters more than this error.
+  } finally {
+    try {
+      await messaging?.close();
+    } finally {
+      await db.close();
+    }
+  }
 }

@@ -26,7 +26,7 @@ import { persistEvent, eventNotificationId } from '../history/events.js';
 import { SourceHistory } from '../history/source.js';
 import { Fault, toFault } from '../http/errors/fault.js';
 import type { Messaging } from '../infrastructure/messaging.js';
-import { ProfileProxy } from '../profiles/proxy.js';
+import { ProfileProxy } from '../profiles/transport/proxy.js';
 import { SessionLabels } from '../sessions/labels.js';
 import { RelayHub, type DeviceConnection } from './relay-hub.js';
 

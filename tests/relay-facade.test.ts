@@ -1,8 +1,11 @@
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { FrameType } from '@protocol';
 import { afterAll, beforeAll, expect, it, vi } from 'vitest';
 import { WebSocket } from 'ws';
-import { createRelay } from '../apps/server/src/relay.js';
+import { createRelay, type Relay } from '../apps/server/src/app/create-relay.js';
+import { NotificationQueue } from '../apps/server/src/notifications/queue.js';
+import { RealtimeModule } from '../apps/server/src/realtime/realtime.module.js';
+import { RelayModule } from '../apps/server/src/app/relay.module.js';
 import { databaseFixture } from './helpers/database.js';
 import { initData, testBotToken } from './helpers/telegram.js';
 
@@ -80,9 +83,11 @@ const authenticatedSocket = (url: string, token: string) =>
 
 it('closes app and device sockets and clears the maintenance intervals on close', async () => {
   vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+  let relay: Relay | undefined;
+  let closed = false;
 
   try {
-    const relay = await createRelay({
+    relay = await createRelay({
       databaseUrl: fixture.url,
       schema: fixture.schema,
       botToken: testBotToken,
@@ -104,16 +109,103 @@ it('closes app and device sockets and clears the maintenance intervals on close'
       authenticatedSocket(origin + '/ws/device', device.token),
     ]);
 
-    const closed = sockets.map(
+    const socketsClosed = sockets.map(
       (socket) => new Promise<void>((resolve) => socket.once('close', () => resolve())),
     );
 
     await relay.close();
-    await Promise.all(closed);
+    closed = true;
+    await Promise.all(socketsClosed);
 
     expect(intervalsWhileRunning).toBe(2);
     expect(vi.getTimerCount()).toBe(0);
   } finally {
+    if (relay && !closed) {
+      await relay.close();
+    }
+
     vi.useRealTimers();
+  }
+});
+
+const TEST_REDIS_URL = process.env.TEST_REDIS_URL ?? 'redis://127.0.0.1:56380';
+
+// A connection string whose PostgreSQL sessions can be counted by name.
+const namedDatabaseUrl = (name: string) => {
+  const url = new URL(fixture.url);
+
+  url.searchParams.set('application_name', name);
+
+  return url.href;
+};
+
+const openSessions = async (name: string) =>
+  Number(
+    (await fixture.db.pool.query('SELECT count(*) FROM pg_stat_activity WHERE application_name=$1', [name]))
+      .rows[0].count,
+  );
+
+const startWithRedis = (databaseUrl: string) =>
+  createRelay({
+    databaseUrl,
+    schema: fixture.schema,
+    redisUrl: TEST_REDIS_URL,
+    botToken: testBotToken,
+    publicOrigin: PUBLIC_ORIGIN,
+  });
+
+it('releases its intervals, Redis and PostgreSQL when the application fails to initialize', async () => {
+  const name = 'failed-init-' + randomUUID();
+  const queueClose = vi.spyOn(NotificationQueue.prototype, 'close');
+
+  const bootstrap = vi.spyOn(RealtimeModule.prototype, 'onApplicationBootstrap').mockImplementation(() => {
+    throw new Error('BOOTSTRAP_FAILED');
+  });
+
+  vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+
+  try {
+    await expect(startWithRedis(namedDatabaseUrl(name))).rejects.toThrow('BOOTSTRAP_FAILED');
+
+    expect(vi.getTimerCount()).toBe(0);
+    expect(queueClose).toHaveBeenCalledTimes(1);
+    await expect.poll(() => openSessions(name)).toBe(0);
+  } finally {
+    vi.useRealTimers();
+    bootstrap.mockRestore();
+    queueClose.mockRestore();
+  }
+});
+
+it('releases Redis and PostgreSQL when a provider fails while the application is created', async () => {
+  const name = 'failed-create-' + randomUUID();
+  const queueClose = vi.spyOn(NotificationQueue.prototype, 'close');
+  const register = RelayModule.register.bind(RelayModule);
+
+  const broken = vi.spyOn(RelayModule, 'register').mockImplementation((resources) => {
+    const module = register(resources);
+
+    return {
+      ...module,
+      providers: [
+        ...(module.providers ?? []),
+        {
+          provide: 'BROKEN_PROVIDER',
+          useFactory: () => {
+            throw new Error('PROVIDER_FAILED');
+          },
+        },
+      ],
+    };
+  });
+
+  try {
+    await expect(startWithRedis(namedDatabaseUrl(name))).rejects.toThrow('PROVIDER_FAILED');
+
+    expect(queueClose).toHaveBeenCalledTimes(1);
+    await expect.poll(() => openSessions(name)).toBe(0);
+  } finally {
+    broken.mockRestore();
+    queueClose.mockRestore();
   }
 });

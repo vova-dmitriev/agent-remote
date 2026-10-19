@@ -44,7 +44,7 @@ vi.mock('../apps/daemon/src/cli/personal/personal-tunnel.js', async (importOrigi
   },
 }));
 
-vi.mock('../apps/server/src/relay.js', () => ({
+vi.mock('../apps/server/src/app/create-relay.js', () => ({
   createRelay: async (config: { publicOrigin: string }) => {
     state.events.push('relay:' + config.publicOrigin);
 

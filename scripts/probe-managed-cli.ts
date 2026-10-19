@@ -5,7 +5,7 @@ import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { randomBytes, randomUUID, createHash } from 'node:crypto';
 import { stripVTControlCharacters } from 'node:util';
-import { createRelay } from '../apps/server/src/relay.js';
+import { createRelay } from '../apps/server/src/app/create-relay.js';
 import { startDaemon } from '../apps/daemon/src/main.js';
 import { saveConfig } from '../apps/daemon/src/config.js';
 import { installHooks } from '../apps/daemon/src/code/hooks/install-hooks.js';

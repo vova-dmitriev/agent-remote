@@ -13,3 +13,9 @@ export type NotificationJobState = (typeof NotificationJobState)[keyof typeof No
 
 export const NotificationBackoffType = { Exponential: 'exponential' } as const;
 export type NotificationBackoffType = (typeof NotificationBackoffType)[keyof typeof NotificationBackoffType];
+
+export const HealthStatus = {
+  Ok: 'ok',
+} as const;
+
+export type HealthStatus = (typeof HealthStatus)[keyof typeof HealthStatus];

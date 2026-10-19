@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { databaseFixture } from './helpers/database.js';
 import { initData, testBotToken } from './helpers/telegram.js';
-import { createRelay } from '../apps/server/src/relay.js';
+import { createRelay } from '../apps/server/src/app/create-relay.js';
 import { hash } from '../apps/server/src/auth/security.js';
 
 let fixture: Awaited<ReturnType<typeof databaseFixture>>, relay: Awaited<ReturnType<typeof createRelay>>;
@@ -109,6 +109,25 @@ it('authenticates before binary parsing and preserves JSON bytes', async () => {
   expect(download.headers.get('content-type')).toContain('application/octet-stream');
   expect(download.headers.get('content-disposition')).toContain("filename*=UTF-8''");
   expect(download.headers.get('cache-control')).toBe('no-store');
+});
+
+it('stores a JSON-typed upload byte for byte instead of parsing it', async () => {
+  const id = randomUUID();
+  const json = Buffer.from('{"a":1}' + ' '.repeat(1000));
+
+  const response = await fetch(origin + path, {
+    method: 'POST',
+    headers: { ...headers(), 'x-upload-id': id },
+    body: json,
+  });
+
+  expect(response.status).toBe(200);
+  expect(await response.json()).toMatchObject({ id, byteLength: json.length });
+
+  const download = await fetch(origin + path + '/' + id, { headers: { authorization: `Bearer ${token}` } });
+
+  expect(download.status).toBe(200);
+  expect(Buffer.from(await download.arrayBuffer())).toEqual(json);
 });
 
 it('isolates owner and device tokens and revokes existing attachment access', async () => {

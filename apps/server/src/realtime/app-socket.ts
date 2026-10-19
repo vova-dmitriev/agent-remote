@@ -8,7 +8,7 @@ import { CommandDispatcher } from '../commands/command-dispatcher.js';
 import { DeviceState } from '../devices/device-state.js';
 import { DeviceService } from '../devices/service.js';
 import { Fault, toFault } from '../http/errors/fault.js';
-import { ProfileProxy } from '../profiles/proxy.js';
+import { ProfileProxy } from '../profiles/transport/proxy.js';
 import { RelayHub, type AppConnection } from './relay-hub.js';
 
 /** One Mini App connection: authenticates, subscribes to a device, resumes events and forwards commands. */

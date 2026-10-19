@@ -9,7 +9,7 @@ import type { Principal } from '../auth/security.js';
 import { ContinuityProxy } from '../continuity/proxy.js';
 import type { DeviceRecord } from '../devices/service.js';
 import { SourceHistory } from '../history/source.js';
-import { ProfileProxy } from '../profiles/proxy.js';
+import { ProfileProxy } from '../profiles/transport/proxy.js';
 import { upgradeHandler } from './upgrade.js';
 
 export interface DeviceConnection {

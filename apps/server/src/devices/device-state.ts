@@ -12,7 +12,7 @@ import type { Principal } from '../auth/security.js';
 import { ContinuityProxy } from '../continuity/proxy.js';
 import { Database } from '../db/database.js';
 import { Notifier } from '../notifications/notify.js';
-import { ProfileProxy } from '../profiles/proxy.js';
+import { ProfileProxy } from '../profiles/transport/proxy.js';
 import { RelayHub, type DeviceConnection } from '../realtime/relay-hub.js';
 import { SessionLabels } from '../sessions/labels.js';
 import { DeviceFence } from './fence.js';

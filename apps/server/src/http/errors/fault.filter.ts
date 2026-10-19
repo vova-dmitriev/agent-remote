@@ -1,9 +1,7 @@
 import { Catch, HttpException, type ArgumentsHost } from '@nestjs/common';
 import { BaseExceptionFilter } from '@nestjs/core';
-import { ErrorCode } from '@protocol';
 import type { Response } from 'express';
-import { z } from 'zod';
-import { Fault } from './fault.js';
+import { toFault, type Fault } from './fault.js';
 
 /**
  * Application errors answer `{ code }` with the status derived from the code.
@@ -18,20 +16,16 @@ export class FaultFilter extends BaseExceptionFilter {
       return;
     }
 
-    let fault: Fault;
-
-    if (exception instanceof Fault) {
-      fault = exception;
-    } else if (exception instanceof z.ZodError) {
-      fault = new Fault(ErrorCode.INVALID_REQUEST);
-    } else {
-      fault = new Fault(ErrorCode.INTERNAL_ERROR);
-    }
-
+    const fault = this.toFault(exception);
     const response = host.switchToHttp().getResponse<Response>();
 
     if (!response.headersSent) {
       response.status(fault.status).json({ code: fault.code });
     }
+  }
+
+  /** Validation errors are invalid requests, the rest internal; a route group may report them differently. */
+  protected toFault(exception: unknown): Fault {
+    return toFault(exception);
   }
 }

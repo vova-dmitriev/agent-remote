@@ -1,13 +1,20 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ErrorCode, HttpStatus } from '@protocol';
-import { HealthStatus, HttpMethod } from '../apps/server/src/domain/http.js';
-import { createRelay } from '../apps/server/src/relay.js';
+import { HealthStatus } from '../apps/server/src/domain/infrastructure.js';
+import { createRelay } from '../apps/server/src/app/create-relay.js';
 import { databaseFixture } from './helpers/database.js';
 import { initData, testBotToken } from './helpers/telegram.js';
 
-const HeadMethod = 'head';
+const RouteMethod = {
+  Get: 'get',
+  Head: 'head',
+  Post: 'post',
+  Delete: 'delete',
+  Patch: 'patch',
+  Put: 'put',
+} as const;
 
-type RouteMethod = HttpMethod | typeof HeadMethod;
+type RouteMethod = (typeof RouteMethod)[keyof typeof RouteMethod];
 
 const RouteAuth = { Principal: 'principal', Device: 'device', Public: 'public' } as const;
 
@@ -20,47 +27,47 @@ const OVERSIZED_BODY_BYTES = 129 * 1024;
 
 // Every route the relay serves today. /auth/refresh authenticates by cookie and Origin, not by bearer.
 const RELAY_ROUTES: Array<[RouteMethod, string, RouteAuth]> = [
-  [HttpMethod.Get, '/preferences', RouteAuth.Principal],
-  [HttpMethod.Patch, '/preferences', RouteAuth.Principal],
-  [HttpMethod.Get, '/health', RouteAuth.Public],
-  [HttpMethod.Post, '/auth/telegram', RouteAuth.Public],
-  [HttpMethod.Post, '/auth/refresh', RouteAuth.Public],
-  [HttpMethod.Post, '/auth/logout', RouteAuth.Principal],
-  [HttpMethod.Post, '/device/pair/start', RouteAuth.Public],
-  [HttpMethod.Post, '/pair/claim', RouteAuth.Principal],
-  [HttpMethod.Post, '/device/pair/cancel', RouteAuth.Public],
-  [HttpMethod.Post, '/device/pair/status', RouteAuth.Public],
-  [HttpMethod.Post, '/device/pair/confirm', RouteAuth.Public],
-  [HttpMethod.Post, '/devices/:deviceId/profiles', RouteAuth.Principal],
-  [HttpMethod.Get, '/devices', RouteAuth.Principal],
-  [HttpMethod.Delete, '/devices/:id', RouteAuth.Principal],
-  [HttpMethod.Get, '/devices/:id/snapshot', RouteAuth.Principal],
-  [HttpMethod.Get, '/devices/:id/connectors', RouteAuth.Principal],
-  [HttpMethod.Get, '/devices/:id/events', RouteAuth.Principal],
-  [HttpMethod.Get, '/sessions/:id/reading-position', RouteAuth.Principal],
-  [HttpMethod.Put, '/sessions/:id/reading-position', RouteAuth.Principal],
-  [HttpMethod.Get, '/sessions/:id/events', RouteAuth.Principal],
-  [HttpMethod.Patch, '/sessions/:id', RouteAuth.Principal],
-  [HttpMethod.Post, '/commands', RouteAuth.Principal],
-  [HttpMethod.Get, '/commands/:id', RouteAuth.Principal],
-  [HttpMethod.Post, '/devices/:deviceId/continuity/sessions/:sessionId/inspect', RouteAuth.Principal],
-  [HttpMethod.Post, '/devices/:deviceId/continuity/conversations', RouteAuth.Principal],
+  [RouteMethod.Get, '/preferences', RouteAuth.Principal],
+  [RouteMethod.Patch, '/preferences', RouteAuth.Principal],
+  [RouteMethod.Get, '/health', RouteAuth.Public],
+  [RouteMethod.Post, '/auth/telegram', RouteAuth.Public],
+  [RouteMethod.Post, '/auth/refresh', RouteAuth.Public],
+  [RouteMethod.Post, '/auth/logout', RouteAuth.Principal],
+  [RouteMethod.Post, '/device/pair/start', RouteAuth.Public],
+  [RouteMethod.Post, '/pair/claim', RouteAuth.Principal],
+  [RouteMethod.Post, '/device/pair/cancel', RouteAuth.Public],
+  [RouteMethod.Post, '/device/pair/status', RouteAuth.Public],
+  [RouteMethod.Post, '/device/pair/confirm', RouteAuth.Public],
+  [RouteMethod.Post, '/devices/:deviceId/profiles', RouteAuth.Principal],
+  [RouteMethod.Get, '/devices', RouteAuth.Principal],
+  [RouteMethod.Delete, '/devices/:id', RouteAuth.Principal],
+  [RouteMethod.Get, '/devices/:id/snapshot', RouteAuth.Principal],
+  [RouteMethod.Get, '/devices/:id/connectors', RouteAuth.Principal],
+  [RouteMethod.Get, '/devices/:id/events', RouteAuth.Principal],
+  [RouteMethod.Get, '/sessions/:id/reading-position', RouteAuth.Principal],
+  [RouteMethod.Put, '/sessions/:id/reading-position', RouteAuth.Principal],
+  [RouteMethod.Get, '/sessions/:id/events', RouteAuth.Principal],
+  [RouteMethod.Patch, '/sessions/:id', RouteAuth.Principal],
+  [RouteMethod.Post, '/commands', RouteAuth.Principal],
+  [RouteMethod.Get, '/commands/:id', RouteAuth.Principal],
+  [RouteMethod.Post, '/devices/:deviceId/continuity/sessions/:sessionId/inspect', RouteAuth.Principal],
+  [RouteMethod.Post, '/devices/:deviceId/continuity/conversations', RouteAuth.Principal],
   [
-    HttpMethod.Get,
+    RouteMethod.Get,
     '/devices/:deviceId/continuity/conversations/:conversationId/executions',
     RouteAuth.Principal,
   ],
-  [HttpMethod.Post, '/devices/:deviceId/continuity/checkpoints/prepare', RouteAuth.Principal],
-  [HttpMethod.Post, '/devices/:deviceId/continuity/checkpoints/:checkpointId/approve', RouteAuth.Principal],
-  [HttpMethod.Post, '/continuity/handoffs', RouteAuth.Principal],
-  [HttpMethod.Get, '/devices/:deviceId/continuity/handoffs/:operationId', RouteAuth.Principal],
-  [HttpMethod.Post, '/devices/:deviceId/continuity/handoffs/:operationId/reconcile', RouteAuth.Principal],
-  [HttpMethod.Post, '/sessions/:sessionId/attachments', RouteAuth.Principal],
-  [HeadMethod, '/sessions/:sessionId/attachments/:attachmentId', RouteAuth.Principal],
-  [HttpMethod.Get, '/sessions/:sessionId/attachments/:attachmentId', RouteAuth.Principal],
-  [HttpMethod.Post, '/device/sessions/:sessionId/attachments', RouteAuth.Device],
-  [HeadMethod, '/device/sessions/:sessionId/attachments/:attachmentId', RouteAuth.Device],
-  [HttpMethod.Get, '/device/sessions/:sessionId/attachments/:attachmentId', RouteAuth.Device],
+  [RouteMethod.Post, '/devices/:deviceId/continuity/checkpoints/prepare', RouteAuth.Principal],
+  [RouteMethod.Post, '/devices/:deviceId/continuity/checkpoints/:checkpointId/approve', RouteAuth.Principal],
+  [RouteMethod.Post, '/continuity/handoffs', RouteAuth.Principal],
+  [RouteMethod.Get, '/devices/:deviceId/continuity/handoffs/:operationId', RouteAuth.Principal],
+  [RouteMethod.Post, '/devices/:deviceId/continuity/handoffs/:operationId/reconcile', RouteAuth.Principal],
+  [RouteMethod.Post, '/sessions/:sessionId/attachments', RouteAuth.Principal],
+  [RouteMethod.Head, '/sessions/:sessionId/attachments/:attachmentId', RouteAuth.Principal],
+  [RouteMethod.Get, '/sessions/:sessionId/attachments/:attachmentId', RouteAuth.Principal],
+  [RouteMethod.Post, '/device/sessions/:sessionId/attachments', RouteAuth.Device],
+  [RouteMethod.Head, '/device/sessions/:sessionId/attachments/:attachmentId', RouteAuth.Device],
+  [RouteMethod.Get, '/device/sessions/:sessionId/attachments/:attachmentId', RouteAuth.Device],
 ];
 
 const concretePath = (path: string) => path.replace(/:\w+/gu, 'x');
@@ -108,12 +115,12 @@ describe('relay HTTP surface', () => {
     const response = await fetch(origin + concretePath(path), {
       method: method.toUpperCase(),
       headers: jsonHeaders(),
-      ...(method === HttpMethod.Get || method === HeadMethod ? {} : { body: '{}' }),
+      ...(method === RouteMethod.Get || method === RouteMethod.Head ? {} : { body: '{}' }),
     });
 
     expect(response.status).toBe(HttpStatus.Unauthorized);
 
-    if (method !== HeadMethod) {
+    if (method !== RouteMethod.Head) {
       expect(await response.json()).toEqual({ code: ErrorCode.UNAUTHORIZED });
     }
   });

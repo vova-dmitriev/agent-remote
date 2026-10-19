@@ -7,7 +7,7 @@ import { ErrorCode, HttpStatus } from '@protocol';
 import type { Response } from 'express';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { JsonExpressAdapter } from '../apps/server/src/http/pipeline/json-express-adapter.js';
-import { createRelay } from '../apps/server/src/relay.js';
+import { createRelay } from '../apps/server/src/app/create-relay.js';
 import { databaseFixture } from './helpers/database.js';
 import { initData, testBotToken } from './helpers/telegram.js';
 

@@ -1,6 +1,6 @@
 import { Controller, Get, Inject } from '@nestjs/common';
 import { Database } from '../db/database.js';
-import { HealthStatus } from '../domain/http.js';
+import { HealthStatus } from '../domain/infrastructure.js';
 import type { Messaging } from '../infrastructure/messaging.js';
 import { MESSAGING } from '../app/relay-config.js';
 

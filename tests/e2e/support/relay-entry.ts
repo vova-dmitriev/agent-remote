@@ -5,7 +5,7 @@ import type { AddressInfo } from 'node:net';
 import type { ClientCommand } from '@protocol';
 import { NotificationDelivery } from '../../../apps/server/src/notifications/delivery.js';
 import { NotificationWorker } from '../../../apps/server/src/notifications/worker.js';
-import { createRelay } from '../../../apps/server/src/relay.js';
+import { createRelay } from '../../../apps/server/src/app/create-relay.js';
 import { testBotToken } from '../../helpers/telegram.js';
 import {
   CONTROL_TOKEN_HEADER,

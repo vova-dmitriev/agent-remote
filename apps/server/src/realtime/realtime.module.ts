@@ -8,7 +8,7 @@ import { Database } from '../db/database.js';
 import { DevicesModule } from '../devices/devices.module.js';
 import { DeviceService } from '../devices/service.js';
 import { SourceHistory } from '../history/source.js';
-import { ProfileProxy } from '../profiles/proxy.js';
+import { ProfileProxy } from '../profiles/transport/proxy.js';
 import { AppSocket } from './app-socket.js';
 import { DeviceSocket } from './device-socket.js';
 import { MaintenanceService } from './maintenance.service.js';
