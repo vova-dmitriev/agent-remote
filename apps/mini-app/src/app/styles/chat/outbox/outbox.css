@@ -1,3 +1,17 @@
+.notice {
+  padding: 14px 18px;
+  border-radius: 10px;
+  margin-bottom: 18px;
+  font-size: 13px;
+}
+.error {
+  background: var(--error-background);
+  color: var(--error-foreground);
+}
+.muted {
+  font-size: 11px;
+  color: var(--muted);
+}
 .prompt-queue {
   display: grid;
   gap: 0.4rem;

@@ -15,7 +15,7 @@ export function ProfileSelectField({ nativeProvider, profiles, profileId, profil
   const { t } = useTranslation()
 
   return (
-    <label className="block text-sm">
+    <label className="mt-[20px] mb-[9px] block text-[12px] leading-[calc(1.25/0.875)]">
       {t("sessionLaunchProfile")}
       <select
         className="mt-1 w-full rounded-md border border-border bg-background p-2"

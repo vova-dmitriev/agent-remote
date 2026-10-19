@@ -1,16 +1,17 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import * as Menu from "@radix-ui/react-dropdown-menu"
 import { ThemePreference } from "@protocol"
-import { Button } from "../button"
+import { Button } from "@/shared/ui/button"
 import { MenuContent } from "./menu-content"
-import { DROPDOWN_IDS } from "./test-ids"
+import { DROPDOWN_IDS } from "../test-ids"
+import { menuItemClass } from "./menu-item-class"
 
 const meta = {
   component: MenuContent,
   args: {
     "data-testid": DROPDOWN_IDS.panel,
     children: (
-      <Menu.Item className="dropdown-item" data-testid={DROPDOWN_IDS.first}>
+      <Menu.Item className={menuItemClass} data-testid={DROPDOWN_IDS.first}>
         Synthetic action
       </Menu.Item>
     ),

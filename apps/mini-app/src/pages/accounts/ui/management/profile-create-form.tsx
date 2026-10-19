@@ -21,7 +21,7 @@ export function ProfileCreateForm({ disabled, submit }: ProfileCreateFormProps) 
       }}
     >
       <h2 className="font-semibold">{t("accountsAdd")}</h2>
-      <label className="grid gap-1 text-sm">
+      <label className="mt-[20px] mb-[9px] block text-[12px] leading-[calc(1.25/0.875)]">
         <span>{t("accountsProvider")}</span>
         <select
           data-testid={PROFILE_MANAGE_IDS.provider}
@@ -42,7 +42,7 @@ export function ProfileCreateForm({ disabled, submit }: ProfileCreateFormProps) 
           {t("accountsClaudeUnsupported")}
         </p>
       ) : null}
-      <label className="block space-y-1">
+      <label className="mt-[20px] mb-[9px] block space-y-1 text-[12px]">
         <span>{t("accountsName")}</span>
         <Input
           data-testid={PROFILE_MANAGE_IDS.label}

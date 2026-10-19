@@ -31,7 +31,7 @@ export function ModelEffortFields({
 
   return (
     <>
-      <label className="block text-sm">
+      <label className="mt-[20px] mb-[9px] block text-[12px] leading-[calc(1.25/0.875)]">
         {t("sessionModel")}
         <select
           className="mt-1 w-full rounded-md border border-border bg-background p-2"
@@ -54,7 +54,7 @@ export function ModelEffortFields({
         </select>
       </label>
       {modelId !== "" && (effort !== "" || selectedModel?.efforts.length) ? (
-        <label className="block text-sm">
+        <label className="mt-[20px] mb-[9px] block text-[12px] leading-[calc(1.25/0.875)]">
           {t("sessionEffort")}
           <select
             className="mt-1 w-full rounded-md border border-border bg-background p-2"

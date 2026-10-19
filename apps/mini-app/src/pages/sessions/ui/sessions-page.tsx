@@ -11,16 +11,18 @@ export function SessionsPage({ sessions, connected, loading, onSelect, children,
 
   return (
     <section data-testid={SESSIONS_PAGE_IDS.root}>
-      <div className="intro">
-        <div className="session-list-heading">
-          <h1 data-testid={SESSIONS_PAGE_IDS.title}>{t("sessionsTitle")}</h1>
+      <div className="py-[10px]">
+        <div className="flex flex-wrap items-center justify-between gap-[8px]">
+          <h1 className="text-[26px] tracking-[-0.8px]" data-testid={SESSIONS_PAGE_IDS.title}>
+            {t("sessionsTitle")}
+          </h1>
           {creation}
         </div>
       </div>
       {connected ? <ProviderFilter value={filter.provider} onChange={filter.setProvider} /> : null}
-      <div className="sessions" data-testid={SESSIONS_PAGE_IDS.list} aria-busy={loading}>
+      <div className="grid gap-0" data-testid={SESSIONS_PAGE_IDS.list} aria-busy={loading}>
         {loading ? (
-          <div className="sessions" data-testid={SESSIONS_PAGE_IDS.loading}>
+          <div className="grid gap-0" data-testid={SESSIONS_PAGE_IDS.loading}>
             <SessionCardSkeleton />
             <SessionCardSkeleton />
             <SessionCardSkeleton />
@@ -29,9 +31,9 @@ export function SessionsPage({ sessions, connected, loading, onSelect, children,
           filter.filtered.map((session) => <SessionCard key={session.id} session={session} onSelect={onSelect} />)
         )}
         {connected && !loading && !sessions.length ? (
-          <div className="empty compact" data-testid={SESSIONS_PAGE_IDS.empty}>
+          <div className="p-[30px] text-center phone:px-0 phone:pt-[45px] phone:pb-[60px]" data-testid={SESSIONS_PAGE_IDS.empty}>
             <h2>{t("macConnected")}</h2>
-            <p>{t("connectSession")}</p>
+            <p className="mx-auto mt-[22px] max-w-[410px] leading-[1.7] text-muted-foreground">{t("connectSession")}</p>
           </div>
         ) : null}
       </div>

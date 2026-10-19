@@ -14,21 +14,28 @@ export function SessionTitle({ title, controller, disabled }: SessionTitleProps)
   return (
     <Popover.Root open={editor.open} onOpenChange={editor.changeOpen}>
       <Popover.Trigger asChild>
-        <button className="session-title-trigger" data-testid={IDS.trigger} disabled={disabled} title={t("renameSession")}>
+        <button
+          className="block w-full cursor-pointer overflow-hidden rounded-[4px] text-left text-ellipsis whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-primary disabled:cursor-default"
+          data-testid={IDS.trigger}
+          disabled={disabled}
+          title={t("renameSession")}
+        >
           {title}
         </button>
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content
-          className="session-title-editor"
+          className="z-[70] w-[min(340px,calc(100vw_-_24px))] rounded-[16px] border border-border bg-surface p-[16px] text-foreground shadow-[0_12px_32px_color-mix(in_srgb,var(--foreground)_12%,transparent)]"
           data-testid={IDS.root}
           sideOffset={8}
           collisionPadding={12}
           align="start"
           aria-label={t("renameSession")}
         >
-          <form onSubmit={(event) => void editor.submit(event)}>
-            <label htmlFor="session-title">{t("renameSession")}</label>
+          <form className="grid gap-[10px]" onSubmit={(event) => void editor.submit(event)}>
+            <label className="mt-[20px] mb-[9px] block text-[12px] font-semibold" htmlFor="session-title">
+              {t("renameSession")}
+            </label>
             <Input
               id="session-title"
               data-testid={IDS.input}
@@ -37,13 +44,13 @@ export function SessionTitle({ title, controller, disabled }: SessionTitleProps)
               maxLength={512}
               disabled={controller.busy}
             />
-            <p className="muted">{t("sessionNameScope")}</p>
+            <p className="text-[12px] text-muted-foreground">{t("sessionNameScope")}</p>
             {editor.error ? (
               <p role="alert" data-testid={IDS.error}>
                 {feedbackText(editor.error, t)}
               </p>
             ) : null}
-            <div className="session-title-actions">
+            <div className="flex justify-end gap-[8px]">
               <Button
                 type="button"
                 variant="ghost"

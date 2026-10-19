@@ -24,12 +24,12 @@ export function AccountsView({
   const layout = useAccountsLayout()
 
   return (
-    <section data-testid={ACCOUNTS_PAGE_IDS.root} className="accounts-page mx-auto w-full max-w-3xl">
+    <section data-testid={ACCOUNTS_PAGE_IDS.root} className="mx-auto grid w-full max-w-3xl gap-[16px] py-[16px]">
       <div className="flex flex-wrap items-center gap-3">
         <Button data-testid={ACCOUNTS_PAGE_IDS.back} variant="ghost" size="icon" onClick={onBack} aria-label={t("accountsBack")}>
           <ArrowLeft />
         </Button>
-        <h1 data-testid={ACCOUNTS_PAGE_IDS.title} className="flex-1 text-2xl font-bold">
+        <h1 data-testid={ACCOUNTS_PAGE_IDS.title} className="flex-1 text-[22px] tracking-[-0.5px]">
           {t("accountsTitle")}
         </h1>
         <Button

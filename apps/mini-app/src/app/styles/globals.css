@@ -1,25 +1,57 @@
 @import "tailwindcss";
 @import "./tokens.css";
-@import "./layout.css";
-@import "./sessions.css";
-@import "./controls.css";
-@import "./responsive.css";
-@import "./accounts/accounts.css";
+@import "./markdown.css";
 @import "./chat/feed.css";
 @import "./chat/outbox/outbox.css";
 @import "./chat/activity/activity.css";
 @import "./chat/subagents/subagents.css";
 @import "./chat/session-layout.css";
 @import "./chat/short-viewport.css";
-@import "./chat/markdown.css";
 @import "./chat/pairing.css";
 @import "./chat/questions/questions.css";
 @import "./chat/message-preview.css";
 @import "./chat/attachments/attachments.css";
-@import "./menus/dropdowns.css";
-@import "./menus/session-status.css";
-@import "./menus/session-controls.css";
-@import "./menus/session-title.css";
-html {
-  scrollbar-gutter: stable;
+
+/* Registration order is cascade order: session overrides phone/tiny, short overrides session. */
+@custom-variant phone (@media (max-width: 560px));
+@custom-variant tiny (@media (max-width: 360px));
+/* Descendants of the compact session shell (`data-shell-layout="session"` on ApplicationShell). */
+@custom-variant session (&:where([data-shell-layout="session"] *));
+@custom-variant short (@media (max-height: 560px));
+
+@layer base {
+  button {
+    cursor: pointer;
+  }
+  button:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  button,
+  input,
+  textarea {
+    outline-color: var(--accent);
+  }
+  h1 {
+    font-family: var(--font-display);
+    letter-spacing: -1.5px;
+    font-weight: 600;
+    font-size: 34px;
+    line-height: 1.2;
+  }
+  h2 {
+    font-size: 19px;
+    font-weight: 600;
+  }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+  }
+  pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.6;
+  }
 }

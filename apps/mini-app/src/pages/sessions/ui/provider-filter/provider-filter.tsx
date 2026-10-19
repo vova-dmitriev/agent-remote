@@ -8,9 +8,14 @@ export function ProviderFilter({ value, onChange }: ProviderFilterProps) {
   const { t } = useTranslation()
 
   return (
-    <div className="provider-filter" data-testid={SESSIONS_PAGE_IDS.filters} aria-label={t("sessionProvider")}>
+    <div
+      className="mb-[8px] flex w-fit gap-[2px] rounded-[12px] bg-surface p-[3px]"
+      data-testid={SESSIONS_PAGE_IDS.filters}
+      aria-label={t("sessionProvider")}
+    >
       <Button
         variant="ghost"
+        className={filterClass}
         data-testid={SESSIONS_PAGE_IDS.filterAll}
         aria-pressed={value === ProviderFilterValue.All}
         onClick={() => onChange(ProviderFilterValue.All)}
@@ -19,6 +24,7 @@ export function ProviderFilter({ value, onChange }: ProviderFilterProps) {
       </Button>
       <Button
         variant="ghost"
+        className={filterClass}
         data-testid={SESSIONS_PAGE_IDS.filterClaude}
         aria-pressed={value === ProviderFilterValue.Claude}
         onClick={() => onChange(ProviderFilterValue.Claude)}
@@ -27,6 +33,7 @@ export function ProviderFilter({ value, onChange }: ProviderFilterProps) {
       </Button>
       <Button
         variant="ghost"
+        className={filterClass}
         data-testid={SESSIONS_PAGE_IDS.filterCodex}
         aria-pressed={value === ProviderFilterValue.Codex}
         onClick={() => onChange(ProviderFilterValue.Codex)}
@@ -36,3 +43,6 @@ export function ProviderFilter({ value, onChange }: ProviderFilterProps) {
     </div>
   )
 }
+
+const filterClass =
+  "h-[30px] rounded-[9px] px-[14px] py-0 text-[12px] text-muted-foreground hover:text-muted-foreground aria-pressed:bg-accent aria-pressed:text-foreground aria-pressed:shadow-[inset_0_0_0_1px_var(--accent)]"

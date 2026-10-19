@@ -22,6 +22,8 @@
   background: var(--background);
 }
 .viewer-toolbar {
+  min-height: 36px;
+  justify-content: space-between;
   z-index: 1;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;

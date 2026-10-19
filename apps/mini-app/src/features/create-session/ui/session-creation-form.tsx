@@ -28,6 +28,7 @@ export function SessionCreationForm({ model, disabled, online, profilesUnavailab
 
   return (
     <form
+      className="flex flex-wrap items-center gap-[8px] pt-[8px] pb-[12px]"
       data-testid={SESSION_CREATE_IDS.form}
       onSubmit={(event) => {
         event.preventDefault()
@@ -41,6 +42,8 @@ export function SessionCreationForm({ model, disabled, online, profilesUnavailab
         triggerLabel={model.provider === AgentProvider.Codex ? ProviderFilterValue.Codex : ProviderFilterValue.Claude}
         icon={Bot}
         ids={SESSION_CREATE_IDS.provider}
+        className={fieldClass}
+        labelClassName={labelClass}
         options={[
           { value: AgentProvider.Claude, label: "Claude", testId: SESSION_CREATE_IDS.claude },
           { value: AgentProvider.Codex, label: "Codex", testId: SESSION_CREATE_IDS.codex },
@@ -53,6 +56,8 @@ export function SessionCreationForm({ model, disabled, online, profilesUnavailab
         triggerLabel={model.selected?.cwd ?? ""}
         icon={Folder}
         ids={SESSION_CREATE_IDS.project}
+        className={fieldClass}
+        labelClassName={labelClass}
         options={model.projects.map((session) => ({
           value: session.id,
           label: session.cwd ?? "",
@@ -78,7 +83,7 @@ export function SessionCreationForm({ model, disabled, online, profilesUnavailab
         onModelChange={model.setModel}
         onEffortChange={model.setEffort}
       />
-      <small data-testid={SESSION_CREATE_IDS.profileStatus} role="status">
+      <small className="basis-full leading-[1.4] text-muted-foreground" data-testid={SESSION_CREATE_IDS.profileStatus} role="status">
         {status}
       </small>
       <Button
@@ -91,3 +96,6 @@ export function SessionCreationForm({ model, disabled, online, profilesUnavailab
     </form>
   )
 }
+
+const fieldClass = "max-w-full min-w-0"
+const labelClass = "max-w-[240px] overflow-hidden text-ellipsis"

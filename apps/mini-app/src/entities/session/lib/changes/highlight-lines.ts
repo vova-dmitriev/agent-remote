@@ -1,6 +1,7 @@
 import type { ExtraProps } from "react-markdown"
 import { MarkdownNodeType } from "@/shared/ui/markdown"
 import { PatchLineKind } from "./line-kind"
+import { patchLineClass } from "./line-class"
 import { patchKind } from "./patch"
 
 type Element = NonNullable<ExtraProps["node"]>
@@ -65,7 +66,7 @@ export function highlightDiffLines() {
           const line: Element = {
             type: MarkdownNodeType.Element,
             tagName: "span",
-            properties: { className: ["diff-line", `diff-line-${kind}`], "data-line": lineNumber },
+            properties: { className: patchLineClass[kind].split(" "), "data-diff-line": kind, "data-line": lineNumber },
             children,
           }
 

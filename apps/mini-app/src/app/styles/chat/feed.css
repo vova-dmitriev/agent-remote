@@ -1,3 +1,42 @@
+.feed {
+  overflow-y: auto;
+  height: 44dvh;
+  min-height: 240px;
+  padding: 22px 0;
+  scrollbar-width: thin;
+}
+.message {
+  padding: 18px 19px;
+  margin-bottom: 13px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.message.user {
+  margin-left: 45px;
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+}
+.message > span {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.message > div {
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  line-height: 1.7;
+  margin-top: 9px;
+}
+.placeholder {
+  color: var(--muted);
+  font-size: 13px;
+  padding: 20px 0;
+}
+@media (max-width: 560px) {
+  .feed {
+    height: 40dvh;
+  }
+}
 .feed-frame {
   position: relative;
   isolation: isolate;

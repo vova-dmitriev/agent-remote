@@ -31,7 +31,7 @@ export function ProfileEnrollment(props: ProfileEnrollmentProps) {
           }}
         >
           <p className="text-sm text-muted-foreground">{t("accountsPinHint")}</p>
-          <label className="block space-y-1">
+          <label className="mt-[20px] mb-[9px] block space-y-1 text-[12px]">
             <span>{t("accountsPinLabel")}</span>
             <Input
               data-testid={PROFILE_ENROLL_IDS.pin}
@@ -46,7 +46,7 @@ export function ProfileEnrollment(props: ProfileEnrollmentProps) {
               required
             />
           </label>
-          <label className="block space-y-1">
+          <label className="mt-[20px] mb-[9px] block space-y-1 text-[12px]">
             <span>{t("accountsKeyLabel")}</span>
             <Input
               data-testid={PROFILE_ENROLL_IDS.key}

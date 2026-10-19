@@ -2,7 +2,8 @@ import { MoreHorizontal, Square } from "lucide-react"
 import { CapabilityKey, SessionStatus, CommandActionType } from "@protocol"
 import { useTranslation } from "@/shared/lib/hooks"
 import { Button } from "@/shared/ui/button"
-import { DropdownMenu, DropdownTrigger, DropdownItem, MenuContent } from "@/shared/ui/dropdown"
+import { DropdownMenu, DropdownTrigger, DropdownItem, MenuContent, menuItemClass } from "@/shared/ui/dropdown"
+import { cn } from "@/shared/lib/utils"
 import { canSend } from "@/entities/session"
 import { COMMAND_IDS } from "@/features/send-command/config/test-ids"
 import type { SessionActionsProps } from "./session-actions.types"
@@ -16,14 +17,14 @@ export function SessionActions({ session, controller, connection, deviceStatus }
   if (!session.capabilities.interrupt) return null
 
   return (
-    <div className="session-actions" data-testid={COMMAND_IDS.actions}>
+    <div className="flex-none" data-testid={COMMAND_IDS.actions}>
       <DropdownMenu modal={false}>
         <DropdownTrigger asChild>
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className="session-actions-trigger"
+            className="size-[36px] text-muted-foreground hover:text-muted-foreground"
             aria-label={t("sessionActions")}
             title={t("sessionActions")}
             data-testid={COMMAND_IDS.actionsTrigger}
@@ -42,7 +43,10 @@ export function SessionActions({ session, controller, connection, deviceStatus }
             <Button
               type="button"
               variant="ghost"
-              className="dropdown-item dropdown-danger"
+              className={cn(
+                menuItemClass,
+                "text-danger hover:bg-transparent hover:text-danger dark:hover:bg-transparent dark:data-[highlighted]:bg-highlight",
+              )}
               data-testid={COMMAND_IDS.interrupt}
               disabled={disabled}
             >

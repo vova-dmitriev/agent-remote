@@ -1,5 +1,31 @@
 @import "./viewer.css";
 
+.composer {
+  border-top: 1px solid var(--line);
+  padding-top: 4px;
+}
+.composer-input {
+  position: relative;
+}
+.composer-input textarea {
+  padding-right: 50px;
+  border-radius: 24px;
+}
+.composer .composer-input textarea:disabled {
+  overflow: hidden;
+}
+.composer-send[data-slot="button"] {
+  position: absolute;
+  right: 7px;
+  bottom: 7px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--foreground);
+  color: var(--background);
+}
+
 .attachment-picker {
   display: contents;
 }
@@ -96,7 +122,7 @@
     height: 26px;
     bottom: 4px;
   }
-  .shell-session .composer-input.attachments-enabled textarea {
+  [data-shell-layout="session"] .composer-input.attachments-enabled textarea {
     padding-left: 40px;
   }
 }
