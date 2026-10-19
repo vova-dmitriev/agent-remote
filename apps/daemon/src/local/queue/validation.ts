@@ -1,18 +1,20 @@
 import {
+  type ClientCommand,
+  clientCommandSchema,
+  CodedError,
   CommandActionType,
+  type CommandResult,
   CommandStatus,
   ErrorCode,
+  hasErrorCode,
   LOCAL_LIMITS,
-  clientCommandSchema,
-  type ClientCommand,
-  type CommandResult,
 } from '@protocol';
 import type { LocalControllerOptions } from '../controller/types.js';
 import type { LocalPrincipal } from '../grants/types.js';
 
 export function assertQueuePrincipal(options: LocalControllerOptions, principal: LocalPrincipal) {
   if (principal.ownerId !== options.ownerId || !options.grants.current(principal)) {
-    throw new Error(ErrorCode.LOCAL_GRANT_REVOKED);
+    throw new CodedError(ErrorCode.LOCAL_GRANT_REVOKED);
   }
 }
 
@@ -20,11 +22,11 @@ export function queueSession(options: LocalControllerOptions, id: string, genera
   const session = options.monitor.session(id);
 
   if (!session || session.target.deviceId !== options.deviceId) {
-    throw new Error(ErrorCode.NOT_FOUND);
+    throw new CodedError(ErrorCode.NOT_FOUND);
   }
 
   if (generation && session.generation !== generation) {
-    throw new Error(ErrorCode.STALE_SESSION);
+    throw new CodedError(ErrorCode.STALE_SESSION);
   }
 
   return session;
@@ -45,7 +47,7 @@ export function validateQueueCommand(
     command.generation !== generation ||
     JSON.stringify(command.target) !== JSON.stringify(session.target)
   ) {
-    throw new Error(ErrorCode.STALE_SESSION);
+    throw new CodedError(ErrorCode.STALE_SESSION);
   }
 
   return command;
@@ -55,7 +57,7 @@ export function queueReceipt(options: LocalControllerOptions, id: string): Comma
   try {
     return options.store.receipt(id);
   } catch (error) {
-    if (error instanceof Error && error.message === ErrorCode.NOT_FOUND) {
+    if (hasErrorCode(error, ErrorCode.NOT_FOUND)) {
       return null;
     }
 
@@ -71,7 +73,7 @@ export function immutableIntent(options: LocalControllerOptions, id: string) {
 
 export function queueBudget(value: unknown) {
   if (Buffer.byteLength(JSON.stringify(value), 'utf8') > LOCAL_LIMITS.logicalBytes) {
-    throw new Error(ErrorCode.PROMPT_TOO_LARGE);
+    throw new CodedError(ErrorCode.PROMPT_TOO_LARGE);
   }
 }
 

@@ -15,7 +15,7 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 import { MEDIA_ID, MEDIA_LIMITS } from './types.js';
-import { ErrorCode, MAX_ATTACHMENT_BYTES } from '@protocol';
+import { CodedError, ErrorCode, MAX_ATTACHMENT_BYTES } from '@protocol';
 
 export class MediaFiles {
   private staging = new Set<string>();
@@ -32,7 +32,7 @@ export class MediaFiles {
     this.checkDirectory();
 
     if (!MEDIA_ID.test(id)) {
-      throw new Error(ErrorCode.INVALID_ATTACHMENT);
+      throw new CodedError(ErrorCode.INVALID_ATTACHMENT);
     }
 
     return join(this.directory, id + (staging ? '.part' : ''));
@@ -58,7 +58,7 @@ export class MediaFiles {
       this.checkFile(info);
 
       if (info.size !== offset || offset + bytes.length > MAX_ATTACHMENT_BYTES) {
-        throw new Error(ErrorCode.ATTACHMENT_INTEGRITY_FAILED);
+        throw new CodedError(ErrorCode.ATTACHMENT_INTEGRITY_FAILED);
       }
 
       writeSync(fd, bytes);
@@ -76,13 +76,13 @@ export class MediaFiles {
       this.checkFile(info);
 
       if (info.size < 1 || info.size > MAX_ATTACHMENT_BYTES) {
-        throw new Error(ErrorCode.ATTACHMENT_INTEGRITY_FAILED);
+        throw new CodedError(ErrorCode.ATTACHMENT_INTEGRITY_FAILED);
       }
 
       const bytes = readFileSync(fd);
 
       if (bytes.length !== info.size) {
-        throw new Error(ErrorCode.ATTACHMENT_INTEGRITY_FAILED);
+        throw new CodedError(ErrorCode.ATTACHMENT_INTEGRITY_FAILED);
       }
 
       return bytes;
@@ -152,13 +152,13 @@ export class MediaFiles {
     const info = lstatSync(this.directory);
 
     if (!info.isDirectory() || info.isSymbolicLink() || (process.getuid && info.uid !== process.getuid())) {
-      throw new Error(ErrorCode.ATTACHMENT_UNAVAILABLE);
+      throw new CodedError(ErrorCode.ATTACHMENT_UNAVAILABLE);
     }
   }
 
   private checkFile(info: ReturnType<typeof fstatSync>) {
     if (!info.isFile() || info.nlink !== 1 || (process.getuid && info.uid !== process.getuid())) {
-      throw new Error(ErrorCode.ATTACHMENT_UNAVAILABLE);
+      throw new CodedError(ErrorCode.ATTACHMENT_UNAVAILABLE);
     }
   }
 }

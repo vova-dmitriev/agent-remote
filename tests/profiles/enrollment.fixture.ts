@@ -1,3 +1,4 @@
+import { CodedError } from '@protocol';
 import { createHash, randomUUID } from 'node:crypto';
 import { existsSync, writeFileSync, appendFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -17,7 +18,7 @@ export async function enrollmentFixture() {
 
   function evidence() {
     if (!expectedKey) {
-      throw new Error('PROFILE_NOT_READY');
+      throw new CodedError('PROFILE_NOT_READY');
     }
 
     return {
@@ -36,7 +37,7 @@ export async function enrollmentFixture() {
     now: () => now,
     apply: async (key: string) => {
       if (existsSync(credential)) {
-        throw new Error('DUPLICATE_NATIVE_AUTH');
+        throw new CodedError('DUPLICATE_NATIVE_AUTH');
       }
 
       writeFileSync(credential, key, { mode: 0o600 });
@@ -44,7 +45,7 @@ export async function enrollmentFixture() {
       expectedKey = key;
 
       if (interrupted) {
-        throw new Error('UNKNOWN_AFTER_WRITE');
+        throw new CodedError('UNKNOWN_AFTER_WRITE');
       }
 
       return evidence();

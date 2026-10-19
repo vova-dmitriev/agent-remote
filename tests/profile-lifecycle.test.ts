@@ -1,3 +1,4 @@
+import { CodedError } from '@protocol';
 import { randomUUID } from 'node:crypto';
 import { writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -76,7 +77,7 @@ it('keeps deletion pending until the Mac acknowledges cleanup, then reconciles o
 
   const { service, options } = fixture(async () => {
     if (!available) {
-      throw new Error('DEVICE_OFFLINE');
+      throw new CodedError('DEVICE_OFFLINE');
     }
   });
 

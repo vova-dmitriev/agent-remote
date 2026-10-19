@@ -1,4 +1,4 @@
-import { ErrorCode, AgentProvider, ProfileLimits, type ExecutionProfileSummary } from '@protocol';
+import { AgentProvider, CodedError, ErrorCode, type ExecutionProfileSummary, ProfileLimits } from '@protocol';
 import { buildProfileEnvironment } from '../../environment.js';
 import { ProfileEnvironmentPurpose } from '../../environment/values.js';
 import { CodexProfileNative } from '../../native/codex.js';
@@ -28,7 +28,7 @@ export class RuntimeProfileNative {
     afterProbe?: (native: CodexProfileNative) => Promise<void>,
   ) {
     if (this.active.get(profile.id)?.size || this.verifying.get(profile.id)?.size) {
-      throw new Error(ErrorCode.PROFILE_EXECUTION_ACTIVE);
+      throw new CodedError(ErrorCode.PROFILE_EXECUTION_ACTIVE);
     }
 
     if (operationId) {
@@ -44,11 +44,11 @@ export class RuntimeProfileNative {
 
     const assertCurrent = () => {
       if (!current()) {
-        throw new Error(ErrorCode.UNAUTHORIZED);
+        throw new CodedError(ErrorCode.UNAUTHORIZED);
       }
 
       if (this.registry.get(profile.id).version !== profile.version) {
-        throw new Error(ErrorCode.LOCAL_REVISION_CONFLICT);
+        throw new CodedError(ErrorCode.LOCAL_REVISION_CONFLICT);
       }
     };
 
@@ -58,7 +58,7 @@ export class RuntimeProfileNative {
       assertCurrent();
 
       if (profile.provider !== AgentProvider.Codex) {
-        throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
+        throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
       }
 
       const environment = await buildProfileEnvironment(this.registry, profile.id, {

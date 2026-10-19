@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ErrorCode, ReasoningEffort, type ExecutionProfileSummary } from '@protocol';
+import { CodedError, ErrorCode, type ExecutionProfileSummary, ReasoningEffort } from '@protocol';
 import { CodexMethod } from '../../domain/codex/codex.js';
 import type { CodexRpcClient } from '../../codex/rpc/rpc-client.js';
 import { ProfileNativeLimits } from './values.js';
@@ -34,7 +34,7 @@ export async function nativeProfileModels(
     );
 
     if (!parsed.success) {
-      throw new Error(ErrorCode.CODEX_PROTOCOL_ERROR);
+      throw new CodedError(ErrorCode.CODEX_PROTOCOL_ERROR);
     }
 
     for (const entry of parsed.data.data) {
@@ -50,7 +50,7 @@ export async function nativeProfileModels(
     }
 
     if (models.length > ProfileNativeLimits.Models) {
-      throw new Error(ErrorCode.CODEX_PROTOCOL_ERROR);
+      throw new CodedError(ErrorCode.CODEX_PROTOCOL_ERROR);
     }
 
     cursor = parsed.data.nextCursor ?? undefined;
@@ -60,11 +60,11 @@ export async function nativeProfileModels(
     }
 
     if (cursors.has(cursor)) {
-      throw new Error(ErrorCode.CODEX_PROTOCOL_ERROR);
+      throw new CodedError(ErrorCode.CODEX_PROTOCOL_ERROR);
     }
 
     cursors.add(cursor);
   }
 
-  throw new Error(ErrorCode.CODEX_PROTOCOL_ERROR);
+  throw new CodedError(ErrorCode.CODEX_PROTOCOL_ERROR);
 }

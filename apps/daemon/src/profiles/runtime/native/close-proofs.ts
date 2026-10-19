@@ -1,4 +1,4 @@
-import { ErrorCode, ProfileLimits } from '@protocol';
+import { CodedError, ErrorCode, ProfileLimits } from '@protocol';
 import { RuntimeProfileCloseProofStatus } from './close-proof-values.js';
 import type { RuntimeProfileCloseProof } from '../types.js';
 
@@ -11,11 +11,11 @@ export class RuntimeProfileCloseProofs {
     const existing = this.proofs.get(operationId);
 
     if (existing && (existing.profileId !== profileId || existing.profileVersion !== profileVersion)) {
-      throw new Error(ErrorCode.PROFILE_OPERATION_REUSED);
+      throw new CodedError(ErrorCode.PROFILE_OPERATION_REUSED);
     }
 
     if (!existing && this.proofs.size >= this.limit) {
-      throw new Error(ErrorCode.PROFILE_LIMIT_REACHED);
+      throw new CodedError(ErrorCode.PROFILE_LIMIT_REACHED);
     }
 
     this.proofs.set(operationId, {

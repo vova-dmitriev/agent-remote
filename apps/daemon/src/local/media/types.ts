@@ -1,10 +1,11 @@
 import { createHash } from 'node:crypto';
 import {
-  attachmentSchema,
-  AttachmentKind,
-  MAX_ATTACHMENT_BYTES,
-  ErrorCode,
   type AttachmentDescriptor,
+  AttachmentKind,
+  attachmentSchema,
+  CodedError,
+  ErrorCode,
+  MAX_ATTACHMENT_BYTES,
   type Session,
 } from '@protocol';
 import { nativeImageMime } from '../../attachments/content/image-content.js';
@@ -63,14 +64,14 @@ export class MediaAuthorization {
 
   authorize(principal: LocalPrincipal, source: Session) {
     if (principal.ownerId !== this.options.ownerId || !this.options.current(principal)) {
-      throw new Error(ErrorCode.LOCAL_GRANT_REVOKED);
+      throw new CodedError(ErrorCode.LOCAL_GRANT_REVOKED);
     }
 
     if (
       principal.deviceId !== source.target.deviceId ||
       !attachmentSourceCurrent(this.options.session(source.id), source)
     ) {
-      throw new Error(ErrorCode.STALE_SESSION);
+      throw new CodedError(ErrorCode.STALE_SESSION);
     }
   }
 
@@ -78,7 +79,7 @@ export class MediaAuthorization {
     const source = this.options.session(id);
 
     if (!source || (generation && source.generation !== generation)) {
-      throw new Error(ErrorCode.STALE_SESSION);
+      throw new CodedError(ErrorCode.STALE_SESSION);
     }
 
     this.authorize(principal, source);
@@ -95,11 +96,11 @@ export function validateUpload(metadata: UploadMetadata) {
     metadata.byteLength < 1 ||
     metadata.byteLength > MAX_ATTACHMENT_BYTES
   ) {
-    throw new Error(ErrorCode.ATTACHMENT_TOO_LARGE);
+    throw new CodedError(ErrorCode.ATTACHMENT_TOO_LARGE);
   }
 
   if (!MEDIA_ID.test(metadata.uploadId) || !/^[\w!#$&^.+-]+\/[\w!#$&^.+-]+$/u.test(metadata.mimeType)) {
-    throw new Error(ErrorCode.INVALID_ATTACHMENT);
+    throw new CodedError(ErrorCode.INVALID_ATTACHMENT);
   }
 
   const valid = attachmentSchema.safeParse({
@@ -112,7 +113,7 @@ export function validateUpload(metadata: UploadMetadata) {
   });
 
   if (!valid.success) {
-    throw new Error(ErrorCode.INVALID_ATTACHMENT);
+    throw new CodedError(ErrorCode.INVALID_ATTACHMENT);
   }
 }
 
@@ -131,7 +132,7 @@ export function assertIntegrity(descriptor: AttachmentDescriptor, bytes: Uint8Ar
     bytes.length !== descriptor.byteLength ||
     createHash('sha256').update(bytes).digest('hex') !== descriptor.sha256
   ) {
-    throw new Error(ErrorCode.ATTACHMENT_INTEGRITY_FAILED);
+    throw new CodedError(ErrorCode.ATTACHMENT_INTEGRITY_FAILED);
   }
 }
 

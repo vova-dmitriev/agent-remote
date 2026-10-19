@@ -1,5 +1,5 @@
 import { isAbsolute, relative, resolve, sep } from 'node:path';
-import { AgentProvider, ErrorCode, ProfileAuthMode } from '@protocol';
+import { AgentProvider, CodedError, ErrorCode, ProfileAuthMode } from '@protocol';
 import { ClaudeProfileArgument, ClaudeProfileEnvironment } from './values.js';
 import type { ClaudeProfileLaunch, ClaudeProfileLaunchInput } from './types.js';
 
@@ -7,11 +7,11 @@ const shellQuote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`;
 
 function credentialHelper(input: ClaudeProfileLaunchInput) {
   if (!input.credentialFile || !input.helperPath || !input.nodeExecutable) {
-    throw new Error(ErrorCode.PROFILE_NOT_READY);
+    throw new CodedError(ErrorCode.PROFILE_NOT_READY);
   }
 
   if (![input.credentialFile, input.helperPath, input.nodeExecutable].every(isAbsolute)) {
-    throw new Error(ErrorCode.INVALID_REQUEST);
+    throw new CodedError(ErrorCode.INVALID_REQUEST);
   }
 
   const configRoot = resolve(input.configDirectory);
@@ -19,7 +19,7 @@ function credentialHelper(input: ClaudeProfileLaunchInput) {
   const fromRoot = relative(configRoot, credentialPath);
 
   if (fromRoot === '..' || fromRoot.startsWith(`..${sep}`) || isAbsolute(fromRoot)) {
-    throw new Error(ErrorCode.UNAUTHORIZED);
+    throw new CodedError(ErrorCode.UNAUTHORIZED);
   }
 
   return `${shellQuote(input.nodeExecutable)} ${shellQuote(input.helperPath)}`;
@@ -51,7 +51,7 @@ export function buildClaudeProfileLaunch(
   base: NodeJS.ProcessEnv = process.env,
 ): ClaudeProfileLaunch {
   if (input.provider !== AgentProvider.Claude || !isAbsolute(input.configDirectory)) {
-    throw new Error(ErrorCode.PROFILE_MISMATCH);
+    throw new CodedError(ErrorCode.PROFILE_MISMATCH);
   }
 
   const args = [ClaudeProfileArgument.SettingSources, ''];
@@ -62,7 +62,7 @@ export function buildClaudeProfileLaunch(
   }
 
   if (input.authMode !== ProfileAuthMode.ApiKey) {
-    throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
+    throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
   }
 
   const apiKeyHelper = credentialHelper(input);

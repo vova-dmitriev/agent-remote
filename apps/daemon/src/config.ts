@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { mkdir, readFile, writeFile, rename, chmod } from 'node:fs/promises';
 import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
+import { CodedError } from '@protocol';
 
 export const stateDirectory = () => process.env.CLAUDE_REMOTE_HOME ?? join(homedir(), '.claude-remote');
 export const configSchema = z.strictObject({
@@ -65,14 +66,14 @@ export function validateRelayUrl(value: string) {
   const url = new URL(value);
 
   if (url.username || url.password || url.search || url.hash) {
-    throw new Error(DaemonErrorCode.INVALID_RELAY_URL);
+    throw new CodedError(DaemonErrorCode.INVALID_RELAY_URL);
   }
 
   if (
     url.protocol !== 'https:' &&
     !(url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname))
   ) {
-    throw new Error(SharedPrivateErrorCode.HTTPS_REQUIRED);
+    throw new CodedError(SharedPrivateErrorCode.HTTPS_REQUIRED);
   }
 
   return url.origin;

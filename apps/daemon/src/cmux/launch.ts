@@ -1,4 +1,4 @@
-import { ErrorCode } from '@protocol';
+import { CodedError, ErrorCode } from '@protocol';
 import { shellQuote as quote } from '../shell/index.js';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -27,7 +27,7 @@ const run: CmuxExecute = async (args, source) => {
       })
     ).stdout;
   } catch {
-    throw new Error(ErrorCode.CMUX_CONTEXT_UNAVAILABLE);
+    throw new CodedError(ErrorCode.CMUX_CONTEXT_UNAVAILABLE);
   }
 };
 
@@ -43,7 +43,7 @@ export async function prepareCmuxContext(
     surface = z.uuid().safeParse(env.CMUX_SURFACE_ID);
 
   if (!workspace.success || !surface.success) {
-    throw new Error(ErrorCode.CMUX_CONTEXT_UNAVAILABLE);
+    throw new CodedError(ErrorCode.CMUX_CONTEXT_UNAVAILABLE);
   }
 
   try {
@@ -80,7 +80,7 @@ export async function prepareCmuxContext(
 
     return context;
   } catch {
-    throw new Error(ErrorCode.CMUX_CONTEXT_UNAVAILABLE);
+    throw new CodedError(ErrorCode.CMUX_CONTEXT_UNAVAILABLE);
   }
 }
 

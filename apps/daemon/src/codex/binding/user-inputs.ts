@@ -1,10 +1,11 @@
 import {
-  ErrorCode,
   BindingState,
+  CodedError,
+  ErrorCode,
   IntegrationState,
+  type Session,
   SessionStatus,
   userInputQuestionSchema,
-  type Session,
 } from '@protocol';
 import { CodexMethod } from '../../domain/codex/codex.js';
 import { randomUUID } from 'node:crypto';
@@ -72,11 +73,11 @@ export class CodexUserInputs {
             this.session.binding !== BindingState.Verified ||
             this.session.integrationState !== IntegrationState.Ready
           ) {
-            throw new Error(ErrorCode.USER_INPUT_EXPIRED);
+            throw new CodedError(ErrorCode.USER_INPUT_EXPIRED);
           }
 
           if (!this.session.capabilities.userInput) {
-            throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
+            throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
           }
 
           // Retain the native-id tombstone until the owner resolves it: never replay uncertain writes.

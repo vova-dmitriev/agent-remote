@@ -1,4 +1,4 @@
-import { ErrorCode, LocalOperation, accountPreferencesSchema, type LocalAction } from '@protocol';
+import { accountPreferencesSchema, CodedError, ErrorCode, type LocalAction, LocalOperation } from '@protocol';
 import { RuntimeEvent } from '../../domain/runtime.js';
 import { LocalDocumentKind } from '../state/values.js';
 import type { LocalPrincipal } from '../grants/types.js';
@@ -61,6 +61,6 @@ export function documentOperation(
     }
 
     default:
-      throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
+      throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
   }
 }

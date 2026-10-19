@@ -1,16 +1,17 @@
 import {
+  CodedError,
   ErrorCode,
+  type ProfileLogin,
+  type ProfileOperation,
   ProfileOperationPhase,
   ProfileStatus,
-  type ProfileOperation,
-  type ProfileLogin,
 } from '@protocol';
 import type { ProfileAuthenticationOptions } from './types.js';
 import type { ProfileJournal } from '../lifecycle/journal.js';
 
 export function assertProfileCaller(current: () => boolean) {
   if (!current()) {
-    throw new Error(ErrorCode.UNAUTHORIZED);
+    throw new CodedError(ErrorCode.UNAUTHORIZED);
   }
 }
 
@@ -18,15 +19,15 @@ export function authenticationProfile(options: ProfileAuthenticationOptions, id:
   const profile = options.registry.get(id);
 
   if (profile.ownerId !== options.scope.ownerId || profile.deviceId !== options.scope.deviceId) {
-    throw new Error(ErrorCode.NOT_FOUND);
+    throw new CodedError(ErrorCode.NOT_FOUND);
   }
 
   if (profile.version !== version) {
-    throw new Error(ErrorCode.LOCAL_REVISION_CONFLICT);
+    throw new CodedError(ErrorCode.LOCAL_REVISION_CONFLICT);
   }
 
   if (profile.status !== ProfileStatus.Ready && profile.status !== ProfileStatus.NeedsAuthentication) {
-    throw new Error(ErrorCode.PROFILE_NOT_READY);
+    throw new CodedError(ErrorCode.PROFILE_NOT_READY);
   }
 
   return profile;

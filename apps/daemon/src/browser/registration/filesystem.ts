@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-syntax -- installer diagnostics are human-readable text, not wire error codes */
 import { constants, type Stats } from 'node:fs';
 import { access, lstat, mkdir, open } from 'node:fs/promises';
 import { dirname, isAbsolute, resolve } from 'node:path';

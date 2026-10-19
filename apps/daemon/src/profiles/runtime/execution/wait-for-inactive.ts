@@ -1,4 +1,4 @@
-import { ErrorCode, ProfileAction, ProfileStatus } from '@protocol';
+import { CodedError, ErrorCode, ProfileAction, ProfileStatus } from '@protocol';
 import { ProfileAuthentication } from '../../authentication/service.js';
 import { CredentialEnrollmentService } from '../../enrollment/service.js';
 import { ProfileService } from '../../service.js';
@@ -16,13 +16,13 @@ export async function waitForProfileInactive(
 ) {
   while (ownership.isActive(profileId)) {
     if (!current()) {
-      throw new Error(ErrorCode.UNAUTHORIZED);
+      throw new CodedError(ErrorCode.UNAUTHORIZED);
     }
 
     const profile = service.registry.get(profileId);
 
     if (profile.status !== ProfileStatus.Removing && profile.status !== ProfileStatus.Removed) {
-      throw new Error(ErrorCode.PROFILE_NOT_READY);
+      throw new CodedError(ErrorCode.PROFILE_NOT_READY);
     }
 
     for (const operationId of ownership.mutationOperations(profileId)) {

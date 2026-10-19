@@ -1,14 +1,15 @@
 import {
   ConnectorId,
-  EventType,
-  TargetKind,
   ConnectorTransport,
-  IntegrationState,
-  SessionStatus,
+  ErrorCode,
+  EventType,
   FrameType,
-  NativeRestartState,
   historySchema,
+  IntegrationState,
+  NativeRestartState,
   type ServerFrame,
+  SessionStatus,
+  TargetKind,
 } from '@protocol';
 import { ModelOrigin, RuntimeEvent } from './domain/runtime.js';
 import { DesktopOperation } from './domain/desktop.js';
@@ -384,7 +385,7 @@ export async function startDaemon() {
             generation: frame.generation,
             before: null,
             after: null,
-            error: 'HISTORY_RELOAD_FAILED',
+            error: ErrorCode.HISTORY_RELOAD_FAILED,
           }),
         );
     } else if (frame.type === FrameType.Ack) {
@@ -508,7 +509,7 @@ export async function startDaemon() {
             continue;
           }
 
-          monitor.publish(sessionId, EventType.Diagnostic, { code: 'TRANSCRIPT_UNAVAILABLE' });
+          monitor.publish(sessionId, EventType.Diagnostic, { code: ErrorCode.TRANSCRIPT_UNAVAILABLE });
         }
       }
 

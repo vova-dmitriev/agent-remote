@@ -1,12 +1,13 @@
 import { immutableProfileScope } from './storage/scope.js';
 import { randomUUID } from 'node:crypto';
 import {
-  CapabilitySupport,
-  ErrorCode,
-  ProfileStatus,
-  executionProfileSummarySchema,
   type AgentProvider,
+  CapabilitySupport,
+  CodedError,
+  ErrorCode,
   type ExecutionProfileSummary,
+  executionProfileSummarySchema,
+  ProfileStatus,
 } from '@protocol';
 import type { LocalDatabase } from '../local/state/database.js';
 import { ProfileRepository } from './storage/repository.js';
@@ -59,11 +60,11 @@ export class ProfileRegistry {
     const profile = this.get(id);
 
     if (profile.version !== expectedVersion) {
-      throw new Error(ErrorCode.LOCAL_REVISION_CONFLICT);
+      throw new CodedError(ErrorCode.LOCAL_REVISION_CONFLICT);
     }
 
     if (profile.status === ProfileStatus.Removed || profile.status === ProfileStatus.Removing) {
-      throw new Error(ErrorCode.PROFILE_NOT_READY);
+      throw new CodedError(ErrorCode.PROFILE_NOT_READY);
     }
 
     return profile;
@@ -121,7 +122,7 @@ export class ProfileRegistry {
     const profile = this.mutable(id, expectedVersion);
 
     if (profile.status !== ProfileStatus.Ready) {
-      throw new Error(ErrorCode.PROFILE_NOT_READY);
+      throw new CodedError(ErrorCode.PROFILE_NOT_READY);
     }
 
     this.repository.setDefault(profile);
@@ -131,7 +132,7 @@ export class ProfileRegistry {
     const profile = this.mutable(id, expectedVersion);
 
     if (profile.status === ProfileStatus.Disabled) {
-      throw new Error(ErrorCode.PROFILE_NOT_READY);
+      throw new CodedError(ErrorCode.PROFILE_NOT_READY);
     }
 
     return this.save(
@@ -157,11 +158,11 @@ export class ProfileRegistry {
     const profile = this.get(id);
 
     if (profile.version !== expectedVersion) {
-      throw new Error(ErrorCode.LOCAL_REVISION_CONFLICT);
+      throw new CodedError(ErrorCode.LOCAL_REVISION_CONFLICT);
     }
 
     if (profile.status !== ProfileStatus.Removing) {
-      throw new Error(ErrorCode.PROFILE_NOT_READY);
+      throw new CodedError(ErrorCode.PROFILE_NOT_READY);
     }
 
     return this.save(

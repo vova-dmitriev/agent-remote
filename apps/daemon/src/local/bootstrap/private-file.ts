@@ -2,7 +2,7 @@ import { chmod, link, lstat, mkdir, open, rm } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { dirname } from 'node:path';
-import { ErrorCode } from '@protocol';
+import { CodedError, ErrorCode } from '@protocol';
 
 export async function privateFile(path: string, initial: () => string): Promise<string> {
   const directory = dirname(path);
@@ -15,7 +15,7 @@ export async function privateFile(path: string, initial: () => string): Promise<
     parent.isSymbolicLink() ||
     (process.getuid && parent.uid !== process.getuid())
   ) {
-    throw new Error(ErrorCode.UNAUTHORIZED);
+    throw new CodedError(ErrorCode.UNAUTHORIZED);
   }
 
   await chmod(directory, 0o700);
@@ -55,7 +55,7 @@ export async function privateFile(path: string, initial: () => string): Promise<
     info.mode & 0o077 ||
     (process.getuid && info.uid !== process.getuid())
   ) {
-    throw new Error(ErrorCode.UNAUTHORIZED);
+    throw new CodedError(ErrorCode.UNAUTHORIZED);
   }
 
   const file = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW);

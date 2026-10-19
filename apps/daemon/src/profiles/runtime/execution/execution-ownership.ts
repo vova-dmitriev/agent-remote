@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { isAbsolute } from 'node:path';
-import { ErrorCode, ProfileStatus } from '@protocol';
+import { CodedError, ErrorCode, ProfileStatus } from '@protocol';
 import type { LocalDatabase } from '../../../local/state/database.js';
 import { immutableProfileScope } from '../../storage/scope.js';
 import type { ProfileRegistry } from '../../registry.js';
@@ -34,17 +34,17 @@ export class ProfileExecutionOwnership {
 
     const insert = this.database.connection.transaction(() => {
       if (this.hasKind(profileId, ExecutionOwnershipKind.Mutation)) {
-        throw new Error(ErrorCode.PROFILE_EXECUTION_ACTIVE);
+        throw new CodedError(ErrorCode.PROFILE_EXECUTION_ACTIVE);
       }
 
       const profile = this.registry.get(profileId);
 
       if (profile.status === ProfileStatus.Removing || profile.status === ProfileStatus.Removed) {
-        throw new Error(ErrorCode.PROFILE_NOT_READY);
+        throw new CodedError(ErrorCode.PROFILE_NOT_READY);
       }
 
       if (profile.version !== expectedVersion) {
-        throw new Error(ErrorCode.LOCAL_REVISION_CONFLICT);
+        throw new CodedError(ErrorCode.LOCAL_REVISION_CONFLICT);
       }
 
       this.database.connection
@@ -69,7 +69,7 @@ export class ProfileExecutionOwnership {
       id,
       bindSocket: (path: string) => {
         if (!isAbsolute(path)) {
-          throw new Error(ErrorCode.CODEX_INVALID_SOCKET);
+          throw new CodedError(ErrorCode.CODEX_INVALID_SOCKET);
         }
 
         this.database.connection
@@ -80,7 +80,7 @@ export class ProfileExecutionOwnership {
       },
       bindProcess: (pid: number) => {
         if (!Number.isSafeInteger(pid) || pid <= 0) {
-          throw new Error(ErrorCode.CODEX_DAEMON_START_FAILED);
+          throw new CodedError(ErrorCode.CODEX_DAEMON_START_FAILED);
         }
 
         this.database.connection

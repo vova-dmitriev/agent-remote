@@ -1,9 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import {
-  attachmentSchema,
   ATTACHMENT_TTL_MS,
-  ErrorCode,
   type AttachmentDescriptor,
+  attachmentSchema,
+  CodedError,
+  ErrorCode,
   type Session,
 } from '@protocol';
 import { MediaFiles } from './files.js';
@@ -39,7 +40,7 @@ export class MediaCatalog {
     );
 
     if (rows.length >= MEDIA_LIMITS.maxFiles || total + staged + required > MEDIA_LIMITS.sessionBytes) {
-      throw new Error(ErrorCode.ATTACHMENT_QUOTA);
+      throw new CodedError(ErrorCode.ATTACHMENT_QUOTA);
     }
   }
 
@@ -55,7 +56,7 @@ export class MediaCatalog {
     }
 
     if (row.expires_at <= Date.now()) {
-      throw new Error(ErrorCode.ATTACHMENT_EXPIRED);
+      throw new CodedError(ErrorCode.ATTACHMENT_EXPIRED);
     }
 
     return attachmentSchema.parse(JSON.parse(row.descriptor));
@@ -73,7 +74,7 @@ export class MediaCatalog {
     const bytes = this.files.read(stage, true);
 
     if (bytes.length !== metadata.byteLength) {
-      throw new Error(ErrorCode.ATTACHMENT_INTEGRITY_FAILED);
+      throw new CodedError(ErrorCode.ATTACHMENT_INTEGRITY_FAILED);
     }
 
     const incoming = describeMedia(randomUUID(), metadata, bytes);
@@ -91,7 +92,7 @@ export class MediaCatalog {
         descriptor.byteLength !== bytes.length ||
         known.source !== (metadata.source ? JSON.stringify(metadata.source) : null)
       ) {
-        throw new Error(ErrorCode.ATTACHMENT_ID_REUSED);
+        throw new CodedError(ErrorCode.ATTACHMENT_ID_REUSED);
       }
 
       this.bytes(descriptor);
@@ -115,7 +116,7 @@ export class MediaCatalog {
     const parsed = attachmentSchema.safeParse(raw);
 
     if (!parsed.success) {
-      throw new Error(ErrorCode.INVALID_ATTACHMENT);
+      throw new CodedError(ErrorCode.INVALID_ATTACHMENT);
     }
 
     const descriptor = parsed.data;
@@ -128,7 +129,7 @@ export class MediaCatalog {
 
     if (existing) {
       if (JSON.stringify(existing) !== JSON.stringify(descriptor)) {
-        throw new Error(ErrorCode.ATTACHMENT_ID_REUSED);
+        throw new CodedError(ErrorCode.ATTACHMENT_ID_REUSED);
       }
 
       this.bytes(existing);

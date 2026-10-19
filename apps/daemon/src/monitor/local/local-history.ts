@@ -1,11 +1,12 @@
 import { z } from 'zod';
 import type Sqlite from 'better-sqlite3';
 import {
+  CodedError,
   ErrorCode,
-  EventType,
-  HistoryDirection,
-  HistoryCursorPrefix,
   type EventEnvelope,
+  EventType,
+  HistoryCursorPrefix,
+  HistoryDirection,
   type HistoryRead,
 } from '@protocol';
 import { bytePage } from '../../local/history/index.js';
@@ -36,7 +37,7 @@ export function cachedLocalHistory(
 
     try {
       if (!request.anchor?.startsWith(HistoryCursorPrefix.Cache)) {
-        throw new Error(ErrorCode.INVALID_CURSOR);
+        throw new CodedError(ErrorCode.INVALID_CURSOR);
       }
 
       anchor = cursorSchema.parse(
@@ -45,7 +46,7 @@ export function cachedLocalHistory(
         ),
       );
     } catch {
-      throw new Error(ErrorCode.INVALID_CURSOR);
+      throw new CodedError(ErrorCode.INVALID_CURSOR);
     }
 
     const comparison = request.direction === HistoryDirection.Before ? '<' : '>';

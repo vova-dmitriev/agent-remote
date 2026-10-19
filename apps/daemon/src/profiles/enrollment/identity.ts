@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { z } from 'zod';
-import { ErrorCode } from '@protocol';
+import { CodedError, ErrorCode } from '@protocol';
 import { createEnrollmentRecipient, restoreEnrollmentRecipient } from '@transport/credentials/recipient.js';
 import { privateFile } from '../../local/bootstrap/private-file.js';
 
@@ -29,6 +29,6 @@ export async function loadEnrollmentIdentity(directory: string) {
 
     return await restoreEnrollmentRecipient(stored.publicKey, stored.privateKey);
   } catch {
-    throw new Error(ErrorCode.ENROLLMENT_UNAVAILABLE);
+    throw new CodedError(ErrorCode.ENROLLMENT_UNAVAILABLE);
   }
 }

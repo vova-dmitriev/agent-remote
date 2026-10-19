@@ -16,7 +16,7 @@ import {
   CodexDesktopChangeType,
 } from '../../domain/codex/codex-desktop.js';
 import { randomUUID } from 'node:crypto';
-import { ErrorCode, validateUserInputAnswers } from '@protocol';
+import { CodedError, ErrorCode, validateUserInputAnswers } from '@protocol';
 import { asyncReplyKeys, asyncReplyWrapper, desktopAsyncRequests } from './desktop-user-input.js';
 import { EventEmitter } from 'node:events';
 import { type RpcFrame } from '../rpc/rpc-client.js';
@@ -48,7 +48,7 @@ export class DesktopCodexClient extends EventEmitter {
     const owner = await ipc.owner(threadId);
 
     if (!owner) {
-      throw new Error(ErrorCode.CODEX_THREAD_NOT_LOADED);
+      throw new CodedError(ErrorCode.CODEX_THREAD_NOT_LOADED);
     }
 
     const client = new DesktopCodexClient(ipc, threadId, owner);
@@ -57,7 +57,7 @@ export class DesktopCodexClient extends EventEmitter {
       await new Promise<void>((resolve, reject) => {
         const timer = setTimeout(() => {
           client.off(RuntimeEvent.Snapshot, ready);
-          reject(new Error(ErrorCode.CODEX_TIMEOUT));
+          reject(new CodedError(ErrorCode.CODEX_TIMEOUT));
         }, 10_000);
 
         const ready = () => {
@@ -88,7 +88,7 @@ export class DesktopCodexClient extends EventEmitter {
     }
 
     if (input.threadId !== this.threadId) {
-      throw new Error(DaemonErrorCode.CODEX_THREAD_MISMATCH);
+      throw new CodedError(DaemonErrorCode.CODEX_THREAD_MISMATCH);
     }
 
     const turns = desktopTurns(this.state);
@@ -155,12 +155,12 @@ export class DesktopCodexClient extends EventEmitter {
         return { turn: last };
       }
 
-      throw new Error(ErrorCode.UNKNOWN_AFTER_WRITE);
+      throw new CodedError(ErrorCode.UNKNOWN_AFTER_WRITE);
     }
 
     if (method === CodexMethod.TurnSteer) {
       if (!this.activeTurn || input.expectedTurnId !== this.activeTurn) {
-        throw new Error(ErrorCode.STALE_SESSION);
+        throw new CodedError(ErrorCode.STALE_SESSION);
       }
 
       const expectedTurnId = this.activeTurn;
@@ -201,7 +201,7 @@ export class DesktopCodexClient extends EventEmitter {
       );
 
       if (object(response.result).turnId !== expectedTurnId) {
-        throw new Error(ErrorCode.UNKNOWN_AFTER_WRITE);
+        throw new CodedError(ErrorCode.UNKNOWN_AFTER_WRITE);
       }
 
       return { turnId: expectedTurnId };
@@ -209,7 +209,7 @@ export class DesktopCodexClient extends EventEmitter {
 
     if (method === CodexMethod.TurnInterrupt) {
       if (input.turnId !== this.activeTurn) {
-        throw new Error(ErrorCode.STALE_SESSION);
+        throw new CodedError(ErrorCode.STALE_SESSION);
       }
 
       return this.ipc.request(
@@ -219,13 +219,15 @@ export class DesktopCodexClient extends EventEmitter {
       );
     }
 
-    throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
+    throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
   }
   respond(id: string | number, result: unknown) {
     const request = this.pending.get(id);
 
     if (!request) {
-      throw new Error(this.answered.has(id) ? 'USER_INPUT_EXPIRED' : 'PERMISSION_EXPIRED');
+      throw new CodedError(
+        this.answered.has(id) ? ErrorCode.USER_INPUT_EXPIRED : ErrorCode.PERMISSION_EXPIRED,
+      );
     }
 
     if (request.method === CodexMethod.ItemToolRequestUserInput) {
@@ -241,7 +243,7 @@ export class DesktopCodexClient extends EventEmitter {
     const method = approvalMethods[request.method as keyof typeof approvalMethods] ?? null;
 
     if (!method) {
-      throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
+      throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
     }
 
     void this.ipc
@@ -291,7 +293,7 @@ export class DesktopCodexClient extends EventEmitter {
     const params = object(request.params);
 
     if (this.answered.has(id) || params.turnId !== this.activeTurn) {
-      throw new Error(ErrorCode.USER_INPUT_EXPIRED);
+      throw new CodedError(ErrorCode.USER_INPUT_EXPIRED);
     }
 
     const questions = params.questions as import('@protocol').UserInputQuestion[];
@@ -320,7 +322,7 @@ export class DesktopCodexClient extends EventEmitter {
 
     const receipt = new Promise<void>((resolve, reject) => {
       settle = resolve;
-      fail = () => reject(new Error(ErrorCode.UNKNOWN_AFTER_WRITE));
+      fail = () => reject(new CodedError(ErrorCode.UNKNOWN_AFTER_WRITE));
     });
 
     const watcher = {
@@ -409,7 +411,7 @@ export class DesktopCodexClient extends EventEmitter {
         );
 
         if (object(response.result).turnId !== turnId) {
-          throw new Error(ErrorCode.UNKNOWN_AFTER_WRITE);
+          throw new CodedError(ErrorCode.UNKNOWN_AFTER_WRITE);
         }
       } else {
         const response = object(
@@ -421,7 +423,7 @@ export class DesktopCodexClient extends EventEmitter {
         );
 
         if (response.ok !== true) {
-          throw new Error(ErrorCode.UNKNOWN_AFTER_WRITE);
+          throw new CodedError(ErrorCode.UNKNOWN_AFTER_WRITE);
         }
       }
 

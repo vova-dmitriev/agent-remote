@@ -1,10 +1,11 @@
 import {
-  CommandActionType,
   AgentProvider,
   BindingState,
+  CodedError,
+  type Command,
+  CommandActionType,
   ErrorCode,
   IntegrationState,
-  type Command,
 } from '@protocol';
 import { fileURLToPath } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -26,7 +27,7 @@ export async function createManagedSession(
   const cwd = await validateProject(action.cwd);
 
   if (!options.monitor.canCreateSession()) {
-    throw new Error(ErrorCode.SESSION_QUOTA);
+    throw new CodedError(ErrorCode.SESSION_QUOTA);
   }
 
   if (action.provider === AgentProvider.Codex) {
@@ -35,7 +36,7 @@ export async function createManagedSession(
     }
 
     if (!options.profiles) {
-      throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
+      throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
     }
 
     const launch = await options.profiles.prepareExecution(
@@ -48,11 +49,11 @@ export async function createManagedSession(
   }
 
   if (action.execution) {
-    throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
+    throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
   }
 
   if (process.platform !== 'darwin') {
-    throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
+    throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
   }
 
   const connectorId = await launchClaudeSession({
@@ -83,5 +84,5 @@ export async function waitManagedSession(monitor: Monitor, connectorId: string):
     await delay(200);
   }
 
-  throw new Error(ErrorCode.UNKNOWN_AFTER_WRITE);
+  throw new CodedError(ErrorCode.UNKNOWN_AFTER_WRITE);
 }

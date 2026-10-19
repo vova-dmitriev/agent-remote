@@ -1,11 +1,13 @@
 import { DaemonErrorCode } from '../error-codes.js';
 import {
+  CodedError,
   ErrorCode,
+  hasErrorCode,
+  type PendingUserInput,
   pendingUserInputSchema,
   positiveInteger,
-  validateUserInputAnswers,
-  type PendingUserInput,
   type UserInputAnswers,
+  validateUserInputAnswers,
 } from '@protocol';
 
 interface Entry {
@@ -25,17 +27,17 @@ export class UserInputBroker {
   }
   open(source: PendingUserInput, answer: Entry['answer']): void {
     if (this.closed) {
-      throw new Error(DaemonErrorCode.BROKER_CLOSED);
+      throw new CodedError(DaemonErrorCode.BROKER_CLOSED);
     }
 
     const request = pendingUserInputSchema.parse(structuredClone(source));
 
     if (this.entries.has(request.requestId)) {
-      throw new Error(DaemonErrorCode.DUPLICATE_REQUEST);
+      throw new CodedError(DaemonErrorCode.DUPLICATE_REQUEST);
     }
 
     if (this.entries.size >= this.maxPending) {
-      throw new Error(ErrorCode.USER_INPUT_QUEUE_FULL);
+      throw new CodedError(ErrorCode.USER_INPUT_QUEUE_FULL);
     }
 
     request.expiresAt = Math.min(request.expiresAt, Date.now() + this.maxWaitMs);
@@ -54,12 +56,12 @@ export class UserInputBroker {
     const entry = this.entries.get(requestId);
 
     if (!entry || entry.request.generation !== generation) {
-      throw new Error(ErrorCode.USER_INPUT_EXPIRED);
+      throw new CodedError(ErrorCode.USER_INPUT_EXPIRED);
     }
 
     if (entry.request.expiresAt <= Date.now()) {
       this.cancel(requestId);
-      throw new Error(ErrorCode.USER_INPUT_EXPIRED);
+      throw new CodedError(ErrorCode.USER_INPUT_EXPIRED);
     }
 
     const answers = validateUserInputAnswers(entry.request, raw);
@@ -72,13 +74,13 @@ export class UserInputBroker {
       if (
         error instanceof Error &&
         [ErrorCode.USER_INPUT_EXPIRED, ErrorCode.STALE_SESSION, ErrorCode.CAPABILITY_UNAVAILABLE].some(
-          (candidateValue) => candidateValue === error.message,
+          (candidateValue) => hasErrorCode(error, candidateValue),
         )
       ) {
         throw error;
       }
 
-      throw new Error(ErrorCode.UNKNOWN_AFTER_WRITE);
+      throw new CodedError(ErrorCode.UNKNOWN_AFTER_WRITE);
     }
   }
   pending(): PendingUserInput[] {

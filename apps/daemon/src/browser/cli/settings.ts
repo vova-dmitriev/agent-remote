@@ -3,7 +3,7 @@ import { constants } from 'node:fs';
 import { link, lstat, open, readFile, unlink } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { dirname, join } from 'node:path';
-import { ErrorCode } from '@protocol';
+import { CodedError, ErrorCode } from '@protocol';
 import { browserSettings } from '../../local/bootstrap/configuration.js';
 import { missing, safeEntry, secureDirectory } from '../../local/supervisor/runtime.js';
 import type { BrowserSettings } from './types.js';
@@ -20,7 +20,7 @@ export async function readSettings(directory: string) {
   try {
     return await browserSettings(directory);
   } catch {
-    throw new Error(ErrorCode.LOCAL_RUNTIME_UNTRUSTED);
+    throw new CodedError(ErrorCode.LOCAL_RUNTIME_UNTRUSTED);
   }
 }
 
@@ -28,7 +28,7 @@ export async function requireSettings(directory: string) {
   const settings = await readSettings(directory);
 
   if (!settings) {
-    throw new Error(ErrorCode.LOCAL_HOST_UNAVAILABLE);
+    throw new CodedError(ErrorCode.LOCAL_HOST_UNAVAILABLE);
   }
 
   return settings;
@@ -41,7 +41,7 @@ export async function ownedContents(path: string): Promise<string | undefined> {
     safeEntry(stat, true);
 
     if (!stat.isFile() || stat.nlink !== 1 || stat.size > 65536) {
-      throw new Error(ErrorCode.LOCAL_RUNTIME_UNTRUSTED);
+      throw new CodedError(ErrorCode.LOCAL_RUNTIME_UNTRUSTED);
     }
 
     return await readFile(path, 'utf8');
@@ -60,7 +60,7 @@ export async function writeOwned(path: string, contents: string, mode: number) {
 
   if (previous !== undefined) {
     if (previous !== contents || ((await lstat(path)).mode & 0o777) !== mode) {
-      throw new Error(ErrorCode.LOCAL_RUNTIME_UNTRUSTED);
+      throw new CodedError(ErrorCode.LOCAL_RUNTIME_UNTRUSTED);
     }
 
     return;

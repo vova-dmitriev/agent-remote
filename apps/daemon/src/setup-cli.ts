@@ -13,6 +13,7 @@ import { requestLocal } from './code/hooks/ipc.js';
 import { installHooks, uninstallHooks } from './code/hooks/install-hooks.js';
 import { startDaemon } from './main.js';
 import { startClaude } from './cli/wrapper.js';
+import { CodedError } from '@protocol';
 
 export async function runCli(argv = process.argv.slice(2)) {
   const [command, ...args] = argv;
@@ -131,7 +132,7 @@ export async function runCli(argv = process.argv.slice(2)) {
       ASCII_CONTROL_CHARACTERS.test(executable) ||
       args.some((arg) => arg.includes('\0'))
     ) {
-      throw new Error(DaemonErrorCode.INVALID_CLAUDE_ARGS);
+      throw new CodedError(DaemonErrorCode.INVALID_CLAUDE_ARGS);
     }
 
     process.exitCode = await startClaude([], { stdin: process.stdin, stdout: process.stdout }, undefined, {
@@ -219,7 +220,7 @@ export async function runCli(argv = process.argv.slice(2)) {
         input += chunk.toString();
 
         if (Buffer.byteLength(input) > 120000) {
-          throw new Error(DaemonErrorCode.HOOK_TOO_LARGE);
+          throw new CodedError(DaemonErrorCode.HOOK_TOO_LARGE);
         }
       }
 
@@ -259,7 +260,7 @@ export async function runCli(argv = process.argv.slice(2)) {
     );
 
     if (result.code) {
-      throw new Error(result.code);
+      throw new CodedError(result.code);
     }
 
     process.stdout.write(JSON.stringify(result) + '\n');

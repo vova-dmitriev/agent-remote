@@ -1,10 +1,11 @@
 import {
+  type ClientCommand,
+  clientCommandSchema,
+  CodedError,
   CommandActionType,
   ErrorCode,
   PromptDelivery,
   SessionStatus,
-  clientCommandSchema,
-  type ClientCommand,
 } from '@protocol';
 import type { LocalControllerOptions } from '../controller/types.js';
 import type { LocalPrincipal } from '../grants/types.js';
@@ -41,11 +42,11 @@ export function claimQueuedCommand(
     }
 
     if (!sameQueuedCommand(expected, command)) {
-      throw new Error(ErrorCode.COMMAND_ID_REUSED);
+      throw new CodedError(ErrorCode.COMMAND_ID_REUSED);
     }
 
     if (!options.grants.approvedClient(queued.clientId, queued.origin)) {
-      throw new Error(ErrorCode.LOCAL_GRANT_REVOKED);
+      throw new CodedError(ErrorCode.LOCAL_GRANT_REVOKED);
     }
   }
 

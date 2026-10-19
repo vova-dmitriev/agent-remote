@@ -2,7 +2,7 @@ import { readFile, lstat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { z } from 'zod';
 import { configSchema, type DaemonConfig } from '../../config.js';
-import { ErrorCode } from '@protocol';
+import { CodedError, ErrorCode } from '@protocol';
 import { loadLocalIdentity } from './identity.js';
 
 export async function runtimeConfiguration(directory: string) {
@@ -47,7 +47,7 @@ export async function browserSettings(directory: string) {
       info.mode & 0o077 ||
       (process.getuid && info.uid !== process.getuid())
     ) {
-      throw new Error(ErrorCode.UNAUTHORIZED);
+      throw new CodedError(ErrorCode.UNAUTHORIZED);
     }
 
     return browserSettingsSchema.parse(JSON.parse(await readFile(path, 'utf8')));

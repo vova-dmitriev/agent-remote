@@ -1,4 +1,4 @@
-import { nodeSourceConfig } from './apps/daemon/eslint.config.mjs';
+import { codedErrorRules, nodeSourceConfig } from './apps/daemon/eslint.config.mjs';
 
 export default [
   {
@@ -17,15 +17,19 @@ export default [
       'playwright-report/**',
     ],
   },
-  ...nodeSourceConfig([
-    'apps/daemon/**/*.{ts,js,mjs}',
-    'apps/server/src/**/*.{ts,js,mjs}',
-    'apps/chrome-extension/src/**/*.{ts,js,mjs}',
-    'apps/desktop/**/*.{ts,js,mjs,cjs}',
-    'packages/**/*.{ts,js,mjs}',
-    'scripts/**/*.{ts,js,mjs}',
-    'eslint/**/*.mjs',
-    'tests/**/*.{ts,js,mjs}',
-    '*.{ts,js,mjs}',
-  ]),
+  ...nodeSourceConfig(
+    [
+      'apps/daemon/**/*.{ts,js,mjs}',
+      'apps/server/src/**/*.{ts,js,mjs}',
+      'apps/chrome-extension/src/**/*.{ts,js,mjs}',
+      'apps/desktop/**/*.{ts,js,mjs,cjs}',
+      'packages/**/*.{ts,js,mjs}',
+      'scripts/**/*.{ts,js,mjs}',
+      'eslint/**/*.mjs',
+      'tests/**/*.{ts,js,mjs}',
+      '*.{ts,js,mjs}',
+    ],
+    ['apps/daemon/src/**/*.ts'],
+  ),
+  ...nodeSourceConfig(['apps/daemon/src/**/*.ts'], [], codedErrorRules),
 ];

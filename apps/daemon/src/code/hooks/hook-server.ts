@@ -1,12 +1,13 @@
 import { DaemonErrorCode } from '../../error-codes.js';
 import {
-  ErrorCode,
-  ConnectorId,
-  TargetKind,
-  ConnectorTransport,
   AttachmentMode,
-  IntegrationState,
+  CodedError,
   CommandStatus,
+  ConnectorId,
+  ConnectorTransport,
+  ErrorCode,
+  IntegrationState,
+  TargetKind,
 } from '@protocol';
 
 import { DesktopMode } from '../../domain/desktop.js';
@@ -61,7 +62,7 @@ export async function startHookServer(options: Options) {
     const info = await lstat(options.path);
 
     if (!info.isSocket()) {
-      throw new Error(DaemonErrorCode.SOCKET_PATH_IN_USE);
+      throw new CodedError(DaemonErrorCode.SOCKET_PATH_IN_USE);
     }
 
     const probe = await import('node:net');
@@ -78,7 +79,7 @@ export async function startHookServer(options: Options) {
     });
 
     if (alive) {
-      throw new Error(DaemonErrorCode.DAEMON_ALREADY_RUNNING);
+      throw new CodedError(DaemonErrorCode.DAEMON_ALREADY_RUNNING);
     }
 
     await unlink(options.path);
@@ -113,7 +114,7 @@ export async function startHookServer(options: Options) {
       const wrapper = wrappers.get(wrapperId);
 
       if (!wrapper) {
-        reject(new Error(ErrorCode.STALE_SESSION));
+        reject(new CodedError(ErrorCode.STALE_SESSION));
 
         return;
       }
@@ -122,7 +123,7 @@ export async function startHookServer(options: Options) {
 
       const timer = setTimeout(() => {
         wrapper.pending.delete(id);
-        reject(new Error(ErrorCode.UNKNOWN_AFTER_WRITE));
+        reject(new CodedError(ErrorCode.UNKNOWN_AFTER_WRITE));
       }, 5000);
 
       wrapper.pending.set(id, { resolve, reject, timer });
@@ -149,7 +150,7 @@ export async function startHookServer(options: Options) {
 
           for (const pending of wrapper.pending.values()) {
             clearTimeout(pending.timer);
-            pending.reject(new Error(ErrorCode.UNKNOWN_AFTER_WRITE));
+            pending.reject(new CodedError(ErrorCode.UNKNOWN_AFTER_WRITE));
           }
 
           void options.adapters.disconnect(wrapperId);
@@ -181,7 +182,7 @@ export async function startHookServer(options: Options) {
         }
 
         if (busy) {
-          throw new Error(ErrorCode.IPC_BUSY);
+          throw new CodedError(ErrorCode.IPC_BUSY);
         }
 
         busy = true;
@@ -191,14 +192,14 @@ export async function startHookServer(options: Options) {
           expected = Buffer.from(options.token);
 
         if (token.length !== expected.length || !timingSafeEqual(token, expected)) {
-          throw new Error(ErrorCode.UNAUTHORIZED);
+          throw new CodedError(ErrorCode.UNAUTHORIZED);
         }
 
         clearTimeout(authTimer);
 
         if (message.type === IpcMessageType.CodexConnect) {
           if (!message.codex || !options.onCodexConnect) {
-            throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
+            throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
           }
 
           const result = await options.onCodexConnect(message.codex);
@@ -211,7 +212,7 @@ export async function startHookServer(options: Options) {
 
         if (message.type === IpcMessageType.DesktopBind) {
           if (!message.mode || !options.onDesktopBind) {
-            throw new Error(ErrorCode.DESKTOP_UNAVAILABLE);
+            throw new CodedError(ErrorCode.DESKTOP_UNAVAILABLE);
           }
 
           const result = await options.onDesktopBind(message.mode);
@@ -224,7 +225,7 @@ export async function startHookServer(options: Options) {
 
         if (message.type === IpcMessageType.Wrapper) {
           if (!message.wrapperId || wrappers.has(message.wrapperId)) {
-            throw new Error(DaemonErrorCode.INVALID_WRAPPER);
+            throw new CodedError(DaemonErrorCode.INVALID_WRAPPER);
           }
 
           wrapperId = message.wrapperId;
@@ -267,7 +268,7 @@ export async function startHookServer(options: Options) {
                   });
 
                   if (response.status !== CommandStatus.Dispatched) {
-                    throw new Error(response.code ?? 'WRAPPER_FAILED');
+                    throw new CodedError(response.code ?? 'WRAPPER_FAILED');
                   }
 
                   return response;
@@ -279,7 +280,7 @@ export async function startHookServer(options: Options) {
                   });
 
                   if (response.status !== CommandStatus.Dispatched) {
-                    throw new Error(response.code ?? 'WRAPPER_FAILED');
+                    throw new CodedError(response.code ?? 'WRAPPER_FAILED');
                   }
 
                   return response;
@@ -288,7 +289,7 @@ export async function startHookServer(options: Options) {
                   const response = await call(id, { type: WrapperActionType.Snapshot });
 
                   if (typeof response.text !== 'string') {
-                    throw new Error(ErrorCode.SNAPSHOT_UNAVAILABLE);
+                    throw new CodedError(ErrorCode.SNAPSHOT_UNAVAILABLE);
                   }
 
                   return response.text;
@@ -307,7 +308,7 @@ export async function startHookServer(options: Options) {
             });
 
             if (bound.status !== CommandStatus.Dispatched) {
-              throw new Error(DaemonErrorCode.BINDING_FAILED);
+              throw new CodedError(DaemonErrorCode.BINDING_FAILED);
             }
 
             wrappers.get(id)!.claudeSessionId = saved.session.claudeSessionId!;
@@ -333,7 +334,7 @@ export async function startHookServer(options: Options) {
           const bound = await call(connector, { type: WrapperActionType.Bind, sessionId: hook.session_id });
 
           if (bound.status !== CommandStatus.Dispatched) {
-            throw new Error(DaemonErrorCode.BINDING_FAILED);
+            throw new CodedError(DaemonErrorCode.BINDING_FAILED);
           }
         }
 

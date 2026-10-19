@@ -1,6 +1,6 @@
 import { unlink } from 'node:fs/promises';
 import { join } from 'node:path';
-import { AgentProvider, ErrorCode, type ExecutionProfileSummary } from '@protocol';
+import { AgentProvider, CodedError, ErrorCode, type ExecutionProfileSummary } from '@protocol';
 import { profileHomes } from '../environment/paths.js';
 import { ProfileRuntimeFile } from '../environment/values.js';
 
@@ -10,13 +10,13 @@ export async function removeProfileCredentials(
   current: () => boolean,
 ) {
   if (profile.provider !== AgentProvider.Codex) {
-    throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
+    throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
   }
 
   const homes = await profileHomes(directory, profile, profile.id);
 
   if (!current()) {
-    throw new Error(ErrorCode.UNAUTHORIZED);
+    throw new CodedError(ErrorCode.UNAUTHORIZED);
   }
 
   await unlink(join(homes.codex, ProfileRuntimeFile.CodexCredentials)).catch(

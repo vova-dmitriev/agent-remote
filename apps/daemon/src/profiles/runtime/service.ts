@@ -1,11 +1,12 @@
 import {
+  CodedError,
   ErrorCode,
+  type ExecutionLaunchSelection,
+  type ProfileRequest,
   ProfileRequestKind,
   profileRequestSchema,
-  profileResponseSchema,
-  type ProfileRequest,
   type ProfileResponse,
-  type ExecutionLaunchSelection,
+  profileResponseSchema,
 } from '@protocol';
 import { immutableProfileScope } from '../storage/scope.js';
 import { ProfileService } from '../service.js';
@@ -83,7 +84,7 @@ export class RuntimeProfiles {
     const authorized = () => !this.closed && current();
 
     if (!authorized()) {
-      throw new Error(ErrorCode.UNAUTHORIZED);
+      throw new CodedError(ErrorCode.UNAUTHORIZED);
     }
 
     const request = profileRequestSchema.parse(input);
@@ -112,7 +113,7 @@ export class RuntimeProfiles {
 
   private async mutate(request: ProfileRequest, authorized: () => boolean): Promise<ProfileResponse> {
     if (request.kind !== ProfileRequestKind.Mutate) {
-      throw new Error(ErrorCode.INVALID_REQUEST);
+      throw new CodedError(ErrorCode.INVALID_REQUEST);
     }
 
     const operationId = request.mutation.operationId;
@@ -137,7 +138,7 @@ export class RuntimeProfiles {
 
   private async executeRequest(request: ProfileRequest, authorized: () => boolean): Promise<ProfileResponse> {
     if (!authorized()) {
-      throw new Error(ErrorCode.UNAUTHORIZED);
+      throw new CodedError(ErrorCode.UNAUTHORIZED);
     }
 
     await this.ownership.reconcileExited(managedCodexChildState);
@@ -149,13 +150,13 @@ export class RuntimeProfiles {
       request.kind !== ProfileRequestKind.Operation &&
       request.kind !== ProfileRequestKind.Quota
     ) {
-      throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
+      throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
     }
 
     const result = await this.router.route(request, authorized);
 
     if (!authorized()) {
-      throw new Error(ErrorCode.UNAUTHORIZED);
+      throw new CodedError(ErrorCode.UNAUTHORIZED);
     }
 
     return profileResponseSchema.parse(result);
@@ -167,11 +168,11 @@ export class RuntimeProfiles {
     current = () => true,
   ): Promise<ProfiledExecutionLaunch> {
     if (!this.options.inputEnabled) {
-      throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
+      throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
     }
 
     if (!current()) {
-      throw new Error(ErrorCode.UNAUTHORIZED);
+      throw new CodedError(ErrorCode.UNAUTHORIZED);
     }
 
     const lease = this.ownership.reserve(selection.profileId, expectedVersion);

@@ -2,22 +2,22 @@ import { constants } from 'node:fs';
 import { lstat, open } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ErrorCode } from '@protocol';
+import { CodedError, ErrorCode } from '@protocol';
 import { ClaudeProfileCredential, ClaudeProfileEnvironment } from './values.js';
 
 export async function readClaudeApiKey(path: string): Promise<string> {
   const credentialPath = resolve(path);
 
   const parent = await lstat(resolve(credentialPath, '..')).catch(() => {
-    throw new Error(ErrorCode.PROFILE_NOT_READY);
+    throw new CodedError(ErrorCode.PROFILE_NOT_READY);
   });
 
   if (!parent.isDirectory() || parent.mode & 0o077 || (process.getuid && parent.uid !== process.getuid())) {
-    throw new Error(ErrorCode.UNAUTHORIZED);
+    throw new CodedError(ErrorCode.UNAUTHORIZED);
   }
 
   const file = await open(credentialPath, constants.O_RDONLY | constants.O_NOFOLLOW).catch(() => {
-    throw new Error(ErrorCode.PROFILE_NOT_READY);
+    throw new CodedError(ErrorCode.PROFILE_NOT_READY);
   });
 
   const bytes = Buffer.alloc(ClaudeProfileCredential.MaxBytes + 1);
@@ -32,13 +32,13 @@ export async function readClaudeApiKey(path: string): Promise<string> {
       info.size > ClaudeProfileCredential.MaxBytes ||
       (process.getuid && info.uid !== process.getuid())
     ) {
-      throw new Error(ErrorCode.UNAUTHORIZED);
+      throw new CodedError(ErrorCode.UNAUTHORIZED);
     }
 
     const { bytesRead } = await file.read(bytes, 0, bytes.length, 0);
 
     if (bytesRead < 1 || bytesRead > ClaudeProfileCredential.MaxBytes) {
-      throw new Error(ErrorCode.UNAUTHORIZED);
+      throw new CodedError(ErrorCode.UNAUTHORIZED);
     }
 
     const secret = bytes.subarray(0, bytesRead).toString('utf8');
@@ -51,7 +51,7 @@ export async function readClaudeApiKey(path: string): Promise<string> {
         return /\s/u.test(character) || code < 32 || code === 127;
       })
     ) {
-      throw new Error(ErrorCode.UNAUTHORIZED);
+      throw new CodedError(ErrorCode.UNAUTHORIZED);
     }
 
     return secret;

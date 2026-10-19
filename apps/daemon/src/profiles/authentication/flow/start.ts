@@ -1,9 +1,10 @@
 import {
+  CodedError,
   ErrorCode,
-  ProfileOperationPhase,
-  profileLoginSchema,
   knownErrorCode,
+  profileLoginSchema,
   type ProfileOperation,
+  ProfileOperationPhase,
 } from '@protocol';
 import { assertProfileCaller, authenticationProfile, saveAuthentication } from '../state.js';
 import type { ProfileAuthenticationContext } from '../types.js';
@@ -56,7 +57,7 @@ export async function startProfileAuthentication(
     );
 
     if (!current()) {
-      throw new Error(ErrorCode.UNAUTHORIZED, { cause: failed });
+      throw new CodedError(ErrorCode.UNAUTHORIZED, { cause: failed });
     }
 
     return { operation: failed };

@@ -11,21 +11,22 @@ import {
   CodexContentType,
 } from '../../domain/codex/codex.js';
 import {
-  TargetKind,
-  PromptDelivery,
-  ErrorCode,
-  CommandStatus,
-  BindingState,
   AttachmentMode,
-  IntegrationState,
-  StatusConfidence,
-  SessionStatus,
-  MessageRole,
-  EventType,
+  BindingState,
+  CodedError,
+  CommandStatus,
   ConnectorTransport,
-  sessionSchema,
-  type Session,
+  ErrorCode,
+  EventType,
   type HistoryMessage,
+  IntegrationState,
+  MessageRole,
+  PromptDelivery,
+  type Session,
+  sessionSchema,
+  SessionStatus,
+  StatusConfidence,
+  TargetKind,
 } from '@protocol';
 import { RuntimeEvent } from '../../domain/runtime.js';
 import { CodexFileChanges } from './file-changes.js';
@@ -80,7 +81,7 @@ export async function bindCodex(options: CodexBindingOptions, deps: Dependencies
   const loaded = object(await rpc.request(CodexMethod.ThreadLoadedList, {}));
 
   if (!Array.isArray(loaded.data) || !loaded.data.includes(options.threadId)) {
-    throw new Error(ErrorCode.CODEX_THREAD_NOT_LOADED);
+    throw new CodedError(ErrorCode.CODEX_THREAD_NOT_LOADED);
   }
 
   const metadata = object(
@@ -88,7 +89,7 @@ export async function bindCodex(options: CodexBindingOptions, deps: Dependencies
   );
 
   if (metadata.id !== options.threadId) {
-    throw new Error(DaemonErrorCode.CODEX_THREAD_MISMATCH);
+    throw new CodedError(DaemonErrorCode.CODEX_THREAD_MISMATCH);
   }
 
   const identity = createHash('sha256')
@@ -528,7 +529,7 @@ export async function bindCodex(options: CodexBindingOptions, deps: Dependencies
           const expectedTurnId = activeTurn;
 
           if (!expectedTurnId) {
-            throw new Error(ErrorCode.NO_ACTIVE_TURN);
+            throw new CodedError(ErrorCode.NO_ACTIVE_TURN);
           }
 
           const result = object(
@@ -542,14 +543,14 @@ export async function bindCodex(options: CodexBindingOptions, deps: Dependencies
           );
 
           if (result.turnId !== expectedTurnId) {
-            throw new Error(ErrorCode.UNKNOWN_AFTER_WRITE);
+            throw new CodedError(ErrorCode.UNKNOWN_AFTER_WRITE);
           }
 
           return { status: CommandStatus.Dispatched };
         }
 
         if (closed || activeTurn || session.status !== SessionStatus.Idle) {
-          throw new Error(ErrorCode.SESSION_NOT_IDLE);
+          throw new CodedError(ErrorCode.SESSION_NOT_IDLE);
         }
 
         session.status = SessionStatus.Running;
@@ -568,7 +569,7 @@ export async function bindCodex(options: CodexBindingOptions, deps: Dependencies
           const turn = object(result.turn);
 
           if (typeof turn.id !== 'string') {
-            throw new Error(ErrorCode.UNKNOWN_AFTER_WRITE);
+            throw new CodedError(ErrorCode.UNKNOWN_AFTER_WRITE);
           }
 
           if (
@@ -589,7 +590,7 @@ export async function bindCodex(options: CodexBindingOptions, deps: Dependencies
       },
       interrupt: async () => {
         if (!activeTurn) {
-          throw new Error(ErrorCode.NO_ACTIVE_TURN);
+          throw new CodedError(ErrorCode.NO_ACTIVE_TURN);
         }
 
         await rpc.request(CodexMethod.TurnInterrupt, { threadId: options.threadId, turnId: activeTurn });
@@ -644,7 +645,7 @@ export async function bindCodex(options: CodexBindingOptions, deps: Dependencies
     const resumed = object(resumeResponse.thread);
 
     if (resumed.id !== options.threadId) {
-      throw new Error(DaemonErrorCode.CODEX_THREAD_MISMATCH);
+      throw new CodedError(DaemonErrorCode.CODEX_THREAD_MISMATCH);
     }
 
     if (!closed && modelRevision === initialModelRevision) {
@@ -775,7 +776,7 @@ export async function bindCodex(options: CodexBindingOptions, deps: Dependencies
       );
 
       if (history.id !== options.threadId) {
-        throw new Error(DaemonErrorCode.CODEX_THREAD_MISMATCH);
+        throw new CodedError(DaemonErrorCode.CODEX_THREAD_MISMATCH);
       }
 
       for (const raw of (Array.isArray(history.turns) ? history.turns : []).slice(-100)) {

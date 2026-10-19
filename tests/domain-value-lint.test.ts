@@ -245,3 +245,48 @@ it.each(['const matches = response.status === 404;', 'socket.close(4001, "UNAUTH
   },
   30000,
 );
+
+it.each([
+  'throw new Error(ErrorCode.NOT_FOUND);',
+  'if (error.message === ErrorCode.NOT_FOUND) {}',
+  'if (ErrorCode.NOT_FOUND !== error.message) {}',
+])(
+  'requires CodedError and errorCode comparisons in daemon source: %s',
+  (source) => {
+    expect(
+      ruleViolations(source, 'apps/daemon/src/example.ts', 'no-restricted-syntax'),
+      source,
+    ).not.toHaveLength(0);
+  },
+  30000,
+);
+
+it('allows CodedError, hasErrorCode and argument-less control-flow throws in daemon source', () => {
+  for (const source of [
+    'throw new CodedError(ErrorCode.NOT_FOUND);',
+    'if (hasErrorCode(error, ErrorCode.NOT_FOUND)) {}',
+    'throw new Error();',
+  ]) {
+    expect(ruleViolations(source, 'apps/daemon/src/example.ts', 'no-restricted-syntax'), source).toEqual([]);
+  }
+}, 30000);
+
+it('rejects raw error codes in comparisons, throw branches and error properties', () => {
+  for (const source of [
+    "if (code === 'STALE_EPOCH') {}",
+    "if (error.code !== 'STALE_EPOCH') {}",
+    "const body = { error: 'HISTORY_RELOAD_FAILED' };",
+    "throw new Error(ready ? 'A_B' : 'C_D');",
+    "throw new CodedError(ready ? 'A_B' : 'C_D');",
+  ]) {
+    expect(errorCodeViolations(source, 'apps/daemon/src/example.ts'), source).not.toHaveLength(0);
+  }
+
+  for (const source of [
+    'if (code === ErrorCode.STALE_EPOCH) {}',
+    "const body = { error: 'Could not load' };",
+    "if (code === 'idle') {}",
+  ]) {
+    expect(errorCodeViolations(source, 'apps/daemon/src/example.ts'), source).toEqual([]);
+  }
+}, 30000);

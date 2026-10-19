@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
-import { ErrorCode, ProfileAuthMode } from '@protocol';
+import { CodedError, ErrorCode, ProfileAuthMode } from '@protocol';
 import { CodexMethod } from '../../domain/codex/codex.js';
 import type { CodexRpcClient } from '../../codex/rpc/rpc-client.js';
 import { readCodexCredentialIdentity } from '../credentials.js';
@@ -27,7 +27,7 @@ export async function nativeProfileIdentity(
   const parsed = accountSchema.safeParse(await client.request(CodexMethod.AccountRead, { refreshToken }));
 
   if (!parsed.success) {
-    throw new Error(ErrorCode.PROFILE_NOT_READY);
+    throw new CodedError(ErrorCode.PROFILE_NOT_READY);
   }
 
   const account = parsed.data.account;
@@ -38,7 +38,7 @@ export async function nativeProfileIdentity(
   const credential = await readCodexCredentialIdentity(directory);
 
   if (nativeMode !== mode || credential.authMode !== mode) {
-    throw new Error(ErrorCode.PROFILE_MISMATCH);
+    throw new CodedError(ErrorCode.PROFILE_MISMATCH);
   }
 
   if (account.type === CodexProfileAuthType.ApiKey && credential.accountRef) {
@@ -55,5 +55,5 @@ export async function nativeProfileIdentity(
     };
   }
 
-  throw new Error(ErrorCode.PROFILE_NOT_READY);
+  throw new CodedError(ErrorCode.PROFILE_NOT_READY);
 }

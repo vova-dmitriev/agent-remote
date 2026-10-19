@@ -1,10 +1,11 @@
 import {
+  CodedError,
   ErrorCode,
   executionLaunchPlanSchema,
-  executionLaunchSelectionSchema,
-  knownErrorCode,
   type ExecutionLaunchSelection,
+  executionLaunchSelectionSchema,
   type ExecutionProfileSummary,
+  knownErrorCode,
 } from '@protocol';
 import { buildProfileEnvironment } from '../../profiles/environment.js';
 import { verifyProfileObservation } from '../../profiles/capabilities.js';
@@ -14,7 +15,9 @@ function validate(profile: ExecutionProfileSummary, selection: ExecutionLaunchSe
   const parsed = executionLaunchPlanSchema.safeParse({ profile, selection });
 
   if (!parsed.success) {
-    throw new Error(knownErrorCode(new Error(parsed.error.issues[0]?.message), ErrorCode.INVALID_REQUEST));
+    throw new CodedError(
+      knownErrorCode(new Error(parsed.error.issues[0]?.message), ErrorCode.INVALID_REQUEST),
+    );
   }
 
   return parsed.data;
@@ -31,11 +34,11 @@ export async function prepareExecutionLaunch(
 
   const assertCurrent = () => {
     if (!current()) {
-      throw new Error(ErrorCode.UNAUTHORIZED);
+      throw new CodedError(ErrorCode.UNAUTHORIZED);
     }
 
     if (options.registry.get(requested.profileId).version !== expectedVersion) {
-      throw new Error(ErrorCode.LOCAL_REVISION_CONFLICT);
+      throw new CodedError(ErrorCode.LOCAL_REVISION_CONFLICT);
     }
   };
 

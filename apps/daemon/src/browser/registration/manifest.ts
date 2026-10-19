@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-syntax -- installer diagnostics are human-readable text, not wire error codes */
 import { isAbsolute, resolve } from 'node:path';
 import { NATIVE_HOST_NAME } from '@protocol';
 import type { NativeHostManifest, NativeHostRegistration } from './types.js';

@@ -1,5 +1,12 @@
 import { DaemonErrorCode } from '../../error-codes.js';
-import { ErrorCode, HistoryDirection, type HistoryMessage, type HistoryRead } from '@protocol';
+import {
+  CodedError,
+  ErrorCode,
+  hasErrorCode,
+  HistoryDirection,
+  type HistoryMessage,
+  type HistoryRead,
+} from '@protocol';
 
 import {
   TRANSCRIPT_PAGE_MESSAGES,
@@ -38,7 +45,7 @@ export class TranscriptPages {
     const opened = await openTranscript(this.options.path, this.options.allowedRoot);
 
     if (!opened) {
-      throw new Error(ErrorCode.TRANSCRIPT_UNAVAILABLE);
+      throw new CodedError(ErrorCode.TRANSCRIPT_UNAVAILABLE);
     }
 
     const { file, info } = opened;
@@ -56,11 +63,11 @@ export class TranscriptPages {
         try {
           cursor = cursorSchema.parse(JSON.parse(Buffer.from(request.anchor ?? '', 'base64url').toString()));
         } catch {
-          throw new Error(ErrorCode.INVALID_CURSOR);
+          throw new CodedError(ErrorCode.INVALID_CURSOR);
         }
 
         if (cursor.dev !== info.dev || cursor.ino !== info.ino || cursor.offset > info.size) {
-          throw new Error(DaemonErrorCode.TRANSCRIPT_CHANGED);
+          throw new CodedError(DaemonErrorCode.TRANSCRIPT_CHANGED);
         }
 
         if (request.direction === HistoryDirection.Before) {
@@ -80,7 +87,7 @@ export class TranscriptPages {
           try {
             position = this.position(request.anchor.slice(TRANSCRIPT_POSITION_PREFIX.length), info);
           } catch (error) {
-            if (!(error instanceof Error) || error.message !== 'TRANSCRIPT_CHANGED') {
+            if (!hasErrorCode(error, DaemonErrorCode.TRANSCRIPT_CHANGED)) {
               throw error;
             }
           }
@@ -110,7 +117,7 @@ export class TranscriptPages {
                 );
         } else {
           if (request.direction === HistoryDirection.Message) {
-            throw new Error(DaemonErrorCode.TRANSCRIPT_CHANGED);
+            throw new CodedError(DaemonErrorCode.TRANSCRIPT_CHANGED);
           }
 
           start = await transcriptWindow(file, end, TRANSCRIPT_PAGE_MESSAGES, this.options.sessionId);
@@ -170,11 +177,11 @@ export class TranscriptPages {
     try {
       cursor = cursorSchema.parse(JSON.parse(Buffer.from(value, 'base64url').toString()));
     } catch {
-      throw new Error(ErrorCode.INVALID_CURSOR);
+      throw new CodedError(ErrorCode.INVALID_CURSOR);
     }
 
     if (cursor.dev !== info.dev || cursor.ino !== info.ino || cursor.offset > info.size) {
-      throw new Error(DaemonErrorCode.TRANSCRIPT_CHANGED);
+      throw new CodedError(DaemonErrorCode.TRANSCRIPT_CHANGED);
     }
 
     return cursor.offset;

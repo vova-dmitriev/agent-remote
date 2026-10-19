@@ -1,9 +1,10 @@
 import { createHash } from 'node:crypto';
 import {
+  CodedError,
+  type EncryptedEnrollment,
+  encryptedEnrollmentSchema,
   ErrorCode,
   ProfileOperationPhase,
-  encryptedEnrollmentSchema,
-  type EncryptedEnrollment,
 } from '@protocol';
 import { decryptEnrollment } from '@transport/credentials/sealed-box.js';
 import { credentialReference } from '../../credentials.js';
@@ -16,7 +17,7 @@ export async function completeCredentialEnrollment(
   current: () => boolean,
 ) {
   if (!current()) {
-    throw new Error(ErrorCode.UNAUTHORIZED);
+    throw new CodedError(ErrorCode.UNAUTHORIZED);
   }
 
   const envelope = encryptedEnrollmentSchema.parse(input);
@@ -25,7 +26,7 @@ export async function completeCredentialEnrollment(
 
   if (record.consumed) {
     if (record.cipherHash !== cipherHash) {
-      throw new Error(ErrorCode.ENROLLMENT_REPLAYED);
+      throw new CodedError(ErrorCode.ENROLLMENT_REPLAYED);
     }
 
     return context.journal.get(envelope.operationId);
@@ -35,7 +36,7 @@ export async function completeCredentialEnrollment(
 
   try {
     if (!current()) {
-      throw new Error(ErrorCode.UNAUTHORIZED);
+      throw new CodedError(ErrorCode.UNAUTHORIZED);
     }
 
     const transition = context.options.database.connection.transaction(() => {
@@ -43,7 +44,7 @@ export async function completeCredentialEnrollment(
 
       if (latest.consumed) {
         if (latest.cipherHash !== cipherHash) {
-          throw new Error(ErrorCode.ENROLLMENT_REPLAYED);
+          throw new CodedError(ErrorCode.ENROLLMENT_REPLAYED);
         }
 
         return { operation: context.journal.get(envelope.operationId), apply: false };
@@ -87,13 +88,13 @@ export async function completeCredentialEnrollment(
       const evidence = await context.options.apply(body.apiKey, profile, current, envelope.operationId);
 
       if (!current()) {
-        throw new Error(ErrorCode.UNAUTHORIZED);
+        throw new CodedError(ErrorCode.UNAUTHORIZED);
       }
 
       return finishEnrollment(context, envelope.operationId, evidence);
     } catch (error) {
       if (!current()) {
-        throw new Error(ErrorCode.UNAUTHORIZED);
+        throw new CodedError(ErrorCode.UNAUTHORIZED);
       }
 
       return uncertainEnrollment(context, envelope.operationId, error);

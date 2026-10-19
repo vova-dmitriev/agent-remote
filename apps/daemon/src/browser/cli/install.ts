@@ -1,7 +1,7 @@
 import { lstat, readFile, unlink } from 'node:fs/promises';
 import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { z } from 'zod';
-import { BrowserKind, ErrorCode } from '@protocol';
+import { BrowserKind, CodedError, ErrorCode } from '@protocol';
 import { browserSettingsSchema } from '../../local/bootstrap/configuration.js';
 import {
   canonicalPath,
@@ -23,7 +23,7 @@ import type { BrowserCliContext } from './types.js';
 
 export function browserKind(value: string | undefined): BrowserKind {
   if (!Object.values(BrowserKind).includes(value as BrowserKind)) {
-    throw new Error(ErrorCode.INVALID_REQUEST);
+    throw new CodedError(ErrorCode.INVALID_REQUEST);
   }
 
   return value as BrowserKind;
@@ -31,7 +31,7 @@ export function browserKind(value: string | undefined): BrowserKind {
 
 export function extensionOrigin(id: string | undefined) {
   if (!id || !/^[a-p]{32}$/.test(id)) {
-    throw new Error(ErrorCode.INVALID_REQUEST);
+    throw new CodedError(ErrorCode.INVALID_REQUEST);
   }
 
   return `chrome-extension://${id}/`;
@@ -48,7 +48,7 @@ async function packagedRuntime(directory: string) {
   safeEntry(stat);
 
   if (!stat.isFile() || stat.size > 65536) {
-    throw new Error(ErrorCode.LOCAL_RUNTIME_UNTRUSTED);
+    throw new CodedError(ErrorCode.LOCAL_RUNTIME_UNTRUSTED);
   }
 
   const { runtime } = descriptor.parse(JSON.parse(await readFile(path, 'utf8')));
@@ -58,7 +58,7 @@ async function packagedRuntime(directory: string) {
     const rest = relative(directory, target);
 
     if (isAbsolute(path) || !rest || rest === '..' || rest.startsWith(`..${sep}`)) {
-      throw new Error(ErrorCode.LOCAL_RUNTIME_UNTRUSTED);
+      throw new CodedError(ErrorCode.LOCAL_RUNTIME_UNTRUSTED);
     }
 
     return target;
@@ -98,7 +98,7 @@ export async function installBrowser(
   const settings = { origins: [origin], runtime };
 
   if (existing && JSON.stringify(existing) !== JSON.stringify(settings)) {
-    throw new Error(ErrorCode.LOCAL_COMPANION_MISMATCH);
+    throw new CodedError(ErrorCode.LOCAL_COMPANION_MISMATCH);
   }
 
   // Validate both product files before publishing either file.
@@ -106,7 +106,7 @@ export async function installBrowser(
   const previous = await ownedContents(wrapperPath(context.directory));
 
   if (previous !== undefined && previous !== script) {
-    throw new Error(ErrorCode.LOCAL_RUNTIME_UNTRUSTED);
+    throw new CodedError(ErrorCode.LOCAL_RUNTIME_UNTRUSTED);
   }
 
   await writeOwned(wrapperPath(context.directory), script, 0o700);
@@ -141,7 +141,7 @@ export async function uninstallBrowser(context: BrowserCliContext, kind: Browser
   const path = wrapperPath(context.directory);
 
   if ((await ownedContents(path)) !== wrapperContents(context.directory, settings)) {
-    throw new Error(ErrorCode.LOCAL_RUNTIME_UNTRUSTED);
+    throw new CodedError(ErrorCode.LOCAL_RUNTIME_UNTRUSTED);
   }
 
   await unlink(path);

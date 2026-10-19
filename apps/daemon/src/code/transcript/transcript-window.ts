@@ -6,6 +6,7 @@ import {
   JSONL_NEWLINE_BYTE,
 } from './transcript-limits.js';
 import { type FileHandle } from 'node:fs/promises';
+import { CodedError } from '@protocol';
 
 export function visibleTranscriptRow(row: Record<string, unknown>, sessionId?: string): boolean {
   if ((sessionId && row.sessionId !== undefined && row.sessionId !== sessionId) || row.isMeta === true) {
@@ -62,7 +63,7 @@ export async function transcriptWindow(file: FileHandle, end: number, count: num
     const { bytesRead } = await file.read(buffer, 0, buffer.length, next);
 
     if (bytesRead !== buffer.length) {
-      throw new Error(DaemonErrorCode.TRANSCRIPT_CHANGED);
+      throw new CodedError(DaemonErrorCode.TRANSCRIPT_CHANGED);
     }
 
     const combined = Buffer.concat([buffer, pending]);

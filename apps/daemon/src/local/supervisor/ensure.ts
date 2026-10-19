@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 import { setTimeout as pause } from 'node:timers/promises';
-import { ErrorCode, LOCAL_LIMITS } from '@protocol';
+import { CodedError, ErrorCode, LOCAL_LIMITS } from '@protocol';
 import { acquireStartLock } from './lock.js';
 import { secureDirectory, verifyCompanionRuntime } from './runtime.js';
 import type { EnsureCompanionOptions } from './types.js';
@@ -14,7 +14,7 @@ async function compatible(options: EnsureCompanionOptions, timeoutMs: number): P
       options.probe(),
       new Promise<never>((_resolve, reject) => {
         timer = setTimeout(
-          () => reject(new Error(ErrorCode.LOCAL_COMPANION_TIMEOUT)),
+          () => reject(new CodedError(ErrorCode.LOCAL_COMPANION_TIMEOUT)),
           Math.max(1, timeoutMs),
         );
       }),
@@ -29,7 +29,7 @@ async function compatible(options: EnsureCompanionOptions, timeoutMs: number): P
       typeof health.instanceId !== 'string' ||
       !health.instanceId
     ) {
-      throw new Error(ErrorCode.LOCAL_COMPANION_MISMATCH);
+      throw new CodedError(ErrorCode.LOCAL_COMPANION_MISMATCH);
     }
 
     return true;
@@ -52,7 +52,7 @@ async function launch(options: EnsureCompanionOptions): Promise<void> {
 
   await new Promise<void>((resolve, reject) => {
     child.once('spawn', resolve);
-    child.once('error', () => reject(new Error(ErrorCode.LOCAL_COMPANION_START_FAILED)));
+    child.once('error', () => reject(new CodedError(ErrorCode.LOCAL_COMPANION_START_FAILED)));
   });
 
   child.unref();
@@ -62,7 +62,7 @@ export async function ensureCompanion(options: EnsureCompanionOptions): Promise<
   const timeoutMs = options.timeoutMs ?? CompanionStartup.timeoutMs;
 
   if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 60_000) {
-    throw new Error(ErrorCode.INVALID_REQUEST);
+    throw new CodedError(ErrorCode.INVALID_REQUEST);
   }
 
   await secureDirectory(options.directory, true, true);
@@ -106,7 +106,7 @@ export async function ensureCompanion(options: EnsureCompanionOptions): Promise<
           await pause(Math.min(CompanionStartup.pollMs, Math.max(1, deadline - Date.now())));
         }
 
-        throw new Error(ErrorCode.LOCAL_COMPANION_TIMEOUT);
+        throw new CodedError(ErrorCode.LOCAL_COMPANION_TIMEOUT);
       } finally {
         // Retain ambiguous startup locks: the child may outlive this caller.
         if (!started || ready) {
@@ -118,5 +118,5 @@ export async function ensureCompanion(options: EnsureCompanionOptions): Promise<
     await pause(Math.min(CompanionStartup.pollMs, Math.max(1, deadline - Date.now())));
   }
 
-  throw new Error(ErrorCode.LOCAL_COMPANION_TIMEOUT);
+  throw new CodedError(ErrorCode.LOCAL_COMPANION_TIMEOUT);
 }

@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-syntax -- installer diagnostics are human-readable text, not wire error codes */
 import { homedir } from 'node:os';
 import { isAbsolute, join, resolve } from 'node:path';
 import { BrowserKind, NATIVE_HOST_NAME } from '@protocol';

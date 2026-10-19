@@ -1,12 +1,14 @@
 import {
   AgentProvider,
-  ProfileAction,
+  CodedError,
   ErrorCode,
-  ProfileOperationPhase,
-  profileMutationSchema,
+  hasErrorCode,
+  ProfileAction,
   profileListSchema,
   type ProfileMutation,
+  profileMutationSchema,
   type ProfileOperation,
+  ProfileOperationPhase,
 } from '@protocol';
 import { immutableProfileScope } from './storage/scope.js';
 import { ProfileRegistry } from './registry.js';
@@ -44,7 +46,7 @@ export class ProfileService {
 
   async execute(input: ProfileMutation, current = () => true): Promise<ProfileOperation> {
     if (!current()) {
-      throw new Error(ErrorCode.UNAUTHORIZED);
+      throw new CodedError(ErrorCode.UNAUTHORIZED);
     }
 
     const request = profileMutationSchema.parse(input);
@@ -56,7 +58,7 @@ export class ProfileService {
       request.action !== ProfileAction.Remove &&
       this.options.executionActive?.(request.profileId)
     ) {
-      throw new Error(ErrorCode.PROFILE_EXECUTION_ACTIVE);
+      throw new CodedError(ErrorCode.PROFILE_EXECUTION_ACTIVE);
     }
 
     const result = this.journal.run(request, () => {
@@ -84,7 +86,7 @@ export class ProfileService {
 
   async reconcile(id: string, current = () => true): Promise<ProfileOperation> {
     if (!current()) {
-      throw new Error(ErrorCode.UNAUTHORIZED);
+      throw new CodedError(ErrorCode.UNAUTHORIZED);
     }
 
     const operation = this.operation(id);
@@ -105,12 +107,11 @@ export class ProfileService {
       }
     } catch (error) {
       if (!current()) {
-        throw new Error(ErrorCode.UNAUTHORIZED);
+        throw new CodedError(ErrorCode.UNAUTHORIZED);
       }
 
       const code =
-        Object.values(ErrorCode).find((value) => error instanceof Error && value === error.message) ??
-        ErrorCode.REQUEST_FAILED;
+        Object.values(ErrorCode).find((value) => hasErrorCode(error, value)) ?? ErrorCode.REQUEST_FAILED;
 
       return this.options.database.connection.transaction(() => {
         const latest = this.operation(id);
@@ -122,7 +123,7 @@ export class ProfileService {
     }
 
     if (!current()) {
-      throw new Error(ErrorCode.UNAUTHORIZED);
+      throw new CodedError(ErrorCode.UNAUTHORIZED);
     }
 
     return this.options.database.connection.transaction(() => {

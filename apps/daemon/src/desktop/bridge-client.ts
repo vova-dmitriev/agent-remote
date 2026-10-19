@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process';
 import { readFileSync, existsSync } from 'node:fs';
 import { dirname, join, parse } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { CodedError, ErrorCode } from '@protocol';
 
 export function installationRoot() {
   let directory = dirname(fileURLToPath(import.meta.url));
@@ -21,7 +22,7 @@ export function installationRoot() {
     directory = dirname(directory);
   }
 
-  throw new Error(DaemonErrorCode.INSTALLATION_ROOT_NOT_FOUND);
+  throw new CodedError(DaemonErrorCode.INSTALLATION_ROOT_NOT_FOUND);
 }
 
 export class BridgeClient {
@@ -111,7 +112,9 @@ export class BridgeClient {
           if (response.ok) {
             pending.resolve(response.result);
           } else {
-            pending.reject(new Error(typeof response.code === 'string' ? response.code : 'HELPER_FAILED'));
+            pending.reject(
+              new CodedError(typeof response.code === 'string' ? response.code : ErrorCode.HELPER_FAILED),
+            );
           }
         } catch {
           this.fail('INVALID_HELPER_FRAME');
@@ -135,7 +138,7 @@ export class BridgeClient {
 
       this.pending = undefined;
       clearTimeout(pending.timer);
-      pending.reject(new Error(code));
+      pending.reject(new CodedError(code));
     }
   }
   close() {

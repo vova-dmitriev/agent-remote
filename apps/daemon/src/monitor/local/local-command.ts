@@ -1,6 +1,13 @@
 import { createHash } from 'node:crypto';
 import type Sqlite from 'better-sqlite3';
-import { ErrorCode, LOCAL_LIMITS, clientCommandSchema, type ClientCommand, type Command } from '@protocol';
+import {
+  type ClientCommand,
+  clientCommandSchema,
+  CodedError,
+  type Command,
+  ErrorCode,
+  LOCAL_LIMITS,
+} from '@protocol';
 
 interface IntentReservation {
   fingerprint: string;
@@ -25,11 +32,11 @@ export function localCommand(db: Sqlite.Database, raw: ClientCommand): Command {
         'fingerprint' in saved ? saved.fingerprint : fingerprint(clientCommandSchema.parse(saved));
 
       if (original !== hash) {
-        throw new Error(ErrorCode.COMMAND_ID_REUSED);
+        throw new CodedError(ErrorCode.COMMAND_ID_REUSED);
       }
 
       if (!Number.isFinite(saved.expiresAt)) {
-        throw new Error(ErrorCode.COMMAND_STORE_UNAVAILABLE);
+        throw new CodedError(ErrorCode.COMMAND_STORE_UNAVAILABLE);
       }
 
       return { ...command, version: LOCAL_LIMITS.protocolVersion, expiresAt: saved.expiresAt };
@@ -40,7 +47,7 @@ export function localCommand(db: Sqlite.Database, raw: ClientCommand): Command {
     };
 
     if (count.count >= LOCAL_LIMITS.maxCommandIntents) {
-      throw new Error(ErrorCode.COMMAND_STORE_UNAVAILABLE);
+      throw new CodedError(ErrorCode.COMMAND_STORE_UNAVAILABLE);
     }
 
     const expiresAt = Date.now() + LOCAL_LIMITS.requestTimeoutMs;

@@ -1,10 +1,11 @@
 import {
-  FrameType,
+  CodedError,
+  type DeviceFrame,
   ErrorCode,
+  FrameType,
   knownErrorCode,
   ProfileLimits,
   type ServerFrame,
-  type DeviceFrame,
 } from '@protocol';
 import type { RuntimeProfiles } from '../service.js';
 
@@ -58,7 +59,7 @@ export class RuntimeProfileRelay {
 
       if (current()) {
         if (Buffer.byteLength(JSON.stringify(response)) > ProfileLimits.ResponseBytes) {
-          throw new Error(ErrorCode.LOCAL_PAYLOAD_TOO_LARGE);
+          throw new CodedError(ErrorCode.LOCAL_PAYLOAD_TOO_LARGE);
         }
 
         this.send({

@@ -1,6 +1,6 @@
 import { lstat } from 'node:fs/promises';
 import { join } from 'node:path';
-import { ErrorCode, LOCAL_LIMITS } from '@protocol';
+import { CodedError, ErrorCode, LOCAL_LIMITS } from '@protocol';
 import { runtimeConfiguration } from '../../local/bootstrap/configuration.js';
 import { localClientSecret } from '../../local/bootstrap/identity.js';
 import { probeCompanion } from '../../local/bootstrap/probe.js';
@@ -31,7 +31,7 @@ async function companionAccess(context: BrowserCliContext) {
 
   const probe = async () => {
     if ((await exists(join(context.directory, 'hooks.sock'))) && !(await exists(path))) {
-      throw new Error(ErrorCode.LOCAL_COMPANION_MISMATCH);
+      throw new CodedError(ErrorCode.LOCAL_COMPANION_MISMATCH);
     }
 
     const health = await (context.dependencies?.probe ?? probeCompanion)(path, capability);
@@ -40,7 +40,7 @@ async function companionAccess(context: BrowserCliContext) {
       health &&
       (health.instanceId !== identity.instanceId || health.protocolVersion !== LOCAL_LIMITS.protocolVersion)
     ) {
-      throw new Error(ErrorCode.LOCAL_COMPANION_MISMATCH);
+      throw new CodedError(ErrorCode.LOCAL_COMPANION_MISMATCH);
     }
 
     return health;
@@ -53,7 +53,7 @@ export async function browserHost(context: BrowserCliContext, origin: string) {
   const settings = await requireSettings(context.directory);
 
   if (!settings.origins.includes(origin)) {
-    throw new Error(ErrorCode.UNAUTHORIZED);
+    throw new CodedError(ErrorCode.UNAUTHORIZED);
   }
 
   const access = await companionAccess(context);

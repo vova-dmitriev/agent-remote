@@ -1,4 +1,4 @@
-import { ErrorCode } from '@protocol';
+import { CodedError, ErrorCode } from '@protocol';
 import { loadEnrollmentIdentity } from '../../enrollment/identity.js';
 import { CliAction } from '../../../domain/cli.js';
 
@@ -8,7 +8,7 @@ export async function runProfilesCli(
   write = (value: string) => process.stdout.write(value),
 ) {
   if (args.length !== 1 || args[0] !== CliAction.Recipient) {
-    throw new Error(ErrorCode.INVALID_REQUEST);
+    throw new CodedError(ErrorCode.INVALID_REQUEST);
   }
 
   const recipient = await loadEnrollmentIdentity(directory);

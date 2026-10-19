@@ -1,15 +1,18 @@
 import {
-  ErrorCode,
-  HttpStatus,
-  MessageRole,
   ATTACHMENT_TTL_MS,
-  MAX_ATTACHMENTS,
-  MAX_ATTACHMENT_BYTES,
-  MAX_MESSAGE_ATTACHMENT_BYTES,
+  type AttachmentDescriptor,
   attachmentSchema,
   attachmentsSchema,
-  type AttachmentDescriptor,
+  CodedError,
+  ErrorCode,
+  errorCode,
+  hasErrorCode,
   type HistoryMessage,
+  HttpStatus,
+  MAX_ATTACHMENT_BYTES,
+  MAX_ATTACHMENTS,
+  MAX_MESSAGE_ATTACHMENT_BYTES,
+  MessageRole,
   type Session,
 } from '@protocol';
 import { createHash, randomUUID } from 'node:crypto';
@@ -97,7 +100,7 @@ export class AttachmentService {
   }
   private async directory() {
     if (this.closed) {
-      throw new Error(AttachmentErrorCode.Unavailable);
+      throw new CodedError(AttachmentErrorCode.Unavailable);
     }
 
     this.root ??= (async () => {
@@ -107,7 +110,7 @@ export class AttachmentService {
       const info = await lstat(parent);
 
       if (!info.isDirectory() || info.isSymbolicLink() || (process.getuid && info.uid !== process.getuid())) {
-        throw new Error(AttachmentErrorCode.Unavailable);
+        throw new CodedError(AttachmentErrorCode.Unavailable);
       }
 
       await chmod(parent, 0o700);
@@ -179,7 +182,7 @@ export class AttachmentService {
         rootInfo.isSymbolicLink() ||
         (process.getuid && rootInfo.uid !== process.getuid())
       ) {
-        throw new Error(AttachmentErrorCode.Unavailable);
+        throw new CodedError(AttachmentErrorCode.Unavailable);
       }
 
       await chmod(root, 0o700);
@@ -198,7 +201,7 @@ export class AttachmentService {
       await this.prune(attachments.reduce((sum, item) => sum + item.byteLength, 0));
 
       if (this.files.size + attachments.length > ATTACHMENT_MAX_PREPARED_FILES) {
-        throw new Error(AttachmentErrorCode.Quota);
+        throw new CodedError(AttachmentErrorCode.Quota);
       }
 
       for (const descriptor of attachments) {
@@ -209,13 +212,13 @@ export class AttachmentService {
           bytes.length !== descriptor.byteLength ||
           createHash('sha256').update(bytes).digest('hex') !== descriptor.sha256
         ) {
-          throw new Error(AttachmentErrorCode.IntegrityFailed);
+          throw new CodedError(AttachmentErrorCode.IntegrityFailed);
         }
 
         await this.mirrors.prepare(session, descriptor, bytes);
 
         if (this.closed) {
-          throw new Error(AttachmentErrorCode.Unavailable);
+          throw new CodedError(AttachmentErrorCode.Unavailable);
         }
 
         const extensions: Record<string, string> = {
@@ -351,7 +354,7 @@ export class AttachmentService {
           }
         }
       } catch (error) {
-        retry ||= error instanceof Error && RETRYABLE_ATTACHMENT_ERRORS.has(error.message);
+        retry ||= RETRYABLE_ATTACHMENT_ERRORS.has(errorCode(error) ?? '');
       }
     }
 
@@ -412,24 +415,24 @@ export class AttachmentService {
     source?: { messageId: string; position: string },
   ): Promise<AttachmentDescriptor> {
     if (this.closed) {
-      throw new Error(AttachmentErrorCode.Unavailable);
+      throw new CodedError(AttachmentErrorCode.Unavailable);
     }
 
     if (this.options.current && !this.options.current(session)) {
-      throw new Error(ErrorCode.STALE_SESSION);
+      throw new CodedError(ErrorCode.STALE_SESSION);
     }
 
     const bytes = media.bytes ?? (media.path ? await nativeFile(media.path) : undefined);
 
     if (!bytes?.length || bytes.length > MAX_ATTACHMENT_BYTES) {
-      throw new Error(AttachmentErrorCode.SourceUnavailable);
+      throw new CodedError(AttachmentErrorCode.SourceUnavailable);
     }
 
     if (media.path) {
       const mimeType = nativeImageMime(bytes);
 
       if (!mimeType) {
-        throw new Error(AttachmentErrorCode.SourceUnavailable);
+        throw new CodedError(AttachmentErrorCode.SourceUnavailable);
       }
 
       media = { ...media, mimeType };
@@ -449,7 +452,7 @@ export class AttachmentService {
 
         return known.descriptor;
       } catch (error) {
-        if (!(error instanceof Error) || error.message !== AttachmentErrorCode.Unavailable) {
+        if (!hasErrorCode(error, AttachmentErrorCode.Unavailable)) {
           throw error;
         }
 
@@ -486,7 +489,7 @@ export class AttachmentService {
     }
 
     if (this.exportWindow.used >= ATTACHMENT_EXPORTS_PER_WINDOW) {
-      throw new Error(AttachmentErrorCode.RateLimited);
+      throw new CodedError(AttachmentErrorCode.RateLimited);
     }
 
     const budget = this.exportWindow;
@@ -500,7 +503,7 @@ export class AttachmentService {
     const uuid = `${hash.slice(0, 8)}-${hash.slice(8, 12)}-5${hash.slice(13, 16)}-a${hash.slice(17, 20)}-${hash.slice(20, 32)}`;
 
     if (this.options.current && !this.options.current(session)) {
-      throw new Error(ErrorCode.STALE_SESSION);
+      throw new CodedError(ErrorCode.STALE_SESSION);
     }
 
     const response = await this.request(session, undefined, {
@@ -524,17 +527,17 @@ export class AttachmentService {
     try {
       body = await boundedBody(response, ATTACHMENT_EXPORT_RESPONSE_MAX_BYTES);
     } catch (error) {
-      if (error instanceof Error && ATTACHMENT_VALIDATION_ERRORS.has(error.message)) {
+      if (ATTACHMENT_VALIDATION_ERRORS.has(errorCode(error) ?? '')) {
         throw error;
       }
 
-      throw new Error(AttachmentErrorCode.TransferFailed);
+      throw new CodedError(AttachmentErrorCode.TransferFailed);
     }
 
     const value = attachmentSchema.parse(JSON.parse(body.toString('utf8')));
 
     if (value.sha256 !== digest || value.byteLength !== bytes.length) {
-      throw new Error(AttachmentErrorCode.IntegrityFailed);
+      throw new CodedError(AttachmentErrorCode.IntegrityFailed);
     }
 
     await this.options.local?.importDescriptor(session, value, bytes).catch(() => {
@@ -555,7 +558,7 @@ export class AttachmentService {
   }
   private async request(session: Session, id?: string, init: RequestInit = {}, relayOnly = false) {
     if (this.closed) {
-      throw new Error(AttachmentErrorCode.Unavailable);
+      throw new CodedError(AttachmentErrorCode.Unavailable);
     }
 
     if (this.options.local && !relayOnly && (id || !this.options.relayUrl)) {
@@ -567,7 +570,7 @@ export class AttachmentService {
     }
 
     if (!this.options.relayUrl || !this.options.deviceToken) {
-      throw new Error(AttachmentErrorCode.Unavailable);
+      throw new CodedError(AttachmentErrorCode.Unavailable);
     }
 
     const url = new URL(
@@ -585,12 +588,12 @@ export class AttachmentService {
         signal: AbortSignal.timeout(ATTACHMENT_REQUEST_TIMEOUT_MS),
       });
     } catch {
-      throw new Error(AttachmentErrorCode.TransferFailed);
+      throw new CodedError(AttachmentErrorCode.TransferFailed);
     }
 
     if (!response.ok) {
       await response.body?.cancel();
-      throw new Error(
+      throw new CodedError(
         response.status === HttpStatus.NotFound || response.status === HttpStatus.Gone
           ? AttachmentErrorCode.Unavailable
           : AttachmentErrorCode.TransferFailed,
@@ -598,7 +601,7 @@ export class AttachmentService {
     }
 
     if (this.options.current && !this.options.current(session)) {
-      throw new Error(ErrorCode.STALE_SESSION);
+      throw new CodedError(ErrorCode.STALE_SESSION);
     }
 
     return response;
@@ -633,7 +636,7 @@ export class AttachmentService {
     }
 
     if (total + required > ATTACHMENT_LOCAL_QUOTA_BYTES) {
-      throw new Error(AttachmentErrorCode.Quota);
+      throw new CodedError(AttachmentErrorCode.Quota);
     }
   }
   async close() {

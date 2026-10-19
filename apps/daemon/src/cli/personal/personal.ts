@@ -14,6 +14,7 @@ import { ensurePersonalEnv, startQuickTunnel } from './personal-runtime.js';
 import { personalBot } from './personal-bot.js';
 import { startNamedTunnel } from './personal-tunnel.js';
 import { ensureMacConnected } from '../pairing/connect.js';
+import { CodedError } from '@protocol';
 
 const execute = promisify(execFile);
 const localOrigin = 'http://127.0.0.1:3040';
@@ -31,7 +32,7 @@ export async function startPersonal(root = installationRoot()) {
   }
 
   await access(join(root, 'dist/mini-app/index.html')).catch(() => {
-    throw new Error(DaemonErrorCode.BUILD_REQUIRED);
+    throw new CodedError(DaemonErrorCode.BUILD_REQUIRED);
   });
 
   const bot = personalBot(config.botToken.trim());
@@ -50,7 +51,7 @@ export async function startPersonal(root = installationRoot()) {
       },
     );
   } catch {
-    throw new Error(DaemonErrorCode.PERSONAL_DATABASE_START_FAILED);
+    throw new CodedError(DaemonErrorCode.PERSONAL_DATABASE_START_FAILED);
   }
 
   let tunnel: Awaited<ReturnType<typeof startQuickTunnel>> | undefined;
@@ -112,11 +113,11 @@ export async function startPersonal(root = installationRoot()) {
 
   const checkRunning = () => {
     if (stopped) {
-      throw new Error(DaemonErrorCode.PERSONAL_START_CANCELLED);
+      throw new CodedError(DaemonErrorCode.PERSONAL_START_CANCELLED);
     }
 
     if (tunnelStopped) {
-      throw new Error(DaemonErrorCode.TUNNEL_EXITED);
+      throw new CodedError(DaemonErrorCode.TUNNEL_EXITED);
     }
   };
 
@@ -191,7 +192,7 @@ export async function startPersonal(root = installationRoot()) {
     }
 
     if (!healthy) {
-      throw new Error(DaemonErrorCode.TUNNEL_HEALTH_TIMEOUT);
+      throw new CodedError(DaemonErrorCode.TUNNEL_HEALTH_TIMEOUT);
     }
 
     checkRunning();
@@ -224,7 +225,7 @@ export async function startPersonal(root = installationRoot()) {
           device = await loadConfig();
         } catch (error) {
           if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-            throw new Error(DaemonErrorCode.INVALID_LOCAL_DEVICE_CONFIG);
+            throw new CodedError(DaemonErrorCode.INVALID_LOCAL_DEVICE_CONFIG);
           }
 
           if (pairingAttempted || stopped) {

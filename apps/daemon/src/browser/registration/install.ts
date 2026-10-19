@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-syntax -- installer diagnostics are human-readable text, not wire error codes */
 import { constants } from 'node:fs';
 import { link, open, unlink } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
