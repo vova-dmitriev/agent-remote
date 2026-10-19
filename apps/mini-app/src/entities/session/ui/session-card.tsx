@@ -4,7 +4,7 @@ import { Button } from "@/shared/ui/button"
 import { cn } from "@/shared/lib/utils"
 import { SESSION_CARD_IDS } from "../config/test-ids"
 import { sourceNames, sessionTitle, agentName } from "../lib/labels"
-import { sessionStatusLabel, sourceAvailable } from "../lib/availability"
+import { sessionStatusLabel, sourceObserved } from "../lib/availability"
 import { sessionCardBodyClass, sessionCardClass, statusDotClass } from "./session-class"
 import type { SessionCardProps } from "./session-card.types"
 
@@ -44,10 +44,7 @@ export function SessionCard({ session, onSelect }: SessionCardProps) {
         </span>
       </div>
       <span
-        className={cn(
-          "size-[8px] shrink-0 rounded-full",
-          statusDotClass[sourceAvailable(session) ? session.status : SessionStatus.Unknown],
-        )}
+        className={cn("size-[8px] shrink-0 rounded-full", statusDotClass[sourceObserved(session) ? session.status : SessionStatus.Unknown])}
       />
     </Button>
   )

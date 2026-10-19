@@ -12,6 +12,7 @@ import {
   IntegrationState,
   NativeRestartState,
   noCapabilities,
+  PermissionDecision,
   type Session,
   sessionSchema,
   SessionStatus,
@@ -24,7 +25,7 @@ import { ClaudeHookEvent } from '../domain/claude.js';
 import { RuntimeEvent, ModelOrigin } from '../domain/runtime.js';
 import { boundSnapshotChanges } from '../codex/binding/file-changes.js';
 import { currentToolStep, clearCurrentStep } from './activity/current-step.js';
-import { boundSubagentSnapshots } from './activity/subagents.js';
+import { boundSubagentSnapshots, recordSubagent, subagentActivityStatus } from './activity/subagents.js';
 import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import { z } from 'zod';
@@ -47,6 +48,17 @@ export const hookSchema = z.object({
   tool_input: z.unknown().optional(),
 });
 export type HookEnvelope = z.infer<typeof hookSchema>;
+
+/** Hooks a subagent fires for its own work. With `agent_id` they describe that child, never the parent turn. */
+const SUBAGENT_ACTIVITY_HOOKS: readonly ClaudeHookEvent[] = [
+  ClaudeHookEvent.PreToolUse,
+  ClaudeHookEvent.PostToolUse,
+  ClaudeHookEvent.PostToolUseFailure,
+  ClaudeHookEvent.Stop,
+  ClaudeHookEvent.Notification,
+  ClaudeHookEvent.PermissionRequest,
+];
+
 interface Options {
   deviceId: string;
   store: LocalStore;
@@ -188,6 +200,9 @@ export class Monitor extends EventEmitter {
         ...(session?.title ? { title: session.title } : {}),
         ...(session?.model ? { model: session.model } : {}),
         ...(session?.lastMessageAt !== undefined ? { lastMessageAt: session.lastMessageAt } : {}),
+        ...(session?.subagents && session.claudeSessionId === hook.session_id
+          ? { subagents: session.subagents }
+          : {}),
         claudeSessionId: hook.session_id,
         generation: randomUUID(),
         status:
@@ -241,26 +256,50 @@ export class Monitor extends EventEmitter {
         (candidateValue) => candidateValue === hook.hook_event_name,
       )
     ) {
-      const agents = session.subagents ?? [];
-      const previous = agents.find((agent) => agent.id === hook.agent_id);
-
-      session.subagents = [
-        ...agents.filter((agent) => agent.id !== hook.agent_id),
-        {
-          ...previous,
-          id: hook.agent_id,
-          ...(hook.agent_type ? { name: hook.agent_type } : {}),
-          status:
-            hook.hook_event_name === ClaudeHookEvent.SubagentStart
-              ? SubagentStatus.Running
-              : SubagentStatus.Completed,
-          updatedAt: Date.now(),
-        },
-      ].slice(-50);
+      session.subagents = recordSubagent(session.subagents, {
+        id: hook.agent_id,
+        name: hook.agent_type,
+        status:
+          hook.hook_event_name === ClaudeHookEvent.SubagentStart
+            ? SubagentStatus.Running
+            : SubagentStatus.Completed,
+      });
     }
 
     this.restored.delete(session.id);
+    session.statusConfidence = StatusConfidence.Observed;
     session.lastEventAt = Date.now();
+
+    if (hook.agent_id && SUBAGENT_ACTIVITY_HOOKS.some((event) => event === hook.hook_event_name)) {
+      const previous = session.subagents?.find((agent) => agent.id === hook.agent_id);
+
+      // Only a tool call proves an unseen child is working; other hooks from unknown ids are not listed.
+      if (previous || hook.hook_event_name === ClaudeHookEvent.PreToolUse) {
+        const status = subagentActivityStatus(hook.hook_event_name, previous?.status);
+
+        session.subagents = recordSubagent(session.subagents, {
+          id: hook.agent_id,
+          name: hook.agent_type,
+          ...(status ? { status } : {}),
+        });
+      }
+
+      this.persistNative(session, hook.transcript_path);
+
+      const events =
+        hook.hook_event_name === ClaudeHookEvent.PermissionRequest
+          ? [
+              this.publish(session.id, EventType.Permission, {
+                status: session.status,
+                ...(hook.tool_name ? { toolName: hook.tool_name } : {}),
+              }),
+            ]
+          : [];
+
+      this.emit(RuntimeEvent.Snapshot);
+
+      return events;
+    }
 
     const statuses: Record<string, Session['status']> = {
       [ClaudeHookEvent.UserPromptSubmit]: SessionStatus.Running,
@@ -326,6 +365,21 @@ export class Monitor extends EventEmitter {
     this.emit(RuntimeEvent.Snapshot);
 
     return [event];
+  }
+  /** A remote answer releases a child's permission prompt. A local fallback still waits in the terminal. */
+  settleSubagentPermission(sessionId: string, agentId: string, decision: PermissionDecision) {
+    const session = this.sessions.get(sessionId);
+
+    if (
+      !session ||
+      decision === PermissionDecision.Local ||
+      session.subagents?.find((agent) => agent.id === agentId)?.status !== SubagentStatus.WaitingInput
+    ) {
+      return;
+    }
+
+    session.subagents = recordSubagent(session.subagents, { id: agentId, status: SubagentStatus.Running });
+    this.persistNative(session);
   }
   private persistNative(session: Session, transcriptPath?: string) {
     if (

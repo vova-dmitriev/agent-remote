@@ -8,6 +8,7 @@ export const sessionControlsEN = {
   launchContextUnavailable: "Could not preserve the launch settings. The session was not stopped.",
   cmuxContextUnavailable: "The original cmux surface is unavailable. The session was not stopped.",
   restartWithInput: "Restart with input",
+  observeOnlyNeedsRestart: "Observation only · restart for input",
   restartWithInputHint: "Resumes this conversation on your Mac with remote input. The current turn will stop; history is preserved.",
   nativeRestartUnavailable: "Could not verify a running Claude process for this conversation. Open it on your Mac.",
   nativeRestartAmbiguous:
@@ -66,6 +67,7 @@ export const sessionControlsRU = {
   launchContextUnavailable: "Не удалось сохранить параметры запуска. Сессия не остановлена.",
   cmuxContextUnavailable: "Исходная панель cmux недоступна. Сессия не остановлена.",
   restartWithInput: "Перезапустить с вводом",
+  observeOnlyNeedsRestart: "Только наблюдение · для ввода нужен перезапуск",
   restartWithInputHint: "Mac возобновит эту же сессию с удалённым вводом. Текущий ход остановится, история сохранится.",
   nativeRestartUnavailable: "Не удалось проверить запущенный процесс Claude для этой сессии. Открой её на Mac.",
   nativeRestartAmbiguous:

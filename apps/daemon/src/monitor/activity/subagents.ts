@@ -1,4 +1,46 @@
 import { SubagentStatus, type Session, type SubagentInfo } from '@protocol';
+import { ClaudeHookEvent } from '../../domain/claude.js';
+
+const SUBAGENT_LIMIT = 50;
+
+/** Insert or refresh one child entry, keeping the newest entries within the per-session limit. */
+export function recordSubagent(
+  agents: SubagentInfo[] = [],
+  update: { id: string; name?: string | undefined; status?: SubagentInfo['status'] },
+): SubagentInfo[] {
+  const previous = agents.find((agent) => agent.id === update.id);
+
+  return [
+    ...agents.filter((agent) => agent.id !== update.id),
+    {
+      ...previous,
+      id: update.id,
+      ...(update.name ? { name: update.name } : {}),
+      status: update.status ?? previous?.status ?? SubagentStatus.Running,
+      updatedAt: Date.now(),
+    },
+  ].slice(-SUBAGENT_LIMIT);
+}
+
+/** Child status after one of its own hooks; `undefined` keeps the current status. */
+export function subagentActivityStatus(event: string, previous?: SubagentInfo['status']) {
+  if (event === ClaudeHookEvent.PreToolUse) {
+    return SubagentStatus.Running;
+  }
+
+  if (event === ClaudeHookEvent.PermissionRequest) {
+    return SubagentStatus.WaitingInput;
+  }
+
+  if (
+    previous === SubagentStatus.WaitingInput &&
+    [ClaudeHookEvent.PostToolUse, ClaudeHookEvent.PostToolUseFailure].some((candidate) => candidate === event)
+  ) {
+    return SubagentStatus.Running;
+  }
+
+  return previous;
+}
 
 /** Keep child metadata within the shared snapshot transport budget, favoring active recent work. */
 export function boundSubagentSnapshots(sessions: Session[]): Session[] {

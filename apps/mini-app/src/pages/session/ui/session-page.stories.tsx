@@ -9,6 +9,7 @@ import {
   ThemePreference,
   Language,
   ErrorCode,
+  StatusConfidence,
 } from "@protocol"
 import { SessionTab } from "@/entities/session"
 import { SessionPageStory } from "@storybook-components/session-page-story"
@@ -73,6 +74,10 @@ export const NativeObservation: StoryObj<typeof meta> = {
       capabilities: { ...terminalSession.capabilities, prompt: false, interrupt: false },
     },
   },
+}
+export const NativeObservationEnglish: StoryObj<typeof meta> = { ...NativeObservation, globals: { language: Language.En } }
+export const NativeRestoredUnobserved: StoryObj<typeof meta> = {
+  args: { session: { ...NativeObservation.args!.session!, statusConfidence: StatusConfidence.Inferred, status: SessionStatus.Unknown } },
 }
 export const CodexModelUnavailable: StoryObj<typeof meta> = {
   args: { session: { ...codexCliSession, errorCode: ErrorCode.CODEX_MODEL_UNAVAILABLE } },
