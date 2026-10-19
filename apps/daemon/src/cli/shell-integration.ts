@@ -1,11 +1,13 @@
 import { DaemonErrorCode } from '../error-codes.js';
 import { shellQuote as quote } from '../shell/index.js';
 import { ASCII_CONTROL_CHARACTERS } from '../validation/control-characters.js';
-import { existsSync } from 'node:fs';
-import { copyFile, lstat, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { missing, safeEntry, secureDirectory } from '../local/supervisor/runtime.js';
+import { constants, type Stats } from 'node:fs';
+import { copyFile, lstat, mkdir, open, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
 import { homedir } from 'node:os';
-import { dirname, isAbsolute, join } from 'node:path';
-import { CodedError } from '@protocol';
+import { basename, dirname, isAbsolute, join } from 'node:path';
+import { CodedError, ErrorCode } from '@protocol';
 
 const CLAUDE_SHELL_FRAGMENT = 'claude.zsh';
 const QUOTED = String.raw`'(?:[^']|'\\'')*'`;
@@ -34,6 +36,65 @@ function claudeShellFragment(options: ClaudeShellCommand) {
 
 const unquote = (value: string) => value.slice(1, -1).replaceAll("'\\''", "'");
 
+const untrusted = () => new CodedError(ErrorCode.LOCAL_RUNTIME_UNTRUSTED);
+const sameFile = (left: Stats, right: Stats) => left.dev === right.dev && left.ino === right.ino;
+
+/**
+ * Publishes `content` by renaming a synced sibling over `path`, so a reader sees the old or the new
+ * file and never a partial one. With `expected`, `path` must still be that regular file at publish time.
+ */
+async function replaceFileAtomically(path: string, content: string, mode: number, expected?: Stats) {
+  const temporary = join(dirname(path), `.${basename(path)}.${randomUUID()}.tmp`);
+
+  try {
+    const handle = await open(
+      temporary,
+      constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW,
+      mode,
+    );
+
+    try {
+      await handle.writeFile(content);
+      await handle.chmod(mode);
+      await handle.sync();
+    } finally {
+      await handle.close();
+    }
+
+    if (expected) {
+      const current = await lstat(path);
+
+      if (!current.isFile() || !sameFile(current, expected)) {
+        throw untrusted();
+      }
+    }
+
+    await rename(temporary, path);
+  } finally {
+    await rm(temporary, { force: true });
+  }
+}
+
+async function readRegularFile(path: string, expected: Stats) {
+  const handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW);
+
+  try {
+    if (!sameFile(await handle.stat(), expected)) {
+      throw untrusted();
+    }
+
+    return await handle.readFile('utf8');
+  } finally {
+    await handle.close();
+  }
+}
+
+const pathExists = (path: string) =>
+  stat(path).then(
+    () => true,
+    (error: unknown) => !missing(error),
+  );
+
 export const claudeShellDirectory = () => process.env.CLAUDE_REMOTE_HOME ?? join(homedir(), '.claude-remote');
 
 export async function installClaudeShell(
@@ -45,7 +106,7 @@ export async function installClaudeShell(
   const fragment = join(options.directory, CLAUDE_SHELL_FRAGMENT);
   const source = claudeShellFragment(options);
 
-  await writeFile(fragment, source, { mode: 0o600 });
+  await replaceFileAtomically(fragment, source, 0o600);
   let previous = '';
 
   try {
@@ -80,24 +141,36 @@ export async function installClaudeShell(
  * this install's pre-move `sessions/entry.js`. A missing fragment is never created.
  */
 export async function refreshClaudeShellEntry(options: { directory: string; entry: string }) {
+  if (options.directory !== claudeShellDirectory()) {
+    throw new CodedError(DaemonErrorCode.INVALID_SHELL_PATH);
+  }
+
   assertShellPaths([options.directory, options.entry]);
   const fragment = join(options.directory, CLAUDE_SHELL_FRAGMENT);
-  let source: string;
+
+  if (!(await pathExists(options.directory))) {
+    return { fragment, changed: false };
+  }
+
+  await secureDirectory(options.directory);
+  let identity: Stats;
 
   try {
-    if (!(await lstat(fragment)).isFile()) {
-      return { fragment, changed: false };
-    }
-
-    source = await readFile(fragment, 'utf8');
+    identity = await lstat(fragment);
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+    if (missing(error)) {
       return { fragment, changed: false };
     }
 
     throw error;
   }
 
+  if (!identity.isFile()) {
+    return { fragment, changed: false };
+  }
+
+  safeEntry(identity);
+  const source = await readRegularFile(fragment, identity);
   const match = MANAGED_LAUNCH.exec(source);
 
   if (!match?.[1] || !match[2] || !match[3]) {
@@ -110,13 +183,19 @@ export async function refreshClaudeShellEntry(options: { directory: string; entr
   if (
     installed.entry === options.entry ||
     source !== claudeShellFragment(installed) ||
-    (installed.entry !== legacyEntry && existsSync(installed.entry))
+    (installed.entry !== legacyEntry && (await pathExists(installed.entry)))
   ) {
     return { fragment, changed: false };
   }
 
   assertShellPaths([installed.executable, installed.node]);
-  await writeFile(fragment, claudeShellFragment({ ...installed, entry: options.entry }), { mode: 0o600 });
+
+  await replaceFileAtomically(
+    fragment,
+    claudeShellFragment({ ...installed, entry: options.entry }),
+    identity.mode & 0o7777,
+    identity,
+  );
 
   return { fragment, changed: true };
 }

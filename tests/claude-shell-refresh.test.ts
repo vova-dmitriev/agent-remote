@@ -1,8 +1,39 @@
-import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import {
+  chmod,
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  realpath,
+  rm,
+  stat,
+  symlink,
+  writeFile,
+} from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, beforeEach, expect, it } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { ErrorCode } from '@protocol';
+import { DaemonErrorCode } from '../apps/daemon/src/error-codes.js';
+
+const filesystem = vi.hoisted(() => ({ failRename: false }));
+
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs/promises')>();
+
+  return {
+    ...actual,
+    rename: async (...args: Parameters<typeof actual.rename>) => {
+      if (filesystem.failRename) {
+        throw new Error('SIMULATED_CRASH');
+      }
+
+      return actual.rename(...args);
+    },
+  };
+});
+
 import {
   claudeShellDirectory,
   installClaudeShell,
@@ -14,7 +45,9 @@ let source: string;
 const environment = { HOME: process.env.HOME, CLAUDE_REMOTE_HOME: process.env.CLAUDE_REMOTE_HOME };
 
 beforeEach(async () => {
-  home = await mkdtemp(join(tmpdir(), 'claude-shell-refresh-'));
+  // The real path: on macOS tmpdir() sits under the /var symlink, which the directory check refuses.
+  home = await realpath(await mkdtemp(join(tmpdir(), 'claude-shell-refresh-')));
+  filesystem.failRename = false;
   source = join(home, 'install/dist/apps/daemon/src');
   process.env.HOME = home;
   delete process.env.CLAUDE_REMOTE_HOME;
@@ -147,4 +180,56 @@ it('does not follow a symlinked fragment', async () => {
   ).toBe(false);
 
   expect(await readFile(target, 'utf8')).toBe(await expected(join(source, 'sessions/entry.js')));
+});
+
+const legacyEntry = () => join(source, 'sessions/entry.js');
+
+const refresh = (directory = claudeShellDirectory()) =>
+  refreshClaudeShellEntry({ directory, entry: currentEntry() });
+
+it('refuses a fragment directory reached through a symlinked ancestor', async () => {
+  await mkdir(join(home, 'real'));
+  await symlink(join(home, 'real'), join(home, 'link'));
+  process.env.CLAUDE_REMOTE_HOME = join(home, 'link/.claude-remote');
+  const { fragment } = await install(legacyEntry());
+  const before = await readFile(fragment, 'utf8');
+
+  await expect(refresh()).rejects.toMatchObject({ code: ErrorCode.LOCAL_RUNTIME_UNTRUSTED });
+  expect(await readFile(fragment, 'utf8')).toBe(before);
+});
+
+it('refuses a fragment outside the shell integration directory', async () => {
+  const elsewhere = join(home, 'elsewhere');
+
+  await installClaudeShell({
+    directory: elsewhere,
+    rcPath: join(home, '.zshrc'),
+    executable: '/usr/local/bin/claude',
+    node: '/usr/bin/node',
+    entry: legacyEntry(),
+  });
+
+  const before = await readFile(join(elsewhere, 'claude.zsh'), 'utf8');
+
+  await expect(refresh(elsewhere)).rejects.toMatchObject({ code: DaemonErrorCode.INVALID_SHELL_PATH });
+  expect(await readFile(join(elsewhere, 'claude.zsh'), 'utf8')).toBe(before);
+});
+
+it('keeps the original fragment mode', async () => {
+  const { fragment } = await install(legacyEntry());
+
+  await chmod(fragment, 0o640);
+  expect((await refresh()).changed).toBe(true);
+  expect((await stat(fragment)).mode & 0o7777).toBe(0o640);
+  expect(await readFile(fragment, 'utf8')).toBe(await expected(currentEntry()));
+});
+
+it('leaves the original fragment and no temporary file when publishing fails', async () => {
+  const { fragment } = await install(legacyEntry());
+  const before = await readFile(fragment, 'utf8');
+
+  filesystem.failRename = true;
+  await expect(refresh()).rejects.toThrow('SIMULATED_CRASH');
+  expect(await readFile(fragment, 'utf8')).toBe(before);
+  expect(await readdir(claudeShellDirectory())).toEqual(['claude.zsh']);
 });
