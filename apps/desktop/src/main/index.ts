@@ -2,6 +2,9 @@ import { app, dialog } from 'electron';
 import { join } from 'node:path';
 import { createDesktopCompanionConnector } from '../runtime/connector.js';
 import { startDesktopMain } from './bootstrap.js';
+import { pinDesktopUserData } from './user-data.js';
+
+pinDesktopUserData(app);
 
 void startDesktopMain({
   companionFactory: createDesktopCompanionConnector,

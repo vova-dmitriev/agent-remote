@@ -1,5 +1,7 @@
 module.exports = {
   packagerConfig: {
+    name: 'Agent Remote',
+    icon: 'assets/icon',
     asar: true,
     appBundleId: 'com.agentremote.desktop',
     executableName: 'Agent Remote',

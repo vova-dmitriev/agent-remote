@@ -44,7 +44,7 @@ test('private/generated paths are denied, curated screenshots and environment te
     'secret.pem',
     'test-results/trace.zip',
     'session.jsonl',
-    'apps/desktop/out/agent-remote-desktop-darwin-arm64/Agent Remote.app/Contents/Info.plist',
+    'apps/desktop/out/Agent Remote-darwin-arm64/Agent Remote.app/Contents/Info.plist',
     'copied/Agent Remote.app/Contents/Resources/app.asar',
     'build/output.js',
     'scripts/build/.env.mjs',

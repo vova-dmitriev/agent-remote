@@ -6,7 +6,14 @@ import { describe, expect, it } from 'vitest';
 const repositoryRequire = createRequire(new URL('../package.json', import.meta.url));
 
 const forgeConfig = repositoryRequire('./apps/desktop/forge.config.cjs') as {
-  packagerConfig: { asar: boolean; extraResource: string[]; ignore: RegExp[]; prune?: boolean };
+  packagerConfig: {
+    name: string;
+    icon: string;
+    asar: boolean;
+    extraResource: string[];
+    ignore: RegExp[];
+    prune?: boolean;
+  };
   hooks?: { postPackage?: (...args: unknown[]) => Promise<void> };
 };
 
@@ -43,6 +50,14 @@ describe('desktop packaging configuration', () => {
     expect(join('/packaged/resources', basename(resources[0]!))).toBe(
       '/packaged/resources/desktop-companion',
     );
+  });
+
+  it('names the app and ships the icon', async () => {
+    expect(forgeConfig.packagerConfig.name).toBe('Agent Remote');
+
+    await expect(
+      readFile(new URL(`../apps/desktop/${forgeConfig.packagerConfig.icon}.icns`, import.meta.url)),
+    ).resolves.toBeInstanceOf(Buffer);
   });
 
   it('does not ask Forge to rebuild the standalone runtime native addons for Electron', () => {

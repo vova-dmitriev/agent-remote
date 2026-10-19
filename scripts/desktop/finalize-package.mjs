@@ -2,11 +2,13 @@ import { constants } from 'node:fs';
 import { lstat, open, readFile, realpath, rm } from 'node:fs/promises';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { createRequire } from 'node:module';
 import { verifyDesktopRuntime } from './verify-runtime-lib.mjs';
 
 const repository = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const desktopDirectory = join(repository, 'apps/desktop');
 const outputDirectory = join(desktopDirectory, 'out');
+const forgeConfig = createRequire(import.meta.url)(join(desktopDirectory, 'forge.config.cjs'));
 const untrusted = () => new Error('LOCAL_RUNTIME_UNTRUSTED');
 
 function inside(parent, target) {
@@ -140,7 +142,7 @@ export async function finalizePackagedDesktop({ outputPaths, platform, arch }) {
 
     const appPath = canonicalOutput.endsWith('.app')
       ? canonicalOutput
-      : join(canonicalOutput, `${app.name}.app`);
+      : join(canonicalOutput, `${forgeConfig.packagerConfig.name}.app`);
 
     await ownedDirectory(appPath);
 
