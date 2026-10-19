@@ -1,4 +1,4 @@
-import { BindingState, ErrorCode, IntegrationState, SessionStatus, type Session } from "@protocol"
+import { BindingState, ErrorCode, IntegrationState, SessionStatus, StatusConfidence, type Session } from "@protocol"
 import type { MessageKey } from "@/shared/lib/i18n"
 import { statuses } from "./labels"
 
@@ -10,10 +10,14 @@ export function sourceAvailable(session: Session) {
   )
 }
 
-/** A live source the companion observes and reads history from, while remote input needs a restart. */
+/**
+ * A live source the companion observes and reads history from, while remote input needs a restart.
+ * Restored sessions stay inferred until a live hook arrives, so a dead process is not shown as observed.
+ */
 function sourceObservedOnly(session: Session) {
   return (
     session.integrationState === IntegrationState.NeedsRestart &&
+    session.statusConfidence === StatusConfidence.Observed &&
     session.capabilities.observe &&
     session.capabilities.history &&
     session.status !== SessionStatus.Ended

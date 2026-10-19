@@ -376,7 +376,13 @@ export async function startHookServer(options: Options) {
 
           socket.once('close', () => options.permissions.cancelSession(session.id, session.generation));
           options.monitor.emit(RuntimeEvent.Snapshot);
-          writeFrame(socket, { type: IpcMessageType.HookResult, output: permissionHookOutput(await answer) });
+          const decision = await answer;
+
+          if (hook.agent_id) {
+            options.monitor.settleSubagentPermission(session.id, hook.agent_id, decision);
+          }
+
+          writeFrame(socket, { type: IpcMessageType.HookResult, output: permissionHookOutput(decision) });
           options.monitor.emit(RuntimeEvent.Snapshot);
         } else {
           writeFrame(socket, { type: IpcMessageType.HookResult, output: {} });

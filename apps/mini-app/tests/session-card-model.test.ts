@@ -2,7 +2,17 @@ import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { I18nextProvider } from "react-i18next"
 import { expect, it } from "vitest"
-import { BindingState, ConnectionStatus, DeviceStatus, ErrorCode, IntegrationState, Language, SessionStatus, type Session } from "@protocol"
+import {
+  BindingState,
+  ConnectionStatus,
+  DeviceStatus,
+  ErrorCode,
+  IntegrationState,
+  Language,
+  SessionStatus,
+  StatusConfidence,
+  type Session,
+} from "@protocol"
 import { createLanguageInstance } from "../src/shared/lib/i18n/index.js"
 import { SessionCard } from "../src/entities/session/ui/session-card.js"
 import { SESSION_CARD_IDS } from "../src/entities/session/config/test-ids.js"
@@ -85,9 +95,25 @@ function liveTerminalObservation(): Session {
     status: SessionStatus.Unknown,
     binding: BindingState.Unverified,
     integrationState: IntegrationState.NeedsRestart,
+    statusConfidence: StatusConfidence.Observed,
     capabilities: { ...session.capabilities, prompt: false, interrupt: false },
   }
 }
+
+function appState(connection: ConnectionStatus = ConnectionStatus.Online, deviceStatus: DeviceStatus = DeviceStatus.Online) {
+  return { ...initialState(), connection, snapshot: { ...sessionSnapshot("device"), deviceStatus } }
+}
+
+it("keeps a restored session without a live hook unavailable until it is observed", () => {
+  const restored = { ...liveTerminalObservation(), statusConfidence: StatusConfidence.Inferred }
+
+  expect(render(restored, Language.En)).toContain("Session unavailable")
+  expect(sessionObserved(appState(), restored)).toBe(false)
+
+  expect(render({ ...restored, statusConfidence: StatusConfidence.Observed }, Language.En)).toContain(
+    "Observation only · restart for input",
+  )
+})
 
 it.each([
   [Language.En, "Observation only · restart for input", "Session unavailable"],
@@ -115,11 +141,7 @@ it("keeps a needs-restart session without live observation unavailable", () => {
 it("observes a needs-restart session only while the app and device are online", () => {
   const session = liveTerminalObservation()
 
-  const state = (connection: ConnectionStatus, deviceStatus: DeviceStatus) => ({
-    ...initialState(),
-    connection,
-    snapshot: { ...sessionSnapshot("device"), deviceStatus },
-  })
+  const state = appState
 
   expect(sessionObserved(state(ConnectionStatus.Online, DeviceStatus.Online), session)).toBe(true)
   expect(sessionObserved(state(ConnectionStatus.Offline, DeviceStatus.Online), session)).toBe(false)

@@ -12,6 +12,7 @@ import {
   IntegrationState,
   NativeRestartState,
   noCapabilities,
+  PermissionDecision,
   type Session,
   sessionSchema,
   SessionStatus,
@@ -24,7 +25,7 @@ import { ClaudeHookEvent } from '../domain/claude.js';
 import { RuntimeEvent, ModelOrigin } from '../domain/runtime.js';
 import { boundSnapshotChanges } from '../codex/binding/file-changes.js';
 import { currentToolStep, clearCurrentStep } from './activity/current-step.js';
-import { boundSubagentSnapshots, recordSubagent } from './activity/subagents.js';
+import { boundSubagentSnapshots, recordSubagent, subagentActivityStatus } from './activity/subagents.js';
 import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import { z } from 'zod';
@@ -55,6 +56,7 @@ const SUBAGENT_ACTIVITY_HOOKS: readonly ClaudeHookEvent[] = [
   ClaudeHookEvent.PostToolUseFailure,
   ClaudeHookEvent.Stop,
   ClaudeHookEvent.Notification,
+  ClaudeHookEvent.PermissionRequest,
 ];
 
 interface Options {
@@ -265,19 +267,38 @@ export class Monitor extends EventEmitter {
     }
 
     this.restored.delete(session.id);
+    session.statusConfidence = StatusConfidence.Observed;
     session.lastEventAt = Date.now();
 
     if (hook.agent_id && SUBAGENT_ACTIVITY_HOOKS.some((event) => event === hook.hook_event_name)) {
-      session.subagents = recordSubagent(session.subagents, {
-        id: hook.agent_id,
-        name: hook.agent_type,
-        ...(hook.hook_event_name === ClaudeHookEvent.PreToolUse ? { status: SubagentStatus.Running } : {}),
-      });
+      const previous = session.subagents?.find((agent) => agent.id === hook.agent_id);
+
+      // Only a tool call proves an unseen child is working; other hooks from unknown ids are not listed.
+      if (previous || hook.hook_event_name === ClaudeHookEvent.PreToolUse) {
+        const status = subagentActivityStatus(hook.hook_event_name, previous?.status);
+
+        session.subagents = recordSubagent(session.subagents, {
+          id: hook.agent_id,
+          name: hook.agent_type,
+          ...(status ? { status } : {}),
+        });
+      }
 
       this.persistNative(session, hook.transcript_path);
+
+      const events =
+        hook.hook_event_name === ClaudeHookEvent.PermissionRequest
+          ? [
+              this.publish(session.id, EventType.Permission, {
+                status: session.status,
+                ...(hook.tool_name ? { toolName: hook.tool_name } : {}),
+              }),
+            ]
+          : [];
+
       this.emit(RuntimeEvent.Snapshot);
 
-      return [];
+      return events;
     }
 
     const statuses: Record<string, Session['status']> = {
@@ -344,6 +365,21 @@ export class Monitor extends EventEmitter {
     this.emit(RuntimeEvent.Snapshot);
 
     return [event];
+  }
+  /** A remote answer releases a child's permission prompt. A local fallback still waits in the terminal. */
+  settleSubagentPermission(sessionId: string, agentId: string, decision: PermissionDecision) {
+    const session = this.sessions.get(sessionId);
+
+    if (
+      !session ||
+      decision === PermissionDecision.Local ||
+      session.subagents?.find((agent) => agent.id === agentId)?.status !== SubagentStatus.WaitingInput
+    ) {
+      return;
+    }
+
+    session.subagents = recordSubagent(session.subagents, { id: agentId, status: SubagentStatus.Running });
+    this.persistNative(session);
   }
   private persistNative(session: Session, transcriptPath?: string) {
     if (

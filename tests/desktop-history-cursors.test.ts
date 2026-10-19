@@ -46,13 +46,17 @@ function snapshot(generation: string): ServerFrame {
 }
 
 /** Mimics the daemon's native transcript cursor rule: Before/After accept only a cursor it returned. */
-function harness(pages: Page[]) {
+function harness(pages: Page[], gate?: Promise<void>) {
   const issued = new Set<string>();
   const requests: HistoryAction[] = [];
 
   const connection = {
     request: async (action: HistoryAction) => {
       requests.push(action);
+
+      if (action.direction !== HistoryDirection.Latest) {
+        await gate;
+      }
 
       const anchor = action.anchor?.startsWith(HistoryCursorPrefix.Source)
         ? action.anchor.slice(HistoryCursorPrefix.Source.length)
@@ -130,6 +134,46 @@ describe('desktop history cursors', () => {
     await history.load(sessionId);
     await history.page(sessionId, HistoryDirection.Before, HistoryCursorPrefix.Position + 'message-offset');
     expect(requests.at(-1)?.anchor).toBe(HistoryCursorPrefix.Source + 'message-offset');
+  });
+
+  it('does not re-request an edge page that came back empty until the generation changes', async () => {
+    const { history, requests } = harness([{ before: 'before-1', after: null }]);
+    const edge = HistoryCursorPrefix.Position + 'message-offset';
+
+    await history.load(sessionId);
+    await expect(history.page(sessionId, HistoryDirection.Before, edge)).resolves.toEqual([]);
+    await expect(history.page(sessionId, HistoryDirection.Before, edge)).resolves.toBeNull();
+    expect(requests).toHaveLength(2);
+    history.observe(snapshot('generation-two'));
+    await history.load(sessionId);
+    await expect(history.page(sessionId, HistoryDirection.Before, edge)).resolves.toEqual([]);
+    expect(requests).toHaveLength(4);
+  });
+
+  it('keeps one page request in flight per direction', async () => {
+    let release!: () => void;
+
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+
+    const { history, requests } = harness([{ before: 'before-1', after: 'after-1' }], gate);
+
+    await history.load(sessionId);
+    const first = history.page(sessionId, HistoryDirection.Before);
+
+    await expect(history.page(sessionId, HistoryDirection.Before)).resolves.toBeNull();
+    const after = history.page(sessionId, HistoryDirection.After);
+
+    expect(requests.map((request) => request.direction)).toEqual([
+      HistoryDirection.Latest,
+      HistoryDirection.Before,
+      HistoryDirection.After,
+    ]);
+
+    release();
+    await expect(first).resolves.toEqual([]);
+    await expect(after).resolves.toEqual([]);
   });
 
   it('drops cursors from a previous generation', async () => {
