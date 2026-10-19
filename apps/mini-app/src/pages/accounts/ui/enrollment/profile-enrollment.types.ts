@@ -1,5 +1,5 @@
 import type { ExecutionProfileSummary } from "@protocol"
-import type { ProfileTaskExecutor } from "@/shared/api"
+import type { ProfileTaskExecutor } from "@/entities/execution-profile"
 
 export interface ProfileEnrollmentProps {
   profile: ExecutionProfileSummary

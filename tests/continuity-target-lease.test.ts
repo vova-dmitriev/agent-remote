@@ -1,6 +1,6 @@
 import { expect, it, vi } from 'vitest';
 import { ContinuityCompatibilityReason, ErrorCode } from '@protocol';
-import { AppTransport } from '../apps/mini-app/src/shared/api/transport.js';
+import { AppTransport } from '../apps/mini-app/src/app/api/transport/app-transport.js';
 
 it('invalidates a retained continuation handle when the selected target changes during its request', async () => {
   const client = new AppTransport('synthetic', { onConnection: () => {}, onFrame: () => {} });

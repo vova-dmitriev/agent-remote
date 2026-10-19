@@ -1,13 +1,12 @@
 import { HistoryCursorPrefix, FrameType, type HistoryPageDirection, type ServerFrame } from '@protocol';
+import type { ApplicationOperations, TransportHandlers } from '@/shared/api';
 import {
   HistoryStream,
   HistoryWindow,
   ReadingPositions,
   loadSessionHistory,
   restoreHistoryWindow,
-  type ApplicationOperations,
-  type TransportHandlers,
-} from '@/shared/api';
+} from '@/entities/session';
 import type { ExtensionConnection } from '../connection.js';
 import { requestHistory } from './request.js';
 

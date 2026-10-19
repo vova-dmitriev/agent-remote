@@ -1,6 +1,8 @@
 import type { Preview } from "@storybook/react-vite"
 import { mswLoader } from "msw-storybook-addon/csf3"
 import { SessionProvider } from "@/entities/session"
+import { HostContext } from "@/shared/lib/host"
+import { telegramHost } from "../src/app/host"
 import { LanguageProvider } from "../src/app/_providers/language-provider"
 import { ThemeProvider } from "../src/app/_providers/theme-provider"
 import { QueryProvider } from "../src/app/_providers/query-provider"
@@ -18,9 +20,11 @@ const preview: Preview = {
             initialTheme={context.globals.theme === "dark" ? "dark" : "light"}
           >
             <QueryProvider>
-              <SessionProvider>
-                <Story />
-              </SessionProvider>
+              <HostContext.Provider value={telegramHost}>
+                <SessionProvider>
+                  <Story />
+                </SessionProvider>
+              </HostContext.Provider>
             </QueryProvider>
           </ThemeProvider>
         </LanguageProvider>

@@ -9,7 +9,8 @@ import {
   type HistoryPageDirection,
   type ServerFrame,
 } from '@protocol';
-import { CommandSubmission, type ApplicationClient, type TransportHandlers } from '@/shared/api';
+import type { ApplicationClient, TransportHandlers } from '@/shared/api';
+import { CommandSubmission } from '@/entities/command';
 import { ExtensionPersistence } from './persistence/client.js';
 import { ExtensionOperations } from './operations.js';
 import { ExtensionMedia } from './media/transfer.js';

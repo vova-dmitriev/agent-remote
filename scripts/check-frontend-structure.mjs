@@ -15,7 +15,7 @@ function visit(directory) {
     (entry) => entry.isFile() && entry.name !== 'index.ts' && !entry.name.startsWith('.'),
   );
 
-  if (/^(app|pages|widgets|features|entities)(\/|$)/.test(path) && files.length > 6) {
+  if (/^(app|pages|widgets|features|entities|shared)(\/|$)/.test(path) && files.length > 6) {
     issues.push(`${path}: more than 6 files; colocate each component with its parts.`);
   }
 

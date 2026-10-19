@@ -12,7 +12,7 @@ import type {
   ContinuityAccess,
   ProfileRoutingAccess,
 } from "@protocol"
-import type { AttachmentAccess } from "./attachments"
+import type { AttachmentAccess } from "./attachment-access"
 import type { Device } from "./types"
 
 export interface ApplicationOperations {

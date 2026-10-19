@@ -1,5 +1,5 @@
 import type { ProfileList } from "@protocol"
-import type { ProfileTaskExecutor } from "@/shared/api"
+import type { ProfileTaskExecutor } from "@/entities/execution-profile"
 import type { ProfileCreateFormProps } from "../management/profile-create-form.types"
 
 export interface ProfileListProps {

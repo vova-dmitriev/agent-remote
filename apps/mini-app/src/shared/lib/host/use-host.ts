@@ -1,4 +1,10 @@
 import { useContext } from "react"
 import { HostContext } from "./context"
 
-export const useHost = () => useContext(HostContext)
+export function useHost() {
+  const host = useContext(HostContext)
+
+  if (!host) throw new Error("HostContext provider is missing")
+
+  return host
+}

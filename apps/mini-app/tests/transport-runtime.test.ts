@@ -1,6 +1,6 @@
 import { afterEach, expect, it } from "vitest"
 import { ConnectionStatus } from "@protocol"
-import { AppTransport } from "../src/shared/api/transport"
+import { AppTransport } from "../src/app/api/transport/app-transport"
 import { createSessionStore } from "../src/entities/session/model/store/create-session-store"
 
 const clients: AppTransport[] = []

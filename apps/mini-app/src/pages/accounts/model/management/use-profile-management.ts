@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { ErrorCode, ProfileRequestKind, ProfileOperationPhase, knownErrorCode, type ProfileRequest, type ProfileLogin } from "@protocol"
 import { profileKeys, useProfileAccess } from "@/entities/execution-profile"
 import { useRuntime } from "@/shared/lib/runtime"
-import type { ProfileTask } from "@/shared/api"
+import type { ProfileTask } from "@/entities/execution-profile"
 import { ProfileOperationJournal } from "@/pages/accounts/lib/management/operation-journal"
 
 export function useProfileManagement(deviceId: string) {

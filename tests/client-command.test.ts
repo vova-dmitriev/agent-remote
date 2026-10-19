@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { HttpStatus } from '@protocol';
-import { CommandSubmission } from '../apps/mini-app/src/shared/api/commands.js';
+import { CommandSubmission } from '../apps/mini-app/src/entities/command/api/commands.js';
 import type { ClientCommand } from '@protocol';
 
 const command: ClientCommand = {
