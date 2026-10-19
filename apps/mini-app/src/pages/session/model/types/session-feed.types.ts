@@ -11,4 +11,6 @@ export interface SessionFeedProps {
   tab: SessionTab
   terminal: AppSnapshot["terminal"]
   agent: AgentName
+  /** When the session's newest message happened; newer history is unloaded while the feed ends earlier. */
+  newestAt?: number | undefined
 }

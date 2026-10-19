@@ -18,9 +18,10 @@ export function useMessagePreviewPosition(anchor: HTMLElement) {
       const topEdge = viewport?.offsetTop ?? 0
       const rightEdge = leftEdge + (viewport?.width ?? window.innerWidth)
       const bottomEdge = topEdge + (viewport?.height ?? window.innerHeight)
-      const available = Math.max(0, rect.left - leftEdge - 18)
+      // The rail sits on the feed's left edge, so the preview opens to the right of its marker.
+      const available = Math.max(0, rightEdge - rect.right - 18)
       const width = Math.min(360, available || rightEdge - leftEdge - 16)
-      const left = Math.max(leftEdge + 8, Math.min(rect.left - width - 10, rightEdge - width - 8))
+      const left = Math.max(leftEdge + 8, Math.min(rect.right + 10, rightEdge - width - 8))
       const top = Math.max(topEdge + 8, Math.min(rect.top + rect.height / 2 - size.height / 2, bottomEdge - size.height - 8))
 
       setPosition((previous) =>

@@ -129,6 +129,20 @@ export function useFollowMessages(
     [messages, virtualizer, cancelRestore, schedulePage],
   )
 
+  const seek = useCallback(
+    (offset: number) => {
+      cancelRestore()
+      follow.current = false
+
+      virtualizer.scrollToOffset(offset, {
+        behavior: navigationScrollBehavior(window.matchMedia("(prefers-reduced-motion: reduce)").matches),
+      })
+
+      schedulePage()
+    },
+    [virtualizer, cancelRestore, schedulePage],
+  )
+
   useLayoutEffect(() => {
     if (follow.current) toBottom()
   }, [enabled, toBottom])
@@ -162,5 +176,5 @@ export function useFollowMessages(
     return () => observer.disconnect()
   }, [preserveViewport])
 
-  return { scroll, content, settled, onScroll, onUserScroll: cancelRestore, atBottom, activeId, jump, toBottom, latest, virtualizer }
+  return { scroll, content, settled, onScroll, onUserScroll: cancelRestore, atBottom, activeId, jump, seek, toBottom, latest, virtualizer }
 }

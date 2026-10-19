@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test';
 import { test, selectSession } from './fixture.js';
 import { byTestId } from '../e2e/support/testid.js';
+import { jumpNear, railMarker } from '../e2e/support/rail.js';
 import { SESSION_PAGE_IDS, SESSION_FEED_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
 import { EventType, MessageRole } from '@protocol';
 import { LocalDocumentKind } from '../../apps/daemon/src/local/state/values.js';
@@ -19,11 +20,10 @@ test('restores a middle message and active marker in a new extension viewer', as
 
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await selectSession(page);
-  const marker = byTestId(page, SESSION_FEED_IDS.marker, { 'message-id': 'reading-60' });
+  const target = await jumpNear(page, 'reading-60');
 
-  await marker.click();
-  await expect(marker).toHaveAttribute('aria-current', 'true');
-  const row = byTestId(page, SESSION_FEED_IDS.virtualRow, { 'message-id': 'reading-60' });
+  await expect(railMarker(page, target)).toHaveAttribute('aria-current', 'true');
+  const row = byTestId(page, SESSION_FEED_IDS.virtualRow, { 'message-id': target });
   const before = await row.evaluate((element) => element.getBoundingClientRect().top);
 
   await page.getByTestId(SESSION_PAGE_IDS.back).click();
@@ -37,14 +37,14 @@ test('restores a middle message and active marker in a new extension viewer', as
           LocalDocumentKind.Reading,
         ).value,
     )
-    .toMatchObject({ messageId: 'reading-60' });
+    .toMatchObject({ messageId: target });
 
   await page.close();
   const reopened = await extension.open();
 
   await reopened.emulateMedia({ reducedMotion: 'reduce' });
   await selectSession(reopened);
-  const restored = byTestId(reopened, SESSION_FEED_IDS.virtualRow, { 'message-id': 'reading-60' });
+  const restored = byTestId(reopened, SESSION_FEED_IDS.virtualRow, { 'message-id': target });
 
   await expect(restored).toBeVisible();
 
@@ -54,15 +54,12 @@ test('restores a middle message and active marker in a new extension viewer', as
     )
     .toBeLessThan(3);
 
-  await expect(byTestId(reopened, SESSION_FEED_IDS.marker, { 'message-id': 'reading-60' })).toHaveAttribute(
-    'aria-current',
-    'true',
-  );
+  await expect(railMarker(reopened, target)).toHaveAttribute('aria-current', 'true');
 
   await reopened.getByTestId(SESSION_FEED_IDS.bottom).click();
 
-  await expect(byTestId(reopened, SESSION_FEED_IDS.marker, { 'message-id': 'reading-79' })).toHaveAttribute(
-    'aria-current',
-    'true',
+  await expect(reopened.getByTestId(SESSION_FEED_IDS.rail)).toHaveAttribute(
+    'data-active-message-id',
+    'reading-79',
   );
 });
