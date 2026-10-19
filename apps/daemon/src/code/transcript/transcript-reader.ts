@@ -18,6 +18,7 @@ import { createHash } from 'node:crypto';
 import { positiveInteger, truncateUtf8, type HistoryMessage } from '@protocol';
 import { TranscriptTitle } from './transcript-title.js';
 import { transcriptWindow } from './transcript-window.js';
+import { transcriptToolItems } from './transcript-tools.js';
 
 interface Candidate {
   message: HistoryMessage;
@@ -27,6 +28,9 @@ interface ReaderOptions {
   path: string;
   allowedRoot: string;
   sessionId?: string;
+  /** Tool calls and results become history items (subagent transcripts); the parent feed keeps text only. */
+  includeTools?: boolean;
+  refuseSymlinks?: boolean;
   withPosition?: boolean;
   onPosition?: (id: string, offset: number) => void;
   initialWindow?: number;
@@ -93,7 +97,11 @@ export class TranscriptReader {
   }
 
   private async read(): Promise<HistoryMessage[]> {
-    const opened = await openTranscript(this.options.path, this.options.allowedRoot);
+    const opened = await openTranscript(
+      this.options.path,
+      this.options.allowedRoot,
+      this.options.refuseSymlinks,
+    );
 
     if (!opened) {
       return [];
@@ -140,6 +148,7 @@ export class TranscriptReader {
               info.size,
               this.options.initialWindow,
               this.options.sessionId,
+              this.options.includeTools,
             );
           }
         }
@@ -196,7 +205,7 @@ export class TranscriptReader {
           ? await this.options.transform(message, media).catch(() => message)
           : message;
 
-        if (normalized.text || normalized.attachments?.length) {
+        if (normalized.text || normalized.attachments?.length || normalized.tool) {
           output.push(normalized);
         }
       }
@@ -229,11 +238,7 @@ export class TranscriptReader {
       }
 
       if (!this.droppingLine) {
-        const message = this.parse(this.partial, this.offset - chunk.length + newline);
-
-        if (message) {
-          messages.push(message);
-        }
+        messages.push(...this.parse(this.partial, this.offset - chunk.length + newline));
       }
 
       this.partial = Buffer.alloc(0);
@@ -242,13 +247,13 @@ export class TranscriptReader {
     }
   }
 
-  private parse(line: Buffer, position: number): Candidate | undefined {
+  private parse(line: Buffer, position: number): Candidate[] {
     let row: Record<string, unknown>;
 
     try {
       row = JSON.parse(line.toString('utf8')) as Record<string, unknown>;
     } catch {
-      return;
+      return [];
     }
 
     if (row && typeof row === 'object') {
@@ -256,7 +261,7 @@ export class TranscriptReader {
     }
 
     if (this.options.sessionId && row.sessionId !== undefined && row.sessionId !== this.options.sessionId) {
-      return;
+      return [];
     }
 
     if (
@@ -268,7 +273,7 @@ export class TranscriptReader {
       ].some((candidateValue) => candidateValue === String(row.type)) ||
       row.isMeta === true
     ) {
-      return;
+      return [];
     }
 
     const message = row.message as { content?: unknown } | undefined;
@@ -287,9 +292,10 @@ export class TranscriptReader {
     }
 
     const media = this.options.transform ? nativeClaudeMedia(row) : [];
+    const tools = this.options.includeTools ? transcriptToolItems(content) : [];
 
-    if (!text && !media.length) {
-      return;
+    if (!text && !media.length && !tools.length) {
+      return [];
     }
 
     const id =
@@ -298,10 +304,9 @@ export class TranscriptReader {
         : createHash('sha256').update(line).digest('hex');
 
     if (this.seen.has(id)) {
-      return;
+      return [];
     }
 
-    this.options.onPosition?.(id, position - line.length);
     this.seen.add(id);
 
     if (this.seen.size > this.maxSeenIds) {
@@ -310,27 +315,38 @@ export class TranscriptReader {
 
     const timestamp = typeof row.timestamp === 'string' ? Date.parse(row.timestamp) : NaN;
 
-    return {
-      media,
-      message: {
-        id,
-        role: row.type === ClaudeRecordType.Assistant ? ClaudeRecordType.Assistant : ClaudeRecordType.User,
-        text: truncateUtf8(text, this.maxTextBytes),
-        occurredAt: Number.isFinite(timestamp) ? timestamp : 0,
-        ...(this.options.withPosition
-          ? {
-              historyCursor:
-                TRANSCRIPT_POSITION_PREFIX +
-                Buffer.from(
-                  JSON.stringify({
-                    dev: Number(this.identity.split(':')[0]),
-                    ino: Number(this.identity.split(':')[1]),
-                    offset: position - line.length,
-                  }),
-                ).toString('base64url'),
-            }
-          : {}),
-      },
+    const base = {
+      role: row.type === ClaudeRecordType.Assistant ? ClaudeRecordType.Assistant : ClaudeRecordType.User,
+      occurredAt: Number.isFinite(timestamp) ? timestamp : 0,
+      ...(this.options.withPosition
+        ? {
+            historyCursor:
+              TRANSCRIPT_POSITION_PREFIX +
+              Buffer.from(
+                JSON.stringify({
+                  dev: Number(this.identity.split(':')[0]),
+                  ino: Number(this.identity.split(':')[1]),
+                  offset: position - line.length,
+                }),
+              ).toString('base64url'),
+          }
+        : {}),
     };
+
+    const candidates: Candidate[] = [
+      ...(text || media.length
+        ? [{ media, message: { id, ...base, text: truncateUtf8(text, this.maxTextBytes) } }]
+        : []),
+      ...tools.map((item) => ({
+        media: [],
+        message: { id: `${id}/${item.index}`, ...base, text: item.text, tool: item.tool },
+      })),
+    ];
+
+    for (const candidate of candidates) {
+      this.options.onPosition?.(candidate.message.id, position - line.length);
+    }
+
+    return candidates;
   }
 }

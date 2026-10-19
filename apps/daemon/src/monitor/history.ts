@@ -1,8 +1,33 @@
-import { CodedError, ErrorCode, type HistoryMessage, type HistoryRead } from '@protocol';
+import { CodedError, ErrorCode, HistoryDirection, type HistoryMessage, type HistoryRead } from '@protocol';
 import { type NativeMedia } from '../attachments/types.js';
+import { type BackfilledSubagent } from '../activity/subagents.js';
 import { TranscriptActivity } from '../code/transcript-activity.js';
 import { TranscriptPages } from '../code/transcript/transcript-pages.js';
 import { TranscriptReader } from '../code/transcript/transcript-reader.js';
+import {
+  listSubagentFiles,
+  subagentDirectory,
+  subagentTranscriptPath,
+} from '../code/subagents/subagent-files.js';
+
+/** Subagent transcripts kept open per session generation; each has its own page cursors. */
+const SUBAGENT_PAGE_SOURCES = 8;
+
+/** The session's subagent list: the only ids whose transcripts may be read, and where backfill lands. */
+export interface SubagentListing {
+  ids(sessionId: string, generation: string): readonly string[];
+  merge(sessionId: string, generation: string, found: BackfilledSubagent[]): void;
+}
+interface Source {
+  generation: string;
+  path: string;
+  claudeSessionId: string | undefined;
+  reader: TranscriptReader;
+  pages: TranscriptPages;
+  activity: TranscriptActivity;
+  agents: Map<string, TranscriptPages>;
+  backfill?: Promise<void> | undefined;
+}
 
 export class MessageTracker {
   private seen = new Map<string, string>();
@@ -24,17 +49,7 @@ export class MessageTracker {
   }
 }
 export class TranscriptSources {
-  private sources = new Map<
-    string,
-    {
-      generation: string;
-      path: string;
-      claudeSessionId: string | undefined;
-      reader: TranscriptReader;
-      pages: TranscriptPages;
-      activity: TranscriptActivity;
-    }
-  >();
+  private sources = new Map<string, Source>();
   constructor(
     private allowedRoot: string,
     private transform?: (
@@ -45,6 +60,7 @@ export class TranscriptSources {
     ) => Promise<HistoryMessage>,
     private onActivity?: (sessionId: string, generation: string, time: number) => void,
     private initialWindow = 100,
+    private subagents?: SubagentListing,
   ) {}
   open(sessionId: string, generation: string, path: string, claudeSessionId?: string) {
     const current = this.sources.get(sessionId);
@@ -90,7 +106,11 @@ export class TranscriptSources {
           : {}),
       }),
       activity: new TranscriptActivity(path, this.allowedRoot, claudeSessionId),
+      agents: new Map(),
     });
+
+    // First observation or restore: list children that started before this process saw the session.
+    void this.refreshSubagents(sessionId);
 
     if (this.initialWindow === 0) {
       void reader.readNext().catch(() => {});
@@ -108,13 +128,104 @@ export class TranscriptSources {
       throw new CodedError(ErrorCode.SESSION_UNAVAILABLE);
     }
 
-    const page = await source.pages.page(request);
+    const pages = request.agentId
+      ? await this.subagentPages(request.sessionId, source, request.agentId, request.direction)
+      : source.pages;
+
+    if (!request.agentId && request.direction === HistoryDirection.Latest) {
+      // Opening the session (and its subagent list) re-lists children without delaying its history.
+      void this.refreshSubagents(request.sessionId);
+    }
+
+    const page = await pages.page(request);
 
     if (this.sources.get(request.sessionId) !== source) {
       throw new CodedError(ErrorCode.STALE_SESSION);
     }
 
     return page;
+  }
+  /** Re-list the session's subagent files; concurrent callers share one directory scan. */
+  refreshSubagents(sessionId: string): Promise<void> {
+    const source = this.sources.get(sessionId);
+
+    if (!source?.claudeSessionId || !this.subagents) {
+      return Promise.resolve();
+    }
+
+    const listing = this.subagents;
+
+    source.backfill ??= (async () => {
+      try {
+        const directory = await subagentDirectory(source.path, source.claudeSessionId!, this.allowedRoot);
+        const found = directory ? await listSubagentFiles(directory) : [];
+
+        if (this.sources.get(sessionId) === source) {
+          listing.merge(sessionId, source.generation, found);
+        }
+      } catch {
+        /* An unreadable subagent directory leaves the hook-observed list unchanged. */
+      } finally {
+        source.backfill = undefined;
+      }
+    })();
+
+    return source.backfill;
+  }
+  /** Pages of one listed child's own transcript inside the owning session's `subagents` directory. */
+  private async subagentPages(
+    sessionId: string,
+    source: Source,
+    agentId: string,
+    direction: HistoryRead['direction'],
+  ) {
+    const claudeSessionId = source.claudeSessionId;
+
+    if (!this.subagents || !claudeSessionId) {
+      throw new CodedError(ErrorCode.NOT_FOUND);
+    }
+
+    const listed = () => this.subagents!.ids(sessionId, source.generation).includes(agentId);
+
+    if (direction === HistoryDirection.Latest || !listed()) {
+      await this.refreshSubagents(sessionId);
+    }
+
+    if (this.sources.get(sessionId) !== source) {
+      throw new CodedError(ErrorCode.STALE_SESSION);
+    }
+
+    if (!listed()) {
+      throw new CodedError(ErrorCode.NOT_FOUND);
+    }
+
+    const cached = source.agents.get(agentId);
+
+    if (cached) {
+      return cached;
+    }
+
+    const directory = await subagentDirectory(source.path, claudeSessionId, this.allowedRoot);
+
+    if (!directory) {
+      throw new CodedError(ErrorCode.TRANSCRIPT_UNAVAILABLE);
+    }
+
+    const pages = new TranscriptPages({
+      path: subagentTranscriptPath(directory, agentId),
+      allowedRoot: directory,
+      sessionId: claudeSessionId,
+      includeTools: true,
+      refuseSymlinks: true,
+    });
+
+    source.agents.set(agentId, pages);
+
+    if (source.agents.size > SUBAGENT_PAGE_SOURCES) {
+      source.agents.delete(source.agents.keys().next().value!);
+    }
+
+    return pages;
   }
   async refreshActivity() {
     if (!this.onActivity) {

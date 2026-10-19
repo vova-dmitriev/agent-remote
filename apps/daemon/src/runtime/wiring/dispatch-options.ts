@@ -89,6 +89,14 @@ export function openTranscriptSources(monitor: Monitor, attachments: AttachmentS
     },
     (id, generation, time) => monitor.setSessionActivity(id, generation, time),
     0,
+    {
+      ids: (id, generation) => {
+        const session = monitor.session(id);
+
+        return session?.generation === generation ? (session.subagents ?? []).map((agent) => agent.id) : [];
+      },
+      merge: (id, generation, found) => monitor.backfillSubagents(id, generation, found),
+    },
   );
 
   for (const { session, transcriptPath } of store.nativeSessions()) {

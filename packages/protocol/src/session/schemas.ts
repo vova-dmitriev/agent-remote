@@ -18,7 +18,7 @@ import { AttachmentMode } from '../history/values.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import { z } from 'zod';
 import { sessionChangesSchema } from './file-changes.js';
-import { sessionActivitySchema } from './activity.js';
+import { sessionActivitySchema, toolActivitySchema } from './activity.js';
 import { historyReadSchema, historyDoneSchema } from '../history/history-window.js';
 import { subagentSchema } from './subagents.js';
 import { validatePrompt } from '../errors/validation.js';
@@ -54,6 +54,7 @@ export const capabilitySchema = z.strictObject({
   observe: z.boolean(),
   history: z.boolean(),
   historyWindow: z.boolean().optional(),
+  subagentHistory: z.boolean().optional(),
   prompt: z.boolean(),
   interrupt: z.boolean(),
   permission: z.boolean(),
@@ -225,6 +226,7 @@ export const historySchema = z.strictObject({
   text: z.string().max(65_536),
   occurredAt: time,
   attachments: attachmentsSchema.optional(),
+  tool: toolActivitySchema.optional(),
 });
 export const terminalSchema = z.strictObject({
   sessionId: id,

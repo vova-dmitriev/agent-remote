@@ -7,6 +7,28 @@ import {
 } from '../../domain/transcript/limits.js';
 import { type FileHandle } from 'node:fs/promises';
 import { CodedError } from '@protocol';
+import { transcriptToolCount } from './transcript-tools.js';
+
+/** History items one record yields: one for its text or media, plus one per tool call or result when requested. */
+export function transcriptRowItems(
+  row: Record<string, unknown>,
+  sessionId?: string,
+  includeTools = false,
+): number {
+  if ((sessionId && row.sessionId !== undefined && row.sessionId !== sessionId) || row.isMeta === true) {
+    return 0;
+  }
+
+  const tools =
+    includeTools &&
+    [ClaudeRecordType.User, ClaudeRecordType.Assistant].some(
+      (candidateValue) => candidateValue === String(row.type),
+    )
+      ? transcriptToolCount((row.message as { content?: unknown } | undefined)?.content)
+      : 0;
+
+  return Number(visibleTranscriptRow(row, sessionId)) + tools;
+}
 
 export function visibleTranscriptRow(row: Record<string, unknown>, sessionId?: string): boolean {
   if ((sessionId && row.sessionId !== undefined && row.sessionId !== sessionId) || row.isMeta === true) {
@@ -49,12 +71,22 @@ export function visibleTranscriptRow(row: Record<string, unknown>, sessionId?: s
         );
 }
 
-/** Locate one bounded page from the end. No history replay or attachment normalization. */
-export async function transcriptWindow(file: FileHandle, end: number, count: number, sessionId?: string) {
+/**
+ * Locate one bounded page from the end. No history replay or attachment normalization. A record whose
+ * items would overflow a non-empty page starts the next page instead.
+ */
+export async function transcriptWindow(
+  file: FileHandle,
+  end: number,
+  count: number,
+  sessionId?: string,
+  includeTools = false,
+) {
   const floor = Math.max(0, end - TRANSCRIPT_WINDOW_BYTES);
   let start = end;
   let pending = Buffer.alloc(0);
   let found = 0;
+  let counted = end;
   const seen = new Set<string>();
 
   while (start > floor) {
@@ -86,14 +118,23 @@ export async function transcriptWindow(file: FileHandle, end: number, count: num
       try {
         const row = JSON.parse(combined.toString('utf8', lineStart, lineEnd));
 
-        if (row && typeof row === 'object' && visibleTranscriptRow(row, sessionId)) {
+        const items = row && typeof row === 'object' ? transcriptRowItems(row, sessionId, includeTools) : 0;
+
+        if (items) {
           const id = typeof row.uuid === 'string' ? row.uuid : String(next + lineStart);
 
           if (!seen.has(id)) {
             seen.add(id);
 
-            if (++found >= count) {
-              return next + lineStart;
+            if (found && found + items > count) {
+              return counted;
+            }
+
+            found += items;
+            counted = next + lineStart;
+
+            if (found >= count) {
+              return counted;
             }
           }
         }

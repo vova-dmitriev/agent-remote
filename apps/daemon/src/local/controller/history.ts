@@ -24,7 +24,14 @@ export async function localHistory(
   options: LocalControllerOptions,
   action: Extract<LocalAction, { operation: typeof LocalOperation.History }>,
 ) {
-  const page = action.anchor?.startsWith(HistoryCursorPrefix.Cache)
+  const cached = action.anchor?.startsWith(HistoryCursorPrefix.Cache);
+
+  // The local cache holds only the session's own messages; a subagent reads its transcript or nothing.
+  if (action.agentId && cached) {
+    throw new CodedError(ErrorCode.INVALID_CURSOR);
+  }
+
+  const page = cached
     ? null
     : await options.history?.({
         type: FrameType.HistoryRead,
@@ -32,6 +39,7 @@ export async function localHistory(
         sessionId: action.sessionId,
         generation: action.generation,
         direction: action.direction,
+        ...(action.agentId ? { agentId: action.agentId } : {}),
         ...(action.anchor
           ? {
               anchor:
@@ -44,6 +52,10 @@ export async function localHistory(
       });
 
   if (!page) {
+    if (action.agentId) {
+      throw new CodedError(ErrorCode.TRANSCRIPT_UNAVAILABLE);
+    }
+
     return options.store.historyPage(action);
   }
 

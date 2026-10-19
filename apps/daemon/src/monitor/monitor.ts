@@ -25,7 +25,13 @@ import { ClaudeHookEvent } from '../domain/claude.js';
 import { RuntimeEvent, ModelOrigin } from '../domain/runtime.js';
 import { boundSnapshotChanges } from '../codex/binding/file-changes.js';
 import { currentToolStep, clearCurrentStep } from '../activity/current-step.js';
-import { boundSubagentSnapshots, recordSubagent, subagentActivityStatus } from '../activity/subagents.js';
+import {
+  type BackfilledSubagent,
+  boundSubagentSnapshots,
+  mergeBackfilledSubagents,
+  recordSubagent,
+  subagentActivityStatus,
+} from '../activity/subagents.js';
 import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import { SourceAdapter, type Binding, type AdapterRegistry } from '../adapters/registry.js';
@@ -239,7 +245,9 @@ export class Monitor extends EventEmitter implements MonitorPort {
       hook.agent_id &&
       [ClaudeHookEvent.SubagentStart, ClaudeHookEvent.SubagentStop].some(
         (candidateValue) => candidateValue === hook.hook_event_name,
-      )
+      ) &&
+      // Untyped internal side agents have no transcript; they are listed only if already known.
+      (hook.agent_type || session.subagents?.some((agent) => agent.id === hook.agent_id))
     ) {
       session.subagents = recordSubagent(session.subagents, {
         id: hook.agent_id,
@@ -365,6 +373,24 @@ export class Monitor extends EventEmitter implements MonitorPort {
 
     session.subagents = recordSubagent(session.subagents, { id: agentId, status: SubagentStatus.Running });
     this.persistNative(session);
+  }
+  /** Children listed from the session's own transcript directory, merged into the hook-observed list. */
+  backfillSubagents(id: string, generation: string, found: readonly BackfilledSubagent[]) {
+    const session = this.sessions.get(id);
+
+    if (!session || session.generation !== generation || !session.claudeSessionId) {
+      return;
+    }
+
+    const merged = mergeBackfilledSubagents(session.subagents, found);
+
+    if (JSON.stringify(merged) === JSON.stringify(session.subagents ?? [])) {
+      return;
+    }
+
+    session.subagents = merged;
+    this.persistNative(session);
+    this.emit(RuntimeEvent.Snapshot);
   }
   private persistNative(session: Session, transcriptPath?: string) {
     if (
