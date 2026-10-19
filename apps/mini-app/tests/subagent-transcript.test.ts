@@ -1,41 +1,8 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest"
-import { ErrorCode, EventType, HistoryDirection, MessageRole, type EventEnvelope, type HistoryNavigationDirection } from "@protocol"
+import { ErrorCode, HistoryDirection, type HistoryNavigationDirection } from "@protocol"
 import { SubagentTranscript, type SubagentRead } from "../src/pages/session/model/subagent/subagent-transcript"
+import { deferred, ids, page, visibility } from "./subagent-transcript-fixture"
 import { SUBAGENT_POLL_BACKOFF_MAX_MS, SUBAGENT_POLL_INTERVAL_MS, SubagentHistoryStatus } from "../src/pages/session/config/subagent"
-
-const visibility = { visibilityState: "visible", addEventListener: () => {}, removeEventListener: () => {} } as unknown as Document
-
-const page = (...ids: string[]): EventEnvelope[] =>
-  ids.map(
-    (id, index) =>
-      ({
-        version: 1,
-        deviceId: "synthetic-device",
-        streamId: "synthetic-stream",
-        seq: index + 1,
-        eventId: "event-" + id,
-        sessionId: "synthetic-session",
-        occurredAt: id.charCodeAt(0) * 100 + index,
-        type: EventType.Message,
-        payload: {
-          id,
-          role: MessageRole.Assistant,
-          text: "Synthetic " + id,
-          occurredAt: id.charCodeAt(0) * 100 + index,
-          historyCursor: "position:" + id,
-        },
-      }) as EventEnvelope,
-  )
-
-function deferred() {
-  let resolve!: (events: EventEnvelope[] | null) => void
-  let reject!: (error: Error) => void
-  const promise = new Promise<EventEnvelope[] | null>((res, rej) => ((resolve = res), (reject = rej)))
-
-  return { promise, resolve, reject }
-}
-
-const ids = (transcript: SubagentTranscript) => transcript.getSnapshot().messages.map((message) => message.id)
 
 beforeEach(() => vi.useFakeTimers())
 afterEach(() => vi.useRealTimers())

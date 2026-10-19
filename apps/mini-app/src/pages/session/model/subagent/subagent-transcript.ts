@@ -20,7 +20,8 @@ export interface SubagentTranscriptState {
 
 /**
  * The transcript window of one subagent view (one instance per session, subagent and generation).
- * Reads run one at a time; a poll is skipped while another read is pending. After stop, responses are ignored.
+ * Reads run one at a time; a poll is skipped while another read of the current start is pending (a restart's first
+ * read queues behind a discarded one). After stop, responses are ignored.
  * Consecutive failures back off exponentially; an unavailable transcript stops polling until retry or resume.
  */
 export class SubagentTranscript {
@@ -28,6 +29,7 @@ export class SubagentTranscript {
   private listeners = new Set<() => void>()
   private poller: SubagentPoller | null = null
   private queue: Promise<void> = Promise.resolve()
+  /** Reads queued since the last start; reads of an earlier start never block a poll. */
   private pending = 0
   private epoch = 0
   private live = false
@@ -61,6 +63,7 @@ export class SubagentTranscript {
 
   stop() {
     ++this.epoch
+    this.pending = 0
     this.poller?.stop()
     this.poller = null
   }
@@ -98,7 +101,11 @@ export class SubagentTranscript {
 
     ++this.pending
 
-    const task = this.queue.then(() => this.load(direction, edge, epoch)).finally(() => --this.pending)
+    const task = this.queue
+      .then(() => this.load(direction, edge, epoch))
+      .finally(() => {
+        if (epoch === this.epoch) --this.pending
+      })
 
     this.queue = task
 
