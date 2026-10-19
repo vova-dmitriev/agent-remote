@@ -1,5 +1,5 @@
 import { afterEach, expect, it } from 'vitest';
-import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { LOCAL_LIMITS } from '@protocol';
@@ -7,9 +7,9 @@ import { installDesktopRuntime } from '../apps/desktop/src/runtime/install-runti
 import { verifyDesktopRuntime } from '../scripts/desktop/verify-runtime-lib.mjs';
 import { desktopRuntimeFixture } from './helpers/desktop-runtime-fixture.js';
 import { packagedCompanionFixture } from './helpers/packaged-companion.js';
-import { packageDesktopRuntime } from '../scripts/desktop/package-runtime.mjs';
+import { copyRuntimeTree, packageDesktopRuntime, runtimeFiles } from '../scripts/desktop/package-runtime.mjs';
 import { desktopNodeTarget } from '../scripts/desktop/runtime-pin.mjs';
-import { listRuntimeFiles } from '../scripts/desktop/runtime-files.mjs';
+import { FINDER_METADATA, listRuntimeFiles } from '../scripts/desktop/runtime-files.mjs';
 
 const cleanups: Array<() => Promise<unknown>> = [];
 const itOnDarwin = it.skipIf(process.platform !== 'darwin');
@@ -124,8 +124,6 @@ it('uses a canonical module repository path when the package source directory is
   ).rejects.toMatchObject({ code: 'ENOENT' });
 });
 
-const FINDER_METADATA = '.DS_Store';
-
 async function runtimeTree(): Promise<string> {
   const root = await mkdtemp(join(tmpdir(), 'runtime-files-'));
 
@@ -172,4 +170,24 @@ it('keeps listing other files so undeclared ones are still rejected by the verif
   await writeFile(join(root, '._a.txt'), 'x', { mode: 0o644 });
 
   await expect(listRuntimeFiles(root)).resolves.toContain('._a.txt');
+});
+
+it('leaves Finder metadata out of the staged manifest and the copied output', async () => {
+  const staging = await runtimeTree();
+  const output = join(await mkdtemp(join(tmpdir(), 'runtime-output-')), 'out');
+
+  cleanups.push(() => rm(join(output, '..'), { recursive: true, force: true }));
+  await writeFile(join(staging, FINDER_METADATA), 'x', { mode: 0o644 });
+  await writeFile(join(staging, 'sub', FINDER_METADATA), 'x', { mode: 0o644 });
+  await mkdir(output);
+
+  expect((await runtimeFiles(staging)).map((file: { path: string }) => file.path)).toEqual([
+    'a.txt',
+    'sub/b.txt',
+  ]);
+
+  await copyRuntimeTree(staging, output);
+  await expect(listRuntimeFiles(output)).resolves.toEqual(['a.txt', 'sub/b.txt']);
+  await expect(readdir(output)).resolves.not.toContain(FINDER_METADATA);
+  await expect(readdir(join(output, 'sub'))).resolves.not.toContain(FINDER_METADATA);
 });

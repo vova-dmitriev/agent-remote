@@ -1,7 +1,7 @@
 import { lstat, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
-const FINDER_METADATA = '.DS_Store';
+export const FINDER_METADATA = '.DS_Store';
 const untrusted = () => new Error('LOCAL_RUNTIME_UNTRUSTED');
 
 export async function listRuntimeFiles(root, directory = root) {

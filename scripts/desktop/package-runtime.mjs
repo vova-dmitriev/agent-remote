@@ -1,10 +1,11 @@
 import { cp, lstat, mkdir, readFile, readdir, realpath, rm, stat, writeFile } from 'node:fs/promises';
 import { createHash, randomUUID } from 'node:crypto';
-import { join, resolve } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { packageCompanion } from '../extension/package-companion.mjs';
 import { assertPinnedDesktopNode, desktopNodeTarget } from './runtime-pin.mjs';
 import { prepareDesktopNode } from './prepare-runtime.mjs';
+import { FINDER_METADATA } from './runtime-files.mjs';
 
 const repository = resolve(fileURLToPath(new URL('../../', import.meta.url)));
 
@@ -12,6 +13,9 @@ const hashFile = async (path) =>
   createHash('sha256')
     .update(await readFile(path))
     .digest('hex');
+
+const STAGING_REMOVE_RETRIES = 5;
+const STAGING_REMOVE_RETRY_DELAY_MS = 100;
 
 const inside = (root, path) => path === root || path.startsWith(`${root}/`);
 
@@ -62,7 +66,7 @@ async function nativeAddons(root, directory = root) {
   return results.sort((left, right) => left.path.localeCompare(right.path));
 }
 
-async function runtimeFiles(root, directory = root) {
+export async function runtimeFiles(root, directory = root) {
   const results = [];
 
   for (const entry of await readdir(directory, { withFileTypes: true })) {
@@ -71,7 +75,7 @@ async function runtimeFiles(root, directory = root) {
     if (entry.isDirectory()) {
       results.push(...(await runtimeFiles(root, path)));
     } else if (entry.isFile()) {
-      if (entry.name !== 'runtime-manifest.json') {
+      if (entry.name !== 'runtime-manifest.json' && entry.name !== FINDER_METADATA) {
         results.push({
           path: path
             .slice(root.length + 1)
@@ -86,6 +90,21 @@ async function runtimeFiles(root, directory = root) {
   }
 
   return results.sort((left, right) => left.path.localeCompare(right.path));
+}
+
+export async function copyRuntimeTree(staging, output) {
+  for (const entry of await readdir(staging, { withFileTypes: true })) {
+    if (entry.name === FINDER_METADATA && entry.isFile()) {
+      continue;
+    }
+
+    await cp(join(staging, entry.name), join(output, entry.name), {
+      recursive: true,
+      errorOnExist: true,
+      force: false,
+      filter: async (source) => basename(source) !== FINDER_METADATA || !(await lstat(source)).isFile(),
+    });
+  }
 }
 
 export async function packageDesktopRuntime({ outputDirectory, nodePath, sourceDirectory = repository }) {
@@ -147,17 +166,16 @@ export async function packageDesktopRuntime({ outputDirectory, nodePath, sourceD
     await writeFile(join(staging, 'runtime-manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
     await mkdir(output, { recursive: true, mode: 0o755 });
 
-    for (const entry of await readdir(staging, { withFileTypes: true })) {
-      await cp(join(staging, entry.name), join(output, entry.name), {
-        recursive: true,
-        errorOnExist: true,
-        force: false,
-      });
-    }
+    await copyRuntimeTree(staging, output);
 
     return manifest;
   } finally {
-    await rm(staging, { recursive: true, force: true });
+    await rm(staging, {
+      recursive: true,
+      force: true,
+      maxRetries: STAGING_REMOVE_RETRIES,
+      retryDelay: STAGING_REMOVE_RETRY_DELAY_MS,
+    });
   }
 }
 
