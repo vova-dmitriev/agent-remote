@@ -16,6 +16,7 @@ import { HandoffContinuityService } from './services/handoffs.js';
 import { ExecutionActivationService } from './services/activation.js';
 import { HandoffTransitionService } from './services/transitions.js';
 import { AuthenticatedSeedProofService } from './services/seed-proof.js';
+import { AuthenticatedSeedIntentService } from './services/seed-intent.js';
 
 export class ContinuityService {
   private readonly conversations: ConversationContinuityService;
@@ -23,6 +24,7 @@ export class ContinuityService {
   private readonly transitions: HandoffTransitionService;
   private readonly activation: ExecutionActivationService;
   private readonly seedProof: AuthenticatedSeedProofService;
+  private readonly seedIntent: AuthenticatedSeedIntentService;
 
   constructor(database: Database, now = Date.now) {
     this.conversations = new ConversationContinuityService(database, now);
@@ -30,6 +32,7 @@ export class ContinuityService {
     this.transitions = new HandoffTransitionService(database, now);
     this.activation = new ExecutionActivationService(database, now);
     this.seedProof = new AuthenticatedSeedProofService(database, now);
+    this.seedIntent = new AuthenticatedSeedIntentService(database, now);
   }
 
   createConversation(principal: Principal, scope: ContinuityReadScope, input: InitialExecution) {
@@ -45,6 +48,12 @@ export class ContinuityService {
     executionId: string,
   ) {
     return this.conversations.getExecution(principal, scope, conversationId, executionId);
+  }
+  listLinks(principal: Principal, scope: ContinuityReadScope, conversationId: string) {
+    return this.conversations.listLinks(principal, scope, conversationId);
+  }
+  inspectSource(principal: Principal, scope: ContinuityReadScope, sessionId: string, generation: string) {
+    return this.conversations.inspectSource(principal, scope, sessionId, generation);
   }
   startHandoff(
     principal: Principal,
@@ -62,6 +71,13 @@ export class ContinuityService {
     proof: HandoffSeedProofFrame,
   ) {
     return this.seedProof.record(principal, scope, proof);
+  }
+  admitAuthenticatedSeedIntent(
+    principal: Principal,
+    scope: ContinuityReadScope,
+    intent: Parameters<AuthenticatedSeedIntentService['admit']>[2],
+  ) {
+    return this.seedIntent.admit(principal, scope, intent);
   }
   recordCreatedTarget(
     principal: Principal,

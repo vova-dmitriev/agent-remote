@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { profileAuthUrlSchema } from './profile-auth-url.js';
 import { ErrorCode } from './error-codes.js';
+import { profileQuotaObservationSchema } from './profile-quota.js';
 import { ProfileAction, ProfileRequestKind, ProfileLimits } from './values/profile-management.js';
 import { profileMutationSchema, profileOperationSchema, profileListSchema } from './profile-management.js';
 import {
@@ -54,6 +55,11 @@ export const profileRequestSchema = z.discriminatedUnion('kind', [
   z.strictObject({ ...kind(ProfileRequestKind.BeginEnrollment), input: beginEnrollmentSchema }),
   z.strictObject({ ...kind(ProfileRequestKind.CompleteEnrollment), input: encryptedEnrollmentSchema }),
   z.strictObject({ ...kind(ProfileRequestKind.Authenticate), input: profileAuthenticationSchema }),
+  z.strictObject({
+    ...kind(ProfileRequestKind.Quota),
+    profileId: z.uuid(),
+    expectedVersion: z.number().int().positive().safe(),
+  }),
 ]);
 
 export const profileResponseSchema = z.discriminatedUnion('kind', [
@@ -80,6 +86,7 @@ export const profileResponseSchema = z.discriminatedUnion('kind', [
     data: profileOperationSchema,
     login: profileLoginSchema.optional(),
   }),
+  z.strictObject({ ...kind(ProfileRequestKind.Quota), data: profileQuotaObservationSchema.nullable() }),
 ]);
 
 export const profileReplySchema = z.discriminatedUnion('ok', [

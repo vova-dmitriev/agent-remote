@@ -1,6 +1,6 @@
 # Account management and automatic profile fallback
 
-Status: proposed design; planning only, not implemented. This extends the [cross-provider continuity design](2026-10-17-cross-provider-continuity-design.md). No account changes, credentials, live prompts or deployments are authorized by writing this document.
+Status: implementation authorized by the user. The account-management foundation is implemented; quota/routing rules and automatic continuation remain in progress. This extends the [cross-provider continuity design](2026-10-17-cross-provider-continuity-design.md). Live account sign-ins, paid inference, pushes and deployment require separate authorization.
 
 ## Confirmed user requirements
 

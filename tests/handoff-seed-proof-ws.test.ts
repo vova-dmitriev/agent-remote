@@ -40,8 +40,6 @@ describe('authenticated device seed proof', () => {
 
     const operation = await service.startHandoff(principal, scope, {
       operationId: randomUUID(),
-      createCommandId: randomUUID(),
-      seedCommandId: randomUUID(),
       request: {
         ownerId: principal.userId,
         deviceId: device.deviceId,
@@ -99,18 +97,45 @@ describe('authenticated device seed proof', () => {
       }),
     ).rejects.toMatchObject({ code: 'CONTINUITY_COMMAND_ID_RESERVED', status: 409 });
 
-    await relay.db.pool.query(
-      'INSERT INTO command_audit(owner_id,command_id,device_id,session_id,action,fingerprint,status,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,1)',
-      [
-        principal.userId,
+    const intent = {
+      type: 'handoff_seed_intent',
+      operationId: operation.id,
+      seedCommandId: operation.seedCommandId,
+      checkpointId: operation.checkpointId,
+      checkpointDigest: operation.checkpointDigest,
+      targetExecutionId,
+      targetGeneration,
+      selection: operation.selection,
+    };
+
+    const admitted = waitFrame(socket, (value) => value.type === 'handoff_seed_admitted');
+
+    socket.send(JSON.stringify(intent));
+
+    await expect(admitted).resolves.toMatchObject({
+      type: 'handoff_seed_admitted',
+      operationId: operation.id,
+      seedCommandId: operation.seedCommandId,
+      targetGeneration,
+    });
+
+    await expect(
+      relay.db.pool.query('SELECT status,action FROM command_audit WHERE command_id=$1', [
         operation.seedCommandId,
-        device.deviceId,
-        nativeSessionId,
-        CommandActionType.Prompt,
-        'e'.repeat(64),
-        CommandStatus.Dispatched,
-      ],
-    );
+      ]),
+    ).resolves.toMatchObject({
+      rows: [{ status: CommandStatus.Accepted, action: CommandActionType.Prompt }],
+    });
+
+    const retryAdmission = waitFrame(socket, (value) => value.type === 'handoff_seed_admitted');
+
+    socket.send(JSON.stringify(intent));
+    await retryAdmission;
+
+    await relay.db.pool.query('UPDATE command_audit SET status=$2 WHERE command_id=$1', [
+      operation.seedCommandId,
+      CommandStatus.Dispatched,
+    ]);
 
     const proof = {
       type: 'handoff_seed_proof',

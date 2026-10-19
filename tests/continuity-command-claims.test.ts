@@ -62,11 +62,9 @@ async function setup() {
     selection: { provider: 'claude' as const, profileId: randomUUID(), model: 'claude-test' },
   };
 
-  const start = (createCommandId: string) =>
+  const start = (operationId: string) =>
     service.startHandoff(principal, scope, {
-      operationId: randomUUID(),
-      createCommandId,
-      seedCommandId: randomUUID(),
+      operationId,
       request,
     });
 

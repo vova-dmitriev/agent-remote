@@ -21,6 +21,7 @@ import type { ProfiledExecutionLaunch } from '../../sessions/execution/types.js'
 import { RuntimeProfileRequestRouter } from './request-router.js';
 import { createRuntimeEnrollment } from './enrollment-adapter.js';
 import { waitForProfileInactive } from './wait-for-inactive.js';
+import { RuntimeProfileQuotaService } from '../quota/service.js';
 
 export class RuntimeProfiles {
   readonly scope;
@@ -31,6 +32,7 @@ export class RuntimeProfiles {
   private ownership: ProfileExecutionOwnership;
   private closed = false;
   private router: RuntimeProfileRequestRouter;
+  private quota: RuntimeProfileQuotaService;
   private pendingMutations = new Map<string, Promise<ProfileResponse>>();
 
   constructor(private options: RuntimeProfilesOptions) {
@@ -63,6 +65,7 @@ export class RuntimeProfiles {
     );
 
     this.native = new RuntimeProfileNative(this.options, this.service.registry);
+    this.quota = new RuntimeProfileQuotaService(this.service.registry, this.native, this.ownership);
     this.authentication = new ProfileAuthentication({ ...this.options, registry: this.service.registry });
 
     this.enrollment = createRuntimeEnrollment(this.options, this.service.registry, this.native);
@@ -72,6 +75,7 @@ export class RuntimeProfiles {
       this.authentication,
       this.enrollment,
       this.ownership,
+      this.quota,
     );
   }
 
@@ -142,7 +146,8 @@ export class RuntimeProfiles {
       !this.options.inputEnabled &&
       request.kind !== ProfileRequestKind.List &&
       request.kind !== ProfileRequestKind.ListPage &&
-      request.kind !== ProfileRequestKind.Operation
+      request.kind !== ProfileRequestKind.Operation &&
+      request.kind !== ProfileRequestKind.Quota
     ) {
       throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
     }

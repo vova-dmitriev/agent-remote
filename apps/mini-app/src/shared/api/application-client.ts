@@ -9,6 +9,8 @@ import type {
   ReadingPosition,
   ReadingPositionResponse,
   ExecutionProfileAccess,
+  ContinuityAccess,
+  ProfileRoutingAccess,
 } from "@protocol"
 import type { AttachmentAccess } from "./attachments"
 import type { Device } from "./types"
@@ -50,6 +52,8 @@ export interface ApplicationPersistence {
 
 export interface ApplicationClient extends ApplicationOperations {
   profiles?: (deviceId: string) => ExecutionProfileAccess
+  continuity?: (deviceId: string) => ContinuityAccess
+  profileRouting?: (deviceId: string) => ProfileRoutingAccess
   readonly persistence?: ApplicationPersistence
   readonly attachments: AttachmentAccess
   start(): Promise<void>

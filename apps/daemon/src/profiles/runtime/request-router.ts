@@ -20,6 +20,11 @@ export class RuntimeProfileRequestRouter extends RuntimeProfileRequestHelpers {
         return { kind: request.kind, data: await this.service.execute(request.mutation, current) };
       case ProfileRequestKind.Operation:
         return { kind: request.kind, data: this.service.operation(request.operationId) };
+      case ProfileRequestKind.Quota:
+        return {
+          kind: request.kind,
+          data: await this.quota.read(request.profileId, request.expectedVersion, current),
+        };
 
       case ProfileRequestKind.Reconcile: {
         const operation = this.service.operation(request.operationId);

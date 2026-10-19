@@ -3,6 +3,7 @@ import { ProfileService } from '../service.js';
 import { ProfileAuthentication } from '../authentication/service.js';
 import { CredentialEnrollmentService } from '../enrollment/service.js';
 import { ProfileExecutionOwnership } from './execution-ownership.js';
+import { RuntimeProfileQuotaService } from '../quota/service.js';
 
 export class RuntimeProfileRequestHelpers {
   constructor(
@@ -10,6 +11,7 @@ export class RuntimeProfileRequestHelpers {
     protected authentication: ProfileAuthentication,
     protected enrollment: CredentialEnrollmentService,
     protected ownership: ProfileExecutionOwnership,
+    protected quota: RuntimeProfileQuotaService,
   ) {}
 
   protected mutationCurrent(

@@ -22,6 +22,11 @@ export const handoffRequestSchema = z.strictObject({
   selection: executionLaunchSelectionSchema,
 });
 
+export const startHandoffRequestSchema = z.strictObject({
+  operationId: z.uuid(),
+  request: handoffRequestSchema,
+});
+
 export const handoffOperationSchema = handoffRequestSchema
   .extend({
     id,
@@ -38,4 +43,5 @@ export const handoffOperationSchema = handoffRequestSchema
   );
 
 export type HandoffRequest = z.infer<typeof handoffRequestSchema>;
+export type StartHandoffRequest = z.infer<typeof startHandoffRequestSchema>;
 export type HandoffOperation = z.infer<typeof handoffOperationSchema>;

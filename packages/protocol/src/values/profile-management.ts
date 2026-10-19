@@ -39,5 +39,6 @@ export const ProfileRequestKind = {
   BeginEnrollment: 'begin_enrollment',
   CompleteEnrollment: 'complete_enrollment',
   Authenticate: 'authenticate',
+  Quota: 'read_quota',
 } as const;
 export type ProfileRequestKind = (typeof ProfileRequestKind)[keyof typeof ProfileRequestKind];

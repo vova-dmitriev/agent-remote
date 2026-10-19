@@ -1,3 +1,5 @@
 export { profileKeys } from "./config/query-keys"
 export { useExecutionProfiles } from "./model/use-execution-profiles"
 export { useProfileAccess } from "./model/use-profile-access"
+export { buildProfileExecution, resolveProfileLaunch, selectableProfiles } from "./model/profile-launch"
+export type { ProfileExecution } from "./model/profile-launch.types"

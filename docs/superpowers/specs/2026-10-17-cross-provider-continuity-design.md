@@ -1,6 +1,6 @@
 # Cross-provider continuity and execution profiles
 
-Status: implementation started by explicit user instruction on 2026-10-17. Shared profile/continuity contracts are implemented; profile management, native enrollment, profile-aware execution and automatic fallback remain pending.
+Status: implementation started by explicit user instruction on 2026-10-17. The profile-management page, encrypted API enrollment, isolated Codex launch, bounded local checkpoints and server conversation/proof foundations are implemented. Production handoff wiring, Claude profile-aware execution and automatic fallback remain in progress; authenticated provider acceptance is still required.
 
 ## Goal and confirmed requirements
 
@@ -10,13 +10,13 @@ A logical conversation contains linked native executions. Switching the selected
 
 ## Existing implementation
 
-- `packages/protocol/src/schemas.ts`: creation currently selects only provider and cwd; session targets retain native identities.
+- `packages/protocol/src/schemas.ts`: creation supports an optional verified profile/model/effort selection; legacy provider/cwd creation is preserved.
 - `apps/daemon/src/sessions/create-session.ts`: creates managed Claude Code or Codex CLI sessions.
-- `apps/daemon/src/codex/launcher.ts`: currently launches a shared managed app-server socket without an explicit per-profile environment.
-- `apps/daemon/src/code/pty-session-manager.ts`: currently inherits the daemon environment.
+- `apps/daemon/src/codex/launcher.ts`: profile-aware creation uses isolated credential/config roots, a scoped socket and verified account/model/effort. Legacy native creation remains available.
+- Claude profile environment and API-key adapters exist, but profile-aware Claude execution is not enabled until its native isolation is established.
 - `apps/daemon/src/sessions/launch-context.ts` and `restart-session.ts`: already preserve native Claude launch arguments and cmux context.
 - Native history paging, attachment transport, command receipts, outbox editing, provider filtering and durable reading positions already exist.
-- There is no cross-provider context checkpoint, execution profile registry or logical-conversation mapping yet.
+- Local profile/checkpoint registries and server logical conversation/proof services exist. A production coordinator must connect their audited effects before handoff can be exposed as working.
 
 ## Product behavior
 

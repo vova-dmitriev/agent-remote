@@ -133,7 +133,7 @@ it('keeps the synthetic child alive after its launching parent exits', async () 
     timeout: 5000,
   });
 
-  const first = await readFile(join(directory, 'pulse'), 'utf8');
+  const first = await waitForFixture(join(directory, 'pulse'));
 
   await new Promise((resolve) => setTimeout(resolve, 60));
   expect(await readFile(join(directory, 'pulse'), 'utf8')).not.toBe(first);

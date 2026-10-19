@@ -2,7 +2,7 @@ import type {
   Conversation,
   ExecutionLink,
   HandoffOperation,
-  HandoffRequest,
+  StartHandoffRequest,
 } from '../../../../packages/protocol/src/index.js';
 
 export const ContinuityError = {
@@ -19,6 +19,7 @@ export const ContinuityError = {
   InvalidIdentifiers: 'CONTINUITY_INVALID_IDENTIFIERS',
   CommandIdReserved: 'CONTINUITY_COMMAND_ID_RESERVED',
   SeedProofMismatch: 'CONTINUITY_SEED_PROOF_MISMATCH',
+  SeedIntentMismatch: 'CONTINUITY_SEED_INTENT_MISMATCH',
   InvalidPhase: 'CONTINUITY_INVALID_PHASE',
 } as const;
 export type ContinuityError = (typeof ContinuityError)[keyof typeof ContinuityError];
@@ -44,11 +45,11 @@ export interface InitialExecution {
   generation: string;
 }
 
-export interface StartHandoffInput {
-  operationId: string;
+export type StartHandoffInput = StartHandoffRequest;
+
+export interface PersistHandoffInput extends StartHandoffInput {
   createCommandId: string;
   seedCommandId: string;
-  request: HandoffRequest;
 }
 
 export interface ContinuityReadScope {

@@ -1,7 +1,7 @@
 import type { PoolClient } from 'pg';
 import { HandoffPhase, type HandoffOperation } from '../../../../../packages/protocol/src/index.js';
 import { Fault } from '../../auth/security.js';
-import { ContinuityError, HandoffCommandKind, type StartHandoffInput } from '../types.js';
+import { ContinuityError, HandoffCommandKind, type PersistHandoffInput } from '../types.js';
 import { asOperation, type ContinuityRow } from './mapping.js';
 
 export interface OperationState {
@@ -52,7 +52,7 @@ export class HandoffRepository {
       : null;
   }
 
-  async insertOperation(tx: PoolClient, input: StartHandoffInput, fingerprint: string, now: number) {
+  async insertOperation(tx: PoolClient, input: PersistHandoffInput, fingerprint: string, now: number) {
     const request = input.request;
 
     await tx.query(
@@ -104,18 +104,30 @@ export class HandoffRepository {
     return result.rows.length > 0;
   }
 
+  async pendingOperation(tx: PoolClient, ownerId: string, deviceId: string, conversationId: string) {
+    const row = (
+      await tx.query<ContinuityRow>(
+        "SELECT * FROM handoff_operations WHERE owner_id=$1 AND device_id=$2 AND conversation_id=$3 AND phase NOT IN ('ready','failed') ORDER BY updated_at DESC LIMIT 1",
+        [ownerId, deviceId, conversationId],
+      )
+    ).rows[0];
+
+    return row ? asOperation(row) : null;
+  }
+
   async command(tx: PoolClient, ownerId: string, deviceId: string, commandId: string) {
     return (
       (
         await tx.query<{
           action: string;
+          fingerprint: string;
           status: string;
           session_id: string;
           result_session_id: string | null;
           create_selection: unknown;
           create_expected_profile_version: number | null;
         }>(
-          'SELECT action,status,session_id,result_session_id,create_selection,create_expected_profile_version FROM command_audit WHERE owner_id=$1 AND device_id=$2 AND command_id=$3',
+          'SELECT action,fingerprint,status,session_id,result_session_id,create_selection,create_expected_profile_version FROM command_audit WHERE owner_id=$1 AND device_id=$2 AND command_id=$3',
           [ownerId, deviceId, commandId],
         )
       ).rows[0] ?? null

@@ -35,6 +35,7 @@ export function useProfileManagement(deviceId: string) {
         setLogin(response.login ?? null)
         loginOperation.current = response.data.id
       } else if (
+        response.data !== null &&
         "phase" in response.data &&
         response.data.id === loginOperation.current &&
         response.data.phase !== ProfileOperationPhase.AwaitingAuthentication
@@ -44,6 +45,7 @@ export function useProfileManagement(deviceId: string) {
       }
 
       if (
+        response.data !== null &&
         "phase" in response.data &&
         (response.data.phase === ProfileOperationPhase.Failed || response.data.phase === ProfileOperationPhase.Unknown)
       ) {

@@ -1,18 +1,14 @@
-import { handoffRequestSchema, type HandoffOperation } from '../../../../../packages/protocol/src/index.js';
+import { randomUUID } from 'node:crypto';
+import {
+  startHandoffRequestSchema,
+  type HandoffOperation,
+} from '../../../../../packages/protocol/src/index.js';
 import { Fault, type Principal } from '../../auth/security.js';
 import type { Database } from '../../db/database.js';
 import { ContinuityRepository } from '../repository.js';
 import { ContinuityError, type ContinuityReadScope, type StartHandoffInput } from '../types.js';
 import { CommandClaimKind, reserveHandoffCommandIds } from '../command-claims.js';
 import { fingerprint, uuid } from './values.js';
-import { z } from 'zod';
-
-const startInput = z.strictObject({
-  operationId: z.uuid(),
-  createCommandId: z.uuid(),
-  seedCommandId: z.uuid(),
-  request: handoffRequestSchema,
-});
 
 export class HandoffContinuityService {
   private readonly repository = new ContinuityRepository();
@@ -26,15 +22,11 @@ export class HandoffContinuityService {
     scope: ContinuityReadScope,
     raw: StartHandoffInput,
   ): Promise<HandoffOperation> {
-    const input = startInput.parse(raw);
+    const input = startHandoffRequestSchema.parse(raw);
     const request = input.request;
 
     if (request.ownerId !== principal.userId || request.deviceId !== scope.deviceId) {
       throw new Fault(ContinuityError.NotFound, 404);
-    }
-
-    if (new Set([input.operationId, input.createCommandId, input.seedCommandId]).size !== 3) {
-      throw new Fault(ContinuityError.InvalidIdentifiers, 400);
     }
 
     const requestFingerprint = fingerprint(input);
@@ -99,6 +91,10 @@ export class HandoffContinuityService {
 
         const now = this.now();
 
+        const createCommandId = randomUUID();
+        const seedCommandId = randomUUID();
+        const persisted = { ...input, createCommandId, seedCommandId };
+
         await reserveHandoffCommandIds(
           tx,
           principal.userId,
@@ -110,12 +106,12 @@ export class HandoffContinuityService {
               operationId: input.operationId,
             },
             {
-              id: input.createCommandId,
+              id: createCommandId,
               kind: CommandClaimKind.HandoffCreate,
               operationId: input.operationId,
             },
             {
-              id: input.seedCommandId,
+              id: seedCommandId,
               kind: CommandClaimKind.HandoffSeed,
               operationId: input.operationId,
             },
@@ -124,7 +120,7 @@ export class HandoffContinuityService {
           now,
         );
 
-        await this.repository.insertOperation(tx, input, requestFingerprint, now);
+        await this.repository.insertOperation(tx, persisted, requestFingerprint, now);
 
         await this.repository.bumpConversation(
           tx,

@@ -44,6 +44,17 @@ export class ConversationRepository {
     return asConversation(row);
   }
 
+  async findConversation(tx: PoolClient, ownerId: string, deviceId: string, id: string, lock = false) {
+    const row = (
+      await tx.query<ContinuityRow>(
+        `SELECT id,owner_id,device_id,active_execution_id,version,updated_at FROM continuity_conversations WHERE owner_id=$1 AND device_id=$2 AND id=$3${lock ? ' FOR UPDATE' : ''}`,
+        [ownerId, deviceId, id],
+      )
+    ).rows[0];
+
+    return row ? asConversation(row) : null;
+  }
+
   async execution(tx: PoolClient, ownerId: string, deviceId: string, conversationId: string, id: string) {
     const row = (
       await tx.query<ContinuityRow>(
@@ -57,6 +68,32 @@ export class ConversationRepository {
     }
 
     return asExecution(row);
+  }
+
+  async executions(tx: PoolClient, ownerId: string, deviceId: string, conversationId: string) {
+    const rows = await tx.query<ContinuityRow>(
+      'SELECT * FROM execution_links WHERE owner_id=$1 AND device_id=$2 AND conversation_id=$3 ORDER BY created_at,id LIMIT 100',
+      [ownerId, deviceId, conversationId],
+    );
+
+    return rows.rows.map(asExecution);
+  }
+
+  async executionForSession(
+    tx: PoolClient,
+    ownerId: string,
+    deviceId: string,
+    nativeSessionId: string,
+    generation: string,
+  ) {
+    const row = (
+      await tx.query<ContinuityRow>(
+        'SELECT * FROM execution_links WHERE owner_id=$1 AND device_id=$2 AND native_session_id=$3 AND generation=$4 LIMIT 1',
+        [ownerId, deviceId, nativeSessionId, generation],
+      )
+    ).rows[0];
+
+    return row ? asExecution(row) : null;
   }
 
   async insertConversation(tx: PoolClient, value: Conversation) {

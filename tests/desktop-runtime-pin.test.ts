@@ -79,10 +79,21 @@ describe('desktop Node release pin', () => {
     );
   });
 
-  it('rejects unsupported platforms and obsolete standalone Node binaries', () => {
+  it('rejects unsupported platforms and obsolete standalone Node binaries', async () => {
     expect(() => desktopNodeTarget('linux', 'x64')).toThrow('Unsupported desktop runtime target');
 
-    expect(() => assertPinnedDesktopNode(process.execPath, process.platform, process.arch)).toThrow(
+    const directory = await mkdtemp(join(tmpdir(), 'desktop-obsolete-node-'));
+
+    temporaryDirectories.push(directory);
+    const obsolete = join(directory, 'node');
+
+    await writeFile(
+      obsolete,
+      `#!/bin/sh\nprintf '%s\\n' '${JSON.stringify({ version: 'v22.12.0', abi: '127', platform: process.platform, arch: process.arch })}'\n`,
+      { mode: 0o700 },
+    );
+
+    expect(() => assertPinnedDesktopNode(obsolete, process.platform, process.arch)).toThrow(
       'LOCAL_RUNTIME_UNTRUSTED',
     );
   });

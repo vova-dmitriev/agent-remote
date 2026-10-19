@@ -30,6 +30,7 @@ export class RuntimeProfileNative {
     current: () => boolean,
     secret?: string,
     operationId?: string,
+    afterProbe?: (native: CodexProfileNative) => Promise<void>,
   ) {
     if (this.active.get(profile.id)?.size || this.verifying.get(profile.id)?.size) {
       throw new Error(ErrorCode.PROFILE_EXECUTION_ACTIVE);
@@ -92,6 +93,10 @@ export class RuntimeProfileNative {
 
       assertCurrent();
 
+      await afterProbe?.(native);
+
+      assertCurrent();
+
       return evidence;
     } finally {
       let closed = false;
@@ -122,6 +127,16 @@ export class RuntimeProfileNative {
         verification.finish();
       }
     }
+  }
+
+  async readQuota(profile: ExecutionProfileSummary, current: () => boolean) {
+    let response: unknown;
+
+    const verification = await this.verify(profile, current, undefined, undefined, async (native) => {
+      response = await native.readRateLimits();
+    });
+
+    return { verification, response };
   }
 
   hasCloseProof(operationId: string, profileId: string, profileVersion: number): boolean {

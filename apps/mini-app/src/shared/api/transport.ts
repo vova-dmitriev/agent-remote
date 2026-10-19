@@ -1,17 +1,9 @@
-import {
-  ConnectionStatus,
-  FrameType,
-  serverFrameSchema,
-  type HistoryPageDirection,
-  type ClientCommand,
-  type CommandResult,
-} from "@protocol"
+import { ConnectionStatus, FrameType, serverFrameSchema, type HistoryPageDirection } from "@protocol"
 import { createAppSocket } from "./socket"
 import { logoutSession } from "./auth/logout"
 import { isAuthenticationError, startSessionAuthentication } from "./auth/errors"
 import { SessionAuthentication } from "./auth/session"
 import { AttachmentTransfer } from "./attachments"
-import { CommandSubmission } from "./commands.js"
 import { requestJson } from "./request-error"
 import { ReadingPositions } from "./reading-position"
 import { HistoryWindow } from "./history-window"
@@ -21,9 +13,6 @@ import type { ApplicationClient } from "./application-client"
 import { RelayOperations } from "./relay-operations"
 
 export class AppTransport extends RelayOperations implements ApplicationClient {
-  private commands = new CommandSubmission((method, path, body) =>
-    this.request(path, { method, ...(body ? { body: JSON.stringify(body) } : {}) }),
-  )
   private token = ""
   private socket: WebSocket | undefined
   private stopped = false
@@ -131,6 +120,12 @@ export class AppTransport extends RelayOperations implements ApplicationClient {
   }
   devices = () => this.request<Device[]>("/devices")
   profiles = (deviceId: string) => this.profileAccess(deviceId, () => !this.stopped)
+  profileRouting = (deviceId: string) => this.routingAccess(deviceId, () => !this.stopped)
+  continuity(deviceId: string) {
+    const selection = this.selection
+
+    return this.continuityAccess(deviceId, () => !this.stopped && this.deviceId === deviceId && this.selection === selection)
+  }
   selectTarget(deviceId: string, sessionId: string | null) {
     this.reading.flush()
     ++this.selection
@@ -143,9 +138,7 @@ export class AppTransport extends RelayOperations implements ApplicationClient {
     ++this.selection
     this.deviceId = this.selectedId = null
 
-    this.commands = new CommandSubmission((method, path, body) =>
-      this.request(path, { method, ...(body ? { body: JSON.stringify(body) } : {}) }),
-    )
+    this.resetCommands()
   }
   private currentHistory = (socket: WebSocket | undefined, sessionId: string, generation: number) =>
     !this.stopped && socket === this.socket && sessionId === this.selectedId && generation === this.selection
@@ -180,10 +173,6 @@ export class AppTransport extends RelayOperations implements ApplicationClient {
       edge,
     )
   }
-  send = (command: ClientCommand): Promise<CommandResult> => this.commands.send(command)
-
-  retryPending = (commandId?: string) => this.commands.retryPending(commandId)
-  checkPending = (commandId: string) => this.commands.checkPending(commandId)
   logout = () => logoutSession(this)
   close() {
     this.stopped = true

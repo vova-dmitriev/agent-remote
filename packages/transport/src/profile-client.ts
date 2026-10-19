@@ -8,6 +8,18 @@ import {
   type ProfileResponse,
 } from '../../protocol/src/index.js';
 
+function responseRecords(response: ProfileResponse) {
+  if (response.kind === ProfileRequestKind.List || response.kind === ProfileRequestKind.ListPage) {
+    return [...response.data.profiles, ...response.data.operations];
+  }
+
+  if (response.kind === ProfileRequestKind.Quota) {
+    return response.data ? [response.data] : [];
+  }
+
+  return [response.data];
+}
+
 export class BoundProfileClient implements ExecutionProfileAccess {
   constructor(
     private deviceId: string,
@@ -31,10 +43,7 @@ export class BoundProfileClient implements ExecutionProfileAccess {
       throw new Error(ErrorCode.INVALID_FRAME);
     }
 
-    const records =
-      response.kind === ProfileRequestKind.List || response.kind === ProfileRequestKind.ListPage
-        ? [...response.data.profiles, ...response.data.operations]
-        : [response.data];
+    const records = responseRecords(response);
 
     if (records.some((record) => record.deviceId !== this.deviceId)) {
       throw new Error(ErrorCode.ACCESS_DENIED);

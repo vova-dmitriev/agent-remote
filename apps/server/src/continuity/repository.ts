@@ -2,7 +2,7 @@ import type { PoolClient } from 'pg';
 import { ConversationRepository } from './repositories/conversations.js';
 import { HandoffRepository, type OperationState } from './repositories/handoffs.js';
 import { SeedProofRepository, type SeedProofRecord } from './repositories/seed-proofs.js';
-import type { StartHandoffInput } from './types.js';
+import type { PersistHandoffInput } from './types.js';
 
 export class ContinuityRepository extends ConversationRepository {
   private readonly handoffs = new HandoffRepository();
@@ -19,11 +19,14 @@ export class ContinuityRepository extends ConversationRepository {
   findOperation(tx: PoolClient, ownerId: string, deviceId: string, id: string) {
     return this.handoffs.findOperation(tx, ownerId, deviceId, id);
   }
-  insertOperation(tx: PoolClient, input: StartHandoffInput, fingerprint: string, now: number) {
+  insertOperation(tx: PoolClient, input: PersistHandoffInput, fingerprint: string, now: number) {
     return this.handoffs.insertOperation(tx, input, fingerprint, now);
   }
   activeOperation(tx: PoolClient, ownerId: string, deviceId: string, conversationId: string) {
     return this.handoffs.activeOperation(tx, ownerId, deviceId, conversationId);
+  }
+  pendingOperation(tx: PoolClient, ownerId: string, deviceId: string, conversationId: string) {
+    return this.handoffs.pendingOperation(tx, ownerId, deviceId, conversationId);
   }
   command(tx: PoolClient, ownerId: string, deviceId: string, commandId: string) {
     return this.handoffs.command(tx, ownerId, deviceId, commandId);

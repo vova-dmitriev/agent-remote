@@ -30,10 +30,11 @@ export class ProfileOperationJournal {
       const response = await send(input)
 
       const terminal =
+        response.data !== null &&
         "phase" in response.data &&
         (response.data.phase === ProfileOperationPhase.Complete || response.data.phase === ProfileOperationPhase.Failed)
 
-      if (id || (terminal && "id" in response.data && response.data.id === pending)) {
+      if (id || (terminal && response.data !== null && "id" in response.data && response.data.id === pending)) {
         if (this.pending() === (id ?? pending)) this.storage.removeItem(this.key)
       }
 

@@ -132,6 +132,111 @@ export class HandoffTransitionService {
     });
   }
 
+  recordCreatedTargetAtCurrentVersion(
+    principal: Principal,
+    scope: ContinuityReadScope,
+    operationId: string,
+    input: InitialExecution,
+  ) {
+    return this.database.transaction(async (tx) => {
+      const state = await this.repository.operation(
+        tx,
+        principal.userId,
+        scope.deviceId,
+        uuid.parse(operationId),
+        true,
+      );
+
+      if (state.value.phase !== HandoffPhase.CreatingTarget) {
+        return state.value;
+      }
+
+      const op = state.value;
+
+      const device = await this.repository.device(
+        tx,
+        principal.userId,
+        scope.deviceId,
+        scope.deviceGeneration,
+      );
+
+      const conversation = await this.repository.conversation(
+        tx,
+        principal.userId,
+        scope.deviceId,
+        op.conversationId,
+        true,
+      );
+
+      if (
+        conversation.activeExecutionId !== op.sourceExecutionId ||
+        conversation.version !== op.expectedConversationVersion + 1
+      ) {
+        throw new Fault(ContinuityError.SourceNotActive, 409);
+      }
+
+      if (
+        input.conversationId !== op.conversationId ||
+        input.provider !== op.selection.provider ||
+        input.profileId !== op.selection.profileId
+      ) {
+        throw new Fault(ContinuityError.TargetMismatch, 409);
+      }
+
+      const receipt = await this.repository.command(tx, principal.userId, scope.deviceId, op.createCommandId);
+
+      if (
+        !receipt ||
+        receipt.action !== CommandActionType.CreateSession ||
+        receipt.status !== CommandStatus.Dispatched ||
+        receipt.result_session_id !== input.nativeSessionId ||
+        receipt.create_expected_profile_version !== op.expectedProfileVersion
+      ) {
+        throw new Fault(ContinuityError.TargetMismatch, 409);
+      }
+
+      const selection = executionLaunchSelectionSchema.safeParse(receipt.create_selection);
+      const snapshot = snapshotSchema.safeParse(device.snapshot);
+
+      const observed = snapshot.success
+        ? snapshot.data.sessions.find((session) => session.id === input.nativeSessionId)
+        : undefined;
+
+      if (
+        !selection.success ||
+        selection.data.provider !== op.selection.provider ||
+        selection.data.profileId !== op.selection.profileId ||
+        selection.data.model !== op.selection.model ||
+        selection.data.effort !== op.selection.effort ||
+        !observed ||
+        observed.generation !== input.generation ||
+        observed.model !== op.selection.model
+      ) {
+        throw new Fault(ContinuityError.TargetMismatch, 409);
+      }
+
+      const link = await this.repository.insertExecution(
+        tx,
+        { ...input, ownerId: principal.userId, deviceId: scope.deviceId },
+        this.now(),
+      );
+
+      return (
+        await this.repository.setOperationPhase(
+          tx,
+          principal.userId,
+          scope.deviceId,
+          op.id,
+          state.version,
+          HandoffPhase.DeliveringContext,
+          null,
+          link.id,
+          this.now(),
+        )
+      ).value;
+    });
+  }
+
   setTerminal(
     principal: Principal,
     scope: ContinuityReadScope,

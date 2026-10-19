@@ -113,12 +113,7 @@ describe('owner-scoped continuity metadata', () => {
       selection: { provider: 'claude' as const, profileId: randomUUID(), model: 'claude-test' },
     };
 
-    const start = {
-      operationId: randomUUID(),
-      createCommandId: randomUUID(),
-      seedCommandId: randomUUID(),
-      request,
-    };
+    const start = { operationId: randomUUID(), request };
 
     const first = await f.service.startHandoff(principal(f.owner), scope(f.device, f.generation), start);
 
@@ -145,8 +140,6 @@ describe('owner-scoped continuity metadata', () => {
       f.service.startHandoff(principal(f.owner), scope(f.device, f.generation), {
         ...start,
         operationId: randomUUID(),
-        createCommandId: randomUUID(),
-        seedCommandId: randomUUID(),
       }),
     ).rejects.toBeInstanceOf(Fault);
   });
@@ -173,8 +166,6 @@ describe('owner-scoped continuity metadata', () => {
 
     const first = await f.service.startHandoff(principal(f.owner), scope(f.device, f.generation), {
       operationId: randomUUID(),
-      createCommandId: randomUUID(),
-      seedCommandId: randomUUID(),
       request,
     });
 
@@ -187,8 +178,6 @@ describe('owner-scoped continuity metadata', () => {
     await expect(
       f.service.startHandoff(principal(f.owner), scope(f.device, f.generation), {
         operationId: randomUUID(),
-        createCommandId: randomUUID(),
-        seedCommandId: randomUUID(),
         request: { ...request, expectedConversationVersion: 2 },
       }),
     ).resolves.toMatchObject({ phase: 'creating_target' });

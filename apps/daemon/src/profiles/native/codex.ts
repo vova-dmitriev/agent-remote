@@ -128,6 +128,10 @@ export class CodexProfileNative {
     };
   }
 
+  readRateLimits() {
+    return this.client.request(CodexMethod.AccountRateLimitsRead, {});
+  }
+
   close() {
     return this.client.close();
   }

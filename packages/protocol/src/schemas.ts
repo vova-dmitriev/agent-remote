@@ -28,6 +28,7 @@ import { pendingUserInputSchema, userInputAnswersSchema } from './user-input.js'
 import { profileRequestSchema, profileReplySchema } from './profile-access.js';
 import { executionLaunchSelectionSchema } from './execution-profile.js';
 import { executionVersionSchema } from './execution-fields.js';
+import { continuityLocalRequestSchema, continuityLocalResponseSchema } from './continuity-access.js';
 
 const id = z.string().min(1).max(512);
 const time = z.number().int().nonnegative().safe();
@@ -253,6 +254,40 @@ export const handoffSeedProofFrameSchema = z.strictObject({
   targetGeneration: z.uuid(),
   selection: executionLaunchSelectionSchema,
 });
+
+const handoffSeedCorrelation = {
+  operationId: z.uuid(),
+  seedCommandId: z.uuid(),
+  checkpointId: z.uuid(),
+  checkpointDigest: z.string().regex(/^[a-f0-9]{64}$/),
+  targetExecutionId: z.uuid(),
+  targetGeneration: z.uuid(),
+  selection: executionLaunchSelectionSchema,
+};
+
+export const handoffSeedIntentFrameSchema = z.strictObject({
+  type: z.literal(FrameType.HandoffSeedIntent),
+  ...handoffSeedCorrelation,
+});
+export const handoffSeedAdmissionFrameSchema = z.strictObject({
+  type: z.literal(FrameType.HandoffSeedAdmitted),
+  ...handoffSeedCorrelation,
+});
+export const continuityRequestFrameSchema = z.strictObject({
+  type: z.literal(FrameType.ContinuityRequest),
+  requestId: z.uuid(),
+  epoch: id,
+  request: continuityLocalRequestSchema,
+});
+export const continuityResultFrameSchema = z.strictObject({
+  type: z.literal(FrameType.ContinuityResult),
+  requestId: z.uuid(),
+  epoch: id,
+  reply: z.discriminatedUnion('ok', [
+    z.strictObject({ ok: z.literal(true), response: continuityLocalResponseSchema }),
+    z.strictObject({ ok: z.literal(false), code: z.enum(ErrorCode) }),
+  ]),
+});
 export const deviceFrameSchema = z.discriminatedUnion('type', [
   z.strictObject({
     type: z.literal(FrameType.ProfilesResult),
@@ -278,6 +313,8 @@ export const deviceFrameSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal(FrameType.Event), event: eventSchema }),
   z.strictObject({ type: z.literal(FrameType.CommandResult), result: resultSchema }),
   handoffSeedProofFrameSchema,
+  handoffSeedIntentFrameSchema,
+  continuityResultFrameSchema,
 ]);
 export const serverFrameSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal(FrameType.ProfilesCancel), requestId: z.uuid(), epoch: id }),
@@ -303,6 +340,8 @@ export const serverFrameSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal(FrameType.Select), sessionId: id.nullable() }),
   z.strictObject({ type: z.literal(FrameType.Command), command: commandSchema }),
   z.strictObject({ type: z.literal(FrameType.Ack), cursor: cursorSchema }),
+  handoffSeedAdmissionFrameSchema,
+  continuityRequestFrameSchema,
 ]);
 export type Target = z.infer<typeof targetSchema>;
 export type CmuxTarget = Extract<Target, { kind: typeof TargetKind.Cmux }>;
@@ -321,6 +360,10 @@ export type ServerFrame = z.infer<typeof serverFrameSchema>;
 export type AppFrame = z.infer<typeof appFrameSchema>;
 export type DeviceFrame = z.infer<typeof deviceFrameSchema>;
 export type HandoffSeedProofFrame = z.infer<typeof handoffSeedProofFrameSchema>;
+export type HandoffSeedIntentFrame = z.infer<typeof handoffSeedIntentFrameSchema>;
+export type HandoffSeedAdmissionFrame = z.infer<typeof handoffSeedAdmissionFrameSchema>;
+export type ContinuityRequestFrame = z.infer<typeof continuityRequestFrameSchema>;
+export type ContinuityResultFrame = z.infer<typeof continuityResultFrameSchema>;
 export const noCapabilities: CapabilitySet = {
   observe: false,
   history: false,

@@ -1,4 +1,6 @@
 import { BoundProfileClient } from "@transport/profile-client"
+import { BoundContinuityClient } from "@transport/continuity-client"
+import { BoundProfileRoutingClient } from "@transport/profile-routing-client"
 import {
   HttpRequestMethod,
   accountPreferencesSchema,
@@ -7,9 +9,24 @@ import {
   type ReadingPosition,
 } from "@protocol"
 import type { ApplicationOperations } from "./application-client"
+import { RelayCommandOperations } from "./relay-command-operations"
 
-export abstract class RelayOperations implements ApplicationOperations {
-  protected abstract request<T>(path: string, options?: RequestInit): Promise<T>
+export abstract class RelayOperations extends RelayCommandOperations implements ApplicationOperations {
+  protected routingAccess(deviceId: string, current: () => boolean) {
+    return new BoundProfileRoutingClient(
+      deviceId,
+      (method, path, body) => this.request(path, { method, ...(body === undefined ? {} : { body: JSON.stringify(body) }) }),
+      current,
+    )
+  }
+
+  protected continuityAccess(deviceId: string, current: () => boolean) {
+    return new BoundContinuityClient(
+      deviceId,
+      (method, path, body) => this.request(path, { method, ...(body === undefined ? {} : { body: JSON.stringify(body) }) }),
+      current,
+    )
+  }
 
   protected profileAccess(deviceId: string, current: () => boolean) {
     return new BoundProfileClient(

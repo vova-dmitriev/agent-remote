@@ -60,6 +60,8 @@ import { Fault, Limiter, hash, telegramIdentity, type Principal } from './auth/s
 import { claimHandoffCreateCommandId, claimRelayCommandId } from './continuity/command-claims.js';
 import { ContinuityService } from './continuity/service.js';
 import { ContinuityError } from './continuity/types.js';
+import { ContinuityProxy } from './continuity/proxy.js';
+import { mountContinuityRoutes } from './continuity/routes.js';
 
 export interface RelayConfig {
   databaseUrl: string;
@@ -184,6 +186,7 @@ export async function createRelay(config: RelayConfig) {
   const send = (socket: WebSocket, frame: ServerFrame) => sender.send(socket, frame);
   const sourceHistory = new SourceHistory(db, live, send);
   const profileProxy = new ProfileProxy(devices, live, send);
+  const continuityProxy = new ContinuityProxy(devices, live, send);
   const profiles = new ServerProfiles(devices, live, profileProxy, new ProfileMetadataCache(db));
 
   mountAttachmentRoutes(
@@ -245,6 +248,7 @@ export async function createRelay(config: RelayConfig) {
 
       live.delete(connection.device.id);
       profileProxy.disconnect(connection);
+      continuityProxy.disconnect(connection);
 
       fanout(connection.device.owner_id, connection.device.id, {
         type: FrameType.DeviceStatus,
@@ -636,6 +640,19 @@ export async function createRelay(config: RelayConfig) {
     });
 
   const principal = async (req: Request) => auth.authenticate(bearer(req));
+
+  mountContinuityRoutes(
+    route,
+    principal,
+    async (req) => {
+      await auth.authenticate(bearer(req));
+    },
+    devices,
+    continuity,
+    continuityProxy,
+    dispatchHandoffCreate,
+  );
+
   const preferences = new PreferenceService(db, messaging?.cache);
 
   route(HttpMethod.Get, '/preferences', async (req) => preferences.get(await principal(req)));
@@ -805,6 +822,7 @@ export async function createRelay(config: RelayConfig) {
       if (connection) {
         live.delete(id);
         profileProxy.disconnect(connection);
+        continuityProxy.disconnect(connection);
         connection.socket.close(4003, 'REVOKED');
       }
 
@@ -1108,6 +1126,7 @@ export async function createRelay(config: RelayConfig) {
 
               if (previous) {
                 profileProxy.disconnect(previous);
+                continuityProxy.disconnect(previous);
               }
 
               previous?.socket.close(4002, 'REPLACED');
@@ -1120,6 +1139,12 @@ export async function createRelay(config: RelayConfig) {
 
           if (frame.type === FrameType.ProfilesResult) {
             await profileProxy.accept(connection, frame);
+
+            return;
+          }
+
+          if (frame.type === FrameType.ContinuityResult) {
+            await continuityProxy.accept(connection, frame);
 
             return;
           }
@@ -1159,6 +1184,29 @@ export async function createRelay(config: RelayConfig) {
               ctx.owner_id,
               ctx.id,
             ]);
+
+            if (frame.type === FrameType.HandoffSeedIntent) {
+              await continuity.admitAuthenticatedSeedIntent(
+                { userId: ctx.owner_id, telegramId: '' },
+                { deviceId: ctx.id, deviceGeneration: ctx.generation },
+                frame,
+              );
+
+              if (live.get(connection.device.id) === connection) {
+                send(connection.socket, {
+                  type: FrameType.HandoffSeedAdmitted,
+                  operationId: frame.operationId,
+                  seedCommandId: frame.seedCommandId,
+                  checkpointId: frame.checkpointId,
+                  checkpointDigest: frame.checkpointDigest,
+                  targetExecutionId: frame.targetExecutionId,
+                  targetGeneration: frame.targetGeneration,
+                  selection: frame.selection,
+                });
+              }
+
+              return;
+            }
 
             if (frame.type === FrameType.HandoffSeedProof) {
               await continuity.recordAuthenticatedSeedProof(
@@ -1404,6 +1452,7 @@ export async function createRelay(config: RelayConfig) {
       closing = true;
       sourceHistory.close();
       profileProxy.close();
+      continuityProxy.close();
       clearInterval(timer);
       clearInterval(retention);
 

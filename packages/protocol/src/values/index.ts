@@ -11,4 +11,5 @@ export * from './profile-management.js';
 export * from './profile-auth-url.js';
 export * from './credential-enrollment.js';
 export * from './http.js';
-export * from './desktop-bridge.js';
+export * from './profile-routing.js';
+export * from './continuity.js';
