@@ -24,7 +24,7 @@ import { ClaudeHookEvent } from '../domain/claude.js';
 import { RuntimeEvent, ModelOrigin } from '../domain/runtime.js';
 import { boundSnapshotChanges } from '../codex/binding/file-changes.js';
 import { currentToolStep, clearCurrentStep } from './activity/current-step.js';
-import { boundSubagentSnapshots } from './activity/subagents.js';
+import { boundSubagentSnapshots, recordSubagent } from './activity/subagents.js';
 import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import { z } from 'zod';
@@ -47,6 +47,16 @@ export const hookSchema = z.object({
   tool_input: z.unknown().optional(),
 });
 export type HookEnvelope = z.infer<typeof hookSchema>;
+
+/** Hooks a subagent fires for its own work. With `agent_id` they describe that child, never the parent turn. */
+const SUBAGENT_ACTIVITY_HOOKS: readonly ClaudeHookEvent[] = [
+  ClaudeHookEvent.PreToolUse,
+  ClaudeHookEvent.PostToolUse,
+  ClaudeHookEvent.PostToolUseFailure,
+  ClaudeHookEvent.Stop,
+  ClaudeHookEvent.Notification,
+];
+
 interface Options {
   deviceId: string;
   store: LocalStore;
@@ -244,26 +254,31 @@ export class Monitor extends EventEmitter {
         (candidateValue) => candidateValue === hook.hook_event_name,
       )
     ) {
-      const agents = session.subagents ?? [];
-      const previous = agents.find((agent) => agent.id === hook.agent_id);
-
-      session.subagents = [
-        ...agents.filter((agent) => agent.id !== hook.agent_id),
-        {
-          ...previous,
-          id: hook.agent_id,
-          ...(hook.agent_type ? { name: hook.agent_type } : {}),
-          status:
-            hook.hook_event_name === ClaudeHookEvent.SubagentStart
-              ? SubagentStatus.Running
-              : SubagentStatus.Completed,
-          updatedAt: Date.now(),
-        },
-      ].slice(-50);
+      session.subagents = recordSubagent(session.subagents, {
+        id: hook.agent_id,
+        name: hook.agent_type,
+        status:
+          hook.hook_event_name === ClaudeHookEvent.SubagentStart
+            ? SubagentStatus.Running
+            : SubagentStatus.Completed,
+      });
     }
 
     this.restored.delete(session.id);
     session.lastEventAt = Date.now();
+
+    if (hook.agent_id && SUBAGENT_ACTIVITY_HOOKS.some((event) => event === hook.hook_event_name)) {
+      session.subagents = recordSubagent(session.subagents, {
+        id: hook.agent_id,
+        name: hook.agent_type,
+        ...(hook.hook_event_name === ClaudeHookEvent.PreToolUse ? { status: SubagentStatus.Running } : {}),
+      });
+
+      this.persistNative(session, hook.transcript_path);
+      this.emit(RuntimeEvent.Snapshot);
+
+      return [];
+    }
 
     const statuses: Record<string, Session['status']> = {
       [ClaudeHookEvent.UserPromptSubmit]: SessionStatus.Running,

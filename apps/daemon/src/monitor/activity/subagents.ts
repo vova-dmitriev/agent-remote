@@ -1,5 +1,26 @@
 import { SubagentStatus, type Session, type SubagentInfo } from '@protocol';
 
+const SUBAGENT_LIMIT = 50;
+
+/** Insert or refresh one child entry, keeping the newest entries within the per-session limit. */
+export function recordSubagent(
+  agents: SubagentInfo[] = [],
+  update: { id: string; name?: string | undefined; status?: SubagentInfo['status'] },
+): SubagentInfo[] {
+  const previous = agents.find((agent) => agent.id === update.id);
+
+  return [
+    ...agents.filter((agent) => agent.id !== update.id),
+    {
+      ...previous,
+      id: update.id,
+      ...(update.name ? { name: update.name } : {}),
+      status: update.status ?? previous?.status ?? SubagentStatus.Running,
+      updatedAt: Date.now(),
+    },
+  ].slice(-SUBAGENT_LIMIT);
+}
+
 /** Keep child metadata within the shared snapshot transport budget, favoring active recent work. */
 export function boundSubagentSnapshots(sessions: Session[]): Session[] {
   let remaining = 32_768;

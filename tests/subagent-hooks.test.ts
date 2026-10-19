@@ -1,4 +1,4 @@
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import { Monitor } from '../apps/daemon/src/monitor/monitor.js';
 import { LocalStore } from '../apps/daemon/src/monitor/store.js';
 import { AdapterRegistry, SourceAdapter } from '../apps/daemon/src/adapters/registry.js';
@@ -153,5 +153,52 @@ it('starts a new Claude session in the same cmux surface without the previous su
     expect(session()?.subagents ?? []).toEqual([]);
   } finally {
     close();
+  }
+});
+
+it('attributes a subagent tool hook to the subagent and leaves the parent untouched', () => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  const { monitor, session, close } = harness();
+
+  try {
+    vi.setSystemTime(1_000);
+    monitor.ingestHook({ hook_event_name: 'SessionStart', session_id: 'parent' }, 'native');
+    monitor.ingestHook({ hook_event_name: 'UserPromptSubmit', session_id: 'parent' }, 'native');
+
+    monitor.ingestHook(
+      { hook_event_name: 'SubagentStart', session_id: 'parent', agent_id: 'child', agent_type: 'reviewer' },
+      'native',
+    );
+
+    monitor.ingestHook({ hook_event_name: 'Stop', session_id: 'parent' }, 'native');
+    const parent = session()!;
+
+    expect(parent.status).toBe('idle');
+    vi.setSystemTime(2_000);
+
+    for (const hook_event_name of ['PreToolUse', 'PostToolUse']) {
+      const events = monitor.ingestHook(
+        {
+          hook_event_name,
+          session_id: 'parent',
+          agent_id: 'child',
+          agent_type: 'reviewer',
+          tool_name: 'Bash',
+          tool_use_id: 'synthetic-tool',
+        },
+        'native',
+      );
+
+      expect(events.map((event) => event.type)).not.toContain('tool');
+      expect(session()?.status).toBe('idle');
+      expect(session()?.currentActivity).toEqual(parent.currentActivity);
+
+      expect(session()?.subagents).toEqual([
+        expect.objectContaining({ id: 'child', name: 'reviewer', status: 'running', updatedAt: 2_000 }),
+      ]);
+    }
+  } finally {
+    close();
+    vi.useRealTimers();
   }
 });
