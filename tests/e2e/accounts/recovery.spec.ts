@@ -7,6 +7,7 @@ import { PROFILE_MANAGE_IDS } from '../../../apps/mini-app/src/pages/accounts/co
 import { PROFILE_ENROLL_IDS } from '../../../apps/mini-app/src/pages/accounts/config/enrollment/test-ids.js';
 import { PROFILE_CARD_IDS } from '../../../apps/mini-app/src/pages/accounts/config/profile/test-ids.js';
 import { ProfileRequestKind } from '@protocol';
+import { openAccounts } from '../support/settings-menu.js';
 
 for (const kind of [ProfileRequestKind.Mutate, ProfileRequestKind.CompleteEnrollment]) {
   test(`recovers ${kind} after losing a committed response and reloading without repeating the write`, async ({ page }) => {
@@ -15,7 +16,7 @@ for (const kind of [ProfileRequestKind.Mutate, ProfileRequestKind.CompleteEnroll
     try {
       await identity(page, '801', 'en');
       await page.goto('/');
-      await page.getByTestId(ACCOUNTS_PAGE_IDS.open).click();
+      await openAccounts(page);
       await page.getByTestId(ACCOUNTS_PAGE_IDS.add).click();
       let lost = false;
 
@@ -42,7 +43,7 @@ for (const kind of [ProfileRequestKind.Mutate, ProfileRequestKind.CompleteEnroll
       await expect(page.getByTestId(ACCOUNTS_PAGE_IDS.recover)).toBeVisible();
       await expect(page.getByTestId(PROFILE_CARD_IDS.root)).toHaveCount(1);
       await page.reload();
-      await page.getByTestId(ACCOUNTS_PAGE_IDS.open).click();
+      await openAccounts(page);
       await page.getByTestId(ACCOUNTS_PAGE_IDS.add).click();
       await expect(page.getByTestId(PROFILE_MANAGE_IDS.submit)).toBeDisabled();
       await page.getByTestId(ACCOUNTS_PAGE_IDS.recover).click();

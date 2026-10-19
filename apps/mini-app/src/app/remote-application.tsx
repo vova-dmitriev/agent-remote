@@ -26,19 +26,14 @@ export function RemoteApplication() {
         connection={state.connection}
         result={model.result}
         onHome={back}
+        onAccounts={model.devices.length && state.connection !== ConnectionStatus.Expired ? view.openAccounts : undefined}
         onLogout={() => {
           view.closeAccounts()
           void model.logout()
         }}
       >
         <CommandNotice error={model.error} busy={commands.busy} retry={() => void commands.retry()} />
-        <ApplicationContent
-          model={model}
-          accounts={view.accounts}
-          back={back}
-          openAccounts={view.openAccounts}
-          closeAccounts={view.closeAccounts}
-        />
+        <ApplicationContent model={model} accounts={view.accounts} back={back} closeAccounts={view.closeAccounts} />
       </ApplicationShell>
     </AttachmentProvider>
   )

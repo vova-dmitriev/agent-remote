@@ -5,7 +5,7 @@ import { SessionPage } from "@/pages/session"
 import { HomeView } from "@/app/home-view"
 import type { ApplicationContentProps } from "./application-content.types"
 
-export function ApplicationContent({ model, accounts, back, openAccounts, closeAccounts }: ApplicationContentProps) {
+export function ApplicationContent({ model, accounts, back, closeAccounts }: ApplicationContentProps) {
   const { state, selected, selection, commands } = model
 
   if (state.connection === ConnectionStatus.Expired) return <SignInPage />
@@ -17,7 +17,7 @@ export function ApplicationContent({ model, accounts, back, openAccounts, closeA
         onBack={closeAccounts}
       />
     )
-  if (!selected) return <HomeView model={model} openAccounts={openAccounts} />
+  if (!selected) return <HomeView model={model} />
 
   return (
     <SessionPage

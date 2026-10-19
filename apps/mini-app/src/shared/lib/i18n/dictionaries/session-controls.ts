@@ -1,4 +1,14 @@
+/** App navigation: header settings menu. */
+const navigationEN = {
+  settings: "Settings",
+} as const
+
+const navigationRU = {
+  settings: "Настройки",
+} as const
+
 export const sessionControlsEN = {
+  ...navigationEN,
   editQueuedPrompt: "Edit",
   sendQueuedNow: "Send now",
   queuedPromptEditor: "Edit queued message",
@@ -58,6 +68,7 @@ export const sessionControlsEN = {
 }
 
 export const sessionControlsRU = {
+  ...navigationRU,
   editQueuedPrompt: "Изменить",
   sendQueuedNow: "Отправить сейчас",
   queuedPromptEditor: "Изменить сообщение в очереди",

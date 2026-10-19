@@ -4,6 +4,5 @@ export interface ApplicationContentProps {
   model: ReturnType<typeof useApplication>
   accounts: boolean
   back: () => void
-  openAccounts: () => void
   closeAccounts: () => void
 }

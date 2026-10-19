@@ -6,6 +6,8 @@ export interface ApplicationShellProps {
   result: string
   onHome: () => void
   onLogout: () => void
+  /** Opens Accounts & keys from the settings menu; the menu is hidden while no device can host accounts. */
+  onAccounts?: (() => void) | undefined
   children: ReactNode
   compact?: boolean
 }

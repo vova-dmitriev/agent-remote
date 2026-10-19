@@ -5,6 +5,7 @@ import { ACCOUNTS_PAGE_IDS } from '../../apps/mini-app/src/pages/accounts/config
 import { PROFILE_MANAGE_IDS } from '../../apps/mini-app/src/pages/accounts/config/management/test-ids.js';
 import { PROFILE_ENROLL_IDS } from '../../apps/mini-app/src/pages/accounts/config/enrollment/test-ids.js';
 import { PROFILE_CARD_IDS } from '../../apps/mini-app/src/pages/accounts/config/profile/test-ids.js';
+import { openAccounts } from '../e2e/support/settings-menu.js';
 
 interface BrowserStorageScope {
   chrome: { storage: { local: { get(keys: null): Promise<Record<string, unknown>> } } };
@@ -15,7 +16,7 @@ test('encrypts and enrolls a profile through built MV3 UI and the real native br
 }) => {
   const page = await extension.open();
 
-  await page.getByTestId(ACCOUNTS_PAGE_IDS.open).click();
+  await openAccounts(page);
   await page.getByTestId(ACCOUNTS_PAGE_IDS.add).click();
   await page.getByTestId(PROFILE_MANAGE_IDS.label).fill('Synthetic extension API');
   await page.getByTestId(PROFILE_MANAGE_IDS.authMode).selectOption(ProfileAuthMode.ApiKey);

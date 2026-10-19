@@ -8,6 +8,7 @@ import { PROFILE_ENROLL_IDS } from '../../../apps/mini-app/src/pages/accounts/co
 import { PROFILE_CARD_IDS } from '../../../apps/mini-app/src/pages/accounts/config/profile/test-ids.js';
 import { SHELL_IDS } from '../../../apps/mini-app/src/widgets/application-shell/config/test-ids.js';
 import { SIGN_IN_IDS } from '../../../apps/mini-app/src/pages/sign-in/config/test-ids.js';
+import { openAccounts } from '../support/settings-menu.js';
 
 test('refuses an untrusted Mac fingerprint before any key reaches native enrollment', async ({ page }) => {
   const companion = await profileCompanion();
@@ -15,7 +16,7 @@ test('refuses an untrusted Mac fingerprint before any key reaches native enrollm
   try {
     await identity(page, '801', 'en');
     await page.goto('/');
-    await page.getByTestId(ACCOUNTS_PAGE_IDS.open).click();
+    await openAccounts(page);
     await page.getByTestId(ACCOUNTS_PAGE_IDS.add).click();
     await page.getByTestId(PROFILE_MANAGE_IDS.label).fill('Synthetic untrusted recipient');
     await page.getByTestId(PROFILE_MANAGE_IDS.authMode).selectOption('api_key');
@@ -42,7 +43,7 @@ test('logout cancels the in-flight Mac operation before verified credentials can
   try {
     await identity(page, '801', 'en');
     await page.goto('/');
-    await page.getByTestId(ACCOUNTS_PAGE_IDS.open).click();
+    await openAccounts(page);
     await page.getByTestId(ACCOUNTS_PAGE_IDS.add).click();
     await page.getByTestId(PROFILE_MANAGE_IDS.label).fill('Synthetic cancelled enrollment');
     await page.getByTestId(PROFILE_MANAGE_IDS.authMode).selectOption('api_key');

@@ -17,6 +17,8 @@ export interface ChoiceDropdownProps<Value extends string> {
   onChange: (value: Value) => void
   ids: { root: string; trigger: string; panel: string }
   compactIcon?: boolean
+  /** Hides the chevron on phones, where the header has no room to spare. */
+  compactChevron?: boolean
   className?: string
   labelClassName?: string
 }
