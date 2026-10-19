@@ -44,6 +44,7 @@ export class DesktopApplicationClient implements ApplicationClient {
   private operations: DesktopOperations
   private stopped = false
   private selectedDevice: string | null = null
+  private boundDevice: string | null = null
   private selectedSession: string | null = null
   private selection = 0
   private unsubscribe: (() => void) | null = null
@@ -82,6 +83,8 @@ export class DesktopApplicationClient implements ApplicationClient {
   private receive(frame: ServerFrame): void {
     if (this.stopped) return
 
+    if (frame.type === FrameType.Snapshot) this.boundDevice = frame.deviceId
+
     if (frame.type === FrameType.CommandResult) {
       frame = { ...frame, result: this.commands.observe(parseCommandResult(frame.result)) }
     }
@@ -95,19 +98,22 @@ export class DesktopApplicationClient implements ApplicationClient {
   }
 
   profiles(deviceId: string) {
+    // The companion serves exactly one device, announced by its snapshot; foreign ids never reach it.
+    const current = () => !this.stopped && this.boundDevice === deviceId
+
     return new BoundProfileClient(
       deviceId,
       async (request) => {
         const selection = this.selection
         const response = await this.connection.request({ operation: LocalOperation.Profiles, request })
 
-        if (this.stopped || selection !== this.selection) {
+        if (!current() || selection !== this.selection) {
           throw new Error(ErrorCode.STALE_EPOCH)
         }
 
         return response
       },
-      () => !this.stopped,
+      current,
     )
   }
 

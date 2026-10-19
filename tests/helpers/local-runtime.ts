@@ -9,12 +9,13 @@ import { LocalStore } from '../../apps/daemon/src/monitor/store.js';
 import { LocalDatabase } from '../../apps/daemon/src/local/state/database.js';
 import { LocalGrants } from '../../apps/daemon/src/local/grants/service.js';
 import { LocalController } from '../../apps/daemon/src/local/controller/controller.js';
+import type { LocalControllerOptions } from '../../apps/daemon/src/local/controller/types.js';
 import { LocalMediaRepository } from '../../apps/daemon/src/local/media/repository.js';
 import { LocalDocuments } from '../../apps/daemon/src/local/state/documents.js';
 
 export const localTestOrigin = 'chrome-extension://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/';
 
-export function localFixture(directory?: string) {
+export function localFixture(directory?: string, profiles?: LocalControllerOptions['profiles']) {
   const store = new LocalStore(':memory:', 'device-local');
   const database = new LocalDatabase(':memory:');
   const permissions = new PermissionBroker();
@@ -86,6 +87,7 @@ export function localFixture(directory?: string) {
 
   const controller = new LocalController({
     ...(media ? { media } : {}),
+    ...(profiles ? { profiles } : {}),
     ownerId: 'owner-local',
     deviceId: 'device-local',
     monitor,

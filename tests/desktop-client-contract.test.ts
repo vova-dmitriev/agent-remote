@@ -8,8 +8,10 @@ import {
   type DesktopBridgeRequest,
   type DesktopBridgeResult,
   DesktopBridgeVersion,
+  DeviceStatus,
   FrameType,
   LocalOperation,
+  ProfileAction,
   ProfileRequestKind,
   AgentProvider,
   ProfileAuthMode,
@@ -117,18 +119,17 @@ describe('desktop bridge contract', () => {
       finish = resolve;
     });
 
-    const connection = {
-      request: vi.fn((action: { operation: string }) =>
-        action.operation === LocalOperation.Profiles ? delayed : Promise.resolve(null),
-      ),
-      close: vi.fn(),
-    };
+    const connection = fakeConnection((action) =>
+      action.operation === LocalOperation.Profiles ? delayed : Promise.resolve(null),
+    );
 
     const client = new DesktopApplicationClient(connection as never, {
       onConnection: () => {},
       onFrame: () => {},
     });
 
+    await client.start();
+    connection.emit(snapshotFrame('device-a'));
     client.selectTarget('device-a', null);
     const profiles = client.profiles!('device-a');
     const pending = profiles.request({ kind: ProfileRequestKind.List });
@@ -182,15 +183,15 @@ describe('desktop bridge contract', () => {
       },
     };
 
-    const connection = {
-      request: vi.fn(async (): Promise<unknown> => list),
-      close: vi.fn(),
-    };
+    const connection = fakeConnection(async (): Promise<unknown> => list);
 
     const client = new DesktopApplicationClient(connection as never, {
       onConnection: () => {},
       onFrame: () => {},
     });
+
+    await client.start();
+    connection.emit(snapshotFrame('device-a'));
 
     await expect(
       client.profiles!('device-a').request({ kind: ProfileRequestKind.List }),
@@ -208,6 +209,58 @@ describe('desktop bridge contract', () => {
       }),
     ).rejects.toThrow(ErrorCode.ACCESS_DENIED);
 
+    client.close();
+  });
+
+  it('rejects profile mutations for a foreign device before any request is sent', async () => {
+    const connection = fakeConnection(async (): Promise<unknown> => null);
+
+    const client = new DesktopApplicationClient(connection as never, {
+      onConnection: () => {},
+      onFrame: () => {},
+    });
+
+    await client.start();
+    connection.emit(snapshotFrame('device-a'));
+
+    await expect(
+      client.profiles!('other-device').request({
+        kind: ProfileRequestKind.Mutate,
+        mutation: {
+          action: ProfileAction.Remove,
+          operationId: '33333333-3333-4333-8333-333333333333',
+          profileId: '11111111-1111-4111-8111-111111111111',
+          expectedVersion: 1,
+        },
+      }),
+    ).rejects.toThrow(ErrorCode.STALE_EPOCH);
+
+    await expect(client.profiles!('other-device').request({ kind: ProfileRequestKind.List })).rejects.toThrow(
+      ErrorCode.STALE_EPOCH,
+    );
+
+    expect(
+      connection.request.mock.calls.some(([action]) => action.operation === LocalOperation.Profiles),
+    ).toBe(false);
+
+    client.close();
+  });
+
+  it('rejects profile requests before the companion snapshot binds a device', async () => {
+    const connection = fakeConnection(async (): Promise<unknown> => null);
+
+    const client = new DesktopApplicationClient(connection as never, {
+      onConnection: () => {},
+      onFrame: () => {},
+    });
+
+    await client.start();
+
+    await expect(client.profiles!('device-a').request({ kind: ProfileRequestKind.List })).rejects.toThrow(
+      ErrorCode.STALE_EPOCH,
+    );
+
+    expect(connection.request).not.toHaveBeenCalled();
     client.close();
   });
 
@@ -237,6 +290,117 @@ describe('desktop bridge contract', () => {
     await connection.start();
 
     expect(listener).toHaveBeenCalledTimes(1);
+    await connection.close();
+  });
+
+  it('keeps lease-2 initial snapshot when an older open settles later', async () => {
+    const first = createLease('00000000-0000-4000-8000-000000000002', 1);
+    const second = createLease('00000000-0000-4000-8000-000000000003', 2);
+    const opens: Array<() => void> = [];
+    let call = 0;
+    let push!: (event: unknown) => void;
+
+    const connection = new DesktopBridgeConnection({
+      open: () => {
+        const lease = call++ === 0 ? first : second;
+
+        return new Promise((resolve) => {
+          opens.push(() => resolve({ leaseId: lease.leaseId, epoch: lease.epoch }));
+        });
+      },
+      request: async () => {
+        throw new Error(ErrorCode.REQUEST_FAILED);
+      },
+      subscribe: (callback) => {
+        push = callback as (event: unknown) => void;
+
+        return () => {};
+      },
+      close: async () => {},
+    });
+
+    const listener = vi.fn();
+
+    connection.subscribe(listener);
+    const starting = connection.start();
+
+    await vi.waitFor(() => expect(opens).toHaveLength(1));
+    const reconnecting = connection.reconnect();
+
+    await vi.waitFor(() => expect(opens).toHaveLength(2));
+    push(frame(second.leaseId, 2));
+    opens[0]!();
+    await starting;
+    opens[1]!();
+    await reconnecting;
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener.mock.calls[0]![0]).toMatchObject({ leaseId: second.leaseId });
+    await connection.close();
+  });
+
+  it('leaves no buffered events after a rejected open', async () => {
+    const lease = createLease('00000000-0000-4000-8000-000000000002', 1);
+    let attempt = 0;
+    let push!: (event: unknown) => void;
+
+    const connection = new DesktopBridgeConnection({
+      open: async () => {
+        if (attempt++ === 0) {
+          push(frame(lease.leaseId, 1));
+
+          throw new Error(ErrorCode.REQUEST_FAILED);
+        }
+
+        return { leaseId: lease.leaseId, epoch: lease.epoch };
+      },
+      request: async () => {
+        throw new Error(ErrorCode.REQUEST_FAILED);
+      },
+      subscribe: (callback) => {
+        push = callback as (event: unknown) => void;
+
+        return () => {};
+      },
+      close: async () => {},
+    });
+
+    const listener = vi.fn();
+
+    connection.subscribe(listener);
+    await expect(connection.start()).rejects.toThrow(ErrorCode.REQUEST_FAILED);
+    await connection.start();
+    expect(listener).not.toHaveBeenCalled();
+    await connection.close();
+  });
+
+  it('keeps order of several buffered events from the same lease', async () => {
+    const lease = createLease('00000000-0000-4000-8000-000000000002', 1);
+    let push!: (event: unknown) => void;
+
+    const connection = new DesktopBridgeConnection({
+      open: async () => {
+        push({ ...frame(lease.leaseId, 1), sequence: 1 });
+        push({ ...frame(lease.leaseId, 1), sequence: 2 });
+
+        return { leaseId: lease.leaseId, epoch: lease.epoch };
+      },
+      request: async () => {
+        throw new Error(ErrorCode.REQUEST_FAILED);
+      },
+      subscribe: (callback) => {
+        push = callback as (event: unknown) => void;
+
+        return () => {};
+      },
+      close: async () => {},
+    });
+
+    const sequences: number[] = [];
+
+    connection.subscribe((event) => sequences.push(event.sequence));
+    await connection.start();
+    expect(sequences).toEqual([1, 2]);
     await connection.close();
   });
 
@@ -393,4 +557,35 @@ function frame(leaseId: string, epoch: number) {
     sequence: 1,
     frame: { type: FrameType.Error, code: 'SYNTHETIC' },
   });
+}
+
+function fakeConnection(handler: (action: { operation: string }) => Promise<unknown>) {
+  let listener: ((event: { frame: unknown }) => void) | undefined;
+
+  return {
+    request: vi.fn(handler),
+    close: vi.fn(),
+    start: vi.fn(async () => {}),
+    subscribe: vi.fn((callback: (event: { frame: unknown }) => void) => {
+      listener = callback;
+
+      return () => {};
+    }),
+    emit: (serverFrame: unknown) => listener?.({ frame: serverFrame }),
+  };
+}
+
+function snapshotFrame(deviceId: string) {
+  return {
+    type: FrameType.Snapshot,
+    deviceId,
+    snapshot: {
+      sessions: [],
+      deviceStatus: DeviceStatus.Online,
+      cursor: { streamId: 'stream', seq: 1 },
+      permissions: [],
+      terminal: null,
+    },
+    connectors: [],
+  };
 }

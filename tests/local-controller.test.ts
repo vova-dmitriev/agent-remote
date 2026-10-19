@@ -1,10 +1,11 @@
-import { afterEach, expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
+import { ErrorCode, LocalOperation, ProfileRequestKind } from '@protocol';
 import { localFixture } from './helpers/local-runtime.js';
 
 const fixtures: ReturnType<typeof localFixture>[] = [];
 
-const setup = () => {
-  const fixture = localFixture();
+const setup = (profiles?: Parameters<typeof localFixture>[1]) => {
+  const fixture = localFixture(undefined, profiles);
 
   fixtures.push(fixture);
 
@@ -133,4 +134,23 @@ it('tracks only active granted viewers for local question ownership', async () =
   f.grants.revoke(f.principal.clientId);
   expect(f.controller.hasViewers()).toBe(false);
   revoked();
+});
+
+it('rejects a Profiles request scoped to another device with ACCESS_DENIED', async () => {
+  const request = vi.fn();
+
+  const f = setup({
+    scope: { ownerId: 'owner-local', deviceId: 'other-device' },
+    request,
+    close: async () => {},
+  } as never);
+
+  await expect(
+    f.controller.execute(f.principal, {
+      operation: LocalOperation.Profiles,
+      request: { kind: ProfileRequestKind.List },
+    }),
+  ).rejects.toThrow(ErrorCode.ACCESS_DENIED);
+
+  expect(request).not.toHaveBeenCalled();
 });

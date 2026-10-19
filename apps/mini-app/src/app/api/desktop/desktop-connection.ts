@@ -95,21 +95,24 @@ export class DesktopBridgeConnection {
 
   private open = async (): Promise<void> => {
     const generation = this.generation
+    const buffer: DesktopBridgeEvent[] = []
 
     this.opening = true
-    this.early = []
+    this.early = buffer
 
     let lease: ReturnType<typeof desktopBridgeLeaseSchema.parse>
 
     try {
       lease = desktopBridgeLeaseSchema.parse(await this.bridge.open())
+    } catch (error) {
+      if (this.early === buffer) this.early = []
+
+      throw error
     } finally {
-      this.opening = false
+      if (this.early === buffer) this.opening = false
     }
 
-    const early = this.early
-
-    this.early = []
+    if (this.early === buffer) this.early = []
 
     if (generation !== this.generation) {
       await this.bridge.close(lease.leaseId, lease.epoch)
@@ -119,7 +122,7 @@ export class DesktopBridgeConnection {
 
     this.lease = lease
 
-    for (const event of early) this.receive(event)
+    for (const event of buffer) this.receive(event)
   }
 
   private receive = (raw: DesktopBridgeEvent): void => {
