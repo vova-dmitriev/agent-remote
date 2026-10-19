@@ -7,6 +7,7 @@ import {
   type HistoryMessage,
   type HistoryRead,
 } from '@protocol';
+import type { NativeMedia } from '../../attachments/types.js';
 
 import {
   TRANSCRIPT_PAGE_MESSAGES,
@@ -36,10 +37,7 @@ interface Options {
   /** Tool calls and results become history items (subagent transcripts). */
   includeTools?: boolean;
   open?: TranscriptOpenOptions;
-  transform?: (
-    message: HistoryMessage,
-    media: import('../../attachments/types.js').NativeMedia[],
-  ) => Promise<HistoryMessage>;
+  transform?: (message: HistoryMessage, media: NativeMedia[]) => Promise<HistoryMessage>;
 }
 export class TranscriptPages {
   private positions = new Map<string, number>();

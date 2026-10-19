@@ -1,0 +1,20 @@
+[
+  {
+    "ruleId": "rules_lgpl_javascript_ssrf_rule-node-ssrf",
+    "path": "apps/daemon/src/cli/pairing/connect.ts",
+    "fingerprint": "e6c8ce22eea6788b",
+    "reason": "Relay origin is checked by validateRelayUrl before any request; the daemon only calls its own configured relay."
+  },
+  {
+    "ruleId": "rules_lgpl_javascript_ssrf_rule-node-ssrf",
+    "path": "apps/mini-app/src/shared/api/request-error.ts",
+    "fingerprint": "8d5f671da54f3ac3",
+    "reason": "Browser fetch to the app API origin from build configuration; no server-side network position to abuse."
+  },
+  {
+    "ruleId": "rules_lgpl_javascript_ssrf_rule-node-ssrf",
+    "path": "scripts/smoke-image.ts",
+    "fingerprint": "da9fecb8b7f344df",
+    "reason": "Developer smoke script requesting a loopback container port it started itself."
+  }
+]

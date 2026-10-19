@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { exportSnapshot, git } from './snapshot.mjs';
 import { isPrivatePath, ScanMode } from './policy.mjs';
+import { runSemgrep } from './semgrep.mjs';
 
 const mode = process.argv[2] ?? ScanMode.Worktree;
 const root = git(['rev-parse', '--show-toplevel'], process.cwd()).toString().trim();
@@ -91,6 +92,10 @@ function check() {
   }
 
   process.stdout.write(`Security: ${mode} scan passed.\n`);
+
+  if (mode !== ScanMode.History) {
+    runSemgrep(root, mode, temporary);
+  }
 }
 
 try {
