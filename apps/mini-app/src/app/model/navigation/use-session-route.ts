@@ -79,5 +79,7 @@ export function useSessionRoute({ enabled, selectedId, sessions, ready, open, cl
     applied.current = next
     if (known) window.history.pushState(null, "", url)
     else window.history.replaceState(null, "", url)
-  }, [enabled, hash, selectedId, sessions])
+    // `ready` is a dependency: when the connection comes online after the snapshot, the first effect marks the
+    // current hash applied in that commit and this one must run in it too, or the initial `#/` is never written.
+  }, [enabled, ready, hash, selectedId, sessions])
 }
