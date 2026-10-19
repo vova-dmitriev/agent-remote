@@ -31,6 +31,17 @@ export class ContinuityRepository extends ConversationRepository {
   command(tx: PoolClient, ownerId: string, deviceId: string, commandId: string) {
     return this.handoffs.command(tx, ownerId, deviceId, commandId);
   }
+  insertSeedCommand(
+    tx: PoolClient,
+    ownerId: string,
+    commandId: string,
+    deviceId: string,
+    sessionId: string,
+    fingerprint: string,
+    now: number,
+  ) {
+    return this.handoffs.insertSeedCommand(tx, ownerId, commandId, deviceId, sessionId, fingerprint, now);
+  }
   seedClaim(tx: PoolClient, ownerId: string, deviceId: string, operationId: string, commandId: string) {
     return this.seedProofs.claimBelongsToOperation(tx, ownerId, deviceId, operationId, commandId);
   }

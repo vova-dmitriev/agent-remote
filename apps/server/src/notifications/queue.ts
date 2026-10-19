@@ -9,7 +9,7 @@ import {
 import { Queue, Worker, DelayedError } from 'bullmq';
 import { type Redis } from 'ioredis';
 import { z } from 'zod';
-import { type Database } from '../db/database.js';
+import { type NotificationRepository } from './repositories/notifications.js';
 import { redisClient } from '../infrastructure/redis.js';
 
 const payload = z.strictObject({ outboxId: z.string().min(1).max(128) });
@@ -51,26 +51,19 @@ export class NotificationQueue {
 
     await this.queue.add('notify', data, { jobId: outboxId });
   }
-  async reconcile(db: Database) {
+  async reconcile(outbox: NotificationRepository) {
     if (this.client.status !== RedisConnectionStatus.Ready) {
       return;
     }
 
-    const rows = (
-      await db.pool.query<{ id: string }>(
-        'SELECT o.id FROM notification_outbox o JOIN users u ON u.id=o.owner_id WHERE o.sent=false AND o.next_attempt_at<=$1 AND u.private_chat_id IS NOT NULL AND u.notifications_enabled=true ORDER BY o.created_at LIMIT 100',
-        [Date.now()],
-      )
-    ).rows;
-
-    for (const row of rows) {
-      const existing = await this.queue.getJob(row.id);
+    for (const id of await outbox.due(Date.now())) {
+      const existing = await this.queue.getJob(id);
       const state = existing ? await existing.getState() : undefined;
 
       if (existing && (state === NotificationJobState.Failed || state === NotificationJobState.Completed)) {
         await existing.retry(state);
       } else {
-        await this.enqueue(row.id);
+        await this.enqueue(id);
       }
     }
   }

@@ -3,6 +3,7 @@ import { Redis } from 'ioredis';
 import { randomUUID } from 'node:crypto';
 import { RedisCache } from '../apps/server/src/infrastructure/redis.js';
 import { PreferenceService } from '../apps/server/src/preferences/service.js';
+import { PreferenceRepository } from '../apps/server/src/preferences/repository.js';
 import { databaseFixture } from './helpers/database.js';
 
 it('serves preferences from Redis, isolates owners, and invalidates stale in-flight fills after changes', async () => {
@@ -48,7 +49,7 @@ it('serves preferences from Redis, isolates owners, and invalidates stale in-fli
     const cache = new DelayedCache(client, 'preferences-' + randomUUID());
 
     expect(typeof RedisCache.prototype.rememberMutable).toBe('function');
-    const service = new PreferenceService(fixture.db, cache);
+    const service = new PreferenceService(new PreferenceRepository(fixture.db), cache);
 
     const a = { userId: 'a', telegramId: '8801' },
       b = { userId: 'b', telegramId: '8802' };

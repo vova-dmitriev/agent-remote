@@ -1,13 +1,14 @@
 import { expect, it } from 'vitest';
 import { attachmentRelayFixture } from './helpers/attachment-relay.js';
 import { BrowserSessions } from '../apps/server/src/auth/sessions/browser-sessions.js';
+import { BrowserSessionRepository } from '../apps/server/src/auth/sessions/repository.js';
 import { initData } from './helpers/telegram.js';
 
 it('renews access using a server-side browser session and revokes all its access tokens on logout', async () => {
   const f = await attachmentRelayFixture();
 
   try {
-    const browser = new BrowserSessions(f.database.db);
+    const browser = new BrowserSessions(new BrowserSessionRepository(f.database.db));
     const session = await browser.create(f.token);
     const refreshed = await browser.refresh(session.secret);
 
@@ -77,7 +78,7 @@ it('logout with an expired access token still revokes the owned browser cookie',
   const f = await attachmentRelayFixture();
 
   try {
-    const browser = new BrowserSessions(f.database.db),
+    const browser = new BrowserSessions(new BrowserSessionRepository(f.database.db)),
       session = await browser.create(f.token);
 
     await f.database.db.pool.query('UPDATE auth_sessions SET expires_at=0');

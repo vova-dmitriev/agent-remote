@@ -2,10 +2,10 @@ import { Inject, Injectable, type CanActivate, type ExecutionContext } from '@ne
 import { ErrorCode } from '@protocol';
 import type { Request } from 'express';
 import { AuthService } from '../../auth/auth-service.js';
-import { Database } from '../../db/database.js';
 import { DeviceService } from '../../devices/service.js';
 import { bearer } from '../../http/auth/bearer.js';
 import { Fault } from '../../http/errors/fault.js';
+import { AttachmentRepository } from '../repositories/attachments.js';
 import type { AttachmentContext } from '../service.js';
 
 /** The owner's routes and the paired device's routes for one session's attachments. */
@@ -30,7 +30,7 @@ export class AttachmentAccess {
   private readonly scopes = new WeakMap<Request, AttachmentScope>();
 
   constructor(
-    @Inject(Database) private readonly db: Database,
+    @Inject(AttachmentRepository) private readonly attachments: AttachmentRepository,
     @Inject(AuthService) private readonly auth: AuthService,
     @Inject(DeviceService) private readonly devices: DeviceService,
   ) {}
@@ -56,19 +56,14 @@ export class AttachmentAccess {
 
     const principal = await this.auth.authenticate(bearer(req));
 
-    const row = (
-      await this.db.pool.query<{ device_id: string }>(
-        'SELECT s.device_id FROM sessions s JOIN devices d ON d.id=s.device_id AND d.owner_id=s.owner_id WHERE s.owner_id=$1 AND s.id=$2 AND d.revoked_at IS NULL',
-        [principal.userId, sessionId],
-      )
-    ).rows[0];
+    const deviceId = await this.attachments.sessionDevice(principal.userId, sessionId);
 
-    if (!row) {
+    if (!deviceId) {
       throw new Fault(ErrorCode.NOT_FOUND);
     }
 
     this.scopes.set(req, {
-      context: { ownerId: principal.userId, deviceId: row.device_id, sessionId },
+      context: { ownerId: principal.userId, deviceId, sessionId },
       deviceMode,
     });
   }

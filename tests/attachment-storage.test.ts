@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { databaseFixture } from './helpers/database.js';
+import { AttachmentRepository } from '../apps/server/src/attachments/repositories/attachments.js';
 import { AttachmentService } from '../apps/server/src/attachments/service.js';
 import { sessionSchema } from '@protocol';
 
@@ -57,7 +58,7 @@ beforeAll(async () => {
     JSON.stringify(session),
   ]);
 
-  service = new AttachmentService(fixture.db);
+  service = new AttachmentService(new AttachmentRepository(fixture.db));
 });
 
 afterAll(async () => fixture?.close());

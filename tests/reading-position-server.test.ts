@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { Redis } from 'ioredis';
 import { RedisCache } from '../apps/server/src/infrastructure/redis.js';
 import { ReadingPositionService } from '../apps/server/src/reading-position/service.js';
+import { ReadingPositionRepository } from '../apps/server/src/reading-position/repository.js';
 import { attachmentRelayFixture } from './helpers/attachment-relay.js';
 
 it('persists a bounded reading anchor and ignores delayed writes from an older visit', async () => {
@@ -172,7 +173,7 @@ it('fences stale Redis fills, checks revocation before cache hits, and falls bac
     await client.connect();
 
     const service = new ReadingPositionService(
-      f.database.db,
+      new ReadingPositionRepository(f.database.db),
       new DelayedCache(client, 'reading-test-' + randomUUID()),
     );
 
@@ -219,7 +220,12 @@ it('fences stale Redis fills, checks revocation before cache hits, and falls bac
     client.disconnect();
     expect(await service.get(f.principal, f.session.id)).toEqual({ position });
 
-    expect(await new ReadingPositionService(f.database.db).get(f.principal, f.session.id)).toEqual({
+    expect(
+      await new ReadingPositionService(new ReadingPositionRepository(f.database.db)).get(
+        f.principal,
+        f.session.id,
+      ),
+    ).toEqual({
       position,
     });
   } finally {

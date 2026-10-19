@@ -4,9 +4,9 @@ import type { ExpressAdapter } from '@nestjs/platform-express';
 import { AuthModule } from '../auth/auth.module.js';
 import { CommandsModule } from '../commands/commands.module.js';
 import { ContinuityProxy } from '../continuity/proxy.js';
-import { Database } from '../db/database.js';
 import { DevicesModule } from '../devices/devices.module.js';
 import { DeviceService } from '../devices/service.js';
+import { HistoryRepository } from '../history/repository.js';
 import { SourceHistory } from '../history/source.js';
 import { ProfileProxy } from '../profiles/transport/proxy.js';
 import { AppSocket } from './app-socket.js';
@@ -25,8 +25,9 @@ import { RelayHub } from './relay-hub.js';
     RelayHub,
     {
       provide: SourceHistory,
-      inject: [Database, RelayHub],
-      useFactory: (db: Database, hub: RelayHub) => new SourceHistory(db, hub.live, hub.send),
+      inject: [HistoryRepository, RelayHub],
+      useFactory: (history: HistoryRepository, hub: RelayHub) =>
+        new SourceHistory(history, hub.live, hub.send),
     },
     {
       provide: ProfileProxy,

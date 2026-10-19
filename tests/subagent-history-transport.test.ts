@@ -22,6 +22,7 @@ import {
 } from '@protocol';
 import { databaseFixture } from './helpers/database.js';
 import { SourceHistory } from '../apps/server/src/history/source.js';
+import { HistoryRepository } from '../apps/server/src/history/repository.js';
 import type { Principal } from '../apps/server/src/auth/security.js';
 import { localHistory } from '../apps/daemon/src/local/controller/history.js';
 import type { LocalControllerOptions } from '../apps/daemon/src/local/controller/types.js';
@@ -187,7 +188,7 @@ describe('relay subagent history', () => {
     });
 
     const source = new SourceHistory(
-      fixture.db,
+      new HistoryRepository(fixture.db),
       new Map(live ? [['device', connection]] : []),
       (_socket, frame) => {
         sent.push(frame);

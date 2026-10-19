@@ -1,9 +1,10 @@
 import { Inject, Injectable, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
-import { CommandStatus, ErrorCode, SocketCloseCode, SocketCloseReason } from '@protocol';
+import { SocketCloseCode, SocketCloseReason } from '@protocol';
 import { AttachmentService } from '../attachments/service.js';
 import { AuthService } from '../auth/auth-service.js';
-import { Database } from '../db/database.js';
+import { CommandRepository } from '../commands/repositories/audit.js';
 import { DeviceState } from '../devices/device-state.js';
+import { HistoryRepository } from '../history/repository.js';
 import { RelayHub } from './relay-hub.js';
 
 /**
@@ -20,11 +21,12 @@ export class MaintenanceService implements OnModuleInit, OnModuleDestroy {
     @Inject(AuthService) private readonly auth: AuthService,
     @Inject(DeviceState) private readonly state: DeviceState,
     @Inject(AttachmentService) private readonly attachments: AttachmentService,
-    @Inject(Database) private readonly db: Database,
+    @Inject(HistoryRepository) private readonly history: HistoryRepository,
+    @Inject(CommandRepository) private readonly commands: CommandRepository,
   ) {}
 
   onModuleInit() {
-    const { auth, attachments, db } = this;
+    const { auth, attachments, history, commands } = this;
     const { live, clients } = this.hub;
     const { offline } = this.state;
 
@@ -48,25 +50,9 @@ export class MaintenanceService implements OnModuleInit, OnModuleDestroy {
     this.retention = setInterval(() => {
       void attachments.prune().catch(() => {});
 
-      void db.pool
-        .query(
-          'DELETE FROM events WHERE occurred_at<$1 OR ctid IN (SELECT ctid FROM (SELECT ctid,row_number() OVER(PARTITION BY device_id ORDER BY occurred_at DESC) AS rank FROM events) e WHERE rank>10000)',
-          [Date.now() - 86400000],
-        )
-        .catch(() => {});
-
-      void db.pool
-        .query('UPDATE command_audit SET status=$2,code=$3 WHERE status=$4 AND created_at<$1', [
-          Date.now() - 15000,
-          CommandStatus.Unknown,
-          ErrorCode.ACK_TIMEOUT,
-          CommandStatus.Accepted,
-        ])
-        .catch(() => {});
-
-      void db.pool
-        .query('DELETE FROM command_audit WHERE created_at<$1', [Date.now() - 86400000])
-        .catch(() => {});
+      void history.prune(Date.now() - 86400000).catch(() => {});
+      void commands.expireUnacknowledged(Date.now() - 15000).catch(() => {});
+      void commands.prune(Date.now() - 86400000).catch(() => {});
     }, 10000);
 
     this.retention.unref();

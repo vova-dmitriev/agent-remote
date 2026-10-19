@@ -1,38 +1,26 @@
 import { ErrorCode } from '@protocol';
-import { type Database } from '../../db/database.js';
+import { type BrowserSessionRepository } from './repository.js';
 import { hash, secret } from '../security.js';
 import { Fault } from '../../http/errors/fault.js';
 
 export class BrowserSessions {
-  constructor(private db: Database) {}
+  constructor(private repository: BrowserSessionRepository) {}
   async create(access: string, now = Date.now()) {
+    const { repository } = this;
+
     const credential = secret(),
       expiresAt = now + 30 * 24 * 60 * 60 * 1000;
 
-    await this.db.transaction(async (tx) => {
-      const row = (
-        await tx.query<{ owner_id: string }>(
-          'SELECT owner_id FROM auth_sessions WHERE token_hash=$1 AND expires_at>$2 FOR UPDATE',
-          [hash(access), now],
-        )
-      ).rows[0];
+    await repository.transaction(async (tx) => {
+      const ownerId = await repository.lockAccess(tx, hash(access), now);
 
-      if (!row) {
+      if (!ownerId) {
         throw new Fault(ErrorCode.UNAUTHORIZED);
       }
 
-      await tx.query('INSERT INTO browser_sessions(token_hash,owner_id,expires_at) VALUES($1,$2,$3)', [
-        hash(credential),
-        row.owner_id,
-        expiresAt,
-      ]);
-
-      await tx.query('UPDATE auth_sessions SET browser_session_hash=$1 WHERE token_hash=$2', [
-        hash(credential),
-        hash(access),
-      ]);
-
-      await tx.query('DELETE FROM browser_sessions WHERE expires_at<=$1', [now]);
+      await repository.insert(tx, hash(credential), ownerId, expiresAt);
+      await repository.linkAccess(tx, hash(credential), hash(access));
+      await repository.deleteExpired(tx, now);
     });
 
     return { secret: credential, expiresAt };
@@ -42,25 +30,16 @@ export class BrowserSessions {
       throw new Fault(ErrorCode.UNAUTHORIZED);
     }
 
-    return this.db.transaction(async (tx) => {
-      const row = (
-        await tx.query('SELECT token_hash FROM browser_sessions WHERE token_hash=$1 FOR UPDATE', [
-          hash(credential),
-        ])
-      ).rowCount;
+    const { repository } = this;
 
-      if (!row) {
+    return repository.transaction(async (tx) => {
+      if (!(await repository.lock(tx, hash(credential)))) {
         throw new Fault(ErrorCode.UNAUTHORIZED);
       }
 
-      const revoked = (
-        await tx.query<{ token_hash: string }>(
-          'SELECT token_hash FROM auth_sessions WHERE browser_session_hash=$1',
-          [hash(credential)],
-        )
-      ).rows.map((row) => row.token_hash);
+      const revoked = await repository.accessTokens(tx, hash(credential));
 
-      await tx.query('DELETE FROM browser_sessions WHERE token_hash=$1', [hash(credential)]);
+      await repository.delete(tx, hash(credential));
 
       return revoked;
     });
@@ -70,13 +49,10 @@ export class BrowserSessions {
       throw new Fault(ErrorCode.UNAUTHORIZED);
     }
 
-    return this.db.transaction(async (tx) => {
-      const row = (
-        await tx.query<{ owner_id: string; expires_at: string; telegram_id: string }>(
-          'SELECT b.owner_id,b.expires_at,u.telegram_id FROM browser_sessions b JOIN users u ON u.id=b.owner_id WHERE b.token_hash=$1 AND b.expires_at>$2 FOR UPDATE OF b',
-          [hash(credential), now],
-        )
-      ).rows[0];
+    const { repository } = this;
+
+    return repository.transaction(async (tx) => {
+      const row = await repository.lockForRefresh(tx, hash(credential), now);
 
       if (!row || (expectedTelegramId !== undefined && row.telegram_id !== expectedTelegramId)) {
         throw new Fault(ErrorCode.UNAUTHORIZED);
@@ -85,12 +61,8 @@ export class BrowserSessions {
       const token = secret(),
         expiresAt = Math.min(now + 900000, Number(row.expires_at));
 
-      await tx.query(
-        'INSERT INTO auth_sessions(token_hash,owner_id,expires_at,browser_session_hash) VALUES($1,$2,$3,$4)',
-        [hash(token), row.owner_id, expiresAt, hash(credential)],
-      );
-
-      await tx.query('DELETE FROM auth_sessions WHERE expires_at<=$1', [now]);
+      await repository.insertAccess(tx, hash(token), row.owner_id, expiresAt, hash(credential));
+      await repository.deleteExpiredAccess(tx, now);
 
       return { token, expiresAt };
     });

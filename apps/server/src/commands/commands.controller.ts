@@ -1,18 +1,18 @@
 import { Body, Controller, Get, HttpCode, Inject, Param, Post, UseGuards } from '@nestjs/common';
 import { ErrorCode, HttpStatus, clientCommandSchema } from '@protocol';
 import type { Principal } from '../auth/security.js';
-import { Database } from '../db/database.js';
 import { CurrentPrincipal } from '../http/auth/current-principal.js';
 import { PrincipalGuard } from '../http/auth/principal.guard.js';
 import { Fault } from '../http/errors/fault.js';
 import { CommandDispatcher } from './command-dispatcher.js';
+import { CommandRepository } from './repositories/audit.js';
 
 /** Sends a client command over HTTP and reports a recorded command's outcome. */
 @Controller('commands')
 @UseGuards(PrincipalGuard)
 export class CommandsController {
   constructor(
-    @Inject(Database) private readonly db: Database,
+    @Inject(CommandRepository) private readonly commands: CommandRepository,
     @Inject(CommandDispatcher) private readonly dispatcher: CommandDispatcher,
   ) {}
 
@@ -24,14 +24,7 @@ export class CommandsController {
 
   @Get(':id')
   async status(@CurrentPrincipal() p: Principal, @Param('id') commandId: string) {
-    const { db } = this;
-
-    const row = (
-      await db.pool.query(
-        'SELECT command_id AS "commandId",status,code,result_session_id AS "sessionId" FROM command_audit WHERE owner_id=$1 AND command_id=$2',
-        [p.userId, commandId],
-      )
-    ).rows[0];
+    const row = await this.commands.status(p.userId, commandId);
 
     if (!row) {
       throw new Fault(ErrorCode.NOT_FOUND);

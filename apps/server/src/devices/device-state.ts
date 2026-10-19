@@ -6,11 +6,10 @@ import {
   type AppSnapshot,
   type ConnectorDescriptor,
   type Cursor,
-  type EventEnvelope,
 } from '@protocol';
 import type { Principal } from '../auth/security.js';
 import { ContinuityProxy } from '../continuity/proxy.js';
-import { Database } from '../db/database.js';
+import { HistoryRepository } from '../history/repository.js';
 import { Notifier } from '../notifications/notify.js';
 import { ProfileProxy } from '../profiles/transport/proxy.js';
 import { RelayHub, type DeviceConnection } from '../realtime/relay-hub.js';
@@ -31,7 +30,7 @@ export const emptySnapshot = (): AppSnapshot => ({
 export class DeviceState {
   constructor(
     @Inject(RelayHub) private readonly hub: RelayHub,
-    @Inject(Database) private readonly db: Database,
+    @Inject(HistoryRepository) private readonly history: HistoryRepository,
     @Inject(DeviceService) private readonly devices: DeviceService,
     @Inject(DeviceFence) private readonly fence: DeviceFence,
     @Inject(SessionLabels) private readonly labels: SessionLabels,
@@ -92,26 +91,16 @@ export class DeviceState {
   };
 
   readonly replay = async (p: Principal, deviceId: string, cursor: Cursor) => {
-    const { db, devices } = this;
+    const { history, devices } = this;
 
     await devices.owned(p, deviceId);
 
-    const bounds = await db.pool.query<{ min: string; max: string }>(
-      'SELECT min(seq)::text AS min,max(seq)::text AS max FROM events WHERE owner_id=$1 AND device_id=$2 AND stream_id=$3',
-      [p.userId, deviceId, cursor.streamId],
-    );
-
-    const range = bounds.rows[0];
+    const range = await history.streamBounds(p.userId, deviceId, cursor.streamId);
 
     if (!range?.min || cursor.seq < Number(range.min) - 1 || cursor.seq > Number(range.max)) {
       return FrameType.ResyncRequired;
     }
 
-    return (
-      await db.pool.query<{ data: EventEnvelope }>(
-        'SELECT data FROM events WHERE owner_id=$1 AND device_id=$2 AND stream_id=$3 AND seq>$4 ORDER BY seq LIMIT 100',
-        [p.userId, deviceId, cursor.streamId, cursor.seq],
-      )
-    ).rows.map((row) => row.data);
+    return history.after(p.userId, deviceId, cursor.streamId, cursor.seq);
   };
 }

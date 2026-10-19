@@ -1,7 +1,10 @@
 import { TelegramUpdateType, TelegramChatType, NotificationKind } from '../domain/notifications.js';
 import { NotificationDelivery } from './delivery.js';
+import { NotificationRepository } from './repositories/notifications.js';
 import { type NotificationQueue } from './queue.js';
 import { randomUUID } from 'node:crypto';
+import { DeviceRepository } from '../devices/repositories/devices.js';
+import { PairingRepository } from '../devices/repositories/pairings.js';
 import { DeviceService } from '../devices/service.js';
 import { hash } from '../auth/security.js';
 import { Fault } from '../http/errors/fault.js';
@@ -22,17 +25,22 @@ export class NotificationWorker {
   private timer: ReturnType<typeof setTimeout> | undefined;
   private controller = new AbortController();
   private delivery: NotificationDelivery;
+  private outbox: NotificationRepository;
+  private devices: DeviceService;
   private sending: Promise<void> = Promise.resolve();
   private polling: Promise<void> = Promise.resolve();
   constructor(
-    private db: Database,
+    db: Database,
     private botToken: string,
     private appUrl: string,
     private fetcher: typeof fetch = fetch,
     private broker?: NotificationQueue,
   ) {
+    this.outbox = new NotificationRepository(db);
+    this.devices = new DeviceService(new DeviceRepository(db), new PairingRepository(db));
+
     this.delivery = new NotificationDelivery(
-      db,
+      this.outbox,
       appUrl,
       (body) => this.api('sendMessage', body),
       broker ? (id) => broker.reserveChat(id) : undefined,
@@ -59,21 +67,16 @@ export class NotificationWorker {
       ) {
         const telegramId = String(message.from.id);
 
-        const user = await this.db.pool.query<{ id: string }>(
-          'INSERT INTO users(id,telegram_id,created_at,private_chat_id,notifications_enabled) VALUES($1,$2,$3,$2,true) ON CONFLICT(telegram_id) DO UPDATE SET private_chat_id=EXCLUDED.private_chat_id,notifications_enabled=true RETURNING id',
-          [randomUUID(), telegramId, Date.now()],
-        );
+        const owner = await this.outbox.registerChat(randomUUID(), telegramId, Date.now());
 
         const code = message.text.match(/^\/start\s+pair_([a-f0-9]{32})\s*$/)?.[1];
 
         if (code) {
-          const owner = user.rows[0]!.id;
-
           let kind: NotificationKind = NotificationKind.PairPending,
             key: string;
 
           try {
-            const claim = await new DeviceService(this.db).claim({ userId: owner, telegramId }, code);
+            const claim = await this.devices.claim({ userId: owner, telegramId }, code);
 
             key = claim.claimId;
           } catch (error) {
@@ -89,10 +92,7 @@ export class NotificationWorker {
 
           const id = hash(owner + ':' + kind + ':' + key);
 
-          await this.db.pool.query(
-            'INSERT INTO notification_outbox(id,owner_id,kind,created_at,next_attempt_at) VALUES($1,$2,$3,$4,$4) ON CONFLICT DO NOTHING',
-            [id, owner, kind, Date.now()],
-          );
+          await this.outbox.recordPairing(id, owner, kind, Date.now());
 
           void this.broker?.enqueue(id).catch(() => {
             /* Outbox reconciliation retries enqueue. */
@@ -100,10 +100,7 @@ export class NotificationWorker {
         }
       }
 
-      await this.db.pool.query(
-        "INSERT INTO bot_state(key,value) VALUES('offset',$1) ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value",
-        [String(update.update_id + 1)],
-      );
+      await this.outbox.saveOffset(String(update.update_id + 1));
     }
   }
   async deliver(now = Date.now()) {
@@ -117,12 +114,10 @@ export class NotificationWorker {
     const polling = async () => {
       while (!this.stopped) {
         try {
-          const row = (
-            await this.db.pool.query<{ value: string }>("SELECT value FROM bot_state WHERE key='offset'")
-          ).rows[0];
+          const offset = await this.outbox.offset();
 
           const result = await this.api<Update[]>('getUpdates', {
-            offset: Number(row?.value ?? 0),
+            offset: Number(offset ?? 0),
             timeout: 25,
             allowed_updates: [TelegramUpdateType.Message],
             limit: 100,
@@ -148,7 +143,7 @@ export class NotificationWorker {
 
       try {
         if (this.broker) {
-          await this.broker.reconcile(this.db);
+          await this.broker.reconcile(this.outbox);
         } else {
           await this.deliver();
         }

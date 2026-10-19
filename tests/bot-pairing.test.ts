@@ -2,6 +2,8 @@ import { afterAll, beforeAll, expect, it } from 'vitest';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { databaseFixture } from './helpers/database.js';
 import { NotificationWorker } from '../apps/server/src/notifications/worker.js';
+import { DeviceRepository } from '../apps/server/src/devices/repositories/devices.js';
+import { PairingRepository } from '../apps/server/src/devices/repositories/pairings.js';
 import { DeviceService } from '../apps/server/src/devices/service.js';
 import { hash } from '../apps/server/src/auth/security.js';
 
@@ -12,7 +14,7 @@ let offset = 1;
 
 beforeAll(async () => {
   fixture = await databaseFixture();
-  devices = new DeviceService(fixture.db);
+  devices = new DeviceService(new DeviceRepository(fixture.db), new PairingRepository(fixture.db));
 
   worker = new NotificationWorker(fixture.db, 'synthetic', 'https://example.invalid', async () => {
     throw new Error('LIVE_TRANSPORT_FORBIDDEN');

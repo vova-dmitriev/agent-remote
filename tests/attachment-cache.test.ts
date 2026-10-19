@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest';
 import { createHash, randomUUID } from 'node:crypto';
 import { databaseFixture } from './helpers/database.js';
+import { AttachmentRepository } from '../apps/server/src/attachments/repositories/attachments.js';
 import { AttachmentService } from '../apps/server/src/attachments/service.js';
 import { sessionSchema } from '@protocol';
 
@@ -46,7 +47,7 @@ it('deduplicates derived blobs, keeps original upload bytes, evicts only rebuild
       [JSON.stringify(session)],
     );
 
-    const service = new AttachmentService(fixture.db),
+    const service = new AttachmentService(new AttachmentRepository(fixture.db)),
       upload = (bytes: Buffer, name = 'synthetic.txt') => ({
         uploadId: randomUUID(),
         generation: 'g',

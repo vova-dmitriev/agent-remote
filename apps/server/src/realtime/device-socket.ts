@@ -1,12 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
-  BindingState,
-  CommandActionType,
   CommandStatus,
   DeviceStatus,
   ErrorCode,
   FrameType,
-  IntegrationState,
   SocketCloseCode,
   SocketCloseReason,
   deviceFrameSchema,
@@ -15,19 +12,22 @@ import {
 import { randomUUID } from 'node:crypto';
 import { WebSocket } from 'ws';
 import { MESSAGING } from '../app/relay-config.js';
+import { CommandRepository } from '../commands/repositories/audit.js';
 import { ContinuityProxy } from '../continuity/proxy.js';
 import { ContinuityService } from '../continuity/service.js';
-import { Database } from '../db/database.js';
 import { DeviceState } from '../devices/device-state.js';
 import { DeviceFence } from '../devices/fence.js';
+import { DeviceRepository } from '../devices/repositories/devices.js';
 import { DeviceService } from '../devices/service.js';
 import { ServerErrorCode } from '../error-codes.js';
 import { persistEvent, eventNotificationId } from '../history/events.js';
+import { HistoryRepository } from '../history/repository.js';
 import { SourceHistory } from '../history/source.js';
 import { Fault, toFault } from '../http/errors/fault.js';
 import type { Messaging } from '../infrastructure/messaging.js';
 import { ProfileProxy } from '../profiles/transport/proxy.js';
 import { SessionLabels } from '../sessions/labels.js';
+import { SessionRepository } from '../sessions/repository.js';
 import { RelayHub, type DeviceConnection } from './relay-hub.js';
 
 /** One companion connection: authenticates the device, then stores its snapshots, events and command results. */
@@ -35,7 +35,10 @@ import { RelayHub, type DeviceConnection } from './relay-hub.js';
 export class DeviceSocket {
   constructor(
     @Inject(RelayHub) private readonly hub: RelayHub,
-    @Inject(Database) private readonly db: Database,
+    @Inject(DeviceRepository) private readonly deviceRecords: DeviceRepository,
+    @Inject(SessionRepository) private readonly sessions: SessionRepository,
+    @Inject(HistoryRepository) private readonly history: HistoryRepository,
+    @Inject(CommandRepository) private readonly commands: CommandRepository,
     @Inject(MESSAGING) private readonly messaging: Messaging | undefined,
     @Inject(DeviceService) private readonly devices: DeviceService,
     @Inject(DeviceFence) private readonly fence: DeviceFence,
@@ -50,7 +53,10 @@ export class DeviceSocket {
   readonly connect = (socket: WebSocket) => {
     const {
       hub,
-      db,
+      deviceRecords,
+      sessions,
+      history,
+      commands,
       messaging,
       devices,
       fence,
@@ -168,11 +174,7 @@ export class DeviceSocket {
 
             connection.lastSeen = Date.now();
 
-            await db.pool.query('UPDATE devices SET last_seen_at=$1 WHERE owner_id=$2 AND id=$3', [
-              connection.lastSeen,
-              ctx.owner_id,
-              ctx.id,
-            ]);
+            await deviceRecords.touch(ctx.owner_id, ctx.id, connection.lastSeen);
 
             if (frame.type === FrameType.HandoffSeedIntent) {
               await continuity.admitAuthenticatedSeedIntent(
@@ -255,27 +257,9 @@ export class DeviceSocket {
 
               frame.snapshot.deviceStatus = DeviceStatus.Online;
 
-              await db.transaction(async (tx) => {
-                await tx.query('UPDATE devices SET snapshot=$1,connectors=$2 WHERE owner_id=$3 AND id=$4', [
-                  JSON.stringify(frame.snapshot),
-                  JSON.stringify(frame.connectors),
-                  ctx.owner_id,
-                  ctx.id,
-                ]);
-
-                await tx.query('DELETE FROM sessions WHERE owner_id=$1 AND device_id=$2', [
-                  ctx.owner_id,
-                  ctx.id,
-                ]);
-
-                for (const session of frame.snapshot.sessions) {
-                  await tx.query('INSERT INTO sessions(owner_id,device_id,id,data) VALUES($1,$2,$3,$4)', [
-                    ctx.owner_id,
-                    ctx.id,
-                    session.id,
-                    JSON.stringify(session),
-                  ]);
-                }
+              await deviceRecords.transaction(async (tx) => {
+                await deviceRecords.saveSnapshot(tx, ctx.owner_id, ctx.id, frame.snapshot, frame.connectors);
+                await sessions.replaceAll(tx, ctx.owner_id, ctx.id, frame.snapshot.sessions);
               });
 
               fanout(ctx.owner_id, ctx.id, {
@@ -291,19 +275,11 @@ export class DeviceSocket {
                 throw new Fault(ErrorCode.INVALID_DEVICE);
               }
 
-              if (
-                event.sessionId &&
-                !(
-                  await db.pool.query(
-                    'SELECT id FROM sessions WHERE owner_id=$1 AND device_id=$2 AND id=$3',
-                    [ctx.owner_id, ctx.id, event.sessionId],
-                  )
-                ).rowCount
-              ) {
+              if (event.sessionId && !(await sessions.exists(ctx.owner_id, ctx.id, event.sessionId))) {
                 throw new Fault(ErrorCode.NOT_FOUND);
               }
 
-              if (await persistEvent(db, ctx.owner_id, event)) {
+              if (await persistEvent(history, ctx.owner_id, event)) {
                 fanout(ctx.owner_id, ctx.id, { type: FrameType.Event, event });
                 const notificationId = eventNotificationId(ctx.owner_id, event);
 
@@ -315,39 +291,28 @@ export class DeviceSocket {
               send(socket, { type: FrameType.Ack, cursor: { streamId: event.streamId, seq: event.seq } });
             } else if (frame.type === FrameType.CommandResult) {
               if (frame.result.sessionId) {
-                const created = await db.pool.query(
-                  "SELECT s.id FROM sessions s JOIN command_audit c ON c.owner_id=s.owner_id AND c.device_id=s.device_id WHERE s.owner_id=$1 AND s.device_id=$2 AND s.id=$3 AND c.command_id=$4 AND c.action IN ($5,$6) AND s.data->>'binding'=$7 AND s.data->>'integrationState'=$8",
-                  [
-                    ctx.owner_id,
-                    ctx.id,
-                    frame.result.sessionId,
-                    frame.result.commandId,
-                    CommandActionType.CreateSession,
-                    CommandActionType.RestartSession,
-                    BindingState.Verified,
-                    IntegrationState.Ready,
-                  ],
+                const created = await commands.createdSession(
+                  ctx.owner_id,
+                  ctx.id,
+                  frame.result.sessionId,
+                  frame.result.commandId,
                 );
 
-                if (frame.result.status !== CommandStatus.Dispatched || !created.rowCount) {
+                if (frame.result.status !== CommandStatus.Dispatched || !created) {
                   throw new Fault(ServerErrorCode.INVALID_COMMAND_RESULT);
                 }
               }
 
-              const updated = await db.pool.query(
-                'UPDATE command_audit SET status=$1,code=$2,result_session_id=$6 WHERE owner_id=$3 AND device_id=$4 AND command_id=$5 AND status=$7 RETURNING command_id',
-                [
-                  frame.result.status,
-                  frame.result.code ?? null,
-                  ctx.owner_id,
-                  ctx.id,
-                  frame.result.commandId,
-                  frame.result.sessionId ?? null,
-                  CommandStatus.Accepted,
-                ],
-              );
+              const updated = await commands.recordResult({
+                ownerId: ctx.owner_id,
+                deviceId: ctx.id,
+                commandId: frame.result.commandId,
+                status: frame.result.status,
+                code: frame.result.code ?? null,
+                sessionId: frame.result.sessionId ?? null,
+              });
 
-              if (updated.rowCount) {
+              if (updated) {
                 fanout(ctx.owner_id, ctx.id, { type: FrameType.CommandResult, result: frame.result });
               }
             } else {

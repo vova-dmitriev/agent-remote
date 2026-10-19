@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { databaseFixture } from './helpers/database.js';
 import { createRelay } from '../apps/server/src/app/create-relay.js';
 import { persistEvent } from '../apps/server/src/history/events.js';
+import { HistoryRepository } from '../apps/server/src/history/repository.js';
 import { initData, testBotToken } from './helpers/telegram.js';
 import type { EventEnvelope } from '@protocol';
 
@@ -72,7 +73,7 @@ function event(seq: number): EventEnvelope {
 it('uses Redis history pages, versions new events atomically and authorizes warm-cache reads', async () => {
   const principal = await relay.auth.authenticate(token);
 
-  await persistEvent(relay.db, principal.userId, event(1));
+  await persistEvent(new HistoryRepository(relay.db), principal.userId, event(1));
   expect((await (await read()).json()).length).toBe(1);
   const keys = await client.keys(`${relay.messaging!.prefix}:cache:*`);
 
@@ -81,14 +82,14 @@ it('uses Redis history pages, versions new events atomically and authorizes warm
   expect((await read(foreign)).status).toBe(404);
   const duplicate = event(1);
 
-  expect(await persistEvent(relay.db, principal.userId, duplicate)).toBe(false);
+  expect(await persistEvent(new HistoryRepository(relay.db), principal.userId, duplicate)).toBe(false);
 
   expect(
     (await relay.db.pool.query('SELECT history_revision FROM devices WHERE id=$1', [deviceId])).rows[0]
       .history_revision,
   ).toBe('1');
 
-  await persistEvent(relay.db, principal.userId, event(2));
+  await persistEvent(new HistoryRepository(relay.db), principal.userId, event(2));
   expect((await (await read()).json()).length).toBe(2);
   await relay.devices.revoke(principal, deviceId);
   expect((await read()).status).toBe(404);
