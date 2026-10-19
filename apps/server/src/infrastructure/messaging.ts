@@ -2,6 +2,7 @@ import { ErrorCode } from '@protocol';
 import { RedisConnectionStatus } from '../domain/infrastructure.js';
 import { createHash } from 'node:crypto';
 import { RedisCache, redisClient } from './redis.js';
+import { RetentionQueue } from '../maintenance/retention-queue.js';
 import { NotificationQueue } from '../notifications/queue.js';
 
 export async function createMessaging(url: string, identity: string) {
@@ -16,11 +17,13 @@ export async function createMessaging(url: string, identity: string) {
 
   const prefix = 'claude-remote-' + createHash('sha256').update(identity).digest('hex').slice(0, 24);
   const queue = new NotificationQueue(url, client, prefix);
+  const retention = new RetentionQueue(url, client, prefix);
 
   return {
     prefix,
     cache: new RedisCache(client, prefix),
     queue,
+    retention,
     async health() {
       if (client.status !== RedisConnectionStatus.Ready) {
         throw new Error(ErrorCode.REDIS_UNAVAILABLE);
@@ -30,7 +33,7 @@ export async function createMessaging(url: string, identity: string) {
     },
     async close() {
       try {
-        await queue.close();
+        await Promise.all([retention.close(), queue.close()]);
       } finally {
         client.disconnect();
       }

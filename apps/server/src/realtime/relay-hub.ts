@@ -23,6 +23,8 @@ export interface AppConnection {
   socket: WebSocket;
   principal: Principal;
   token: string;
+  /** When the token expires, as authenticated; checks may only bring it closer, never extend it. */
+  expiresAt: number;
   deviceId: string | null;
   sessionId: string | null;
   selected: boolean;

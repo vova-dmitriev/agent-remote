@@ -53,6 +53,7 @@ export class AppSocket implements OnModuleInit, OnModuleDestroy {
     const { command } = this.dispatcher;
     let client: AppConnection | undefined;
     let chain = Promise.resolve();
+    let rejected = false;
 
     let queued = 0,
       queuedBytes = 0;
@@ -87,7 +88,7 @@ export class AppSocket implements OnModuleInit, OnModuleDestroy {
               throw new Fault(ErrorCode.UNAUTHORIZED);
             }
 
-            const p = await auth.authenticate(frame.token);
+            const { expiresAt, ...principal } = await auth.authenticate(frame.token);
 
             if (socket.readyState !== WebSocket.OPEN || hub.closing) {
               return;
@@ -95,8 +96,9 @@ export class AppSocket implements OnModuleInit, OnModuleDestroy {
 
             client = {
               socket,
-              principal: p,
+              principal,
               token: frame.token,
+              expiresAt,
               deviceId: null,
               sessionId: null,
               selected: false,
@@ -109,7 +111,13 @@ export class AppSocket implements OnModuleInit, OnModuleDestroy {
             return;
           }
 
-          await auth.authenticate(client.token);
+          // Every request re-checks the token, so a revocation made anywhere stops the next request and the socket.
+          const current = await auth.authenticate(client.token).catch((error: unknown) => {
+            rejected = true;
+            throw error;
+          });
+
+          client.expiresAt = Math.min(client.expiresAt, current.expiresAt);
 
           if (frame.type === FrameType.Subscribe) {
             await devices.owned(client.principal, frame.deviceId);
@@ -153,6 +161,8 @@ export class AppSocket implements OnModuleInit, OnModuleDestroy {
 
           if (!client) {
             socket.close(SocketCloseCode.Unauthorized, SocketCloseReason.Unauthorized);
+          } else if (rejected) {
+            socket.close(SocketCloseCode.Unauthorized, SocketCloseReason.TokenExpired);
           }
         })
         .finally(() => {

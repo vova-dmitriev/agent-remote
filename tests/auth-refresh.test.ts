@@ -12,7 +12,12 @@ it('renews access using a server-side browser session and revokes all its access
     const session = await browser.create(f.token);
     const refreshed = await browser.refresh(session.secret);
 
-    expect(await f.relay.auth.authenticate(refreshed.token)).toEqual(f.principal);
+    expect(await f.relay.auth.authenticate(refreshed.token)).toEqual({
+      userId: f.principal.userId,
+      telegramId: f.principal.telegramId,
+      expiresAt: refreshed.expiresAt,
+    });
+
     await expect(browser.refresh('0'.repeat(64))).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
 
     await expect(browser.refresh(session.secret, session.expiresAt + 1)).rejects.toMatchObject({

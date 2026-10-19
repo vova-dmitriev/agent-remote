@@ -31,14 +31,26 @@ export class AuthRepository {
     await tx.query('DELETE FROM auth_sessions WHERE expires_at<$1', [now]);
   }
 
-  /** The user an unexpired token hash belongs to. */
+  /** The user an unexpired token hash belongs to, and when the token expires. */
   async principal(tokenHash: string, now: number) {
     return (
-      await this.db.pool.query<{ id: string; telegram_id: string }>(
-        'SELECT u.id,u.telegram_id FROM auth_sessions a JOIN users u ON u.id=a.owner_id WHERE a.token_hash=$1 AND a.expires_at>$2',
+      await this.db.pool.query<{ id: string; telegram_id: string; expires_at: string }>(
+        'SELECT u.id,u.telegram_id,a.expires_at FROM auth_sessions a JOIN users u ON u.id=a.owner_id WHERE a.token_hash=$1 AND a.expires_at>$2',
         [tokenHash, now],
       )
     ).rows[0];
+  }
+
+  /** The expiry of each given token hash that is still stored and unexpired; revoked and expired ones are absent. */
+  async unexpired(tokenHashes: readonly string[], now: number): Promise<Map<string, number>> {
+    const rows = (
+      await this.db.pool.query<{ token_hash: string; expires_at: string }>(
+        'SELECT token_hash,expires_at FROM auth_sessions WHERE token_hash=ANY($1::text[]) AND expires_at>$2',
+        [tokenHashes, now],
+      )
+    ).rows;
+
+    return new Map(rows.map((row) => [row.token_hash, Number(row.expires_at)]));
   }
 
   async lockToken(tx: PoolClient, tokenHash: string) {

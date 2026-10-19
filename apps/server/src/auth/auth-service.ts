@@ -24,14 +24,21 @@ export class AuthService {
 
     return { token, expiresAt };
   }
-  async authenticate(token: string, now = Date.now()): Promise<Principal> {
+  async authenticate(token: string, now = Date.now()): Promise<Principal & { expiresAt: number }> {
     const row = await this.repository.principal(hash(token), now);
 
     if (!row) {
       throw new Fault(ErrorCode.UNAUTHORIZED);
     }
 
-    return { userId: row.id, telegramId: row.telegram_id };
+    return { userId: row.id, telegramId: row.telegram_id, expiresAt: Number(row.expires_at) };
+  }
+  /** One query for many tokens: the stored expiry of each token that is neither revoked nor expired. */
+  async unexpired(tokens: readonly string[], now = Date.now()): Promise<Map<string, number>> {
+    const hashes = new Map(tokens.map((token) => [hash(token), token]));
+    const stored = await this.repository.unexpired([...hashes.keys()], now);
+
+    return new Map([...stored].map(([tokenHash, expiresAt]) => [hashes.get(tokenHash)!, expiresAt]));
   }
   async logout(token: string) {
     const { repository } = this;

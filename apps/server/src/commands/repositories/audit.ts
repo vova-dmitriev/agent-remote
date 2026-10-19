@@ -159,8 +159,15 @@ export class CommandRepository {
     ]);
   }
 
-  /** Drops every owner's commands created before `before`. */
-  async prune(before: number) {
-    await this.db.pool.query('DELETE FROM command_audit WHERE created_at<$1', [before]);
+  /** Drops up to `limit` of every owner's commands created before `before`; returns how many. */
+  async pruneBatch(before: number, limit: number): Promise<number> {
+    return (
+      (
+        await this.db.pool.query(
+          'DELETE FROM command_audit WHERE ctid IN (SELECT ctid FROM command_audit WHERE created_at<$1 LIMIT $2)',
+          [before, limit],
+        )
+      ).rowCount ?? 0
+    );
   }
 }

@@ -120,7 +120,8 @@ it('closes app and device sockets and clears the maintenance intervals on close'
     closed = true;
     await Promise.all(socketsClosed);
 
-    expect(intervalsWhileRunning).toBe(2);
+    // Liveness tick, token recheck and in-process retention (no Redis here).
+    expect(intervalsWhileRunning).toBe(3);
     expect(vi.getTimerCount()).toBe(0);
   } finally {
     if (relay && !closed) {

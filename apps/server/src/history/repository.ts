@@ -199,11 +199,32 @@ export class HistoryRepository {
     ).rows.map((row) => row.data);
   }
 
-  /** Drops events older than `before` and all but each device's latest 10 000. */
-  async prune(before: number) {
-    await this.db.pool.query(
-      'DELETE FROM events WHERE occurred_at<$1 OR ctid IN (SELECT ctid FROM (SELECT ctid,row_number() OVER(PARTITION BY device_id ORDER BY occurred_at DESC) AS rank FROM events) e WHERE rank>10000)',
-      [before],
+  /** Every device that may hold events, revoked ones included. */
+  async deviceIds(): Promise<string[]> {
+    return (await this.db.pool.query<{ id: string }>('SELECT id FROM devices')).rows.map((row) => row.id);
+  }
+
+  /** Drops up to `limit` of a device's events older than `before`, through `events_retention`; returns how many. */
+  async pruneOlder(deviceId: string, before: number, limit: number): Promise<number> {
+    return (
+      (
+        await this.db.pool.query(
+          'DELETE FROM events WHERE ctid IN (SELECT ctid FROM events WHERE device_id=$1 AND occurred_at<$2 LIMIT $3)',
+          [deviceId, before, limit],
+        )
+      ).rowCount ?? 0
+    );
+  }
+
+  /** Drops up to `limit` of a device's events beyond its newest `keep`, through `events_retention`; returns how many. */
+  async pruneSurplus(deviceId: string, keep: number, limit: number): Promise<number> {
+    return (
+      (
+        await this.db.pool.query(
+          'DELETE FROM events WHERE ctid IN (SELECT ctid FROM events WHERE device_id=$1 ORDER BY occurred_at DESC OFFSET $2 LIMIT $3)',
+          [deviceId, keep, limit],
+        )
+      ).rowCount ?? 0
     );
   }
 }
