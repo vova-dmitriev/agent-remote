@@ -1,3 +1,4 @@
+import type { ReactNode } from "react"
 import type { useApplication } from "@/app/model/use-application"
 
 export interface ApplicationContentProps {
@@ -5,4 +6,6 @@ export interface ApplicationContentProps {
   accounts: boolean
   back: () => void
   closeAccounts: () => void
+  /** Shown while no session is selected: the session list, or the desktop placeholder / new-session pane. */
+  home: ReactNode
 }

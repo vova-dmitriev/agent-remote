@@ -6,6 +6,7 @@ export const SHELL_IDS = {
   logout: "application-shell-logout",
   receipt: "application-shell-receipt",
   openTab: "application-shell-open-tab",
+  sidebarToggle: "application-shell-sidebar-toggle",
   settings: "application-shell-settings",
   settingsMenu: "application-shell-settings-menu",
   accounts: "application-shell-accounts",

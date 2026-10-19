@@ -6,7 +6,16 @@ import { ShellHeader } from "./header/shell-header"
 import { ShellLayout } from "../config/values"
 import type { ApplicationShellProps } from "./application-shell.types"
 
-export function ApplicationShell({ connection, result, onHome, onLogout, onAccounts, children, compact = false }: ApplicationShellProps) {
+export function ApplicationShell({
+  connection,
+  result,
+  onHome,
+  onLogout,
+  onAccounts,
+  children,
+  compact = false,
+  chrome = true,
+}: ApplicationShellProps) {
   const { t } = useTranslation()
 
   return (
@@ -15,7 +24,7 @@ export function ApplicationShell({ connection, result, onHome, onLogout, onAccou
       data-shell-layout={compact ? ShellLayout.Session : ShellLayout.Page}
       data-testid={SHELL_IDS.root}
     >
-      {!compact ? (
+      {!compact && chrome ? (
         <ShellHeader
           connection={connection}
           onHome={onHome}
@@ -30,7 +39,7 @@ export function ApplicationShell({ connection, result, onHome, onLogout, onAccou
           {feedbackText(result, t)}
         </p>
       ) : null}
-      {!compact ? (
+      {!compact && chrome ? (
         <footer className="mt-[40px] border-t border-border pt-[18px] text-center text-[11px] text-muted-foreground">{t("footer")}</footer>
       ) : null}
     </main>

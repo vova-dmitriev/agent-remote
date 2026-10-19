@@ -1,11 +1,11 @@
-import { SessionStatus } from "@protocol"
 import { useTranslation } from "@/shared/lib/hooks"
 import { Button } from "@/shared/ui/button"
 import { cn } from "@/shared/lib/utils"
 import { SESSION_CARD_IDS } from "../config/test-ids"
 import { sourceNames, sessionTitle, agentName } from "../lib/labels"
-import { sessionStatusLabel, sourceObserved } from "../lib/availability"
-import { sessionCardBodyClass, sessionCardClass, statusDotClass } from "./session-class"
+import { sessionStatusLabel } from "../lib/availability"
+import { sessionCardBodyClass, sessionCardClass } from "./session-class"
+import { SessionStatusDot } from "./status-dot/status-dot"
 import type { SessionCardProps } from "./session-card.types"
 
 export function SessionCard({ session, onSelect }: SessionCardProps) {
@@ -43,9 +43,7 @@ export function SessionCard({ session, onSelect }: SessionCardProps) {
           {t(sessionStatusLabel(session))}
         </span>
       </div>
-      <span
-        className={cn("size-[8px] shrink-0 rounded-full", statusDotClass[sourceObserved(session) ? session.status : SessionStatus.Unknown])}
-      />
+      <SessionStatusDot session={session} />
     </Button>
   )
 }

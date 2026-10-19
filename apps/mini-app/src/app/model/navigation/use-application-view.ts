@@ -6,7 +6,9 @@ export function useApplicationView() {
 
   return {
     accounts: view === ApplicationView.Accounts,
+    newSession: view === ApplicationView.NewSession,
     openAccounts: () => setView(ApplicationView.Accounts),
+    openNewSession: () => setView(ApplicationView.NewSession),
     closeAccounts: () => setView(ApplicationView.Sessions),
   }
 }

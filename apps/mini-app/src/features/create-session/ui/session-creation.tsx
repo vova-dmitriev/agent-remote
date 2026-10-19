@@ -7,7 +7,7 @@ import { useSessionCreation } from "../model/use-session-creation"
 import { SessionCreationForm } from "./session-creation-form"
 import type { SessionCreationProps } from "./session-creation.types"
 
-export function SessionCreation({ sessions, disabled, online, create, profileData }: SessionCreationProps) {
+export function SessionCreation({ sessions, disabled, online, create, profileData, inline = false }: SessionCreationProps) {
   const { t } = useTranslation()
   const deviceId = sessions[0]?.target.deviceId ?? ""
   const profileQuery = useExecutionProfiles(deviceId, online)
@@ -19,10 +19,17 @@ export function SessionCreation({ sessions, disabled, online, create, profileDat
 
   return (
     <div className="has-[form]:basis-full" data-testid={SESSION_CREATE_IDS.root}>
-      <Button variant="ghost" data-testid={SESSION_CREATE_IDS.toggle} aria-expanded={model.open} onClick={() => model.setOpen(!model.open)}>
-        <Plus size={16} aria-hidden="true" /> {t("newSession")}
-      </Button>
-      {model.open ? (
+      {inline ? null : (
+        <Button
+          variant="ghost"
+          data-testid={SESSION_CREATE_IDS.toggle}
+          aria-expanded={model.open}
+          onClick={() => model.setOpen(!model.open)}
+        >
+          <Plus size={16} aria-hidden="true" /> {t("newSession")}
+        </Button>
+      )}
+      {inline || model.open ? (
         <SessionCreationForm
           model={model}
           disabled={disabled}

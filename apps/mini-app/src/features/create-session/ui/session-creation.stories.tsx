@@ -55,6 +55,7 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Collapsed: Story = {}
+export const Inline: Story = { args: { inline: true } }
 export const Open: Story = {
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByTestId(SESSION_CREATE_IDS.toggle))
