@@ -1,10 +1,11 @@
 import { Injectable, type NestMiddleware } from '@nestjs/common';
-import express, { type NextFunction, type Request, type Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
+import { jsonBodyParser } from './body-parsers.js';
 
 /** JSON bodies up to 128 KB; `RelayModule` excludes the raw attachment uploads. */
 @Injectable()
 export class JsonBodyMiddleware implements NestMiddleware {
-  private readonly parse = express.json({ limit: '128kb', strict: true });
+  private readonly parse = jsonBodyParser();
 
   use(req: Request, res: Response, next: NextFunction) {
     this.parse(req, res, next);

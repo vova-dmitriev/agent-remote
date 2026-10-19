@@ -1,8 +1,9 @@
 import { Inject, Injectable, type NestMiddleware } from '@nestjs/common';
 import { ErrorCode, MAX_ATTACHMENT_BYTES } from '@protocol';
-import express, { type NextFunction, type Request, type Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 import { RELAY_CONFIG, type RelayConfig } from '../../app/relay-config.js';
 import { Limiter, RateLimitKey } from '../../auth/security.js';
+import { rawAttachmentParser } from '../../http/pipeline/body-parsers.js';
 import { Fault } from '../../http/errors/fault.js';
 import { AttachmentFaultCode } from '../errors.js';
 import {
@@ -27,7 +28,7 @@ const isBodyTooLarge = (error: unknown) =>
 @Injectable()
 export class AttachmentUploadMiddleware implements NestMiddleware {
   private active = 0;
-  private readonly parse = express.raw({ type: () => true, limit: MAX_ATTACHMENT_BYTES, inflate: false });
+  private readonly parse = rawAttachmentParser();
 
   constructor(
     @Inject(AttachmentAccess) private readonly access: AttachmentAccess,

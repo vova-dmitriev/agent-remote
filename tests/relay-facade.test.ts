@@ -1,8 +1,11 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { NestApplicationContext } from '@nestjs/core';
 import { FrameType } from '@protocol';
 import { afterAll, beforeAll, expect, it, vi } from 'vitest';
 import { WebSocket } from 'ws';
 import { createRelay, type Relay } from '../apps/server/src/app/create-relay.js';
+import { Database } from '../apps/server/src/db/database.js';
+import { Notifier } from '../apps/server/src/notifications/notify.js';
 import { NotificationQueue } from '../apps/server/src/notifications/queue.js';
 import { RealtimeModule } from '../apps/server/src/realtime/realtime.module.js';
 import { RelayModule } from '../apps/server/src/app/relay.module.js';
@@ -177,6 +180,29 @@ it('releases its intervals, Redis and PostgreSQL when the application fails to i
   }
 });
 
+it('rethrows the original startup error when releasing resources fails too', async () => {
+  const name = 'failed-release-' + randomUUID();
+  const close = Database.prototype.close;
+
+  const dbClose = vi.spyOn(Database.prototype, 'close').mockImplementation(async function (this: Database) {
+    await close.call(this);
+    throw new Error('RELEASE_FAILED');
+  });
+
+  const bootstrap = vi.spyOn(RealtimeModule.prototype, 'onApplicationBootstrap').mockImplementation(() => {
+    throw new Error('BOOTSTRAP_FAILED');
+  });
+
+  try {
+    await expect(startWithRedis(namedDatabaseUrl(name))).rejects.toThrow('BOOTSTRAP_FAILED');
+    expect(dbClose).toHaveBeenCalledTimes(1);
+    await expect.poll(() => openSessions(name)).toBe(0);
+  } finally {
+    bootstrap.mockRestore();
+    dbClose.mockRestore();
+  }
+});
+
 it('releases Redis and PostgreSQL when a provider fails while the application is created', async () => {
   const name = 'failed-create-' + randomUUID();
   const queueClose = vi.spyOn(NotificationQueue.prototype, 'close');
@@ -206,6 +232,33 @@ it('releases Redis and PostgreSQL when a provider fails while the application is
     await expect.poll(() => openSessions(name)).toBe(0);
   } finally {
     broken.mockRestore();
+    queueClose.mockRestore();
+  }
+});
+
+it('releases Redis and PostgreSQL when resolving a facade service fails after initialization', async () => {
+  const name = 'failed-resolve-' + randomUUID();
+  const queueClose = vi.spyOn(NotificationQueue.prototype, 'close');
+  const get = NestApplicationContext.prototype.get;
+
+  const resolve = vi.spyOn(NestApplicationContext.prototype, 'get').mockImplementation(function (
+    this: NestApplicationContext,
+    ...args: Parameters<typeof get>
+  ) {
+    if (args[0] === Notifier) {
+      throw new Error('RESOLVE_FAILED');
+    }
+
+    return get.apply(this, args);
+  });
+
+  try {
+    await expect(startWithRedis(namedDatabaseUrl(name))).rejects.toThrow('RESOLVE_FAILED');
+
+    expect(queueClose).toHaveBeenCalledTimes(1);
+    await expect.poll(() => openSessions(name)).toBe(0);
+  } finally {
+    resolve.mockRestore();
     queueClose.mockRestore();
   }
 });

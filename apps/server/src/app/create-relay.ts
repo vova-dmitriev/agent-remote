@@ -34,6 +34,7 @@ export interface Relay {
 export async function createRelay(config: RelayConfig): Promise<Relay> {
   const db = new Database(config.databaseUrl, config.schema);
   let messaging: Messaging | undefined;
+  let app: NestExpressApplication | undefined;
 
   try {
     await db.migrate();
@@ -41,14 +42,7 @@ export async function createRelay(config: RelayConfig): Promise<Relay> {
     messaging = config.redisUrl
       ? await createMessaging(config.redisUrl, config.databaseUrl + (config.schema ?? 'public'))
       : undefined;
-  } catch (error) {
-    await db.close();
-    throw error;
-  }
 
-  let app: NestExpressApplication | undefined;
-
-  try {
     app = await NestFactory.create<NestExpressApplication>(
       RelayModule.register({ config, db, messaging }),
       new JsonExpressAdapter(),
@@ -63,11 +57,16 @@ export async function createRelay(config: RelayConfig): Promise<Relay> {
     app.use(securityHeaders);
     // Starts the maintenance jobs and attaches the WebSocket hub now, as before the Nest migration, not on `listen()`.
     await app.init();
+
+    return facade(app, db, messaging);
   } catch (error) {
     await release(app, messaging, db);
     throw error;
   }
+}
 
+/** Resolves the services the facade exposes; a failure here still releases what the start acquired. */
+function facade(app: NestExpressApplication, db: Database, messaging: Messaging | undefined): Relay {
   const hub = app.get(RelayHub);
   const dispatcher = app.get(CommandDispatcher);
   const fence = app.get(DeviceFence);
@@ -100,21 +99,20 @@ export async function createRelay(config: RelayConfig): Promise<Relay> {
   };
 }
 
-/** Releases what a failed start acquired: the application's hooks stop its timers and subscriptions, then storage closes. */
+/**
+ * Releases what a failed start acquired: the application's hooks stop its timers and subscriptions, then storage
+ * closes. It never throws: the start already failed, and that original error is the one the caller must see.
+ */
 async function release(
   app: NestExpressApplication | undefined,
   messaging: Messaging | undefined,
   db: Database,
 ) {
-  try {
-    await app?.close();
-  } catch {
-    // The start already failed; closing storage below still matters more than this error.
-  } finally {
+  for (const close of [() => app?.close(), () => messaging?.close(), () => db.close()]) {
     try {
-      await messaging?.close();
-    } finally {
-      await db.close();
+      await close();
+    } catch {
+      // Closing the remaining resources matters more than reporting why this one failed to close.
     }
   }
 }
