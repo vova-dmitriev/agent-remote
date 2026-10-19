@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, it } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { lstat, readFile, rm, writeFile } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import { createBrowserFixture, cleanupBrowserFixture, pendingGrant } from './helpers/browser-cli-fixture.js';
 import { runBrowserCli } from '../apps/daemon/src/browser/cli/index.js';
 import { LocalOrigin } from '@protocol';
+import { CompanionEnvironment } from '../apps/daemon/src/local/supervisor/values.js';
 
 const run = promisify(execFile);
 const extensionId = 'abcdefghijklmnopabcdefghijklmnop';
@@ -216,6 +217,37 @@ it('starts injected local mode with input enabled and preserves explicit permiss
   await new Promise((resolve) => setImmediate(resolve));
   expect(closed).toBe(true);
 });
+
+it.each([
+  ['1', true],
+  [undefined, false],
+] as const)(
+  'starts local mode with legacy Claude hooks only when the desktop launcher asks (%s)',
+  async (flag, expected) => {
+    vi.stubEnv(CompanionEnvironment.LegacyClaudeHooks, flag);
+    const calls: unknown[] = [];
+
+    try {
+      await runBrowserCli(['start-local'], {
+        ...context(),
+        dependencies: {
+          startDaemon: async (options) => {
+            calls.push(options);
+
+            return { close: async () => {} };
+          },
+          onShutdown: () => {},
+          probe: async () => null,
+        },
+      });
+
+      expect(calls).toEqual([{ legacyClaudeHooks: expected }]);
+      expect(process.env[CompanionEnvironment.LegacyClaudeHooks]).toBeUndefined();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  },
+);
 
 it.each([[], ['unknown'], ['host'], ['revoke', '*'], ['install']])(
   'rejects invalid browser arguments %j',

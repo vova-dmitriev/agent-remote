@@ -13,6 +13,7 @@ import {
   waitForFixture,
 } from './helpers/companion-fixture.js';
 import { ensureCompanion } from '../apps/daemon/src/local/supervisor/index.js';
+import { CompanionEnvironment } from '../apps/daemon/src/local/supervisor/values.js';
 
 const run = promisify(execFile);
 let directory: string;
@@ -46,6 +47,30 @@ it('starts the exact trusted runtime with fixed args and a private home', async 
   await ensureCompanion(options());
   expect(await readFile(join(directory, 'starts'), 'utf8')).toBe('["browser","start-local"]\n');
 });
+
+it.each([
+  [true, '1'],
+  [false, ''],
+] as const)(
+  'passes the legacy Claude hook request to the launched companion only on demand (%s)',
+  async (legacyClaudeHooks, expected) => {
+    const previous = process.env[CompanionEnvironment.LegacyClaudeHooks];
+
+    process.env[CompanionEnvironment.LegacyClaudeHooks] = '1';
+
+    try {
+      await ensureCompanion({ ...options(), legacyClaudeHooks });
+    } finally {
+      if (previous === undefined) {
+        delete process.env[CompanionEnvironment.LegacyClaudeHooks];
+      } else {
+        process.env[CompanionEnvironment.LegacyClaudeHooks] = previous;
+      }
+    }
+
+    expect(await readFile(join(directory, 'legacy-claude-hooks'), 'utf8')).toBe(expected);
+  },
+);
 
 it('attaches to a compatible companion without launching or validating absent runtime resources', async () => {
   await ensureCompanion({

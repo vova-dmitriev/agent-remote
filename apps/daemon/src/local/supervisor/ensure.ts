@@ -4,7 +4,7 @@ import { CodedError, ErrorCode, LOCAL_LIMITS } from '@protocol';
 import { acquireStartLock } from './lock.js';
 import { secureDirectory, verifyCompanionRuntime } from './runtime.js';
 import type { EnsureCompanionOptions } from './types.js';
-import { CompanionArgument, CompanionStartup } from './values.js';
+import { CompanionArgument, CompanionEnvironment, CompanionFlag, CompanionStartup } from './values.js';
 
 async function compatible(options: EnsureCompanionOptions, timeoutMs: number): Promise<boolean> {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -39,6 +39,14 @@ async function compatible(options: EnsureCompanionOptions, timeoutMs: number): P
 }
 
 async function launch(options: EnsureCompanionOptions): Promise<void> {
+  const env: NodeJS.ProcessEnv = { ...process.env, CLAUDE_REMOTE_HOME: options.directory };
+
+  delete env[CompanionEnvironment.LegacyClaudeHooks];
+
+  if (options.legacyClaudeHooks) {
+    env[CompanionEnvironment.LegacyClaudeHooks] = CompanionFlag.Enabled;
+  }
+
   const child = spawn(
     options.runtime.nodePath,
     [options.runtime.entryPath, CompanionArgument.Browser, CompanionArgument.StartLocal],
@@ -46,7 +54,7 @@ async function launch(options: EnsureCompanionOptions): Promise<void> {
       detached: true,
       stdio: 'ignore',
       cwd: options.directory,
-      env: { ...process.env, CLAUDE_REMOTE_HOME: options.directory },
+      env,
     },
   );
 

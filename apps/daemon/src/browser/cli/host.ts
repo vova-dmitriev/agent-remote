@@ -6,6 +6,7 @@ import { localClientSecret } from '../../local/bootstrap/identity.js';
 import { probeCompanion } from '../../local/bootstrap/probe.js';
 import { ensureCompanion } from '../../local/supervisor/index.js';
 import { missing, secureDirectory } from '../../local/supervisor/runtime.js';
+import { CompanionEnvironment, CompanionFlag } from '../../local/supervisor/values.js';
 import { runNativeHost } from '../host/bridge.js';
 import { requireSettings } from './settings.js';
 import type { BrowserCliContext } from './types.js';
@@ -78,6 +79,10 @@ export async function browserHost(context: BrowserCliContext, origin: string) {
 }
 
 export async function startLocal(context: BrowserCliContext) {
+  // Set only by the desktop launcher; consumed here so children never inherit it.
+  const legacyClaudeHooks = process.env[CompanionEnvironment.LegacyClaudeHooks] === CompanionFlag.Enabled;
+
+  delete process.env[CompanionEnvironment.LegacyClaudeHooks];
   await secureDirectory(context.directory, true, true);
   const access = await companionAccess(context);
 
@@ -87,7 +92,7 @@ export async function startLocal(context: BrowserCliContext) {
 
   process.env.REMOTE_INPUT_ENABLED = '1';
   const start = context.dependencies?.startDaemon ?? (await import('../../main.js')).startDaemon;
-  const daemon = await start();
+  const daemon = await start({ legacyClaudeHooks });
 
   const stop = () => {
     void daemon.close().then(() => {

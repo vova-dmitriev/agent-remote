@@ -18,12 +18,12 @@ import { attachmentPrompt } from '../../attachments/content/input.js';
 import { codexConnectionSchema, type CodexConnection } from '../../codex/manager.js';
 import { cmuxContextSchema, type CmuxContext } from '../../cmux/context.js';
 import { createServer, type Socket } from 'node:net';
-import { chmod, lstat, unlink } from 'node:fs/promises';
 import { randomUUID, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
 import { type Monitor, hookSchema } from '../../monitor/monitor.js';
 import { SourceAdapter, type AdapterRegistry, type DispatchReceipt } from '../../adapters/registry.js';
 import { PermissionBroker, permissionHookOutput } from '../../commands/permission-broker.js';
+import { bindHookSocket } from './hook-socket.js';
 import { lineReader, writeFrame } from './ipc.js';
 
 type WrapperReply = DispatchReceipt & { text?: string };
@@ -58,37 +58,6 @@ const authenticated = z.object({
 });
 
 export async function startHookServer(options: Options) {
-  try {
-    const info = await lstat(options.path);
-
-    if (!info.isSocket()) {
-      throw new CodedError(DaemonErrorCode.SOCKET_PATH_IN_USE);
-    }
-
-    const probe = await import('node:net');
-
-    const alive = await new Promise<boolean>((resolve) => {
-      const socket = probe.connect(options.path);
-
-      socket.once('connect', () => {
-        socket.destroy();
-        resolve(true);
-      });
-
-      socket.once('error', () => resolve(false));
-    });
-
-    if (alive) {
-      throw new CodedError(DaemonErrorCode.DAEMON_ALREADY_RUNNING);
-    }
-
-    await unlink(options.path);
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-      throw error;
-    }
-  }
-
   let closing = false;
   const sockets = new Set<Socket>();
 
@@ -412,16 +381,7 @@ export async function startHookServer(options: Options) {
     });
   });
 
-  await new Promise<void>((resolve, reject) => {
-    server.once('error', reject);
-
-    server.listen(options.path, () => {
-      server.removeListener('error', reject);
-      resolve();
-    });
-  });
-
-  await chmod(options.path, 0o600);
+  const release = await bindHookSocket(server, options.path);
 
   return {
     async close() {
@@ -431,11 +391,7 @@ export async function startHookServer(options: Options) {
         socket.destroy();
       }
 
-      await new Promise<void>((resolve) => server.close(() => resolve()));
-
-      try {
-        await unlink(options.path);
-      } catch {}
+      await release();
     },
   };
 }

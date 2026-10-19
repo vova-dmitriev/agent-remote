@@ -76,7 +76,7 @@ export async function createDesktopCompanionConnector(
 
   const probe = () => probeCompanion(socketPath, capability, LocalFeature.DesktopGrants);
 
-  await ensureCompanion({ directory, runtime, probe });
+  await ensureCompanion({ directory, runtime, probe, legacyClaudeHooks: true });
 
   let connection: Awaited<ReturnType<typeof connectDesktopSocket>>;
 

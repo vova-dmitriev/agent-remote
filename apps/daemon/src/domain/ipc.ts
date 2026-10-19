@@ -21,3 +21,12 @@ export const WrapperActionType = {
 } as const;
 
 export type WrapperActionType = (typeof WrapperActionType)[keyof typeof WrapperActionType];
+
+export const LegacyHookSocketState = {
+  Disabled: 'disabled',
+  Listening: 'listening',
+  Occupied: 'occupied',
+  Refused: 'refused',
+} as const;
+
+export type LegacyHookSocketState = (typeof LegacyHookSocketState)[keyof typeof LegacyHookSocketState];

@@ -7,7 +7,9 @@ import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { CodedError } from '@protocol';
 
-export const stateDirectory = () => process.env.CLAUDE_REMOTE_HOME ?? join(homedir(), '.claude-remote');
+/** The CLI default home; `~/.claude/settings.json` hooks post here when CLAUDE_REMOTE_HOME is unset. */
+export const defaultStateDirectory = () => join(homedir(), '.claude-remote');
+export const stateDirectory = () => process.env.CLAUDE_REMOTE_HOME ?? defaultStateDirectory();
 export const configSchema = z.strictObject({
   relayUrl: z.url(),
   deviceId: z.string().min(1),
@@ -31,9 +33,7 @@ export async function saveConfig(config: DaemonConfig) {
   await chmod(path, 0o600);
 }
 
-export async function localSecret() {
-  const dir = stateDirectory();
-
+export async function localSecret(dir = stateDirectory()) {
   await mkdir(dir, { recursive: true, mode: 0o700 });
   const path = join(dir, 'local.key');
 
@@ -60,7 +60,8 @@ export async function localSecret() {
   }
 }
 
-export const socketPath = () => join(stateDirectory(), 'hooks.sock');
+export const hookSocketPath = (directory: string) => join(directory, 'hooks.sock');
+export const socketPath = () => hookSocketPath(stateDirectory());
 
 export function validateRelayUrl(value: string) {
   const url = new URL(value);

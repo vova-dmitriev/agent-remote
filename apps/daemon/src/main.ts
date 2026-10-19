@@ -27,7 +27,7 @@ import { runtimeConfiguration } from './local/bootstrap/configuration.js';
 import { openLocalServices } from './local/bootstrap/services.js';
 import { NoRelay } from './local/bootstrap/no-relay.js';
 
-export async function startDaemon() {
+export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {}) {
   const config = await runtimeConfiguration(stateDirectory()),
     token = await localSecret();
 
@@ -115,6 +115,7 @@ export async function startDaemon() {
     desktopBridge,
     desktopBindings,
     readers,
+    legacyClaudeHooks: options.legacyClaudeHooks ?? false,
   });
 
   const { localController, localServer } = await startLocalSurface({
@@ -189,5 +190,5 @@ export async function startDaemon() {
     dispatcher.setConnection(false);
   });
 
-  return { monitor, close };
+  return { monitor, close, legacyHookSocket: hookServer.legacyHookSocket };
 }
