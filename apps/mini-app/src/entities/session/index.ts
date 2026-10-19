@@ -18,7 +18,7 @@ export type { SessionStoreState } from "./model/store/types"
 export { PROMPT_RECEIPT_POLL_MS } from "./model/store/outbox/constants"
 export { SessionChanges } from "./ui/changes/session-changes"
 
-export { SessionTab, AgentName, ProviderFilterValue } from "./config/session-values"
+export { SessionTab, AgentName, ProviderFilterValue, HistoryPageOutcome } from "./config/session-values"
 export { PromptStatus } from "./model/store/outbox/constants"
 export { HistoryStream, loadSessionHistory, restoreHistoryWindow } from "./api/history"
 export { HistoryWindow } from "./api/history-window"

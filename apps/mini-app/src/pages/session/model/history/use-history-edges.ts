@@ -1,7 +1,7 @@
 import { useCallback, useLayoutEffect, useRef, useState } from "react"
-import { HistoryDirection, type HistoryMessage, type HistoryNavigationDirection, type HistoryPageDirection } from "@protocol"
-
-type ExhaustedEdges = Record<HistoryPageDirection, string | null>
+import { HistoryDirection, type HistoryMessage, type HistoryNavigationDirection } from "@protocol"
+import { settleHistoryEdge, type ExhaustedEdges } from "@/pages/session/lib/history/history-edges"
+import type { HistoryPageLoader } from "@/pages/session/model/types/session-feed.types"
 
 function edgeId(messages: HistoryMessage[], direction: HistoryNavigationDirection) {
   if (direction === HistoryDirection.Before) return messages[0]?.id
@@ -12,14 +12,11 @@ function edgeId(messages: HistoryMessage[], direction: HistoryNavigationDirectio
 
 /**
  * Whether unloaded history may exist past either end of the loaded window. The wire carries no total, so
- * an edge counts as exhausted only after a page request for it settled without extending that edge.
+ * an edge counts as exhausted only after a page request for it completed (loaded or declined by the transport)
+ * without extending that edge; failed or stale requests keep it open.
  * Newer history additionally requires the session's last message time to be past the loaded tail.
  */
-export function useHistoryEdges(
-  messages: HistoryMessage[],
-  onHistoryPage: ((direction: HistoryNavigationDirection) => void | Promise<void>) | undefined,
-  newestAt: number | undefined,
-) {
+export function useHistoryEdges(messages: HistoryMessage[], onHistoryPage: HistoryPageLoader | undefined, newestAt: number | undefined) {
   const current = useRef(messages)
   const [exhausted, setExhausted] = useState<ExhaustedEdges>({ before: null, after: null })
 
@@ -31,9 +28,9 @@ export function useHistoryEdges(
     async (direction: HistoryNavigationDirection) => {
       const edge = edgeId(current.current, direction)
 
-      await onHistoryPage?.(direction)
-      if (edge === undefined || direction === HistoryDirection.Latest) return
-      setExhausted((previous) => (previous[direction] === edge ? previous : { ...previous, [direction]: edge }))
+      const outcome = await onHistoryPage?.(direction)
+
+      setExhausted((previous) => settleHistoryEdge(previous, direction, edge, outcome))
     },
     [onHistoryPage],
   )

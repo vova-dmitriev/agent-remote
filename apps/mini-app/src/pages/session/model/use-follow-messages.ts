@@ -1,18 +1,19 @@
 import { useCallback, useLayoutEffect, useRef, useState } from "react"
 import { useVirtualizer, type VirtualItem } from "@tanstack/react-virtual"
-import { HistoryDirection, type HistoryMessage, type HistoryNavigationDirection } from "@protocol"
+import { HistoryDirection, type HistoryMessage } from "@protocol"
 import { useHistoryPagination } from "./history/use-history-pagination"
 import { useReadingPosition } from "./use-reading-position"
 import { navigationScrollBehavior } from "../lib/message-navigation"
 
 import { FEED_READING_INSET } from "../config/reading"
+import type { HistoryPageLoader } from "./types/session-feed.types"
 
 export function useFollowMessages(
   messages: HistoryMessage[],
   enabled = true,
   scope?: string,
   ready = true,
-  onHistoryPage?: (direction: HistoryNavigationDirection) => void | Promise<void>,
+  onHistoryPage?: HistoryPageLoader,
 ) {
   const scroll = useRef<HTMLDivElement>(null)
   const content = useRef<HTMLDivElement>(null)

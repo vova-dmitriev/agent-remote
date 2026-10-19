@@ -9,7 +9,7 @@ import type { RailMarkerProps } from "@/pages/session/model/types/message-rail.t
 const TICK_SIZE = 3
 
 /** One rail hit target: a single message or a run of messages too close to tell apart on the track. */
-export function RailMarker({ group, messages, agent, current, preview, register, jump, onKeyDown }: RailMarkerProps) {
+export function RailMarker({ group, messages, agent, current, preview, register, focus, jump, onKeyDown }: RailMarkerProps) {
   const { t } = useTranslation()
   const message = messages[group.first]!
   const top = group.center - RAIL_HIT_SIZE / 2
@@ -44,9 +44,13 @@ export function RailMarker({ group, messages, agent, current, preview, register,
       }}
       onPointerLeave={() => preview.hide(PreviewSource.Hover)}
       onFocus={(event) => {
+        focus.enter(message.id)
         if (event.currentTarget.matches(":focus-visible")) preview.show(message.id, event.currentTarget, PreviewSource.Focus)
       }}
-      onBlur={() => preview.hide(PreviewSource.Focus)}
+      onBlur={(event) => {
+        focus.leave(event)
+        preview.hide(PreviewSource.Focus)
+      }}
       onClick={() => {
         preview.dismiss(message.id)
         jump(message.id)
@@ -59,6 +63,7 @@ export function RailMarker({ group, messages, agent, current, preview, register,
       <span
         className="absolute left-[8px] block w-[12px] rounded-[1px] bg-current opacity-45 group-hover/marker:w-[18px] group-hover/marker:opacity-100 group-focus-visible/marker:w-[18px] group-focus-visible/marker:opacity-100 group-aria-[current=true]/marker:w-[18px] group-aria-[current=true]/marker:opacity-100"
         style={{ top: group.top - top - TICK_SIZE / 2, height: TICK_SIZE }}
+        data-testid={SESSION_FEED_IDS.railTick}
         aria-hidden="true"
       />
     </Button>

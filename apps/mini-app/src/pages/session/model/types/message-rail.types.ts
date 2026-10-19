@@ -1,4 +1,4 @@
-import type { KeyboardEvent } from "react"
+import type { FocusEvent, KeyboardEvent } from "react"
 import { AgentName } from "@/entities/session"
 import type { HistoryMessage, HistoryPageDirection } from "@protocol"
 import type { RailGroup, RailViewport } from "@/pages/session/lib/rail-layout"
@@ -33,6 +33,7 @@ export interface RailMarkerProps {
   current: boolean
   preview: ReturnType<typeof useMessagePreview>
   register: (id: string, node: HTMLButtonElement | null) => void
+  focus: { enter: (id: string) => void; leave: (event: FocusEvent<HTMLButtonElement>) => void }
   jump: (id: string) => void
   onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void
 }

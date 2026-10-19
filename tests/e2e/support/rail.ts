@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 import { SESSION_FEED_IDS } from '../../../apps/mini-app/src/pages/session/config/test-ids.js';
 import { byTestIdListing } from './testid.js';
 
@@ -27,4 +27,35 @@ export async function jumpNear(page: Page, messageId: string) {
 
     return node.dataset.messageId!;
   });
+}
+
+/** Synthetic messages of uneven length, so measuring rows moves later markers. */
+export function railConversation(count: number, prefix = 'rail-') {
+  return Array.from({ length: count }, (_, index) => ({
+    id: prefix + index,
+    role: index % 2 ? ('assistant' as const) : ('user' as const),
+    text: 'Synthetic rail message ' + index + '. ' + 'Body text. '.repeat((index % 5) * 12 + 2),
+    occurredAt: 1700000000000 + index,
+  }));
+}
+
+export async function box(locator: Locator) {
+  const bounds = await locator.boundingBox();
+
+  expect(bounds).not.toBeNull();
+
+  return bounds!;
+}
+
+/** Band edges relative to the track, in pixels. */
+export async function bandEdges(page: Page) {
+  const track = await box(page.getByTestId(SESSION_FEED_IDS.railTrack));
+  const band = await box(page.getByTestId(SESSION_FEED_IDS.railBand));
+
+  return { top: band.y - track.y, bottom: track.y + track.height - (band.y + band.height), height: track.height };
+}
+
+/** The test id of the focused element, or null. */
+export function focusedTestId(page: Page) {
+  return page.evaluate(() => document.activeElement?.getAttribute('data-testid') ?? null);
 }

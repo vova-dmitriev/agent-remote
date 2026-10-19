@@ -44,7 +44,7 @@ export function SessionFeed({
   return (
     <div className="relative isolate session:min-h-0 session:flex-1" data-testid={SESSION_FEED_IDS.frame} aria-busy={loading}>
       <div
-        className={cn(feedClass, showMessages && "py-0 pl-[35px] session:py-0")}
+        className={cn(feedClass, showMessages && "py-0 pl-[47px] session:py-0")}
         data-testid={SESSION_FEED_IDS.root}
         ref={scroll}
         style={showMessages && !settled ? { visibility: "hidden" } : undefined}

@@ -1,7 +1,7 @@
 import { useRef, useState } from "react"
 import { HistoryStatus, HistoryDirection, ErrorCode, type Session, type HistoryNavigationDirection } from "@protocol"
 import { useRuntime } from "@/shared/lib/runtime"
-import { SessionTab } from "../config/session-values"
+import { HistoryPageOutcome, SessionTab } from "../config/session-values"
 import { useSessionStoreApi } from "./context/use-session-store"
 import { reduceHistoryWindow } from "./store/history"
 
@@ -53,7 +53,7 @@ export function useSessionSelection() {
     }
   }
 
-  async function loadPage(direction: HistoryNavigationDirection) {
+  async function loadPage(direction: HistoryNavigationDirection): Promise<HistoryPageOutcome> {
     const lease = runtime.current()
 
     const transport = lease?.client,
@@ -61,7 +61,7 @@ export function useSessionSelection() {
 
     const sessionId = selected.current
 
-    if (!transport || !sessionId) return
+    if (!transport || !sessionId) return HistoryPageOutcome.Failed
 
     const messages = store.getState().session.messages[sessionId] ?? []
     const baseline = direction === HistoryDirection.Latest ? new Map(messages.map((message) => [message.id, message])) : undefined
@@ -74,7 +74,8 @@ export function useSessionSelection() {
         ? transport.history(sessionId, true)
         : transport.historyPage(sessionId, direction, edge))
 
-      if (!events || !runtime.isCurrent(lease) || selection.current !== request) return
+      if (!runtime.isCurrent(lease) || selection.current !== request) return HistoryPageOutcome.Failed
+      if (!events) return HistoryPageOutcome.Declined
 
       setState((s) =>
         reduceHistoryWindow(
@@ -86,9 +87,13 @@ export function useSessionSelection() {
           baseline,
         ),
       )
+
+      return HistoryPageOutcome.Loaded
     } catch (error) {
       if (runtime.isCurrent(lease) && selection.current === request)
         setError(error instanceof Error ? error.message : ErrorCode.HISTORY_RELOAD_FAILED)
+
+      return HistoryPageOutcome.Failed
     }
   }
 

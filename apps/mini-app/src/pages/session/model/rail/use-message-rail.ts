@@ -1,6 +1,7 @@
 import { useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from "react"
 import { railBand, railGroupOf, railGroups, railSeekOffset } from "@/pages/session/lib/rail-layout"
 import type { MessageRailProps } from "@/pages/session/model/types/message-rail.types"
+import { useRailFocus } from "./use-rail-focus"
 
 type RailInput = Pick<MessageRailProps, "messages" | "starts" | "total" | "viewport" | "activeId" | "jump" | "seek">
 
@@ -36,6 +37,7 @@ export function useMessageRail({ messages, starts, total, viewport, activeId, ju
   const selectedIndex = useMemo(() => messages.findIndex((message) => message.id === selectedId), [messages, selectedId])
   const selected = railGroupOf(groups, selectedIndex)
   const band = railBand(viewport, height)
+  const focus = useRailFocus(groups, messages, buttons)
 
   function register(id: string, node: HTMLButtonElement | null) {
     if (node) buttons.current.set(id, node)
@@ -61,5 +63,5 @@ export function useMessageRail({ messages, starts, total, viewport, activeId, ju
     seek(railSeekOffset(event.clientY - rect.top, rect.height, viewport))
   }
 
-  return { track, groups, band, selectedId, selected, register, onKeyDown, onTrackClick }
+  return { track, groups, band, selectedId, selected, focus, register, onKeyDown, onTrackClick }
 }

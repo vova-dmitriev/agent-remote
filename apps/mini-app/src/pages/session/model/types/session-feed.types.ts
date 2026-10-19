@@ -1,9 +1,12 @@
-import { AgentName, SessionTab } from "@/entities/session"
+import { AgentName, HistoryPageOutcome, SessionTab } from "@/entities/session"
 import type { HistoryMessage, AppSnapshot, HistoryStatus, HistoryNavigationDirection } from "@protocol"
+
+/** Loads a history page; the outcome tells whether an unchanged edge proves the history there exhausted. */
+export type HistoryPageLoader = (direction: HistoryNavigationDirection) => void | Promise<HistoryPageOutcome | void>
 
 export interface SessionFeedProps {
   sessionId: string
-  onHistoryPage?: ((direction: HistoryNavigationDirection) => void | Promise<void>) | undefined
+  onHistoryPage?: HistoryPageLoader | undefined
   readingScope?: string | undefined
   messages: HistoryMessage[]
   historyStatus?: HistoryStatus

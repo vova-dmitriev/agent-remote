@@ -16,19 +16,20 @@ export const MessageRail = memo(function MessageRail(props: MessageRailProps) {
   const { messages, jump, agent, older, newer, loadPage } = props
   const { t } = useTranslation()
   const preview = useMessagePreview(messages)
-  const { track, groups, band, selectedId, selected, register, onKeyDown, onTrackClick } = useMessageRail(props)
+  const { track, groups, band, selectedId, selected, focus, register, onKeyDown, onTrackClick } = useMessageRail(props)
 
   return (
     <>
       <nav
-        className="absolute inset-y-0 left-0 flex w-[28px] flex-col"
+        className="absolute inset-y-0 left-0 w-[40px]"
         data-testid={SESSION_FEED_IDS.rail}
         data-message-count={messages.length}
         data-active-message-id={selectedId}
         aria-label={t("messageNavigation")}
       >
         {older ? <HistoryCap direction={HistoryDirection.Before} loadPage={loadPage} /> : null}
-        <div ref={track} className="relative min-h-0 flex-1" data-testid={SESSION_FEED_IDS.railTrack}>
+        {/* Caps sit in their own column so the track keeps the scrollbar's full height and scale. */}
+        <div ref={track} className="absolute inset-y-0 right-0 left-[16px]" data-testid={SESSION_FEED_IDS.railTrack}>
           {/* Like a native scrollbar track, the free track is a pointer-only shortcut; markers carry keyboard navigation. */}
           <Button
             variant="ghost"
@@ -53,6 +54,7 @@ export const MessageRail = memo(function MessageRail(props: MessageRailProps) {
               current={index === selected}
               preview={preview}
               register={register}
+              focus={focus}
               jump={jump}
               onKeyDown={(event) => onKeyDown(event, index)}
             />
