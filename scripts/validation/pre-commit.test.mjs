@@ -22,7 +22,7 @@ function fixture(script, validationCommand = 'node --check example.mjs') {
   execFileSync('git', ['init', '--quiet', root]);
   mkdirSync(join(root, 'scripts'), { recursive: true });
 
-  for (const path of ['.githooks', '.gitleaks.toml', 'scripts/security', 'scripts/validation']) {
+  for (const path of ['.githooks', '.gitleaks.toml', '.semgrep', 'scripts/security', 'scripts/validation']) {
     if (existsSync(join(repository, path))) {
       cpSync(join(repository, path), join(root, path), { recursive: true });
     }

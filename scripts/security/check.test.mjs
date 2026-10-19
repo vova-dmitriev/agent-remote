@@ -1,11 +1,21 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { cpSync, mkdtempSync, rmSync, writeFileSync, readFileSync, mkdirSync } from 'node:fs';
+import {
+  cpSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+  readFileSync,
+  mkdirSync,
+  symlinkSync,
+  existsSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, test } from 'node:test';
 import { isPrivatePath } from './policy.mjs';
+import { assessedFindings } from './semgrep-assessed.mjs';
 
 const repository = fileURLToPath(new URL('../../', import.meta.url));
 const directories = [];
@@ -22,14 +32,16 @@ function fixture() {
   directories.push(directory);
   execFileSync('git', ['init', '--quiet', directory]);
   cpSync(join(repository, '.gitleaks.toml'), join(directory, '.gitleaks.toml'));
+  cpSync(join(repository, '.semgrep'), join(directory, '.semgrep'), { recursive: true });
 
   return directory;
 }
 
-function scan(directory, mode) {
+function scan(directory, mode, environment = process.env) {
   return spawnSync(process.execPath, [join(repository, 'scripts/security/check.mjs'), mode], {
     cwd: directory,
     encoding: 'utf8',
+    env: environment,
   });
 }
 
@@ -134,4 +146,169 @@ test('installed pre-commit hook rejects staged secrets without creating a commit
   assert.match(result.stderr, /telegram-bot-token/);
   assert.equal(readFileSync(join(directory, '.git/HEAD'), 'utf8'), before);
   assert.equal(scan(directory, 'history').status, 0);
+});
+
+const semgrepRules = readFileSync(join(repository, '.semgrep/secobserve-high.yml'), 'utf8');
+const unsafeEval = (marker) => `export function ${marker}(input: string) { return eval('1+' + input); }\n`;
+
+const commit = (directory) =>
+  execFileSync(
+    'git',
+    [
+      '-c',
+      'user.name=t',
+      '-c',
+      'user.email=t@localhost',
+      '-c',
+      'commit.gpgsign=false',
+      'commit',
+      '--quiet',
+      '--no-verify',
+      '-m',
+      'base',
+    ],
+    {
+      cwd: directory,
+    },
+  );
+
+test('vendored Semgrep rules cover only JavaScript and TypeScript', () => {
+  const languages = new Set();
+  let inLanguages = false;
+
+  for (const line of semgrepRules.split('\n')) {
+    const item = /^\s+- ([a-z]+)\s*$/.exec(line);
+
+    if (/^\s+languages:\s*$/.test(line)) {
+      inLanguages = true;
+    } else if (inLanguages && item) {
+      languages.add(item[1]);
+    } else {
+      inLanguages = false;
+    }
+  }
+
+  assert.deepEqual([...languages].sort(), ['javascript', 'typescript']);
+  assert.match(semgrepRules, /^# Source sha256: [0-9a-f]{64}$/m);
+});
+
+test('assessed Semgrep findings name an existing file and a vendored rule', () => {
+  for (const entry of assessedFindings) {
+    assert.equal(existsSync(join(repository, entry.path)), true, entry.path);
+    assert.match(semgrepRules, new RegExp(`- id: ${entry.ruleId}$`, 'm'), entry.ruleId);
+  }
+});
+
+test('staged High finding is blocked, even with nosemgrep, and no source is printed', () => {
+  const directory = fixture();
+
+  writeFileSync(
+    join(directory, 'vulnerable.ts'),
+    `${unsafeEval('markerAlpha')}${unsafeEval('markerBeta').trimEnd()} // nosemgrep\n`,
+  );
+
+  execFileSync('git', ['add', 'vulnerable.ts'], { cwd: directory });
+  const result = scan(directory, 'staged');
+
+  assert.equal(result.status, 1, result.stderr);
+  assert.match(result.stderr, /javascript_eval_rule-eval-with-expression: vulnerable\.ts:1\n/);
+  assert.match(result.stderr, /javascript_eval_rule-eval-with-expression: vulnerable\.ts:2\n/);
+
+  for (const output of [result.stderr, result.stdout]) {
+    assert.equal(/eval\(|marker(Alpha|Beta)|1\+/.test(output), false);
+  }
+});
+
+test('a finding already in HEAD does not block a commit that leaves it untouched', () => {
+  const directory = fixture();
+
+  writeFileSync(join(directory, 'vulnerable.ts'), unsafeEval('markerAlpha'));
+  execFileSync('git', ['add', '.'], { cwd: directory });
+  commit(directory);
+  writeFileSync(join(directory, 'vulnerable.ts'), `${unsafeEval('markerAlpha')}export const harmless = 1;\n`);
+  execFileSync('git', ['add', 'vulnerable.ts'], { cwd: directory });
+  const result = scan(directory, 'staged');
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Semgrep: staged scan passed/);
+
+  writeFileSync(join(directory, 'vulnerable.ts'), `${unsafeEval('markerAlpha')}${unsafeEval('markerNew')}`);
+  execFileSync('git', ['add', 'vulnerable.ts'], { cwd: directory });
+  const added = scan(directory, 'staged');
+
+  assert.equal(added.status, 1);
+  assert.match(added.stderr, /vulnerable\.ts:2\n/);
+  assert.equal(added.stderr.includes('vulnerable.ts:1\n'), false);
+});
+
+test('worktree scan reports a finding without a baseline', () => {
+  const directory = fixture();
+
+  writeFileSync(join(directory, 'vulnerable.ts'), unsafeEval('markerAlpha'));
+  const result = scan(directory, 'worktree');
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /javascript_eval_rule-eval-with-expression: vulnerable\.ts:1\n/);
+});
+
+test('missing Docker fails the Semgrep step instead of skipping it', () => {
+  const directory = fixture();
+  const tools = mkdtempSync(join(tmpdir(), 'repository-security-tools-'));
+
+  directories.push(tools);
+
+  for (const tool of ['git', 'gitleaks']) {
+    const location = execFileSync('which', [tool], { encoding: 'utf8' }).trim();
+
+    symlinkSync(location, join(tools, tool));
+  }
+
+  writeFileSync(join(directory, 'clean.ts'), 'export const clean = 1;\n');
+  execFileSync('git', ['add', 'clean.ts'], { cwd: directory });
+  const result = scan(directory, 'staged', { ...process.env, PATH: tools });
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Semgrep requires Docker\. Scan did not run\./);
+});
+
+test('an assessed finding passes, but a second finding of the same rule in the same file is blocked', () => {
+  const directory = fixture();
+  const assessed = 'scripts/smoke-image.ts';
+
+  mkdirSync(join(directory, 'scripts'), { recursive: true });
+  cpSync(join(repository, assessed), join(directory, assessed));
+  const unchanged = scan(directory, 'worktree');
+
+  assert.equal(unchanged.status, 0, unchanged.stderr);
+
+  const original = readFileSync(join(directory, assessed), 'utf8');
+
+  writeFileSync(
+    join(directory, assessed),
+    `${original}\nexport async function second(path: string, body: unknown) {\n  return fetch(path, { body: JSON.stringify(body) });\n}\n`,
+  );
+
+  const result = scan(directory, 'worktree');
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /rules_lgpl_javascript_ssrf_rule-node-ssrf: scripts\/smoke-image\.ts:\d+\n/);
+  assert.equal(result.stderr.split('\n').filter((line) => line.startsWith('rules_lgpl')).length, 1);
+});
+
+test('staged Semgrep scan inside a hook environment never touches the real repository', () => {
+  const directory = fixture();
+
+  const hookEnvironment = {
+    ...process.env,
+    GIT_DIR: join(directory, '.git'),
+    GIT_INDEX_FILE: join(directory, '.git/index'),
+  };
+
+  writeFileSync(join(directory, 'clean.ts'), 'export const clean = 1;\n');
+  execFileSync('git', ['add', 'clean.ts'], { cwd: directory });
+  const result = scan(directory, 'staged', hookEnvironment);
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(spawnSync('git', ['rev-parse', '--verify', 'HEAD'], { cwd: directory }).status !== 0, true);
+  assert.match(execFileSync('git', ['ls-files'], { cwd: directory, encoding: 'utf8' }), /clean\.ts/);
 });

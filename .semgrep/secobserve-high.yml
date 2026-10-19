@@ -1,0 +1,1553 @@
+# Vendored subset of the team SecObserve High/Critical Semgrep ruleset.
+# Source: /Users/vladimir/velvetech/eagletransport/report-service/.semgrep/secobserve-high.yml
+# Source sha256: 27f7e7d06277521e60e635837c83879ed19b03a2f3bbe7a8626dfb18525a1c39
+# Generator of the source: ai-automation/scripts/secobserve_rules.py (Semgrep 1.181.0, sast-rules @ 53bf5cf6df3c)
+# Vendored: 2026-10-19
+# Filter: 72 source rules -> JavaScript/TypeScript only (44), then only rules for
+#   technology this repository uses (Node.js core, Express, Electron, pg, Playwright); 17 kept.
+# License: MIT (c) GitLab Inc.; rules/lgpl* entries LGPL-3.0 (njsscan ports).
+rules:
+  - id: javascript_eval_rule-eval-with-expression
+    languages:
+      - javascript
+      - typescript
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern: |
+                  eval($OBJ)
+              - pattern-not: |
+                  eval("...")
+          - patterns:
+              - pattern: |
+                  $A.eval($OBJ)
+              - pattern-not: |
+                  $A.eval("...")
+          - patterns:
+              - pattern: |
+                  (..., eval)($OBJ)
+              - pattern-not: |
+                  (..., eval)("...")
+          - patterns:
+              - pattern: |
+                  $ALIAS = eval;
+                  ...
+                  $ALIAS($OBJ)
+              - pattern-not: |
+                  $ALIAS = eval;
+                  ...
+                  $ALIAS("...")
+          - pattern: |
+              new Function(..., "..." + $OBJ + "...")
+          - pattern: |
+              $BODY = "..." + $OBJ + "..."
+              ...
+              new Function(..., $BODY)
+          - pattern: |
+              new Function(..., `...${...}...`)
+          - pattern: |
+              $BODY = `...${...}...`
+              ...
+              new Function(..., $BODY)
+          - pattern: |
+              Function(..., "..." + $OBJ + "...")
+          - pattern: |
+              $BODY = "..." + $OBJ + "..."
+              ...
+              Function(..., $BODY)
+          - pattern: |
+              $BODY = `...${...}...`
+              ...
+              Function(..., $BODY)
+          - pattern: |
+              Function(..., `...${...}...`)
+          - pattern: |
+              setTimeout("..." + $OBJ + "...", ...)
+          - pattern: |
+              setTimeout(`...${...}...`, ...)
+          - pattern: |
+              setInterval("..." + $OBJ + "...", ...)
+          - pattern: |
+              setInterval(`...${...}...`, ...)
+      - pattern-not: |
+          setTimeout("...", ...)
+      - pattern-not: |
+          setInterval("...", ...)
+    severity: WARNING
+    message: >
+      The application was found calling the `eval` function OR Function()
+        constructor OR setTimeout() OR setInterval() methods. If the
+
+        variables or strings or functions passed to these methods contains user-supplied input, an adversary could attempt to execute arbitrary
+
+        JavaScript
+
+        code. This could lead to a full system compromise in Node applications or Cross-site Scripting
+
+        (XSS) in web applications.
+
+
+        To remediate this issue, remove all calls to above methods and consider alternative methods for
+
+        executing
+
+        the necessary business logic. There is almost no safe method of calling `eval` or other above stated sinks with
+
+        user-supplied input.
+
+        Instead, consider alternative methods such as using property accessors to dynamically access
+
+        values.
+
+
+        Example using property accessors to dynamically access an object's property:
+
+        ```
+
+        // Define an object
+
+        const obj = {key1: 'value1', key2: 'value2'};
+
+        // Get key dynamically from user input
+
+        const key = getUserInput();
+
+        // Check if the key exists in our object and return it, or a default empty string
+
+        const value = (obj.hasOwnProperty(key)) ? obj[key] : '';
+
+        // Work with the value
+
+        ```
+
+
+        For more information on why not to use `eval`, and alternatives see:
+
+        - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval#never_use_eval!
+
+        Other References:
+
+        - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/Function
+
+        - https://developer.mozilla.org/en-US/docs/Web/API/setTimeout
+
+        - https://developer.mozilla.org/en-US/docs/Web/API/setInterval
+    metadata:
+      cwe: CWE-95
+      shortDescription: Improper neutralization of directives in dynamically evaluated code ('Eval Injection')
+      category: security
+      owasp:
+        - A1:2017-Injection
+        - A03:2021-Injection
+        - A05:2025-Injection
+      source-rule-url: https://github.com/nodesecurity/eslint-plugin-security/blob/master/rules/detect-eval-with-expression.js
+      security-severity: High
+  - id: rules_lgpl_javascript_database_rule-node-sqli-injection
+    patterns:
+      - pattern-inside: |
+          require('$LIB')
+          ...
+      - metavariable-regex:
+          metavariable: $LIB
+          regex: \b(sql-client|mysql|pg|mssql|oracledb|sequelize)\b
+      - pattern-not: |
+          $CON.query("..." + "...", ...)
+      - pattern-not: |
+          $SQL = "...";
+          ...
+          $CON.query(<... $SQL ...>, ...)
+      - pattern-either:
+          - pattern: |
+              $CON.query(<... $REQ.$QUERY ...>, ...)
+          - pattern: |
+              $SQL = <... $REQ.$QUERY ...>;
+              ...
+              $CON.query(<... $SQL ...>, ...)
+          - pattern: |
+              $INP = <... $REQ.$QUERY ...>;
+              ...
+              $SQL = <... $INP ...>;
+              ...
+              $CON.query(<... $SQL ...>, ...)
+          - pattern: |
+              $CON.query(`...${...}...`, ...)
+          - pattern: |
+              $CON.query("..."+...+"...", ...)
+          - pattern: |
+              $SQL = <... $INP ...>;
+              ...
+              $CON.query(<... $SQL ...>, ...)
+    message: |
+      Untrusted input concatinated with raw SQL query can result in SQL Injection.
+    languages:
+      - javascript
+    severity: ERROR
+    metadata:
+      owasp:
+        - A1:2017-Injection
+        - A03:2021-Injection
+        - A05:2025-Injection
+      cwe: CWE-89
+      shortDescription: Improper neutralization of special elements used in an SQL command (SQL Injection)
+      security-severity: CRITICAL
+      category: security
+  - id: rules_lgpl_javascript_electronjs_rule-electron-allow-http
+    patterns:
+      - pattern-either:
+          - pattern: |
+              new BrowserWindow({webPreferences: {allowRunningInsecureContent: true}})
+          - pattern: |
+              var $X = {webPreferences: {allowRunningInsecureContent: true}};
+    message: >
+      Application can load content over HTTP and that makes the app vulnerable to Man in the middle
+      attacks.
+    languages:
+      - javascript
+    severity: ERROR
+    metadata:
+      owasp:
+        - A3:2017-Sensitive Data Exposure
+        - A02:2021-Cryptographic Failures
+        - A04:2025-Cryptographic Failures
+      cwe: CWE-319
+      shortDescription: Cleartext Transmission of Sensitive Information
+      security-severity: CRITICAL
+      category: security
+  - id: rules_lgpl_javascript_electronjs_rule-electron-disable-websecurity
+    patterns:
+      - pattern-either:
+          - pattern: |
+              new BrowserWindow({webPreferences: {webSecurity: false}})
+          - pattern: |
+              var $X = {webPreferences: {webSecurity: false}};
+    message: >
+      Disabling webSecurity will disable the same-origin policy and allows the execution of insecure
+      code from any domain.
+    languages:
+      - javascript
+    severity: ERROR
+    metadata:
+      owasp:
+        - A5:2017-Broken Access Control
+        - A07:2021-Identification and Authentication Failures
+        - A07:2025-Authentication Failures
+      cwe: CWE-346
+      shortDescription: Origin validation error
+      security-severity: CRITICAL
+      category: security
+  - id: rules_lgpl_javascript_electronjs_rule-electron-experimental-features
+    patterns:
+      - pattern-either:
+          - pattern: |
+              new BrowserWindow({webPreferences: {experimentalFeatures: true}})
+          - pattern: |
+              var $X = {webPreferences: {experimentalFeatures: true}};
+    message: |
+      Experimental features are not expected to be in production ready applications.
+    languages:
+      - javascript
+    severity: WARNING
+    metadata:
+      owasp:
+        - A5:2017-Broken Access Control
+        - A04:2021-Insecure Design
+        - A06:2025-Insecure Design
+      cwe: CWE-272
+      shortDescription: Least privilege violation
+      security-severity: CRITICAL
+      category: security
+  - id: rules_lgpl_javascript_eval_rule-eval-nodejs
+    patterns:
+      - pattern-either:
+          - pattern-inside: function ($REQ, $RES, ...) {...}
+          - pattern-inside: function $FUNC($REQ, $RES, ...) {...}
+          - pattern-inside: $X = function $FUNC($REQ, $RES, ...) {...}
+          - pattern-inside: var $X = function $FUNC($REQ, $RES, ...) {...};
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES, ...) {...})
+      - pattern-either:
+          - pattern: |
+              new Function(..., <... $REQ.$QUERY.$VAR ...>, ...)
+          - pattern: |
+              new Function(..., <... $REQ.$QUERY ...>, ...)
+          - pattern: |
+              eval(..., <... $REQ.$QUERY.$VAR ...>, ...)
+          - pattern: |
+              eval(..., <... $REQ.$QUERY ...>, ...)
+          - pattern: |
+              setTimeout(..., <... $REQ.$QUERY.$VAR ...>, ...)
+          - pattern: |
+              setTimeout(..., <... $REQ.$QUERY ...>, ...)
+          - pattern: |
+              setInterval(..., <... $REQ.$QUERY.$VAR ...>, ...)
+          - pattern: |
+              setInterval(..., <... $REQ.$QUERY ...>, ...)
+          - pattern: |
+              $INP = <... $REQ.$QUERY.$VAR ...>;
+              ...
+              new Function(..., <... $INP ...>, ...)
+          - pattern: |
+              $INP = <... $REQ.$QUERY ...>;
+              ...
+              new Function(..., <... $INP ...>, ...)
+          - pattern: |
+              $INP = <... $REQ.$QUERY.$VAR ...>;
+              ...
+              eval(..., <... $INP ...>, ...)
+          - pattern: |
+              $INP = <... $REQ.$QUERY ...>;
+              ...
+              eval(..., <... $INP ...>, ...)
+          - pattern: |
+              $INP = <... $REQ.$QUERY.$VAR ...>;
+              ...
+              setTimeout(..., <... $INP ...>, ...)
+          - pattern: |
+              $INP = <... $REQ.$QUERY ...>;
+              ...
+              setTimeout(..., <... $INP ...>, ...)
+          - pattern: |
+              $INP = <... $REQ.$QUERY.$VAR ...>;
+              ...
+              setInterval(..., <... $INP ...>, ...)
+          - pattern: |
+              $INP = <... $REQ.$QUERY ...>;
+              ...
+              setInterval(..., <... $INP ...>, ...)
+    message: >
+      User controlled data in eval() or similar functions may result in Server Side Injection or
+      Remote Code Injection
+    languages:
+      - javascript
+    severity: ERROR
+    metadata:
+      cwe: CWE-95
+      shortDescription: Improper neutralization of directives in dynamically evaluated code ('Eval Injection')
+      category: security
+      owasp:
+        - A1:2017-Injection
+        - A03:2021-Injection
+        - A05:2025-Injection
+      security-severity: HIGH
+  - id: rules_lgpl_javascript_eval_rule-eval-require
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-inside: |
+              function ($REQ, $RES, ...) {...}
+          - focus-metavariable: $REQ
+    pattern-sinks:
+      - patterns:
+          - pattern: |
+              require($REQ, ...)
+          - focus-metavariable: $REQ
+    pattern-sanitizers:
+      - patterns:
+          - pattern-either:
+              - pattern: |
+                  if($VALIDATION){
+                  ...
+                  require($REQ, ...) 
+                  ...
+                  } 
+              - pattern: |
+                  $A = $VALIDATION
+                  ...
+                  if($A){
+                  ...
+                  require($REQ, ...)
+                  ...
+                  }
+          - metavariable-pattern:
+              metavariable: $VALIDATION
+              pattern-either:
+                - pattern: |
+                    $AL.includes(...)  
+                - pattern: |
+                    $AL.indexOf(...) !== -1
+                - pattern: |
+                    $AL.find(...) !== undefined
+                - pattern: |
+                    $ALS.has(...)
+    message: >
+      Passing untrusted user input directly into the require() function without proper 
+
+      validation or sanitization can possibly cause a vulnerability known as remote code execution
+      (RCE). 
+
+      An attacker could manipulate the input to load and execute arbitrary code from external
+      sources, 
+
+      potentially leading to severe security breaches such as data theft, system compromise, 
+
+      or unauthorized access.
+
+      To mitigate this risk, it's crucial to validate and sanitize user input
+
+      thoroughly before passing it to functions like require(), ensuring that only trusted and safe
+      inputs are utilized.
+
+
+      Following is an example of secure validation against allowlist to prevent the vulnerability:
+
+      ```
+
+      // Define a list of explicitly allowed packages for require
+
+      const allowedPkgs = [
+          'package1',
+          'package2',
+          'package3'
+      ];
+
+
+      app.get("/eval/require/7", async (req, res) => {
+          var isAllowed = allowedPkgs.includes(req.query.name);  
+          if (isAllowed) {
+              // ok: rules_lgpl_javascript_eval_rule-eval-require
+              var cp = require(req.query.name);
+              cp.exec('ls', (error, stdout, stderr) => {
+                  console.log("exec output : \n", stdout)
+              });        
+          }
+          res.send("Please check console logs.");
+      });
+
+      ```
+    severity: ERROR
+    languages:
+      - javascript
+    metadata:
+      cwe: CWE-95
+      shortDescription: Improper neutralization of directives in dynamically evaluated code ('Eval Injection')
+      category: security
+      owasp:
+        - A1:2017-Injection
+        - A03:2021-Injection
+        - A05:2025-Injection
+      security-severity: CRITICAL
+  - id: rules_lgpl_javascript_eval_rule-vm-code-injection
+    patterns:
+      - pattern-inside: |
+          $VM = require('vm')
+          ...
+      - pattern-either:
+          - pattern-inside: function ($REQ, $RES, ...) {...}
+          - pattern-inside: function $FUNC($REQ, $RES, ...) {...}
+          - pattern-inside: $X = function $FUNC($REQ, $RES, ...) {...}
+          - pattern-inside: var $X = function $FUNC($REQ, $RES, ...) {...};
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES, ...) {...})
+      - pattern-either:
+          - pattern: $VM.runInContext(<... $REQ.$QUERY.$FOO ...>,...)
+          - pattern: $VM.runInContext(<... $REQ.$BODY ...>,...)
+          - pattern: |
+              $INPUT = <... $REQ.$QUERY.$FOO ...>;
+              ...
+              $VM.runInContext($INPUT,...)
+          - pattern: |
+              $INPUT = <... $REQ.$BODY ...>;
+              ...
+              $VM.runInContext($INPUT,...)
+          - pattern: $VM.runInNewContext(<... $REQ.$QUERY.$FOO ...>,...)
+          - pattern: $VM.runInNewContext(<... $REQ.$BODY ...>,...)
+          - pattern: |
+              $INPUT = <... $REQ.$QUERY.$FOO ...>;
+              ...
+              $VM.runInNewContext($INPUT,...)
+          - pattern: |
+              $INPUT = <... $REQ.$BODY ...>;
+              ...
+              $VM.runInNewContext($INPUT,...)
+          - pattern: $VM.runInThisContext(<... $REQ.$QUERY.$FOO ...>,...)
+          - pattern: $VM.runInThisContext(<... $REQ.$BODY ...>,...)
+          - pattern: |
+              $INPUT = <... $REQ.$QUERY.$FOO ...>;
+              ...
+              $VM.runInThisContext($INPUT,...)
+          - pattern: |
+              $INPUT = <... $REQ.$BODY ...>;
+              ...
+              $VM.runInThisContext($INPUT,...)
+          - pattern: $VM.compileFunction(<... $REQ.$QUERY.$FOO ...>,...)
+          - pattern: $VM.compileFunction(<... $REQ.$BODY ...>,...)
+          - pattern: |
+              $INPUT = <... $REQ.$QUERY.$FOO ...>;
+              ...
+              $VM.compileFunction($INPUT,...)
+          - pattern: |
+              $INPUT = <... $REQ.$BODY ...>;
+              ...
+              $VM.compileFunction($INPUT,...)
+          - pattern: new $VM.Script(<... $REQ.$QUERY.$FOO ...>,...)
+          - pattern: new $VM.Script(<... $REQ.$BODY ...>,...)
+          - pattern: |
+              $INPUT = <... $REQ.$QUERY.$FOO ...>;
+              ...
+              new $VM.Script($INPUT,...)
+          - pattern: |
+              $INPUT = <... $REQ.$BODY ...>;
+              ...
+              new $VM.Script($INPUT,...)
+    message: |
+      Untrusted user input reaching `vm` can result in code injection.
+    severity: ERROR
+    languages:
+      - javascript
+    metadata:
+      cwe: CWE-94
+      shortDescription: Improper control of generation of code (Code Injection)
+      category: security
+      owasp:
+        - A1:2017-Injection
+        - A03:2021-Injection
+        - A05:2025-Injection
+      security-severity: CRITICAL
+  - id: rules_lgpl_javascript_eval_rule-vm-compilefunction-injection
+    patterns:
+      - pattern-inside: |
+          require('vm')
+          ...
+      - pattern-either:
+          - pattern-inside: function ($REQ, $RES, ...) {...}
+          - pattern-inside: function $FUNC($REQ, $RES, ...) {...}
+          - pattern-inside: $X = function $FUNC($REQ, $RES, ...) {...}
+          - pattern-inside: var $X = function $FUNC($REQ, $RES, ...) {...};
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES, ...) {...})
+      - pattern-either:
+          - pattern: |
+              $VM.compileFunction($CODE,$PARAMS,{parsingContext: <... $REQ.$QUERY.$FOO ...>},...)
+          - pattern: >
+              $CONTEXT = <... $REQ.$QUERY.$FOO ...>; ...
+              $VM.compileFunction($CODE,$PARAMS,{parsingContext: <... $CONTEXT ...>},...)
+          - pattern: >
+              $CONTEXT = <... {$NAME:$REQ.$QUERY.$FOO} ...>; ...
+              $VM.compileFunction($CODE,$PARAMS,{parsingContext: <... $CONTEXT ...>},...)
+          - pattern: >
+              $CONTEXT = {$NAME: <... $REQ.$QUERY.$FOO ...>}; ...
+              $VM.compileFunction($CODE,$PARAMS,{parsingContext: <... $CONTEXT ...>},...)
+          - pattern: >
+              $VAR = <... $REQ.$QUERY.$FOO ...>; ... $CONTEXT = {$NAME: <... $VAR ...>}; ...
+              $VM.compileFunction($CODE,$PARAMS,{parsingContext: <... $CONTEXT ...>},...)
+          - pattern: |
+              $OPTS = {parsingContext: <... $REQ.$QUERY.$FOO ...>};
+              ...
+              $VM.compileFunction($CODE,$PARAMS,$OPTS,...)
+          - pattern: |
+              $CONTEXT = <... $REQ.$QUERY.$FOO ...>;
+              ...
+              $OPTS = {parsingContext: <... $CONTEXT ...>};
+              ...
+              $VM.compileFunction($CODE,$PARAMS,$OPTS,...)
+          - pattern: |
+              $CONTEXT = {$NAME: <... $REQ.$QUERY.$FOO ...>};
+              ...
+              $OPTS = {parsingContext: <... $CONTEXT ...>};
+              ...
+              $VM.compileFunction($CODE,$PARAMS,$OPTS,...)
+          - pattern: |
+              $VAR = <... $REQ.$QUERY.$FOO ...>;
+              ...
+              $CONTEXT = {$NAME: <... $VAR ...>};
+              ...
+              $OPTS = {parsingContext: <... $CONTEXT ...>};
+              ...
+              $VM.compileFunction($CODE,$PARAMS,$OPTS,...)
+          - pattern: |
+              $VM.compileFunction($CODE,$PARAMS,{parsingContext: <... $REQ.$BODY ...>},...)
+          - pattern: >
+              $CONTEXT = <... $REQ.$BODY ...>; ...
+              $VM.compileFunction($CODE,$PARAMS,{parsingContext: <... $CONTEXT ...>},...)
+          - pattern: >
+              $CONTEXT = <... {$NAME:$REQ.$BODY} ...>; ...
+              $VM.compileFunction($CODE,$PARAMS,{parsingContext: <... $CONTEXT ...>},...)
+          - pattern: >
+              $CONTEXT = {$NAME: <... $REQ.$BODY ...>}; ...
+              $VM.compileFunction($CODE,$PARAMS,{parsingContext: <... $CONTEXT ...>},...)
+          - pattern: >
+              $VAR = <... $REQ.$BODY ...>; ... $CONTEXT = {$NAME: <... $VAR ...>}; ...
+              $VM.compileFunction($CODE,$PARAMS,{parsingContext: <... $CONTEXT ...>},...)
+          - pattern: |
+              $OPTS = {parsingContext: <... $REQ.$BODY ...>};
+              ...
+              $VM.compileFunction($CODE,$PARAMS,$OPTS,...)
+          - pattern: |
+              $CONTEXT = <... $REQ.$BODY ...>;
+              ...
+              $OPTS = {parsingContext: <... $CONTEXT ...>};
+              ...
+              $VM.compileFunction($CODE,$PARAMS,$OPTS,...)
+          - pattern: |
+              $CONTEXT = {$NAME: <... $REQ.$BODY ...>};
+              ...
+              $OPTS = {parsingContext: <... $CONTEXT ...>};
+              ...
+              $VM.compileFunction($CODE,$PARAMS,$OPTS,...)
+          - pattern: |
+              $VAR = <... $REQ.$BODY ...>;
+              ...
+              $CONTEXT = {$NAME: <... $VAR ...>};
+              ...
+              $OPTS = {parsingContext: <... $CONTEXT ...>};
+              ...
+              $VM.compileFunction($CODE,$PARAMS,$OPTS,...)
+    message: |
+      Untrusted user input in `vm.compileFunction()` can result in code injection.
+    severity: ERROR
+    languages:
+      - javascript
+    metadata:
+      cwe: CWE-94
+      shortDescription: Improper control of generation of code (Code Injection)
+      category: security
+      owasp:
+        - A1:2017-Injection
+        - A03:2021-Injection
+        - A05:2025-Injection
+      security-severity: CRITICAL
+  - id: rules_lgpl_javascript_eval_rule-vm-runincontext-injection
+    patterns:
+      - pattern-inside: |
+          require('vm')
+          ...
+      - pattern-either:
+          - pattern-inside: function ($REQ, $RES, ...) {...}
+          - pattern-inside: function $FUNC($REQ, $RES, ...) {...}
+          - pattern-inside: $X = function $FUNC($REQ, $RES, ...) {...}
+          - pattern-inside: var $X = function $FUNC($REQ, $RES, ...) {...};
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES, ...) {...})
+      - pattern-either:
+          - pattern: |
+              $CONTEXT = <... $REQ.$QUERY.$FOO ...>;
+              ...
+              $VM.runInContext($CODE,<... $CONTEXT ...>,...)
+          - pattern: |
+              $CONTEXT = <... {$NAME:$REQ.$QUERY.$FOO} ...>;
+              ...
+              $VM.runInContext($CODE,<... $CONTEXT ...>,...)
+          - pattern: |
+              $CONTEXT = {$NAME: <... $REQ.$QUERY.$FOO ...>};
+              ...
+              $VM.runInContext($CODE,<... $CONTEXT ...>,...)
+          - pattern: |
+              $VAR = <... $REQ.$QUERY.$FOO ...>;
+              ...
+              $CONTEXT = {$NAME: <... $VAR ...>};
+              ...
+              $VM.runInContext($CODE,<... $CONTEXT ...>,...)
+          - pattern: |
+              $CONTEXT = <... $REQ.$BODY ...>;
+              ...
+              $VM.runInContext($CODE,<... $CONTEXT ...>,...)
+          - pattern: |
+              $CONTEXT = <... {$NAME:$REQ.$BODY} ...>;
+              ...
+              $VM.runInContext($CODE,<... $CONTEXT ...>,...)
+          - pattern: |
+              $CONTEXT = {$NAME: <... $REQ.$BODY ...>};
+              ...
+              $VM.runInContext($CODE,<... $CONTEXT ...>,...)
+          - pattern: |
+              $VAR = <... $REQ.$BODY ...>;
+              ...
+              $CONTEXT = {$NAME: <... $VAR ...>};
+              ...
+              $VM.runInContext($CODE,<... $CONTEXT ...>,...)
+    message: |
+      Untrusted user input in `vm.runInContext()` can result in code injection.
+    severity: ERROR
+    languages:
+      - javascript
+    metadata:
+      cwe: CWE-94
+      shortDescription: Improper control of generation of code (Code Injection)
+      category: security
+      owasp:
+        - A1:2017-Injection
+        - A03:2021-Injection
+        - A05:2025-Injection
+      security-severity: CRITICAL
+  - id: rules_lgpl_javascript_eval_rule-vm-runinnewcontext-injection
+    patterns:
+      - pattern-inside: |
+          require('vm')
+          ...
+      - pattern-either:
+          - pattern-inside: function ($REQ, $RES, ...) {...}
+          - pattern-inside: function $FUNC($REQ, $RES, ...) {...}
+          - pattern-inside: $X = function $FUNC($REQ, $RES, ...) {...}
+          - pattern-inside: var $X = function $FUNC($REQ, $RES, ...) {...};
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES, ...) {...})
+      - pattern-either:
+          - pattern: |
+              $VM.runInNewContext($CODE,<... $REQ.$QUERY.$FOO ...>,...)
+          - pattern: |
+              $CONTEXT = <... $REQ.$QUERY.$FOO ...>;
+              ...
+              $VM.runInNewContext($CODE,<... $CONTEXT ...>,...)
+          - pattern: |
+              $CONTEXT = {$NAME: <... $REQ.$QUERY.$FOO ...>};
+              ...
+              $VM.runInNewContext($CODE,<... $CONTEXT ...>,...)
+          - pattern: |
+              $CONTEXT = <... {$NAME:$REQ.$QUERY.$FOO} ...>;
+              ...
+              $VM.runInNewContext($CODE,<... $CONTEXT ...>,...)
+          - pattern: |
+              $VAR = <... $REQ.$QUERY.$FOO ...>;
+              ...
+              $CONTEXT = {$NAME: <... $VAR ...>};
+              ...
+              $VM.runInNewContext($CODE,<... $CONTEXT ...>,...)
+          - pattern: |
+              $VM.runInNewContext($CODE,<... $REQ.$BODY ...>,...)
+          - pattern: |
+              $CONTEXT = <... $REQ.$BODY ...>;
+              ...
+              $VM.runInNewContext($CODE,<... $CONTEXT ...>,...)
+          - pattern: |
+              $CONTEXT = {$NAME: <... $REQ.$BODY ...>};
+              ...
+              $VM.runInNewContext($CODE,<... $CONTEXT ...>,...)
+          - pattern: |
+              $CONTEXT = <... {$NAME:$REQ.$BODY} ...>;
+              ...
+              $VM.runInNewContext($CODE,<... $CONTEXT ...>,...)
+          - pattern: |
+              $VAR = <... $REQ.$BODY ...>;
+              ...
+              $CONTEXT = {$NAME: <... $VAR ...>};
+              ...
+              $VM.runInNewContext($CODE,<... $CONTEXT ...>,...)
+    message: |
+      Untrusted user input in `vm.runInNewContext()` can result in code injection.
+    severity: ERROR
+    languages:
+      - javascript
+    metadata:
+      cwe: CWE-94
+      shortDescription: Improper control of generation of code (Code Injection)
+      category: security
+      owasp:
+        - A1:2017-Injection
+        - A03:2021-Injection
+        - A05:2025-Injection
+      security-severity: CRITICAL
+  - id: rules_lgpl_javascript_headers_rule-generic-header-injection
+    patterns:
+      - pattern-either:
+          - pattern-inside: function ($REQ, $RES, ...) {...}
+          - pattern-inside: function $FUNC($REQ, $RES, ...) {...}
+          - pattern-inside: $X = function $FUNC($REQ, $RES, ...) {...}
+          - pattern-inside: var $X = function $FUNC($REQ, $RES, ...) {...};
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES, ...) {...})
+      - pattern-either:
+          - pattern: |
+              $INP = $REQ.$QUERY;
+              ...
+              $RES.set(..., <... $INP ...>, ...)
+          - pattern: |
+              $INP = $REQ.$QUERY.$VAR;
+              ...
+              $RES.set(..., <... $INP ...>, ...)
+          - pattern: |
+              $INP = $REQ.$VAR;
+              ...
+              $RES.set(..., { $X: <... $INP ...>}, ...)
+          - pattern: |
+              $INP = $REQ.$QUERY.$FOO;
+              ...
+              $RES.set(..., { $X: <... $INP ...>}, ...)
+          - pattern: |
+              $INP = $REQ.$VAR;
+              ...
+              $RES.writeHead(..., { $X: <... $INP ...> }, ...)
+          - pattern: |
+              $INP = $REQ.$QUERY.$FOO;
+              ...
+              $RES.writeHead(..., { $X: <... $INP ...> }, ...)
+          - pattern: |
+              $RES.set(..., <... $REQ.$QUERY ...>, ...)
+          - pattern: |
+              $RES.set(..., <... $REQ.$QUERY.$VAR ...>, ...)
+          - pattern: |
+              $RES.set(..., { $X: <... $REQ.$VAR ...>}, ...)
+          - pattern: |
+              $RES.set(..., { $X: <... $REQ.$QUERY.$FOO ...>}, ...)
+          - pattern: |
+              $RES.writeHead(..., { $X: <... $REQ.$VAR ...> }, ...)
+          - pattern: |
+              $RES.writeHead(..., { $X: <... $REQ.$QUERY.$FOO ...> }, ...)
+    message: >
+      Untrusted user input in response header will result in HTTP Header Injection or Response
+      Splitting Attacks.
+    languages:
+      - javascript
+    severity: ERROR
+    metadata:
+      owasp:
+        - A1:2017-Injection
+        - A03:2021-Injection
+        - A05:2025-Injection
+      cwe: CWE-644
+      shortDescription: Improper neutralization of HTTP headers for scripting syntax
+      security-severity: CRITICAL
+      category: security
+  - id: rules_lgpl_javascript_redirect_rule-express-open-redirect
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-inside: |
+              function ($REQ, $RES, ...) {...}
+          - focus-metavariable: $REQ
+    pattern-sinks:
+      - pattern: |
+          $RES.redirect(...)
+    pattern-sanitizers:
+      - pattern-either:
+          - patterns:
+              - pattern-either:
+                  - pattern: |
+                      if($VALIDATION){
+                        ...
+                        $RES.redirect(...)
+                        ...
+                      } 
+                  - pattern: |
+                      $A = $VALIDATION
+                      ...
+                      if($A){
+                        ...
+                        $RES.redirect(...)
+                        ...
+                      }
+              - metavariable-pattern:
+                  metavariable: $VALIDATION
+                  pattern-either:
+                    - pattern: |
+                        $AL.includes(...)  
+                    - pattern: |
+                        $AL.indexOf(...) !== -1
+                    - pattern: |
+                        $AL.find(...) !== undefined
+                    - pattern: |
+                        $ALS.has(...)
+          - patterns:
+              - pattern: |
+                  $RES.redirect("$DOM" + ...)
+              - metavariable-regex:
+                  metavariable: $DOM
+                  regex: (http(s)?:\/\/.*\/)
+    message: |
+      Passing untrusted user input in `redirect()` can result in an open redirect
+      vulnerability. This could be abused by malicious actors to trick users into 
+      being redirected to websites under their control to capture authentication
+      information.  
+      To prevent open redirect vulnerabilities:
+
+      - Always validate and sanitize user inputs, especially URL parameters
+       or query strings that may influence the flow of the application.
+      - Use allowlists (lists of permitted URLs) to validate redirect targets 
+       against known, trusted URLs before performing the redirect.
+      - Avoid directly using user input for redirecting. If unavoidable, ensure
+       strict validation against an allowlist.
+
+      Following is an example of secure validation against allowlist to prevent the vulnerability:
+       ```
+       // Define a list of explicitly allowed URLs for redirection
+       const allowedUrls = [
+           'https://www.example.com/page1',
+           'https://www.example.com/page2',
+           'https://secure.example.com/page3'
+       ];
+
+       app.get('/redirect/:url', (req, res) => {
+           const url = decodeURIComponent(req.params.url);
+           const isAllowed = allowedUrls.includes(url);
+           if (isAllowed) {
+               // If the URL is allowed, proceed with the redirect
+               res.redirect(url);
+           } else {
+               res.status(400).send('Invalid redirect URL');
+           }
+       });
+       ```
+    languages:
+      - javascript
+    severity: ERROR
+    metadata:
+      shortDescription: URL redirection to untrusted site 'open redirect'
+      category: security
+      owasp:
+        - A1:2017-Injection
+        - A01:2021-Broken Access Control
+        - A01:2025-Broken Access Control
+      cwe: CWE-601
+      security-severity: CRITICAL
+  - id: rules_lgpl_javascript_redirect_rule-express-open-redirect2
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-inside: |
+              function ($REQ, $RES, ...) {...}
+          - focus-metavariable: $REQ
+    pattern-sinks:
+      - pattern-either:
+          - patterns:
+              - pattern-not: |
+                  $RES.$METHOD("=~/location/i", "=~/http(s)?:\/\/.*\//" + ...)
+              - pattern-not-inside: |
+                  $VAR = "=~/http(s)?:\/\/.*\//" + ...;
+                  ...
+              - pattern: |
+                  $RES.$METHOD("=~/location/i", $VAR)
+              - metavariable-regex:
+                  metavariable: $METHOD
+                  regex: (header|set|append|setHeader)
+          - patterns:
+              - pattern-not-inside: |
+                  $V = "=~/http(s)?:\/\/.*\//" + ...;
+                  ...
+              - pattern-not:
+                  patterns:
+                    - pattern: |
+                        $RES.writeHead(..., { 
+                            ..., 
+                            location: $V,
+                            ...
+                        })
+                    - metavariable-pattern:
+                        metavariable: $V
+                        patterns:
+                          - pattern: |
+                              "=~/http(s)?:\/\/.*\//" + ...
+              - pattern: |
+                  $RES.writeHead(..., { 
+                              ..., 
+                              location: $V,
+                              ...
+                          })
+              - focus-metavariable: $V
+          - patterns:
+              - pattern-not: |
+                  $RES.location("=~/http(s)?:\/\/.*\//" + ...)
+              - pattern-not-inside: |
+                  $VAR = "=~/http(s)?:\/\/.*\//" + ...;
+                  ...
+              - pattern: |
+                  $RES.location($VAR)
+    pattern-sanitizers:
+      - pattern-either:
+          - patterns:
+              - pattern-either:
+                  - pattern: |
+                      if($VALIDATION){
+                        ...
+                      } 
+                  - pattern: |
+                      $A = $VALIDATION
+                      ...
+                      if($A){
+                        ...
+                      }
+              - metavariable-pattern:
+                  metavariable: $VALIDATION
+                  pattern-either:
+                    - pattern: |
+                        $AL.includes(...)  
+                    - pattern: |
+                        $AL.indexOf(...) !== -1
+                    - pattern: |
+                        $AL.find(...) !== undefined
+                    - pattern: |
+                        $ALS.has(...)
+    message: |
+      Passing untrusted user input in `redirect()` can result in an open redirect
+      vulnerability. This could be abused by malicious actors to trick users into 
+      being redirected to websites under their control to capture authentication
+      information.  
+      To prevent open redirect vulnerabilities:
+
+      - Always validate and sanitize user inputs, especially URL parameters
+       or query strings that may influence the flow of the application.
+      - Use allowlists (lists of permitted URLs) to validate redirect targets 
+       against known, trusted URLs before performing the redirect.
+      - Avoid directly using user input for redirecting. If unavoidable, ensure
+       strict validation against an allowlist.
+
+      Following is an example of secure validation against allowlist to prevent the vulnerability:
+       ```
+       // Define a list of explicitly allowed URLs for redirection
+       const allowedUrls = [
+           'https://www.example.com/page1',
+           'https://www.example.com/page2',
+           'https://secure.example.com/page3'
+       ];
+
+       app.get('/redirect/:url', (req, res) => {
+           const url = decodeURIComponent(req.params.url);
+           const isAllowed = allowedUrls.includes(url);
+           if (isAllowed) {
+               // If the URL is allowed, proceed with the redirect
+                res.location(url).status(302).end();
+           } else {
+               res.status(400).send('Invalid redirect URL');
+           }
+       });
+       ```
+    languages:
+      - javascript
+    severity: ERROR
+    metadata:
+      shortDescription: URL redirection to untrusted site 'open redirect'
+      category: security
+      owasp:
+        - A1:2017-Injection
+        - A01:2021-Broken Access Control
+        - A01:2025-Broken Access Control
+      cwe: CWE-601
+      security-severity: CRITICAL
+  - id: rules_lgpl_javascript_ssrf_rule-node-ssrf
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - focus-metavariable: $REQ
+          - pattern: function ($REQ, $RES, ...) {...}
+      - patterns:
+          - focus-metavariable: $REQ
+          - pattern: function $FUNC($REQ, $RES, ...) {...}
+    pattern-sanitizers:
+      - patterns:
+          - pattern-either:
+              - pattern: |
+                  if($VALIDATION){
+                  ...
+                  } 
+              - pattern: |
+                  $A = $VALIDATION
+                  ...
+                  if($A){
+                  ...
+                  }
+          - metavariable-pattern:
+              metavariable: $VALIDATION
+              pattern-either:
+                - pattern: |
+                    $AL.includes(...)  
+                - pattern: |
+                    $AL.indexOf(...) !== -1
+                - pattern: |
+                    $AL.find(...) !== undefined
+                - pattern: |
+                    $ALS.has(...)
+    pattern-sinks:
+      - patterns:
+          - focus-metavariable: $REQ
+          - pattern-either:
+              - pattern-inside: |
+                  $NEEDLE = require('needle');
+                  ...
+              - pattern-inside: |
+                  import $NEEDLE from 'needle'
+                  ...
+          - pattern-either:
+              - pattern: $NEEDLE('$VERB', $REQ, ...)
+              - pattern: $NEEDLE.$VERB($REQ, ...)
+          - metavariable-regex:
+              metavariable: $VERB
+              regex: ^(get|put|post|patch|delete|head)$
+      - patterns:
+          - focus-metavariable: $REQ
+          - pattern-either:
+              - pattern-inside: |
+                  $AXIOS = require('axios');
+                  ...
+              - pattern-inside: |
+                  import $AXIOS from 'axios'
+                  ...
+          - pattern-either:
+              - patterns:
+                  - metavariable-regex:
+                      metavariable: $URL
+                      regex: ^(url|baseURL)$
+                  - pattern-either:
+                      - pattern: |
+                          $AXIOS({ ..., $URL: $REQ, ...})
+                      - pattern: |
+                          $AXIOS.create({ ..., $URL: $REQ, ...})
+              - patterns:
+                  - pattern: $AXIOS.$VERB($REQ, ...)
+                  - metavariable-regex:
+                      metavariable: $VERB
+                      regex: ^(get|put|post|patch|delete|head)$
+              - patterns:
+                  - pattern: axios($REQ)
+                  - pattern-not-inside: axios({...})
+              - pattern: |
+                  axios.defaults.baseURL = $REQ
+      - patterns:
+          - focus-metavariable: $URL
+          - pattern-either:
+              - pattern-inside: |
+                  {..., request, ... } = require('urllib');
+                  ...
+              - pattern-inside: |
+                  import {..., request, ... } from 'urllib'
+                  ...
+          - pattern: request($URL, ...)
+      - patterns:
+          - focus-metavariable: $URL
+          - pattern-either:
+              - pattern-inside: |
+                  {..., HttpClient, ... } = require('urllib');
+                  ...
+              - pattern-inside: |
+                  import {..., HttpClient, ... } from 'urllib'
+                  ...
+              - pattern: |
+                  $HTTPCLIENT = new HttpClient({
+                                      allowH2: true,
+                                    });
+                  ...
+                  $HTTPCLIENT.request($URL, ...)
+      - patterns:
+          - focus-metavariable: $URL
+          - pattern-either:
+              - pattern-inside: |
+                  $URLLIIB = require('urllib');
+                  ...
+              - pattern-inside: |
+                  import $URLLIIB from 'urllib'
+                  ...
+          - pattern: $URLLIIB.request($URL, ...)
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  $SA = require('superagent');
+                   ...
+              - pattern-inside: |
+                  import $SA from 'superagent'
+                  ...
+          - patterns:
+              - pattern: $SA.$VERB(...)
+              - metavariable-regex:
+                  metavariable: $VERB
+                  regex: ^(get|put|post|patch|delete|head)$
+      - patterns:
+          - pattern-either:
+              - patterns:
+                  - pattern: fetch($REQ,...)
+                  - focus-metavariable: $REQ
+                  - pattern-not: fetch(new Request(...))
+              - patterns:
+                  - pattern: fetch(new Request($REQ,...))
+                  - focus-metavariable: $REQ
+          - pattern-not-inside: |
+              $REQUEST_OBJ = new Request(...)
+              ...
+              fetch($REQUEST_OBJ)
+      - patterns:
+          - pattern: new Request($REQ,...)
+          - focus-metavariable: $REQ
+          - pattern-inside: |
+              $REQUEST_OBJ = new Request($REQ,...)
+              ...
+              fetch($REQUEST_OBJ)
+      - patterns:
+          - focus-metavariable: $REQ
+          - pattern-either:
+              - pattern-inside: |
+                  $HTTP = require('$PKG');
+                  ...
+              - pattern-inside: |
+                  import $HTTP from $PKG
+                  ...
+          - metavariable-regex:
+              metavariable: $PKG
+              regex: ^(http|https)$
+          - metavariable-regex:
+              metavariable: $METHOD
+              regex: ^(get|request)$
+          - pattern-either:
+              - patterns:
+                  - pattern: $HTTP.$METHOD($REQ, ...)
+                  - pattern-not-inside: |
+                      $HTTP.$METHOD({...}, ...)
+                  - pattern-not-inside: |
+                      $OPTS = {...}
+                      ...
+                      $HTTP.$METHOD($OPTS, ...)
+              - pattern: |
+                  $HTTP.$METHOD({..., hostname: $REQ}, ...)
+              - pattern: |
+                  $OPTS = {..., hostname: $REQ, ...}
+                  ...
+                  $HTTP.$METHOD($OPTS, ...)
+              - pattern: |
+                  $HTTP.$METHOD({..., host: $REQ}, ...)
+              - pattern: |
+                  $OPTS = {..., host: $REQ, ...}
+                  ...
+                  $HTTP.$METHOD($OPTS, ...)            
+      - patterns:
+          - focus-metavariable: $REQ
+          - pattern-either:
+              - pattern-inside: |
+                  { ..., io, ... } = require('socket.io-client');
+                  ...
+              - pattern-inside: |
+                  import { ..., io, ... } from 'socket.io-client'
+                  ...
+          - pattern: io($REQ, ...)
+      - patterns:
+          - focus-metavariable: $HOST
+          - pattern-either:
+              - pattern-inside: |
+                  $NET = require('net');
+                  ...
+              - pattern-inside: |
+                  import $NET from 'net'
+                  ...
+          - metavariable-regex:
+              metavariable: $METHOD
+              regex: ^(connect|createConnection)$
+          - pattern-either:
+              - pattern: $NET.$METHOD($PORT, $HOST, ...)
+              - pattern: |
+                  $NET.$METHOD({..., host: $HOST, ...}, ...)
+              - pattern: |
+                  $OPTS = {..., host: $HOST, ...}
+                  ...
+                  $NET.$METHOD($OPTS, ...)
+              - pattern: |
+                  $CLIENT = new $NET.Socket()
+                  ...
+                  $CLIENT.$METHOD($PORT, $HOST, ...)
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  $BENT = require('bent');
+                  ...
+              - pattern-inside: |
+                  import $BENT from 'bent';
+                  ...
+          - pattern: $BENT(...)
+      - patterns:
+          - focus-metavariable: $REQ
+          - pattern-either:
+              - pattern-inside: |
+                  $BENT = require('bent');
+                  ...
+                  $MTD = $BENT(...)
+              - pattern-inside: |
+                  import $BENT from 'bent';
+                  ...
+                  $MTD = $BENT(...)
+          - pattern: $MTD($REQ, ...)
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  $BENT = require('bent');
+                  ...
+                  $GETBENT = $BENT('$PKG')
+                  ...
+              - pattern-inside: |
+                  import $BENT from 'bent';
+                  ...
+                  $GETBENT = $BENT('$PKG')
+                  ...
+          - pattern: $GETBENT(...)
+          - metavariable-regex:
+              metavariable: $PKG
+              regex: ^(json|buffer)$
+      - patterns:
+          - focus-metavariable: $REQ
+          - pattern-either:
+              - pattern-inside: |
+                  import $GOT from 'got';
+                  ...
+          - pattern: $GOT.$VERB($REQ, ...)
+          - metavariable-regex:
+              metavariable: $VERB
+              regex: ^(get|put|post|patch|delete|head)$
+      - patterns:
+          - focus-metavariable: $URL
+          - pattern-either:
+              - pattern-inside: |
+                  $REQUEST = require('request');
+                  ...
+              - pattern-inside: |
+                  import $REQUEST from 'request';
+                  ...
+          - pattern: $REQUEST($URL, ...)
+    message: |
+      This application allows user-controlled URLs to be passed directly to HTTP client libraries. 
+      This can result in Server-Side Request Forgery (SSRF).
+      SSRF refers to an attack where the attacker can abuse functionality on 
+      the server to force it to make requests to other internal systems within your 
+      infrastructure that are not directly exposed to the internet. 
+      This allows the attacker to access internal resources they do not have direct access to.
+
+      Some risks of SSRF are:
+
+      - Access and manipulation of internal databases, APIs, or administrative panels
+      - Ability to scan internal network architecture and services
+      - Can be used to pivot attacks into the internal network
+      - Circumvent network segregation and firewall rules
+
+      To avoid this, try using hardcoded HTTP request calls or a whitelisting object to 
+      check whether the user input is trying to access allowed resources or not.
+
+      Here is an example:
+      ```
+      var whitelist = [
+        "https://example.com", 
+        "https://example.com/sample"
+      ]
+
+      app.get('/ssrf/node-ssrf/axios/safe/3', function (req, res) {
+        if(whitelist.includes(req.query.url)){
+            axios.get(url, {})
+                .then(function (response) {
+                    console.log(response);
+                })
+                .catch(function (response) {
+                    console.log(response);  
+                })
+        }
+      });
+      ``` 
+      For more information on SSRF see OWASP:
+      https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+    languages:
+      - javascript
+    severity: ERROR
+    metadata:
+      owasp:
+        - A1:2017-Injection
+        - A10:2021-Server-Side Request Forgery
+        - A01:2025-Broken Access Control
+      cwe: CWE-918
+      shortDescription: Server-side request forgery (SSRF)
+      security-severity: HIGH
+      category: security
+  - id: rules_lgpl_javascript_ssrf_rule-playwright-ssrf
+    patterns:
+      - pattern-inside: |
+          require('playwright')
+          ...
+      - pattern-either:
+          - pattern-inside: function $FUNC($REQ, $RES, ...) {...}
+          - pattern-inside: $X = function $FUNC($REQ, $RES, ...) {...}
+          - pattern-inside: var $X = function $FUNC($REQ, $RES, ...) {...};
+          - pattern-inside: $APP.$METHOD(..., function $FUNC($REQ, $RES, ...) {...})
+      - pattern-either:
+          - pattern: $PAGE.goto(<... $REQ.$QUERY.$FOO ...>, ...)
+          - pattern: $PAGE.goto(<... $REQ.$BODY ...>, ...)
+          - pattern: $PAGE.setContent(<... $REQ.$QUERY.$FOO ...>, ...)
+          - pattern: $PAGE.setContent(<... $REQ.$BODY ...>, ...)
+          - pattern: $PAGE.evaluate(<... $REQ.$QUERY.$FOO ...>, ...)
+          - pattern: $PAGE.evaluate(<... $REQ.$BODY ...>, ...)
+          - pattern: $PAGE.evaluate($CODE,..., <... $REQ.$QUERY.$FOO ...>, ...)
+          - pattern: $PAGE.evaluate($CODE,..., <... $REQ.$BODY ...>, ...)
+          - pattern: $PAGE.evaluateHandle(<... $REQ.$QUERY.$FOO ...>, ...)
+          - pattern: $PAGE.evaluateHandle(<... $REQ.$BODY ...>, ...)
+          - pattern: $PAGE.evaluateHandle($CODE,..., <... $REQ.$QUERY.$FOO ...>, ...)
+          - pattern: $PAGE.evaluateHandle($CODE,..., <... $REQ.$BODY ...>, ...)
+          - pattern: $PAGE.evaluateOnNewDocument(<... $REQ.$BODY ...>, ...)
+          - pattern: $PAGE.evaluateOnNewDocument(<... $REQ.$BODY.$FOO ...>, ...)
+          - pattern: $CONTEXT.addInitScript(<... $REQ.$BODY ...>,...)
+          - pattern: $CONTEXT.addInitScript(<... $REQ.$BODY.$FOO ...>,...)
+          - pattern: |
+              $INPUT = <... $REQ.$QUERY.$FOO ...>;
+              ...
+              $PAGE.goto(<... $INPUT ...>,...)
+          - pattern: |
+              $INPUT = <... $REQ.$BODY ...>;
+              ...
+              $PAGE.goto(<... $INPUT ...>,...)
+          - pattern: |
+              $INPUT = <... $REQ.$QUERY.$FOO ...>;
+              ...
+              $PAGE.setContent(<... $INPUT ...>,...)
+          - pattern: |
+              $INPUT = <... $REQ.$BODY ...>;
+              ...
+              $PAGE.setContent(<... $INPUT ...>,...)
+          - pattern: |
+              $INPUT = <... $REQ.$QUERY.$FOO ...>;
+              ...
+              $PAGE.evaluate($CODE,..., <... $INPUT ...>,...)
+          - pattern: |
+              $INPUT = <... $REQ.$BODY ...>;
+              ...
+              $PAGE.evaluate($CODE,..., <... $INPUT ...>,...)
+          - pattern: |
+              $INPUT = <... $REQ.$QUERY.$FOO ...>;
+              ...
+              $PAGE.evaluate(<... $INPUT ...>,...)
+          - pattern: |
+              $INPUT = <... $REQ.$BODY ...>;
+              ...
+              $PAGE.evaluate(<... $INPUT ...>,...)
+          - pattern: |
+              $INPUT = <... $REQ.$QUERY.$FOO ...>;
+              ...
+              $PAGE.evaluateHandle(<... $INPUT ...>,...)
+          - pattern: |
+              $INPUT = <... $REQ.$BODY ...>;
+              ...
+              $PAGE.evaluateHandle(<... $INPUT ...>,...)
+          - pattern: |
+              $INPUT = <... $REQ.$QUERY.$FOO ...>;
+              ...
+              $PAGE.evaluateHandle($CODE,..., <... $INPUT ...>,...)
+          - pattern: |
+              $INPUT = <... $REQ.$BODY ...>;
+              ...
+              $PAGE.evaluateHandle($CODE,..., <... $INPUT ...>,...)
+          - pattern: |
+              $INPUT = <... $REQ.$QUERY.$FOO ...>;
+              ...
+              $PAGE.evaluateOnNewDocument(<... $INPUT ...>,...)
+          - pattern: |
+              $INPUT = <... $REQ.$BODY ...>;
+              ...
+              $PAGE.evaluateOnNewDocument(<... $INPUT ...>,...)
+          - pattern: |
+              $INPUT = <... $REQ.$BODY ...>;
+              ...
+              $CONTEXT.addInitScript($INPUT,...)
+    message: >
+      If unverified user data can reach the `puppeteer` methods it can result in Server-Side Request
+      Forgery vulnerabilities.
+    metadata:
+      owasp:
+        - A1:2017-Injection
+        - A10:2021-Server-Side Request Forgery
+        - A01:2025-Broken Access Control
+      cwe: CWE-918
+      shortDescription: Server-side request forgery (SSRF)
+      security-severity: CRITICAL
+      category: security
+    severity: ERROR
+    languages:
+      - javascript
+  - id: javascript_exec_rule-child-process
+    message: |
+      OS command injection is a critical vulnerability that can lead to a full system
+      compromise as it may allow an adversary to pass in arbitrary commands or arguments
+      to be executed.
+
+      User input should never be used in constructing commands or command arguments
+      to functions which execute OS commands. This includes filenames supplied by
+      user uploads or downloads.
+
+      Ensure your application does not:
+
+      - Use user-supplied information in the process name to execute.
+      - Use user-supplied information in an OS command execution function which does
+      not escape shell meta-characters.
+      - Use user-supplied information in arguments to OS commands.
+
+      The application should have a hardcoded set of arguments that are to be passed
+      to OS commands. If filenames are being passed to these functions, it is
+      recommended that a hash of the filename be used instead, or some other unique
+      identifier. It is strongly recommended that a native library that implements
+      the same functionality be used instead of using OS system commands, due to the
+      risk of unknown attacks against third-party commands.
+
+      When specifying the OS command, ensure the application uses the full path
+      information, otherwise the OS may attempt to look up which process to execute
+      and could be vulnerable to untrusted search path vulnerabilities (CWE-426).
+
+      Example of safely executing an OS command:
+      ```
+      const child_process = require('child_process');
+      const fs = require('fs');
+      const crypto = require('node:crypto');
+      const { mkdtempSync } = require('node:fs');
+
+      function executeCommand(userFileData) {
+          // Create a temporary directory, preferably in an application directory
+          // that only the application has access to.
+          const fileDir = mkdtempSync('/tmp/tmpdir-');
+          // Generate a random filename, do not use user input
+          const filePath = fileDir + path.sep + crypto.randomUUID();
+          // Write the user-supplied data to the temporary file.
+          fs.writeFileSync(filePath, userFileData);
+          // Execute a program with a hardcoded path to the binary
+          child_process.exec(`/bin/cat ${filePath}`, (error, stdout, stderr) => {
+              // Delete the temporary directory and file if no longer needed
+              fs.rmSync(fileDir, { recursive: true, force: true });
+              if (error) {
+                console.error(`exec error: ${error}`);
+                return;
+              }
+              console.log(`stdout: ${stdout}`);
+              console.error(`stderr: ${stderr}`);
+          });
+      }
+      ```
+
+      For more information on OS command injection, see OWASP's guide:
+      https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html
+
+      Detected non-literal calls to child_process.exec(). This could lead to a command
+      injection vulnerability.
+    metadata:
+      cwe: CWE-78
+      owasp:
+        - A1:2017-Injection
+        - A03:2021-Injection
+        - A05:2025-Injection
+      shortDescription: Improper neutralization of special elements used in an OS command ('OS Command Injection')
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Nodejs_Security_Cheat_Sheet.html#do-not-use-dangerous-functions
+      source-rule-url: https://github.com/nodesecurity/eslint-plugin-security/blob/master/rules/detect-child-process.js
+      category: security
+      technology:
+        - javascript
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+      cwe2022-top25: true
+      cwe2021-top25: true
+      subcategory:
+        - audit
+      vulnerability_class:
+        - Command Injection
+      security-severity: HIGH
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    options:
+      taint_unify_mvars: true
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-inside: |
+              function ... (...,$ARG,...) {
+                ...
+              }
+          - focus-metavariable: $ARG
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  $CP = require('child_process')
+                  ...
+              - pattern-inside: |
+                  import * as $CP from 'child_process'
+                  ...
+              - pattern-inside: |
+                  import $CP from 'child_process'
+                  ...
+          - pattern-either:
+              - pattern: $CP.exec($CMD,...)
+              - pattern: $CP.execSync($CMD,...)
+              - pattern: $CP.spawn($CMD,...)
+              - pattern: $CP.spawnSync($CMD,...)
+          - focus-metavariable: $CMD
+    pattern-sanitizers:
+      - pattern: |
+          $CMD = "..."
+      - pattern: |
+          $CMD = ["...",...]

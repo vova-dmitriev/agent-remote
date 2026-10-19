@@ -9,7 +9,7 @@
 - Never claim Desktop Chat Accessibility integration works before verifying it against the actual application.
 - Never import or call `expect` or any assertion API in `*.stories.*`. Storybook play functions may only perform interactions; assertions belong in test/spec files.
 - Never store secrets, tokens, real chat content or terminal recordings in version control.
-- Before publication, run `npm run security:check` and `npm run security:test`. Install the checked-in Git hooks with `npm run security:install-hooks`; do not bypass findings. README screenshots must come from reviewed English Storybook fixtures, never real sessions. See `SECURITY.md`.
+- Before publication, run `npm run security:check` (Gitleaks and the Semgrep SecObserve gate; Semgrep runs from a digest-pinned Docker image, `# nosemgrep` is ignored) and `npm run security:test`. Install the checked-in Git hooks with `npm run security:install-hooks`; do not bypass findings. README screenshots must come from reviewed English Storybook fixtures, never real sessions. See `SECURITY.md`.
 - Run `npm run validate` without creating a commit. Pre-commit must validate the actual staged snapshot with `npm run validate:commit`; never bypass hooks or validate only the working copy for a commit.
 - Frontend changes must follow `apps/mini-app/AGENTS.md` and pass `npm run check:frontend`; the guarded build enforces source-quality gates.
 

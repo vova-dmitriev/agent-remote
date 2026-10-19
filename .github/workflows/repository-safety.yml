@@ -14,7 +14,9 @@ jobs:
           persist-credentials: false
       - name: Install pinned Gitleaks with checksum verification
         run: bash scripts/security/install-gitleaks-linux.sh
-      - name: Check public files, complete history and hook regressions
+      - name: Pull the digest-pinned Semgrep image
+        run: docker pull "$(node --input-type=module -e "import { SEMGREP_IMAGE } from './scripts/security/semgrep.mjs'; process.stdout.write(SEMGREP_IMAGE)")"
+      - name: Check public files, Semgrep SecObserve rules, complete history and hook regressions
         run: |
           node scripts/security/check.mjs worktree
           node scripts/security/check.mjs history
