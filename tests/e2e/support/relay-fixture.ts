@@ -2,13 +2,12 @@ import { test as base, expect } from '@playwright/test';
 import { Pool } from 'pg';
 import { WebSocket } from 'ws';
 import { randomBytes, randomUUID, createHash } from 'node:crypto';
-import { NotificationWorker } from '../../../apps/server/src/notifications/worker.js';
-import { createRelay } from '../../../apps/server/src/relay.js';
-import { initData, testBotToken } from '../../helpers/telegram.js';
+import { initData } from '../../helpers/telegram.js';
 import type { ClientCommand, HistoryMessage } from '@protocol';
 import { sessionSnapshot } from './session-fixtures.js';
 import { commandOutcome, setCommandOutcome } from '../runtime/command-outcome.js';
 import { appOrigin } from '../runtime/app-origin.js';
+import { startRelayProcess, type RemoteRelay } from './relay-process.js';
 
 export { setCommandOutcome } from '../runtime/command-outcome.js';
 
@@ -17,8 +16,16 @@ const url =
     'postgres://claude_remote:local_test_only@127.0.0.1:55432/claude_remote_test',
   schema = 'e2e_' + randomUUID().replaceAll('-', '');
 
-let relay: Awaited<ReturnType<typeof createRelay>>;
+let relay: RemoteRelay;
 const sockets: WebSocket[] = [];
+// The relay's epoch for each authenticated device socket, as its `authenticated` frame reported it.
+const epochs = new WeakMap<WebSocket, string>();
+
+export const rememberEpoch = (socket: WebSocket, epoch: string) => epochs.set(socket, epoch);
+
+/** The epoch of the current device connection, or undefined when its socket is not open (the device is offline). */
+export const liveEpoch = () =>
+  sockets[0]?.readyState === WebSocket.OPEN ? epochs.get(sockets[0]) : undefined;
 
 export const delivered: ClientCommand[] = [];
 let deviceId: string;
@@ -36,16 +43,15 @@ async function startRelay() {
   await pool.query(`CREATE SCHEMA ${schema}`);
   await pool.end();
 
-  relay = await createRelay({
+  relay = await startRelayProcess({
     databaseUrl: url,
     schema,
-    botToken: testBotToken,
     publicOrigin: appOrigin,
+    port: 3000,
     inputEnabled: true,
     permissionsEnabled: true,
   });
 
-  await relay.listen(3000);
   const login = await relay.auth.login(initData('801'));
 
   const code = randomBytes(16).toString('hex'),
@@ -68,7 +74,10 @@ async function startRelay() {
     ws.on('message', (raw) => {
       const frame = JSON.parse(String(raw));
 
-      if (frame.type === 'authenticated') resolve();
+      if (frame.type === 'authenticated') {
+        rememberEpoch(ws, frame.epoch);
+        resolve();
+      }
 
       if (frame.type === 'command') {
         delivered.push(frame.command);
@@ -135,9 +144,8 @@ export async function completeBotPairing(telegramId: number) {
     proof = randomBytes(32).toString('hex');
 
   await relay.devices.start(sha(code), sha(proof));
-  const worker = new NotificationWorker(relay.db, testBotToken, appOrigin);
 
-  await worker.updates([
+  await relay.notifications.updates([
     {
       update_id: 1,
       message: {
@@ -167,9 +175,8 @@ async function stopRelay() {
 export const test = base.extend<{ relayRuntime: undefined }>({
   relayRuntime: [
     async ({ browserName: _browserName }, use) => {
-      await startRelay();
-
       try {
+        await startRelay();
         await use(undefined);
       } finally {
         await stopRelay();
