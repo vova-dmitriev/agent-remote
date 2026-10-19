@@ -4,7 +4,7 @@ import {
   ProfileStatus,
   type ProfileOperation,
   type ProfileLogin,
-} from '../../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import type { ProfileAuthenticationOptions } from './types.js';
 import type { ProfileJournal } from '../lifecycle/journal.js';
 

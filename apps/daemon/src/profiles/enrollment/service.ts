@@ -10,8 +10,8 @@ import {
   enrollmentChallengeSchema,
   type BeginEnrollmentRequest,
   type EncryptedEnrollment,
-} from '../../../../../packages/protocol/src/index.js';
-import type { EnrollmentRecipient } from '../../../../../packages/transport/src/credentials/types.js';
+} from '@protocol';
+import type { EnrollmentRecipient } from '@transport/credentials/types.js';
 import { immutableProfileScope } from '../storage/scope.js';
 import { ProfileJournal } from '../lifecycle/journal.js';
 import { loadEnrollmentIdentity } from './identity.js';

@@ -1,4 +1,4 @@
-import type { ExecutionProfileSummary, ProfileLogin } from '../../../../../packages/protocol/src/index.js';
+import type { ExecutionProfileSummary, ProfileLogin } from '@protocol';
 import type { ProfileVerification } from '../types.js';
 import type { ProfileRegistry } from '../registry.js';
 import type { ProfileServiceOptions } from '../lifecycle/types.js';

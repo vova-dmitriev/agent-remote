@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { actionSchema, snapshotSchema } from '../packages/protocol/src/index.js';
+import { actionSchema, snapshotSchema } from '@protocol';
 
 it('accepts structured question answers and explicit skip without converting them to prompts', () => {
   expect(

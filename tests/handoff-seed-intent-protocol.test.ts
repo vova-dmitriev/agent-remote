@@ -4,7 +4,7 @@ import {
   handoffSeedAdmissionFrameSchema,
   handoffSeedIntentFrameSchema,
   executionLaunchSelectionSchema,
-} from '../packages/protocol/src/index.js';
+} from '@protocol';
 
 const seedMeta = {
   operationId: '11111111-1111-4111-8111-111111111111',

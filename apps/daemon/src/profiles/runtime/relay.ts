@@ -5,7 +5,7 @@ import {
   ProfileLimits,
   type ServerFrame,
   type DeviceFrame,
-} from '../../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import type { RuntimeProfiles } from './service.js';
 
 type ProfileRelayFrame = Extract<

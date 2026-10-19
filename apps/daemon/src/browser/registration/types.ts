@@ -1,4 +1,4 @@
-import type { BrowserKind } from '../../../../../packages/protocol/src/values/local-client.js';
+import type { BrowserKind } from '@protocol';
 import type { NativeHostInterface } from './values.js';
 
 export interface NativeHostRegistration {

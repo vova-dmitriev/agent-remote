@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest';
-import { historySchema } from '../packages/protocol/src/index.js';
+import { historySchema } from '@protocol';
 import { createHash, randomBytes } from 'node:crypto';
 import { mkdtemp, writeFile, appendFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -113,9 +113,7 @@ it('restores registered native history through the actual relay despite a retire
         headers: { authorization: 'Bearer ' + ownerToken },
       });
 
-      return response.ok
-        ? ((await response.json()) as import('../packages/protocol/src/index.js').EventEnvelope[])
-        : [];
+      return response.ok ? ((await response.json()) as import('@protocol').EventEnvelope[]) : [];
     };
 
     await expect

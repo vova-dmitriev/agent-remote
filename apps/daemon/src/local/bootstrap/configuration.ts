@@ -2,7 +2,7 @@ import { readFile, lstat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { z } from 'zod';
 import { configSchema, type DaemonConfig } from '../../config.js';
-import { ErrorCode } from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode } from '@protocol';
 import { loadLocalIdentity } from './identity.js';
 
 export async function runtimeConfiguration(directory: string) {

@@ -4,7 +4,7 @@ import { COMMAND_IDS } from '../../apps/mini-app/src/features/send-command/confi
 import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
 import { SESSION_PAGE_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
 import { SHELL_IDS } from '../../apps/mini-app/src/widgets/application-shell/config/test-ids.js';
-import { SessionStatus } from '../../packages/protocol/src/index.js';
+import { SessionStatus } from '@protocol';
 import { LocalDocumentKind } from '../../apps/daemon/src/local/state/values.js';
 
 test('uses one approved browser identity for two viewers and rejects stale draft edits', async ({

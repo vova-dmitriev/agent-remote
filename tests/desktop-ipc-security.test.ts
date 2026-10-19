@@ -10,7 +10,7 @@ import {
   LocalOperation,
   desktopBridgeRequestSchema,
   type ServerFrame,
-} from '../packages/protocol/src/index.js';
+} from '@protocol';
 import { resolveDesktopAsset } from '../apps/desktop/src/main/protocol/asset-path.js';
 import { DESKTOP_ASSET_URL } from '../apps/desktop/src/main/config/links.js';
 import { DesktopPrivateIpcChannel } from '../apps/desktop/src/shared/private-ipc.js';

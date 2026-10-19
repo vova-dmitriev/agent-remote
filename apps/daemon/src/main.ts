@@ -9,7 +9,7 @@ import {
   NativeRestartState,
   historySchema,
   type ServerFrame,
-} from '../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { ModelOrigin, RuntimeEvent } from './domain/runtime.js';
 import { DesktopOperation } from './domain/desktop.js';
 import {

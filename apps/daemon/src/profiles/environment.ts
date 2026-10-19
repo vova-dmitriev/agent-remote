@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import { ErrorCode, ProfileStatus } from '../../../../packages/protocol/src/index.js';
+import { ErrorCode, ProfileStatus } from '@protocol';
 import { privateFile } from '../local/bootstrap/private-file.js';
 import type { ProfileRegistry } from './registry.js';
 import { profileHomes } from './environment/paths.js';

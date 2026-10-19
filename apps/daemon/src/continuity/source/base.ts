@@ -12,7 +12,7 @@ import {
   SubagentStatus,
   type AttachmentDescriptor,
   type Session,
-} from '../../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { nativeFile } from '../../attachments/io.js';
 import { isAbsolute } from 'node:path';
 
@@ -58,7 +58,7 @@ export function validateSession(
 }
 
 export function mapMessage(
-  message: import('../../../../../packages/protocol/src/index.js').HistoryMessage,
+  message: import('@protocol').HistoryMessage,
   attachments: Map<string, AttachmentDescriptor>,
 ): CheckpointMessage | null {
   if (message.role !== MessageRole.User && message.role !== MessageRole.Assistant) {

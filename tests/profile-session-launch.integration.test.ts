@@ -1,5 +1,5 @@
 import { afterEach, expect, it } from 'vitest';
-import { AgentProvider } from '../packages/protocol/src/index.js';
+import { AgentProvider } from '@protocol';
 import { cleanupProfileLaunchFixtures, create, setupPeer } from './profile-session-launch.fixture.js';
 import { readPeerEvents, stopControlledPeer } from './helpers/profile-codex-peer.js';
 

@@ -1,13 +1,7 @@
 import { connect } from 'node:net';
 import { once } from 'node:events';
 import type { Readable, Writable } from 'node:stream';
-import {
-  ErrorCode,
-  LocalKind,
-  localHelloSchema,
-  localRequestSchema,
-  LOCAL_LIMITS,
-} from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode, LocalKind, localHelloSchema, localRequestSchema, LOCAL_LIMITS } from '@protocol';
 import { FramedPeer } from '../transport/peer.js';
 
 export interface NativeHostOptions {

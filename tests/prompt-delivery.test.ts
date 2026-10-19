@@ -4,7 +4,7 @@ import { Monitor } from '../apps/daemon/src/monitor/monitor.js';
 import { Dispatcher } from '../apps/daemon/src/commands/dispatcher.js';
 import { PermissionBroker } from '../apps/daemon/src/commands/permission-broker.js';
 import { AdapterRegistry, SourceAdapter } from '../apps/daemon/src/adapters/registry.js';
-import { actionSchema, type Command, type Session } from '../packages/protocol/src/index.js';
+import { actionSchema, type Command, type Session } from '@protocol';
 
 const cleanups: (() => void)[] = [];
 

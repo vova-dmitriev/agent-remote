@@ -8,7 +8,7 @@ import {
   resultSchema,
   type AttachmentDescriptor,
   type ClientCommand,
-} from '../../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import type { ApplicationPersistence, PersistedDraft, PersistedQueue } from '@/shared/api';
 import type { ExtensionConnection } from '../connection.js';
 

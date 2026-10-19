@@ -1,4 +1,4 @@
-import type { ClientCommand, PromptTurnBarrier } from '../../../../../packages/protocol/src/index.js';
+import type { ClientCommand, PromptTurnBarrier } from '@protocol';
 
 export interface QueuedIntent {
   command: ClientCommand;

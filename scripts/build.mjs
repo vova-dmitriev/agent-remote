@@ -1,9 +1,8 @@
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, cpSync } from 'node:fs';
+import { buildNode } from './build/node.mjs';
 
-execFileSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.build.json'], {
-  stdio: 'inherit',
-});
+await buildNode();
 
 mkdirSync('dist/apps/server/src/db/migrations', { recursive: true });
 cpSync('apps/server/src/db/migrations', 'dist/apps/server/src/db/migrations', { recursive: true });

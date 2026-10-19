@@ -7,7 +7,7 @@ import {
   LocalOperation,
   MessageRole,
   type HistoryMessage,
-} from '../packages/protocol/src/index.js';
+} from '@protocol';
 import {
   assertFits,
   closeHistoryFixtures,

@@ -1,4 +1,4 @@
-import { ErrorCode, HistoryDirection, LOCAL_LIMITS } from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode, HistoryDirection, LOCAL_LIMITS } from '@protocol';
 
 export const LOCAL_HISTORY_LIMITS = {
   // Leave room for result metadata and both cursors within the logical-message ceiling.

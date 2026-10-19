@@ -12,12 +12,13 @@ import {
   type CommandResult,
   type Cursor,
   type EventEnvelope,
-} from '../../../../packages/protocol/src/index.js';
+  ErrorCode,
+  type HistoryRead,
+  type ClientCommand,
+} from '@protocol';
 import { CommandStoreOutcome } from '../domain/runtime.js';
-import { ErrorCode, type HistoryRead } from '../../../../packages/protocol/src/index.js';
 import { cachedLocalHistory } from './local-history.js';
 import { localCommand } from './local-command.js';
-import type { ClientCommand } from '../../../../packages/protocol/src/index.js';
 import Sqlite from 'better-sqlite3';
 import { chmodSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';

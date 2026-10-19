@@ -1,6 +1,6 @@
 import { lstat } from 'node:fs/promises';
 import { join } from 'node:path';
-import { ErrorCode, LOCAL_LIMITS } from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode, LOCAL_LIMITS } from '@protocol';
 import { runtimeConfiguration } from '../../local/bootstrap/configuration.js';
 import { localClientSecret } from '../../local/bootstrap/identity.js';
 import { probeCompanion } from '../../local/bootstrap/probe.js';

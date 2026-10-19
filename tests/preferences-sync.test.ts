@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { PreferenceSync } from '../apps/mini-app/src/shared/lib/preferences/sync.js';
-import type { AccountPreferences, PreferencePatch } from '../packages/protocol/src/index.js';
+import type { AccountPreferences, PreferencePatch } from '@protocol';
 
 const defaults: AccountPreferences = { language: 'ru', theme: 'auto' };
 

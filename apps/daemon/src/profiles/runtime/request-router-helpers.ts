@@ -1,4 +1,4 @@
-import { ProfileOperationPhase } from '../../../../../packages/protocol/src/index.js';
+import { ProfileOperationPhase } from '@protocol';
 import { ProfileService } from '../service.js';
 import { ProfileAuthentication } from '../authentication/service.js';
 import { CredentialEnrollmentService } from '../enrollment/service.js';

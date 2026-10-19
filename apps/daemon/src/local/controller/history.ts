@@ -6,7 +6,7 @@ import {
   HistoryCursorPrefix,
   LocalOperation,
   type LocalAction,
-} from '../../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { TRANSCRIPT_POSITION_PREFIX } from '../../code/transcript-limits.js';
 import { bytePage } from '../history/index.js';
 import type { LocalControllerOptions } from './types.js';

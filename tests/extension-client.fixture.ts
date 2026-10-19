@@ -8,7 +8,7 @@ import {
   StatusConfidence,
   TargetKind,
   LocalKind,
-} from '../packages/protocol/src/index.js';
+} from '@protocol';
 import type { ChromeApi, ChromePort } from '../apps/chrome-extension/src/config/chrome-api.js';
 import { ExtensionConnection } from '../apps/chrome-extension/src/client/connection.js';
 

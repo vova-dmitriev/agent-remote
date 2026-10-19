@@ -4,7 +4,7 @@ import {
   ProfileStatus,
   ProfileOperationPhase,
   type ProfileOperation,
-} from '../../../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import type { ProfileVerification } from '../../types.js';
 import type { EnrollmentContext } from './types.js';
 

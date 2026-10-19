@@ -7,7 +7,7 @@ import {
   executionProfileSummarySchema,
   type AgentProvider,
   type ExecutionProfileSummary,
-} from '../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import type { LocalDatabase } from '../local/state/database.js';
 import { ProfileRepository } from './storage/repository.js';
 import {

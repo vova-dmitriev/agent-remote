@@ -15,7 +15,7 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 import { MEDIA_ID, MEDIA_LIMITS } from './types.js';
-import { ErrorCode, MAX_ATTACHMENT_BYTES } from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode, MAX_ATTACHMENT_BYTES } from '@protocol';
 
 export class MediaFiles {
   private staging = new Set<string>();

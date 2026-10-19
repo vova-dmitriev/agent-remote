@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { boundSubagentSnapshots } from '../apps/daemon/src/monitor/subagents.js';
-import { sessionSchema, noCapabilities } from '../packages/protocol/src/index.js';
+import { sessionSchema, noCapabilities } from '@protocol';
 
 it('keeps snapshots below transport bounds with many large child tasks and preserves active children first', () => {
   const sessions = Array.from({ length: 10 }, (_, index) =>

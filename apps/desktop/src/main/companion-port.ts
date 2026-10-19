@@ -1,4 +1,4 @@
-import type { LocalAction, ServerFrame } from '../../../../packages/protocol/src/index.js';
+import type { LocalAction, ServerFrame } from '@protocol';
 
 /** Main-process-only adapter; the connector never crosses the renderer bridge. */
 export interface DesktopCompanionConnector {

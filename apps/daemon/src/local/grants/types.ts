@@ -1,4 +1,4 @@
-import type { LocalClientGrant, LocalGrantStatus } from '../../../../../packages/protocol/src/index.js';
+import type { LocalClientGrant, LocalGrantStatus } from '@protocol';
 
 export interface GrantRow {
   client: string;

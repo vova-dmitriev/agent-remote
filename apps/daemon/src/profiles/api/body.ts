@@ -1,4 +1,4 @@
-import { ErrorCode } from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode } from '@protocol';
 import { ProfileApiLimit } from './values.js';
 
 export async function profileApiBody(response: Response): Promise<unknown> {

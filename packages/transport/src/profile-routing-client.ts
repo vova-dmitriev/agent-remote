@@ -1,12 +1,12 @@
-import { ErrorCode } from '../../protocol/src/error-codes.js';
-import { HttpRequestMethod } from '../../protocol/src/values/http.js';
 import {
+  ErrorCode,
+  HttpRequestMethod,
   profileRoutingSettingsSchema,
   profileRoutingSnapshotSchema,
   saveProfileRoutingSchema,
   type ProfileRoutingAccess,
   type SaveProfileRouting,
-} from '../../protocol/src/profile-routing.js';
+} from '@protocol';
 
 type RoutingExchange = (method: HttpRequestMethod, path: string, body?: unknown) => Promise<unknown>;
 

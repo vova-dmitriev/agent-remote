@@ -13,7 +13,7 @@ import {
   localResultSchema,
   type LocalAction,
   type ServerFrame,
-} from '../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { FramedPeer } from '../../../daemon/src/browser/transport/peer.js';
 
 export interface DesktopSocketClient {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { profileAuthUrlSchema } from '../packages/protocol/src/profile-auth-url.js';
+import { profileAuthUrlSchema } from '@protocol';
 
 describe('profile auth URL policy', () => {
   it('accepts only the bounded HTTPS OpenAI auth origin', () => {

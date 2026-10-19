@@ -7,7 +7,7 @@ import {
   enrollmentCredentialBodySchema,
   type EnrollmentChallenge,
   type EncryptedEnrollment,
-} from '../../../protocol/src/index.js';
+} from '@protocol';
 import { decodeEnrollmentBase64, enrollmentKeyId } from './recipient.js';
 import type { EnrollmentRecipient } from './types.js';
 

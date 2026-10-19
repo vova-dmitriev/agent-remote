@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
 import { databaseFixture } from './helpers/database.js';
 import { persistEvent } from '../apps/server/src/history/events.js';
-import type { EventEnvelope } from '../packages/protocol/src/index.js';
+import type { EventEnvelope } from '@protocol';
 
 it('rolls back the event and revision if notification intent cannot be persisted, then retries once', async () => {
   const fixture = await databaseFixture();

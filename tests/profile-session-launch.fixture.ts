@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { AgentProvider, ProfileAuthMode } from '../packages/protocol/src/index.js';
+import { AgentProvider, ProfileAuthMode } from '@protocol';
 import { CodexManager } from '../apps/daemon/src/codex/manager.js';
 import { LocalDatabase } from '../apps/daemon/src/local/state/database.js';
 import { ProfileService } from '../apps/daemon/src/profiles/service.js';

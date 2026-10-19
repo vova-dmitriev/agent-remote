@@ -16,7 +16,7 @@ import {
   CodexDesktopChangeType,
 } from '../domain/codex-desktop.js';
 import { randomUUID } from 'node:crypto';
-import { ErrorCode, validateUserInputAnswers } from '../../../../packages/protocol/src/index.js';
+import { ErrorCode, validateUserInputAnswers } from '@protocol';
 import { asyncReplyKeys, asyncReplyWrapper, desktopAsyncRequests } from './desktop-user-input.js';
 import { EventEmitter } from 'node:events';
 import { type RpcFrame } from './rpc-client.js';
@@ -294,8 +294,7 @@ export class DesktopCodexClient extends EventEmitter {
       throw new Error(ErrorCode.USER_INPUT_EXPIRED);
     }
 
-    const questions =
-      params.questions as import('../../../../packages/protocol/src/index.js').UserInputQuestion[];
+    const questions = params.questions as import('@protocol').UserInputQuestion[];
 
     const answers = validateUserInputAnswers({ questions }, object(result).answers);
     const asynchronous = this.asynchronous.has(id);

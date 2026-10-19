@@ -1,4 +1,4 @@
-import { ErrorCode } from '../../../../packages/protocol/src/index.js';
+import { ErrorCode } from '@protocol';
 import { connect } from 'node:net';
 import { PassThrough, Writable } from 'node:stream';
 import { lstat } from 'node:fs/promises';

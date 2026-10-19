@@ -1,4 +1,4 @@
-import { ErrorCode, LOCAL_LIMITS } from '../../../../packages/protocol/src/index.js';
+import { ErrorCode, LOCAL_LIMITS } from '@protocol';
 
 export class BrokerPending {
   private entries = new Map<string, ReturnType<typeof setTimeout>>();

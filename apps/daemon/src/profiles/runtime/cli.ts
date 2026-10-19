@@ -1,4 +1,4 @@
-import { ErrorCode } from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode } from '@protocol';
 import { loadEnrollmentIdentity } from '../enrollment/identity.js';
 import { CliAction } from '../../domain/cli.js';
 

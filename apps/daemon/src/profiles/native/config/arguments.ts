@@ -1,4 +1,4 @@
-import { ProfileAuthMode } from '../../../../../../packages/protocol/src/index.js';
+import { ProfileAuthMode } from '@protocol';
 import { CodexProfileArgument } from '../values.js';
 
 export function profileNativeArguments(mode: ProfileAuthMode) {

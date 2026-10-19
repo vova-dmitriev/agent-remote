@@ -1,7 +1,6 @@
 import { homedir } from 'node:os';
 import { isAbsolute, join, resolve } from 'node:path';
-import { BrowserKind } from '../../../../../packages/protocol/src/values/local-client.js';
-import { NATIVE_HOST_NAME } from '../../../../../packages/protocol/src/local-limits.js';
+import { BrowserKind, NATIVE_HOST_NAME } from '@protocol';
 import type { NativeHostRegistration } from './types.js';
 import { NativeHostPlatform } from './values.js';
 

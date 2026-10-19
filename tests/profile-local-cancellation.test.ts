@@ -3,17 +3,11 @@ import { randomUUID } from 'node:crypto';
 import { join, resolve } from 'node:path';
 import { writeFileSync } from 'node:fs';
 import { expect, it, vi } from 'vitest';
-import {
-  LocalKind,
-  LocalOperation,
-  ProfileAction,
-  ProfileRequestKind,
-  ProfileStatus,
-} from '../packages/protocol/src/index.js';
+import { LocalKind, LocalOperation, ProfileAction, ProfileRequestKind, ProfileStatus } from '@protocol';
 import { RuntimeProfiles } from '../apps/daemon/src/profiles/runtime/service.js';
 import { startLocalServer } from '../apps/daemon/src/local/server/server.js';
 import { FramedPeer } from '../apps/daemon/src/browser/transport/peer.js';
-import { encryptEnrollment } from '../packages/transport/src/credentials/sealed-box.js';
+import { encryptEnrollment } from '@transport/credentials/sealed-box.js';
 import { profileServiceFixture } from './profiles/service.fixture.js';
 import { localFixture, localTestOrigin } from './helpers/local-runtime.js';
 import { deferred } from './profiles/runtime/deferred.js';

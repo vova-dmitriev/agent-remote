@@ -5,7 +5,7 @@ import {
   ConnectionStatus,
   serverFrameSchema,
   type ClientCommand,
-} from '../packages/protocol/src/index.js';
+} from '@protocol';
 import type { ApplicationClient } from '../apps/mini-app/src/shared/api/application-client.js';
 import { DraftState } from '../apps/mini-app/src/features/send-command/model/persistence/draft-state.js';
 import { ManagedQueue } from '../apps/mini-app/src/features/send-command/model/persistence/managed-queue.js';

@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
+import { buildNode } from '../../scripts/build/node.mjs';
+
 const run = promisify(execFile);
 
 export const repository = fileURLToPath(new URL('../../', import.meta.url));
@@ -57,15 +59,7 @@ export async function packagedCompanionFixture(
     await mkdir(helperDirectory, { recursive: true });
     await writeFile(join(helperDirectory, 'ClaudeBridge'), helper, { mode: 0o755 });
 
-    await run(
-      nodePath,
-      [join(repository, 'node_modules/typescript/bin/tsc'), '-p', join(source, 'tsconfig.build.json')],
-      {
-        cwd: source,
-        timeout: 30_000,
-        maxBuffer: 1024 * 1024,
-      },
-    );
+    await buildNode(source);
 
     const script = new URL('../../scripts/extension/package-companion.mjs', import.meta.url).href;
 
@@ -112,9 +106,5 @@ export async function packagedCompanionFixture(
 }
 
 export async function compileCompanionFixture() {
-  await run(
-    process.execPath,
-    [join(repository, 'node_modules/typescript/bin/tsc'), '-p', join(repository, 'tsconfig.build.json')],
-    { cwd: repository, timeout: 30_000, maxBuffer: 1024 * 1024 },
-  );
+  await buildNode(repository);
 }

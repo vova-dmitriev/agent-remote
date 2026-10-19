@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import { ErrorCode, LocalOrigin } from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode, LocalOrigin } from '@protocol';
 import { runtimeConfiguration } from '../../local/bootstrap/configuration.js';
 import { LocalDatabase } from '../../local/state/database.js';
 import { LocalGrants } from '../../local/grants/service.js';

@@ -1,6 +1,6 @@
 import { DaemonErrorCode } from '../error-codes.js';
 import { CliAction } from '../domain/cli.js';
-import { TargetKind } from '../../../../packages/protocol/src/index.js';
+import { TargetKind } from '@protocol';
 import { IpcMessageType } from '../domain/ipc.js';
 import { spawn } from 'node:child_process';
 import { homedir } from 'node:os';

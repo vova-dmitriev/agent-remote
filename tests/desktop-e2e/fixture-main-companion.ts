@@ -1,5 +1,5 @@
 import { appendFile } from 'node:fs/promises';
-import { LocalOperation } from '../../packages/protocol/src/index.js';
+import { LocalOperation } from '@protocol';
 import { startDesktopMain } from '../../apps/desktop/src/main/bootstrap.js';
 import { createDesktopCompanionConnector } from '../../apps/desktop/src/runtime/connector.js';
 import type { DesktopCompanionFactory } from '../../apps/desktop/src/main/companion-port.js';

@@ -44,7 +44,14 @@ export async function buildExtension(outDir = resolve(repository, 'dist/chrome-e
     configFile: false,
     plugins: configuration.config.plugins.filter((plugin) => plugin?.name === 'extension-zod-no-eval'),
     resolve: {
-      alias: { '@protocol': resolve(repository, 'packages/protocol/src/index.ts') },
+      alias: [
+        {
+          find: '@protocol/private',
+          replacement: resolve(repository, 'packages/protocol/src/private-error-codes.ts'),
+        },
+        { find: /^@protocol$/, replacement: resolve(repository, 'packages/protocol/src/index.ts') },
+        { find: '@transport', replacement: resolve(repository, 'packages/transport/src') },
+      ],
     },
     build: {
       outDir: output,

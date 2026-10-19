@@ -6,7 +6,7 @@ import {
   type ProfileList,
   type ProfileRequest,
   type ProfileResponse,
-} from '../../../../../packages/protocol/src/index.js';
+} from '@protocol';
 
 export async function readProfilePages(
   send: (request: ProfileRequest) => Promise<ProfileResponse>,

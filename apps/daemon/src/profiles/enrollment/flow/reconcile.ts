@@ -1,4 +1,4 @@
-import { ErrorCode, ProfileOperationPhase } from '../../../../../../packages/protocol/src/index.js';
+import { ErrorCode, ProfileOperationPhase } from '@protocol';
 import { finishEnrollment, uncertainEnrollment } from './state.js';
 import type { EnrollmentContext } from './types.js';
 

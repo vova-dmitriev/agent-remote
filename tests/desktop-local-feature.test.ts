@@ -4,7 +4,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { ErrorCode, LocalFeature, LOCAL_LIMITS } from '../packages/protocol/src/index.js';
+import { ErrorCode, LocalFeature, LOCAL_LIMITS } from '@protocol';
 import { FramedPeer } from '../apps/daemon/src/browser/transport/peer.js';
 import { probeCompanion } from '../apps/daemon/src/local/bootstrap/probe.js';
 import { startLocalServer } from '../apps/daemon/src/local/server/server.js';

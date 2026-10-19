@@ -1,5 +1,5 @@
 import { ServerErrorCode } from './error-codes.js';
-import { SharedPrivateErrorCode } from '../../../packages/protocol/src/private-error-codes.js';
+import { SharedPrivateErrorCode } from '@protocol/private';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRelay } from './relay.js';

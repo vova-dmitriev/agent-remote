@@ -1,10 +1,5 @@
 import { expect, it, vi, describe } from 'vitest';
-import {
-  ErrorCode,
-  HistoryPageDirection,
-  LocalKind,
-  LocalOperation,
-} from '../packages/protocol/src/index.js';
+import { ErrorCode, HistoryPageDirection, LocalKind, LocalOperation } from '@protocol';
 import { broker, snapshotFrame } from './extension-client.fixture.js';
 import { ExtensionApplicationClient } from '../apps/chrome-extension/src/client/application-client.js';
 

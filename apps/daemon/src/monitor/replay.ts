@@ -1,4 +1,4 @@
-import { FrameType, type Cursor, type EventEnvelope } from '../../../../packages/protocol/src/index.js';
+import { FrameType, type Cursor, type EventEnvelope } from '@protocol';
 import { type LocalStore } from './store.js';
 
 /** Only server acknowledgements advance durable progress; omitted sessions never consume a batch. */

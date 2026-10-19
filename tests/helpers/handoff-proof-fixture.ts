@@ -2,7 +2,7 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
 import { createRelay } from '../../apps/server/src/relay.js';
 import { initData, testBotToken } from '../helpers/telegram.js';
-import type { AppSnapshot, Session } from '../../packages/protocol/src/index.js';
+import type { AppSnapshot, Session } from '@protocol';
 import { WebSocket } from 'ws';
 
 const url =

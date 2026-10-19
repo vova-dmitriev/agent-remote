@@ -1,4 +1,4 @@
-import { ErrorCode } from '../../../protocol/src/error-codes.js';
+import { ErrorCode } from '@protocol';
 
 export function encodeBase64(bytes: Uint8Array): string {
   let binary = '';

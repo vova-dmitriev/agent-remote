@@ -1,4 +1,4 @@
-import { ErrorCode } from '../../../../packages/protocol/src/index.js';
+import { ErrorCode } from '@protocol';
 import { shellQuote as quote } from '../shell/index.js';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';

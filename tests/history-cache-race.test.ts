@@ -5,7 +5,7 @@ import { databaseFixture } from './helpers/database.js';
 import { RedisCache } from '../apps/server/src/infrastructure/redis.js';
 import { SessionHistory } from '../apps/server/src/history/service.js';
 import { persistEvent } from '../apps/server/src/history/events.js';
-import type { EventEnvelope } from '../packages/protocol/src/index.js';
+import type { EventEnvelope } from '@protocol';
 
 it('cannot let an old in-flight history fill overwrite a newer committed revision', async () => {
   const fixture = await databaseFixture();

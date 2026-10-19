@@ -8,7 +8,7 @@ import {
   historySchema,
   type Cursor,
   type HistoryRead,
-} from '../../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import type { CheckpointSource } from '../context/types.js';
 import { sourceBase, mapMessage } from './base.js';
 import { sameFence } from '../context/values.js';

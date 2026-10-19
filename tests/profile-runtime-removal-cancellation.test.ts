@@ -7,7 +7,7 @@ import {
   ProfileOperationPhase,
   ProfileRequestKind,
   ProfileStatus,
-} from '../packages/protocol/src/index.js';
+} from '@protocol';
 import { CodexProfileNative } from '../apps/daemon/src/profiles/native/codex.js';
 import { ProfileProcessCleanupError } from '../apps/daemon/src/profiles/native/lifecycle/errors.js';
 import { RuntimeProfiles } from '../apps/daemon/src/profiles/runtime/service.js';

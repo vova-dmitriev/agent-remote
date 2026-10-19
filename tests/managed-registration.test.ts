@@ -3,7 +3,7 @@ import { LocalStore } from '../apps/daemon/src/monitor/store.js';
 import { Monitor } from '../apps/daemon/src/monitor/monitor.js';
 import { AdapterRegistry, SourceAdapter } from '../apps/daemon/src/adapters/registry.js';
 import { PermissionBroker } from '../apps/daemon/src/commands/permission-broker.js';
-import { noCapabilities } from '../packages/protocol/src/index.js';
+import { noCapabilities } from '@protocol';
 
 it('restores the same owned managed conversation after daemon restart with a fresh input binding', () => {
   const store = new LocalStore(':memory:', 'device'),

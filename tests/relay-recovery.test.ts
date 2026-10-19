@@ -3,7 +3,7 @@ import { Pool } from 'pg';
 import { WebSocket } from 'ws';
 import { randomUUID, randomBytes, createHash } from 'node:crypto';
 import { createRelay } from '../apps/server/src/relay.js';
-import type { EventEnvelope } from '../packages/protocol/src/index.js';
+import type { EventEnvelope } from '@protocol';
 import { initData, testBotToken } from './helpers/telegram.js';
 
 const url =

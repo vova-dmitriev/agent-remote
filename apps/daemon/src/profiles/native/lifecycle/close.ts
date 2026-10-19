@@ -1,5 +1,5 @@
 import type { ChildProcess } from 'node:child_process';
-import { ErrorCode } from '../../../../../../packages/protocol/src/index.js';
+import { ErrorCode } from '@protocol';
 import { ProfileNativeLimits, ProfileProcessSignal } from '../values.js';
 
 function waitForExit(child: ChildProcess, duration: number) {

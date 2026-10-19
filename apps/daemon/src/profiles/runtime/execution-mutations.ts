@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { ErrorCode, ProfileStatus } from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode, ProfileStatus } from '@protocol';
 import type { LocalDatabase } from '../../local/state/database.js';
 import { immutableProfileScope } from '../storage/scope.js';
 import type { ProfileRegistry } from '../registry.js';

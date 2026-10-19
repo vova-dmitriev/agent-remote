@@ -1,18 +1,17 @@
 import { createHash } from 'node:crypto';
-import { ErrorCode } from '../../../../../packages/protocol/src/error-codes.js';
 import {
+  ErrorCode,
   profileQuotaObservationSchema,
   type ProfileQuotaObservation,
-} from '../../../../../packages/protocol/src/profile-quota.js';
-import {
   profileRoutingSettingsSchema,
   saveProfileRoutingSchema,
   type SaveProfileRouting,
   type ProfileRoutingSettings,
-} from '../../../../../packages/protocol/src/profile-routing.js';
-import { profileListSchema } from '../../../../../packages/protocol/src/profile-management.js';
-import { ProfileAuthMode, ProfileStatus } from '../../../../../packages/protocol/src/values/execution.js';
-import { AgentProvider } from '../../../../../packages/protocol/src/values/command.js';
+  profileListSchema,
+  ProfileAuthMode,
+  ProfileStatus,
+  AgentProvider,
+} from '@protocol';
 import { Fault } from '../../auth/security.js';
 import type { Database } from '../../db/database.js';
 import { ProfileRoutingStorage } from './values.js';

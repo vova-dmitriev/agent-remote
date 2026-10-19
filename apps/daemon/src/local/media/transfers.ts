@@ -1,11 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import {
-  ErrorCode,
-  LOCAL_LIMITS,
-  type AttachmentDescriptor,
-  type Session,
-} from '../../../../../packages/protocol/src/index.js';
-import { decodeBase64, encodeBase64 } from '../../../../../packages/transport/src/native/base64.js';
+import { ErrorCode, LOCAL_LIMITS, type AttachmentDescriptor, type Session } from '@protocol';
+import { decodeBase64, encodeBase64 } from '@transport/native/base64.js';
 import type { LocalPrincipal } from '../grants/types.js';
 import { MediaCatalog } from './catalog.js';
 import {

@@ -1,7 +1,7 @@
 import { endianness } from 'node:os';
 import { expect, it } from 'vitest';
 import { NativeFrameCodec } from '../apps/daemon/src/browser/transport/framing.js';
-import { ErrorCode } from '../packages/protocol/src/error-codes.js';
+import { ErrorCode } from '@protocol';
 
 function wire(body: Uint8Array, size = body.length): Buffer {
   const header = Buffer.alloc(4);

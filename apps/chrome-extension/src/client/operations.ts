@@ -6,7 +6,7 @@ import {
   readingPositionSchema,
   type PreferencePatch,
   type ReadingPosition,
-} from '../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { chromeApi } from '../config/chrome-api.js';
 import { ExtensionConfig } from '../config/values.js';
 import type { ExtensionConnection } from './connection.js';

@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { databaseFixture } from './helpers/database.js';
 import { AttachmentService } from '../apps/server/src/attachments/service.js';
-import { sessionSchema } from '../packages/protocol/src/index.js';
+import { sessionSchema } from '@protocol';
 
 let fixture: Awaited<ReturnType<typeof databaseFixture>>;
 let service: AttachmentService;

@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { CommandActionType, CommandStatus } from '../packages/protocol/src/index.js';
+import { CommandActionType, CommandStatus } from '@protocol';
 import { Dispatcher } from '../apps/daemon/src/commands/dispatcher.js';
 import { DispatchScheduler } from '../apps/daemon/src/commands/scheduling/index.js';
 import { PermissionBroker } from '../apps/daemon/src/commands/permission-broker.js';

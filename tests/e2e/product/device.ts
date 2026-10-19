@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test';
 import { WebSocket } from 'ws';
-import type { AppSnapshot, ConnectorDescriptor } from '../../../packages/protocol/src/index.js';
+import type { AppSnapshot, ConnectorDescriptor } from '@protocol';
 import { delivered, deviceFixture } from '../support/relay-fixture.js';
 
 export async function currentSnapshot(): Promise<AppSnapshot> {

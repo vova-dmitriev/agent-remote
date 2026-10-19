@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { ErrorCode, type ProfileAuthMode } from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode, type ProfileAuthMode } from '@protocol';
 import { CodexRpcClient } from '../../codex/rpc-client.js';
 import { CodexProfileArgument, ProfileNativeLimits } from './values.js';
 import type { ProfileNativeOptions } from './types.js';

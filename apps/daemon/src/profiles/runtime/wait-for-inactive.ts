@@ -1,4 +1,4 @@
-import { ErrorCode, ProfileAction, ProfileStatus } from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode, ProfileAction, ProfileStatus } from '@protocol';
 import { ProfileAuthentication } from '../authentication/service.js';
 import { CredentialEnrollmentService } from '../enrollment/service.js';
 import { ProfileService } from '../service.js';

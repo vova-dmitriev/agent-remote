@@ -1,4 +1,4 @@
-import type { UserInputQuestion } from '../../../packages/protocol/src/index.js';
+import type { UserInputQuestion } from '@protocol';
 import { object, type Data, type SyntheticThread } from './model.js';
 
 export const styleQuestion: UserInputQuestion = {

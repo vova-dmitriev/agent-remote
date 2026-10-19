@@ -1,5 +1,5 @@
 import { resolve } from 'node:path';
-import { AgentProvider, ErrorCode, ProfileAuthMode } from '../../../../../packages/protocol/src/index.js';
+import { AgentProvider, ErrorCode, ProfileAuthMode } from '@protocol';
 import type { ClaudeAuthenticationEvidence, VerifiedClaudeAuthentication } from './types.js';
 import { ClaudeProfileError } from './values.js';
 

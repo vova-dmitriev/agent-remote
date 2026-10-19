@@ -1,5 +1,4 @@
-import { ErrorCode } from '../../../../packages/protocol/src/index.js';
-import { MessageRole } from '../../../../packages/protocol/src/index.js';
+import { ErrorCode, MessageRole } from '@protocol';
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 
 export const hash = (value: string) => createHash('sha256').update(value).digest('hex');

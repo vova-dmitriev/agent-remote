@@ -7,13 +7,17 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   optimizeDeps: { entries: ["index.html"], include: ["libsodium-wrappers"] },
   resolve: {
-    alias: {
-      "@storybook-fixtures": fileURLToPath(new URL("./.storybook/fixtures", import.meta.url)),
-      "@storybook-components": fileURLToPath(new URL("./.storybook/components", import.meta.url)),
-      "@": fileURLToPath(new URL("./src", import.meta.url)),
-      "@transport": fileURLToPath(new URL("../../packages/transport/src", import.meta.url)),
-      "@protocol": fileURLToPath(new URL("../../packages/protocol/src/index.ts", import.meta.url)),
-    },
+    alias: [
+      {
+        find: "@protocol/private",
+        replacement: fileURLToPath(new URL("../../packages/protocol/src/private-error-codes.ts", import.meta.url)),
+      },
+      { find: /^@protocol$/, replacement: fileURLToPath(new URL("../../packages/protocol/src/index.ts", import.meta.url)) },
+      { find: "@transport", replacement: fileURLToPath(new URL("../../packages/transport/src", import.meta.url)) },
+      { find: "@storybook-fixtures", replacement: fileURLToPath(new URL("./.storybook/fixtures", import.meta.url)) },
+      { find: "@storybook-components", replacement: fileURLToPath(new URL("./.storybook/components", import.meta.url)) },
+      { find: "@", replacement: fileURLToPath(new URL("./src", import.meta.url)) },
+    ],
   },
   build: { outDir: "../../dist/mini-app", emptyOutDir: true },
   server: {

@@ -1,5 +1,5 @@
 import { expect, type Page } from '@playwright/test';
-import { FrameType, SessionStatus, CommandActionType, AttachmentMode, type SessionStatus as SourceStatus } from '../../packages/protocol/src/index.js';
+import { FrameType, SessionStatus, CommandActionType, AttachmentMode, type SessionStatus as SourceStatus } from '@protocol';
 import { COMMAND_IDS } from '../../apps/mini-app/src/features/send-command/config/test-ids.js';
 import { UPLOAD_IDS } from '../../apps/mini-app/src/features/send-command/ui/attachments/test-ids.js';
 import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';

@@ -6,7 +6,7 @@ import {
   type HistoryMessage,
   type Session,
   attachmentsSchema,
-} from '../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { type PreparedAttachment } from './types.js';
 import { attachmentPrompt, codexAttachmentInput } from './input.js';
 

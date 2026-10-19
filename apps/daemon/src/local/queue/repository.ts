@@ -9,7 +9,7 @@ import {
   type ClientCommand,
   type LocalAction,
   LocalOperation,
-} from '../../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { LocalDocumentKind } from '../state/values.js';
 import type { LocalControllerOptions } from '../controller/types.js';
 import type { LocalPrincipal } from '../grants/types.js';

@@ -7,7 +7,7 @@ import {
   HistoryCursorPrefix,
   type EventEnvelope,
   type HistoryRead,
-} from '../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { bytePage } from '../local/history/index.js';
 
 const cursorSchema = z.strictObject({ at: z.number().nonnegative(), seq: z.number().int().nonnegative() });

@@ -1,5 +1,5 @@
 import type { PoolClient } from 'pg';
-import { HandoffPhase, type HandoffOperation } from '../../../../../packages/protocol/src/index.js';
+import { HandoffPhase, type HandoffOperation } from '@protocol';
 import { Fault } from '../../auth/security.js';
 import { ContinuityError, HandoffCommandKind, type PersistHandoffInput } from '../types.js';
 import { asOperation, type ContinuityRow } from './mapping.js';

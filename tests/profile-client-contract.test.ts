@@ -1,13 +1,13 @@
 import { expect, it } from 'vitest';
-import { AgentProvider } from '../packages/protocol/src/values/command.js';
-import { ProfileAuthMode } from '../packages/protocol/src/values/execution.js';
 import {
+  AgentProvider,
+  ProfileAuthMode,
   QuotaObservationStatus,
   QuotaScopeKind,
   QuotaSource,
-} from '../packages/protocol/src/values/profile-routing.js';
-import { ProfileRequestKind } from '../packages/protocol/src/values/profile-management.js';
-import { BoundProfileClient } from '../packages/transport/src/profile-client.js';
+  ProfileRequestKind,
+} from '@protocol';
+import { BoundProfileClient } from '@transport/profile-client.js';
 
 const request = {
   kind: ProfileRequestKind.Quota,

@@ -1,4 +1,4 @@
-import type { Session, PendingPermission } from '../../../packages/protocol/src/index.js';
+import type { Session, PendingPermission } from '@protocol';
 
 export function codexFixtures(base: Session) {
   const sessions: Session[] = (['codex-cli', 'codex-desktop'] as const).map((kind) => ({

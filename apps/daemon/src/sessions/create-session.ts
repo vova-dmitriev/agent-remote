@@ -5,7 +5,7 @@ import {
   ErrorCode,
   IntegrationState,
   type Command,
-} from '../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { fileURLToPath } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
 import { type Monitor } from '../monitor/monitor.js';

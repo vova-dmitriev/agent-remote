@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { executionProfileSummarySchema } from '../../../../../packages/protocol/src/index.js';
+import { executionProfileSummarySchema } from '@protocol';
 import type { ProfileScope } from '../types.js';
 
 const fields = executionProfileSummarySchema.shape;

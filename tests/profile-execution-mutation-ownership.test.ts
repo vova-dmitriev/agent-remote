@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { expect, it } from 'vitest';
-import { encryptEnrollment } from '../packages/transport/src/credentials/sealed-box.js';
+import { encryptEnrollment } from '@transport/credentials/sealed-box.js';
 import { managedCodexSocketExited } from '../apps/daemon/src/codex/launcher.js';
 import { ProfileExecutionOwnership } from '../apps/daemon/src/profiles/runtime/execution-ownership.js';
 import { ExecutionChildState } from '../apps/daemon/src/profiles/runtime/execution-values.js';

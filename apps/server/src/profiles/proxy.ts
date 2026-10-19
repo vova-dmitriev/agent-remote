@@ -8,7 +8,7 @@ import {
   type ProfileResponse,
   type ServerFrame,
   type DeviceFrame,
-} from '../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { Fault, type Principal } from '../auth/security.js';
 import type { DeviceService } from '../devices/service.js';
 import { ProfileProxyLimit } from './values.js';

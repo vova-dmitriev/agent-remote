@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { appFrameSchema, deviceFrameSchema, FrameType } from '../packages/protocol/src/index.js';
+import { appFrameSchema, deviceFrameSchema, FrameType } from '@protocol';
 
 const proof = {
   type: FrameType.HandoffSeedProof,

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { expect, it } from 'vitest';
-import { ErrorCode, ProfileOperationPhase } from '../packages/protocol/src/index.js';
+import { ErrorCode, ProfileOperationPhase } from '@protocol';
 import { authenticationFixture } from './profiles/authentication.fixture.js';
 
 it('does not leave a delivered sign-in pending after a replacement sign-in completes', async () => {

@@ -1,5 +1,5 @@
 import { CodexItemType, CodexContentType } from '../domain/codex.js';
-import { MessageRole, truncateUtf8, type HistoryMessage } from '../../../../packages/protocol/src/index.js';
+import { MessageRole, truncateUtf8, type HistoryMessage } from '@protocol';
 
 export type Data = Record<string, unknown>;
 export const object = (value: unknown): Data =>

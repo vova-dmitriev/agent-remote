@@ -1,13 +1,13 @@
 import { expect, it } from 'vitest';
-import { profileQuotaObservationSchema } from '../packages/protocol/src/profile-quota.js';
-import { AgentProvider } from '../packages/protocol/src/values/command.js';
-import { ProfileAuthMode } from '../packages/protocol/src/values/execution.js';
 import {
+  profileQuotaObservationSchema,
+  AgentProvider,
+  ProfileAuthMode,
   CodexRateLimitReachedType,
   QuotaEvidenceKind,
   QuotaObservationStatus,
   QuotaScopeKind,
-} from '../packages/protocol/src/values/profile-routing.js';
+} from '@protocol';
 
 const observation = {
   ownerId: 'owner-a',

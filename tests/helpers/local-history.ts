@@ -7,8 +7,8 @@ import {
   MessageRole,
   type EventEnvelope,
   type HistoryMessage,
-} from '../../packages/protocol/src/index.js';
-import { fragmentValue } from '../../packages/transport/src/native/fragments.js';
+} from '@protocol';
+import { fragmentValue } from '@transport/native/fragments.js';
 import { localFixture } from './local-runtime.js';
 
 const fixtures: ReturnType<typeof localFixture>[] = [];

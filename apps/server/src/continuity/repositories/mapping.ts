@@ -5,7 +5,7 @@ import {
   type Conversation,
   type ExecutionLink,
   type HandoffOperation,
-} from '../../../../../packages/protocol/src/index.js';
+} from '@protocol';
 
 export type ContinuityRow = Record<string, unknown>;
 export const asConversation = (row: ContinuityRow): Conversation =>

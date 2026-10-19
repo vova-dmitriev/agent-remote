@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest';
-import { ContinuityCompatibilityReason, ErrorCode } from '../packages/protocol/src/index.js';
+import { ContinuityCompatibilityReason, ErrorCode } from '@protocol';
 import { AppTransport } from '../apps/mini-app/src/shared/api/transport.js';
 
 it('invalidates a retained continuation handle when the selected target changes during its request', async () => {

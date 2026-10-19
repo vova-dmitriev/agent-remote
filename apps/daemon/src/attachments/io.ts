@@ -1,9 +1,8 @@
-import { ErrorCode } from '../../../../packages/protocol/src/index.js';
+import { ErrorCode, MAX_ATTACHMENT_BYTES } from '@protocol';
 import { ASCII_CONTROL_CHARACTERS } from '../validation/control-characters.js';
 import { constants } from 'node:fs';
 import { open, realpath, stat } from 'node:fs/promises';
 import { isAbsolute, resolve } from 'node:path';
-import { MAX_ATTACHMENT_BYTES } from '../../../../packages/protocol/src/index.js';
 
 export async function boundedBody(response: Response, maximum = MAX_ATTACHMENT_BYTES): Promise<Buffer> {
   const length = response.headers.get('content-length');

@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test';
 import { test, selectSession } from './fixture.js';
 import { COMMAND_IDS } from '../../apps/mini-app/src/features/send-command/config/test-ids.js';
-import { SessionStatus } from '../../packages/protocol/src/index.js';
+import { SessionStatus } from '@protocol';
 
 test('edits acknowledged queued work and sends it now exactly once during a running turn', async ({
   extension,

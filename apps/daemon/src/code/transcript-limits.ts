@@ -1,4 +1,4 @@
-import { HistoryCursorPrefix } from '../../../../packages/protocol/src/index.js';
+import { HistoryCursorPrefix } from '@protocol';
 
 export const TRANSCRIPT_PAGE_MESSAGES = 100;
 export const TRANSCRIPT_AROUND_BEFORE_MESSAGES = 49;

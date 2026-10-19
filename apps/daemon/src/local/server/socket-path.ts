@@ -2,7 +2,7 @@ import { connect } from 'node:net';
 import type { Stats } from 'node:fs';
 import { lstat, unlink } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { ErrorCode, LOCAL_LIMITS } from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode, LOCAL_LIMITS } from '@protocol';
 
 export const LOCAL_SOCKET_LIMITS = {
   probeTimeoutMs: Math.min(2_000, LOCAL_LIMITS.requestTimeoutMs),

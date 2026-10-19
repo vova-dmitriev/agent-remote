@@ -6,7 +6,7 @@ import {
   ProfileAuthMode,
   ProfileRequestKind,
   ProfileStatus,
-} from '../../../packages/protocol/src/index.js';
+} from '@protocol';
 import type { RuntimeProfiles } from '../../../apps/daemon/src/profiles/runtime/service.js';
 
 export async function readyLaunchProfile(runtime: RuntimeProfiles, label: string) {

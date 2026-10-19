@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest';
-import { ErrorCode } from '../packages/protocol/src/index.js';
+import { ErrorCode } from '@protocol';
 import { CodexProfileNative } from '../apps/daemon/src/profiles/native/codex.js';
 import { RuntimeProfileNative } from '../apps/daemon/src/profiles/runtime/native.js';
 import { codexSubscription } from './profiles/registry.fixture.js';

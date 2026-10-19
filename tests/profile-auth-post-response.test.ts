@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { ErrorCode, ProfileOperationPhase, ProfileStatus } from '../packages/protocol/src/index.js';
+import { ErrorCode, ProfileOperationPhase, ProfileStatus } from '@protocol';
 import { authenticationFixture } from './profiles/authentication.fixture.js';
 
 it('requires a newly authorized check after a delivered sign-in continues with its viewer closed', async () => {

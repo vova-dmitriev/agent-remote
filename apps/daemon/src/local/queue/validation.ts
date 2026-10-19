@@ -6,7 +6,7 @@ import {
   clientCommandSchema,
   type ClientCommand,
   type CommandResult,
-} from '../../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import type { LocalControllerOptions } from '../controller/types.js';
 import type { LocalPrincipal } from '../grants/types.js';
 

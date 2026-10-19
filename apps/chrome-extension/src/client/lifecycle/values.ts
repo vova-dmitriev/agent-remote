@@ -1,4 +1,4 @@
-import { ErrorCode, LOCAL_AUTH_ERROR_CODES } from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode, LOCAL_AUTH_ERROR_CODES } from '@protocol';
 
 export const RECONNECT_DELAYS_MS = [1000, 2000, 4000] as const;
 export const TERMINAL_AUTH_ERRORS = new Set<string>(LOCAL_AUTH_ERROR_CODES);

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { ErrorCode, MAX_ATTACHMENT_BYTES, type Session } from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode, MAX_ATTACHMENT_BYTES, type Session } from '@protocol';
 import { attachmentSourceCurrent } from '../../attachments/source-current.js';
 import { MediaCatalog } from './catalog.js';
 import { MediaTransfers } from './transfers.js';

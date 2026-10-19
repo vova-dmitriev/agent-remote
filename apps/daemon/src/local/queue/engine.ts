@@ -6,7 +6,7 @@ import {
   canDeliverPrompt,
   type ClientCommand,
   type LocalAction,
-} from '../../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { RuntimeEvent } from '../../domain/runtime.js';
 import { LocalDocumentKind } from '../state/values.js';
 import type { LocalControllerOptions } from '../controller/types.js';

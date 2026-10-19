@@ -6,7 +6,7 @@ import type { PassThrough } from 'node:stream';
 import { join } from 'node:path';
 import { createBrowserFixture, cleanupBrowserFixture, pendingGrant } from './helpers/browser-cli-fixture.js';
 import { runBrowserCli } from '../apps/daemon/src/browser/cli/index.js';
-import { LocalOrigin } from '../packages/protocol/src/index.js';
+import { LocalOrigin } from '@protocol';
 
 const run = promisify(execFile);
 const extensionId = 'abcdefghijklmnopabcdefghijklmnop';
@@ -77,7 +77,7 @@ it('rejects a wrong host origin before exposing a bridge or starting a companion
 });
 
 it('does not let a browser host claim the desktop grant origin', async () => {
-  const { LocalOrigin } = await import('../packages/protocol/src/values/local-client.js');
+  const { LocalOrigin } = await import('@protocol');
 
   await install();
   await expect(runBrowserCli(['host', LocalOrigin.Desktop], context())).rejects.toThrow('UNAUTHORIZED');

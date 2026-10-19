@@ -7,7 +7,7 @@ import { pathToFileURL } from 'node:url';
 import { RuntimeEvent } from '../../apps/daemon/src/domain/runtime.js';
 import { localFixture } from '../helpers/local-runtime.js';
 import { startLocalServer } from '../../apps/daemon/src/local/server/server.js';
-import { BrowserKind, NATIVE_HOST_NAME } from '../../packages/protocol/src/index.js';
+import { BrowserKind, NATIVE_HOST_NAME } from '@protocol';
 import { shellQuote } from '../../apps/daemon/src/shell/index.js';
 import type { ExtensionHarness } from './support/types.js';
 import { localProfileFixture } from './support/profiles.js';

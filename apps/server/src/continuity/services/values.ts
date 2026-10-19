@@ -7,7 +7,7 @@ import {
   StatusConfidence,
   snapshotSchema,
   type ExecutionLink,
-} from '../../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { z } from 'zod';
 
 export const uuid = z.uuid();

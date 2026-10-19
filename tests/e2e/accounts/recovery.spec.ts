@@ -6,7 +6,7 @@ import { ACCOUNTS_PAGE_IDS } from '../../../apps/mini-app/src/pages/accounts/con
 import { PROFILE_MANAGE_IDS } from '../../../apps/mini-app/src/pages/accounts/config/management/test-ids.js';
 import { PROFILE_ENROLL_IDS } from '../../../apps/mini-app/src/pages/accounts/config/enrollment/test-ids.js';
 import { PROFILE_CARD_IDS } from '../../../apps/mini-app/src/pages/accounts/config/profile/test-ids.js';
-import { ProfileRequestKind } from '../../../packages/protocol/src/index.js';
+import { ProfileRequestKind } from '@protocol';
 
 for (const kind of [ProfileRequestKind.Mutate, ProfileRequestKind.CompleteEnrollment]) {
   test(`recovers ${kind} after losing a committed response and reloading without repeating the write`, async ({ page }) => {

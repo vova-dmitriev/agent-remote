@@ -23,6 +23,12 @@ export default ts.config(
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
       "no-empty": ["error", { allowEmptyCatch: true }],
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [{ group: ["**/packages/*/src/**"], message: "Import through @protocol, @protocol/private or @transport/*." }],
+        },
+      ],
     },
   },
   {

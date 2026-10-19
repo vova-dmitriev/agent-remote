@@ -6,7 +6,7 @@ import {
   validateUserInputAnswers,
   type PendingUserInput,
   type UserInputAnswers,
-} from '../../../../packages/protocol/src/index.js';
+} from '@protocol';
 
 interface Entry {
   request: PendingUserInput;

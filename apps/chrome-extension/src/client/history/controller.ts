@@ -1,9 +1,4 @@
-import { HistoryCursorPrefix } from '../../../../../packages/protocol/src/index.js';
-import {
-  FrameType,
-  type HistoryPageDirection,
-  type ServerFrame,
-} from '../../../../../packages/protocol/src/index.js';
+import { HistoryCursorPrefix, FrameType, type HistoryPageDirection, type ServerFrame } from '@protocol';
 import {
   HistoryStream,
   HistoryWindow,

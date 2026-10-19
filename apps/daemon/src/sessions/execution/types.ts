@@ -1,7 +1,4 @@
-import type {
-  ExecutionLaunchSelection,
-  ExecutionProfileSummary,
-} from '../../../../../packages/protocol/src/index.js';
+import type { ExecutionLaunchSelection, ExecutionProfileSummary } from '@protocol';
 import type { ProfileRegistry } from '../../profiles/registry.js';
 import type { ProfileVerification } from '../../profiles/types.js';
 

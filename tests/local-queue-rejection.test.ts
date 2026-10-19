@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { ErrorCode, LocalOperation } from '../packages/protocol/src/index.js';
+import { ErrorCode, LocalOperation } from '@protocol';
 import { setup, closeFixtures, command, save } from './helpers/local-queue.js';
 
 afterEach(closeFixtures);

@@ -1,4 +1,4 @@
-import { CommandStatus } from '../../../packages/protocol/src/index.js';
+import { CommandStatus } from '@protocol';
 
 export const FixtureCommandOutcome = {
   Dispatched: CommandStatus.Dispatched,

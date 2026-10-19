@@ -21,7 +21,12 @@
     "../chrome-extension": {
       "entry": ["src/background/main.ts"],
       "project": ["src/**/*.ts"],
-      "paths": { "@/*": ["../mini-app/src/*"], "@protocol": ["../../packages/protocol/src/index.ts"] },
+      "paths": {
+        "@/*": ["../mini-app/src/*"],
+        "@protocol/private": ["../../packages/protocol/src/private-error-codes.ts"],
+        "@protocol": ["../../packages/protocol/src/index.ts"],
+        "@transport/*": ["../../packages/transport/src/*"],
+      },
     },
   },
 }

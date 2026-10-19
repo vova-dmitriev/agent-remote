@@ -3,11 +3,7 @@ import { ClaudeContentType, ClaudeRecordType } from '../domain/claude.js';
 import { ASCII_CONTROL_CHARACTERS } from '../validation/control-characters.js';
 import { createHash } from 'node:crypto';
 import { basename, isAbsolute } from 'node:path';
-import {
-  MAX_ATTACHMENT_BYTES,
-  MAX_ATTACHMENTS,
-  MAX_MESSAGE_ATTACHMENT_BYTES,
-} from '../../../../packages/protocol/src/index.js';
+import { MAX_ATTACHMENT_BYTES, MAX_ATTACHMENTS, MAX_MESSAGE_ATTACHMENT_BYTES } from '@protocol';
 import { type NativeMedia } from './types.js';
 
 const object = (value: unknown): Record<string, unknown> =>

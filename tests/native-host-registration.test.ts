@@ -14,7 +14,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { registerNativeHost, unregisterNativeHost } from '../apps/daemon/src/browser/registration/index.js';
-import { BrowserKind } from '../packages/protocol/src/values/local-client.js';
+import { BrowserKind } from '@protocol';
 
 let homeDirectory: string;
 let executablePath: string;

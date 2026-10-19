@@ -9,7 +9,7 @@ import { createRelay } from '../../apps/server/src/relay.js';
 import { startDaemon } from '../../apps/daemon/src/main.js';
 import { saveConfig, localSecret, socketPath } from '../../apps/daemon/src/config.js';
 import { requestLocal, lineReader, writeFrame } from '../../apps/daemon/src/code/ipc.js';
-import type { AppSnapshot } from '../../packages/protocol/src/index.js';
+import type { AppSnapshot } from '@protocol';
 import { initData, testBotToken } from '../helpers/telegram.js';
 
 const url =

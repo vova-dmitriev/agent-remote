@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { randomUUID } from 'node:crypto';
-import { CommandStatus, ErrorCode, LocalOperation } from '../packages/protocol/src/index.js';
+import { CommandStatus, ErrorCode, LocalOperation } from '@protocol';
 import { setup, closeFixtures, command, save } from './helpers/local-queue.js';
 
 afterEach(closeFixtures);

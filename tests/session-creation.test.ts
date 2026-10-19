@@ -5,7 +5,7 @@ import { LocalStore } from '../apps/daemon/src/monitor/store.js';
 import { AdapterRegistry, SourceAdapter } from '../apps/daemon/src/adapters/registry.js';
 import { PermissionBroker } from '../apps/daemon/src/commands/permission-broker.js';
 import { Dispatcher } from '../apps/daemon/src/commands/dispatcher.js';
-import { noCapabilities, type Command } from '../packages/protocol/src/index.js';
+import { noCapabilities, type Command } from '@protocol';
 
 const cleanup: (() => void)[] = [];
 

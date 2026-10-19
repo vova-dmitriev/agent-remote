@@ -112,7 +112,13 @@ If confirmed: replace `await readFile(join(directory, 'pulse'), 'utf8')` at line
 Run Step 1's loop.
 Expected: 5/5 runs pass.
 
-- [ ] **Step 5: Checkpoint** — `npm run validate` exits 0.
+(Update 2026-10-19: Steps 2–3 were already applied inside Task 1's commit `4dff7ad`; only Step 1/4 verification remains for the flaky test.)
+
+- [ ] **Step 4b: Tolerate Finder metadata in the desktop runtime**
+
+Observed in Task 1: `npm run package:desktop` failed once with `LOCAL_RUNTIME_UNTRUSTED` because Finder created `.DS_Store` inside `apps/desktop/dist/desktop-companion` during the run; `listRuntimeFiles` (`scripts/desktop/runtime-files.mjs`) rejects any undeclared file. The same check runs on installed apps, so a user opening the bundle's resources in Finder would brick the companion. Fix: `listRuntimeFiles` skips regular, non-symlink files whose name is exactly `.DS_Store` (named constant `FINDER_METADATA = '.DS_Store'`), at any depth; ownership/mode checks still apply to them. Check `apps/daemon/src/local/supervisor/runtime.ts` (`verifyCompanionRuntime`) for the same undeclared-file rule and apply the same exemption there if it exists. Test first: a runtime fixture with `.DS_Store` at root and in a subdirectory verifies; a `.DS_Store` symlink or a `.DS_Store` directory is still rejected; any other undeclared file is still rejected.
+
+- [ ] **Step 5: Checkpoint** — commit `fix: tolerate Finder metadata in verified desktop runtime` through the hook.
 
 ---
 

@@ -4,7 +4,7 @@ import {
   reduceSessionState,
   canSend,
 } from '../apps/mini-app/src/entities/session/model/session-state.js';
-import type { AppSnapshot } from '../packages/protocol/src/index.js';
+import type { AppSnapshot } from '@protocol';
 
 const snapshot: AppSnapshot = {
   sessions: [],

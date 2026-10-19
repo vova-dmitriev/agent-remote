@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { z } from 'zod';
-import { ErrorCode } from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode } from '@protocol';
 import { privateFile } from './private-file.js';
 
 const schema = z.strictObject({

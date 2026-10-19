@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  targetSchema,
-  commandSchema,
-  appFrameSchema,
-  sessionSchema,
-} from '../packages/protocol/src/index.js';
+import { targetSchema, commandSchema, appFrameSchema, sessionSchema } from '@protocol';
 
 const target = { kind: 'claude-code-cli', deviceId: 'd', connectorId: 'c', claudeSessionId: 's' };
 

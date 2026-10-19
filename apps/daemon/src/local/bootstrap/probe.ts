@@ -1,7 +1,6 @@
 import { connect } from 'node:net';
 import { z } from 'zod';
-import { ErrorCode, LocalFeature, LOCAL_LIMITS } from '../../../../../packages/protocol/src/index.js';
-import { LocalControl } from '../../../../../packages/protocol/src/values/local-control.js';
+import { ErrorCode, LocalFeature, LOCAL_LIMITS, LocalControl } from '@protocol';
 import { FramedPeer } from '../../browser/transport/peer.js';
 
 const healthSchema = z.strictObject({

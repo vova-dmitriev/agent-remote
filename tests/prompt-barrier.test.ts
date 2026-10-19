@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { advancePromptBarrier } from '../packages/protocol/src/prompt-delivery.js';
+import { advancePromptBarrier } from '@protocol';
 
 it('holds delivery until an actual busy cycle or message progress follows the prior dispatch', () => {
   const barrier = { lastEventAt: 1000, observedBusy: false };

@@ -6,7 +6,7 @@ import { UPLOAD_IDS } from '../../apps/mini-app/src/features/send-command/ui/att
 import { ATTACHMENT_IDS } from '../../apps/mini-app/src/entities/attachment/config/test-ids.js';
 import { SESSION_PAGE_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
 import { LocalDocumentKind } from '../../apps/daemon/src/local/state/values.js';
-import { EventType, MessageRole, type AttachmentDescriptor } from '../../packages/protocol/src/index.js';
+import { EventType, MessageRole, type AttachmentDescriptor } from '@protocol';
 
 test('restores an acknowledged image draft and opens, zooms and downloads original bytes', async ({
   extension,

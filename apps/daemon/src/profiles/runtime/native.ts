@@ -1,9 +1,4 @@
-import {
-  ErrorCode,
-  AgentProvider,
-  ProfileLimits,
-  type ExecutionProfileSummary,
-} from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode, AgentProvider, ProfileLimits, type ExecutionProfileSummary } from '@protocol';
 import { buildProfileEnvironment } from '../environment.js';
 import { ProfileEnvironmentPurpose } from '../environment/values.js';
 import { CodexProfileNative } from '../native/codex.js';

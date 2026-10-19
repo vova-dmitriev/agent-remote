@@ -1,10 +1,5 @@
-import {
-  ErrorCode,
-  localEventSchema,
-  localResultSchema,
-  type LocalClientResponse,
-} from '../../../../../packages/protocol/src/index.js';
-import { FragmentReader } from '../../../../../packages/transport/src/native/fragments.js';
+import { ErrorCode, localEventSchema, localResultSchema, type LocalClientResponse } from '@protocol';
+import { FragmentReader } from '@transport/native/fragments.js';
 import type { BrokerPending } from '../pending.js';
 
 interface Handlers {

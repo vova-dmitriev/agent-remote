@@ -7,7 +7,7 @@ import {
   profileListSchema,
   type ProfileMutation,
   type ProfileOperation,
-} from '../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { immutableProfileScope } from './storage/scope.js';
 import { ProfileRegistry } from './registry.js';
 import { ProfileJournal } from './lifecycle/journal.js';

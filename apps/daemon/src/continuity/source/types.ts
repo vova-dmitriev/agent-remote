@@ -1,4 +1,4 @@
-import type { AttachmentDescriptor, Session } from '../../../../../packages/protocol/src/index.js';
+import type { AttachmentDescriptor, Session } from '@protocol';
 import type { AttachmentService } from '../../attachments/service.js';
 import { RepositoryFenceScope } from './values.js';
 

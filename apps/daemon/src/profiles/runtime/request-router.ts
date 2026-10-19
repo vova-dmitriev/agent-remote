@@ -4,7 +4,7 @@ import {
   ProfileRequestKind,
   type ProfileRequest,
   type ProfileResponse,
-} from '../../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { profileListPage } from '../lifecycle/page.js';
 import { ProfileExecutionOwnership } from './execution-ownership.js';
 import { RuntimeProfileRequestHelpers } from './request-router-helpers.js';

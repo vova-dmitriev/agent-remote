@@ -1,7 +1,7 @@
 import { lstat, readFile, unlink } from 'node:fs/promises';
 import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { z } from 'zod';
-import { BrowserKind, ErrorCode } from '../../../../../packages/protocol/src/index.js';
+import { BrowserKind, ErrorCode } from '@protocol';
 import { browserSettingsSchema } from '../../local/bootstrap/configuration.js';
 import {
   canonicalPath,

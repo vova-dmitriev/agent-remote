@@ -5,7 +5,7 @@ import {
   knownErrorCode,
   type ExecutionLaunchSelection,
   type ExecutionProfileSummary,
-} from '../../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { buildProfileEnvironment } from '../../profiles/environment.js';
 import { verifyProfileObservation } from '../../profiles/capabilities.js';
 import type { ExecutionLaunchOptions, TrustedExecutionLaunch } from './types.js';

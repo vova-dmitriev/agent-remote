@@ -5,8 +5,8 @@ import {
   ContinuityLocalRequestKind,
   ErrorCode,
   HandoffPhase,
-} from '../packages/protocol/src/index.js';
-import { BoundContinuityClient } from '../packages/transport/src/continuity-client.js';
+} from '@protocol';
+import { BoundContinuityClient } from '@transport/continuity-client.js';
 
 const source = { deviceId: 'device:a', sessionId: 'session:b', generation: 'generation' };
 

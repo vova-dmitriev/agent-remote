@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { expect, it } from 'vitest';
 import { RuntimeProfiles } from '../apps/daemon/src/profiles/runtime/service.js';
 import { RuntimeProfileRelay } from '../apps/daemon/src/profiles/runtime/relay.js';
-import { BoundedSender } from '../packages/transport/src/bounded-sender.js';
+import { BoundedSender } from '@transport/bounded-sender.js';
 import {
   ErrorCode,
   FrameType,
@@ -10,7 +10,7 @@ import {
   ProfileRequestKind,
   type DeviceFrame,
   type ProfileRequest,
-} from '../packages/protocol/src/index.js';
+} from '@protocol';
 import { profileServiceFixture } from './profiles/service.fixture.js';
 import { codexSubscription, verifiedAccount } from './profiles/registry.fixture.js';
 import { readProfilePages } from '../apps/server/src/profiles/transport/list.js';

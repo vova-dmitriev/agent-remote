@@ -6,9 +6,9 @@ import {
   CommandStatus,
   type CommandResult,
   type ClientCommand,
-} from '../packages/protocol/src/index.js';
+  serverFrameSchema,
+} from '@protocol';
 import { createSessionStore } from '../apps/mini-app/src/entities/session/model/store/create-session-store.js';
-import { serverFrameSchema } from '../packages/protocol/src/index.js';
 import type { ApplicationClient } from '../apps/mini-app/src/shared/api/application-client.js';
 import { snapshotFrame } from './extension-client.fixture.js';
 import { ManagedQueue } from '../apps/mini-app/src/features/send-command/model/persistence/managed-queue.js';

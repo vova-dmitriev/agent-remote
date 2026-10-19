@@ -1,4 +1,4 @@
-import type { CommandResult } from '../../../../../packages/protocol/src/index.js';
+import type { CommandResult } from '@protocol';
 
 export class DispatchScheduler {
   readonly queues = new Map<string, Promise<unknown>>();

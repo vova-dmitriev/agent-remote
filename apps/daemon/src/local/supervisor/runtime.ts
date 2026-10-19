@@ -2,7 +2,7 @@ import { constants, type Stats } from 'node:fs';
 import { lstat, mkdir, open } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { dirname, isAbsolute, resolve } from 'node:path';
-import { ErrorCode } from '../../../../../packages/protocol/src/error-codes.js';
+import { ErrorCode } from '@protocol';
 import type { CompanionRuntime } from './types.js';
 
 const untrusted = () => new Error(ErrorCode.LOCAL_RUNTIME_UNTRUSTED);

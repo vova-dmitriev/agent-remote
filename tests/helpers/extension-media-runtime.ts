@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { LocalMediaRepository } from '../../apps/daemon/src/local/media/repository.js';
 import { LocalDatabase } from '../../apps/daemon/src/local/state/database.js';
-import { LocalOperation, type LocalAction, type Session } from '../../packages/protocol/src/index.js';
+import { LocalOperation, type LocalAction, type Session } from '@protocol';
 import type { LocalPrincipal } from '../../apps/daemon/src/local/grants/types.js';
 
 export const cleanup: (() => void | Promise<void>)[] = [];

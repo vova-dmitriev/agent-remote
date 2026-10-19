@@ -1,4 +1,4 @@
-import { ErrorCode } from '../../protocol/src/index.js';
+import { ErrorCode } from '@protocol';
 
 interface Socket {
   readonly readyState: number;

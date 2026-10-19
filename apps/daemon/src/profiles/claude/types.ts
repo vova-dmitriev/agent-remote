@@ -1,4 +1,4 @@
-import { AgentProvider, type ProfileAuthMode } from '../../../../../packages/protocol/src/index.js';
+import { AgentProvider, type ProfileAuthMode } from '@protocol';
 
 export interface ClaudeProfileLaunchInput {
   provider: typeof AgentProvider.Claude;

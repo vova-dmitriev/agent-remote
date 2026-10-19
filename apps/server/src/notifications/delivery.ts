@@ -1,4 +1,4 @@
-import { EventType } from '../../../../packages/protocol/src/index.js';
+import { EventType } from '@protocol';
 import { NotificationKind } from '../domain/notifications.js';
 import { type Database } from '../db/database.js';
 import { notificationContext } from './context.js';

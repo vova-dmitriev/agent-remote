@@ -1,10 +1,5 @@
 import { expect, it } from 'vitest';
-import {
-  targetSchema,
-  sessionSchema,
-  connectorSchema,
-  clientCommandSchema,
-} from '../packages/protocol/src/index.js';
+import { targetSchema, sessionSchema, connectorSchema, clientCommandSchema } from '@protocol';
 
 const capabilities = {
   observe: true,

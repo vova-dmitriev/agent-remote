@@ -1,5 +1,4 @@
-import { ErrorCode } from '../../../../packages/protocol/src/index.js';
-import { AgentProvider, type Session } from '../../../../packages/protocol/src/index.js';
+import { ErrorCode, AgentProvider, type Session } from '@protocol';
 import { z } from 'zod';
 import { type Database } from '../db/database.js';
 import { Fault, hash, type Principal } from '../auth/security.js';

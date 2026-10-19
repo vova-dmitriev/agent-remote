@@ -1,4 +1,4 @@
-import type { Session, Target, ConnectorDescriptor } from '../../../packages/protocol/src/index.js';
+import type { Session, Target, ConnectorDescriptor } from '@protocol';
 import { publishSnapshot } from './device.js';
 
 export const sourceCases = [

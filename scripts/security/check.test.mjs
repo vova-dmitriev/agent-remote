@@ -46,11 +46,19 @@ test('private/generated paths are denied, curated screenshots and environment te
     'session.jsonl',
     'apps/desktop/out/agent-remote-desktop-darwin-arm64/Agent Remote.app/Contents/Info.plist',
     'copied/Agent Remote.app/Contents/Resources/app.asar',
+    'build/output.js',
+    'scripts/build/nested/build/output.js',
   ]) {
     assert.equal(isPrivatePath(file), true, file);
   }
 
-  for (const file of ['.env.example', 'docs/screenshots/sessions.png', 'apps/mini-app/src/index.ts']) {
+  for (const file of [
+    '.env.example',
+    'docs/screenshots/sessions.png',
+    'apps/mini-app/src/index.ts',
+    'scripts/build/node.mjs',
+    'scripts/build/rewrite-aliases.d.mts',
+  ]) {
     assert.equal(isPrivatePath(file), false, file);
   }
 });

@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
-import { ErrorCode, ProfileAuthMode } from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode, ProfileAuthMode } from '@protocol';
 import { CodexMethod } from '../../domain/codex.js';
 import type { CodexRpcClient } from '../../codex/rpc-client.js';
 import { readCodexCredentialIdentity } from '../credentials.js';

@@ -1,11 +1,11 @@
-import { ErrorCode } from '../../../../packages/protocol/src/index.js';
-import { type Pool, type PoolClient } from 'pg';
 import {
+  ErrorCode,
   readingPositionResponseSchema,
   readingPositionSchema,
   type ReadingPosition,
   type ReadingPositionResponse,
-} from '../../../../packages/protocol/src/index.js';
+} from '@protocol';
+import { type Pool, type PoolClient } from 'pg';
 import { Fault, hash, type Principal } from '../auth/security.js';
 import { type Database } from '../db/database.js';
 import { type RedisCache } from '../infrastructure/redis.js';

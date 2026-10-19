@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { ErrorCode } from '../packages/protocol/src/index.js';
+import { ErrorCode } from '@protocol';
 import type { ApplicationClient } from '../apps/mini-app/src/shared/api/application-client.js';
 import { DraftState } from '../apps/mini-app/src/features/send-command/model/persistence/draft-state.js';
 

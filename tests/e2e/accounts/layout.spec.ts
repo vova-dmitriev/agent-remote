@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test';
-import { AgentProvider } from '../../../packages/protocol/src/index.js';
+import { AgentProvider } from '@protocol';
 import { ACCOUNTS_PAGE_IDS as PAGE } from '../../../apps/mini-app/src/pages/accounts/config/test-ids.js';
 import { PROFILE_MANAGE_IDS as FORM } from '../../../apps/mini-app/src/pages/accounts/config/management/test-ids.js';
 import { PROFILE_CARD_IDS as CARD } from '../../../apps/mini-app/src/pages/accounts/config/profile/test-ids.js';

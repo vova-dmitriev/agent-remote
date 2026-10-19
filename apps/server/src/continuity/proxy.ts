@@ -7,7 +7,7 @@ import {
   type ContinuityLocalResponse,
   type DeviceFrame,
   type ServerFrame,
-} from '../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { Fault, type Principal } from '../auth/security.js';
 import type { DeviceService } from '../devices/service.js';
 import type { ProfileConnection } from '../profiles/types.js';

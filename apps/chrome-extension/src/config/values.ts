@@ -1,3 +1,5 @@
+// Loaded by Node while Vite reads vite.extension.config.ts, before any alias exists.
+// eslint-disable-next-line no-restricted-imports
 import { NATIVE_HOST_NAME } from '../../../../packages/protocol/src/local-limits.js';
 
 export const ExtensionApiValue = {

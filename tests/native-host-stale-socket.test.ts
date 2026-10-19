@@ -4,7 +4,7 @@ import { once } from 'node:events';
 import { chmod, lstat, mkdtemp, realpath, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { ErrorCode } from '../packages/protocol/src/index.js';
+import { ErrorCode } from '@protocol';
 import { startLocalServer } from '../apps/daemon/src/local/server/server.js';
 import { probeCompanion } from '../apps/daemon/src/local/bootstrap/probe.js';
 import { localFixture } from './helpers/local-runtime.js';

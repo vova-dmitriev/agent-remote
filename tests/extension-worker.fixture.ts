@@ -1,6 +1,6 @@
 import { vi } from 'vitest';
 import type { ChromeApi, ChromePort } from '../apps/chrome-extension/src/config/chrome-api.js';
-import { FragmentReader, fragmentValue } from '../packages/transport/src/native/fragments.js';
+import { FragmentReader, fragmentValue } from '@transport/native/fragments.js';
 
 export function workerPort(trusted = true) {
   const messages = new Set<(value: unknown, port: ChromePort) => void>();

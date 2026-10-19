@@ -7,7 +7,7 @@ import {
   ProfileAuthMode,
   type ExecutionProfileSummary,
   profileAuthUrlSchema,
-} from '../../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { CodexMethod } from '../../domain/codex.js';
 import type { CodexRpcClient } from '../../codex/rpc-client.js';
 import type { ProfileVerification } from '../types.js';

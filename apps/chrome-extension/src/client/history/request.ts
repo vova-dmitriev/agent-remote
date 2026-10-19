@@ -1,6 +1,5 @@
-import { HistoryCursorPrefix } from '../../../../../packages/protocol/src/index.js';
+import { HistoryCursorPrefix, HistoryDirection, LocalOperation, eventSchema } from '@protocol';
 import { z } from 'zod';
-import { HistoryDirection, LocalOperation, eventSchema } from '../../../../../packages/protocol/src/index.js';
 import type { ExtensionConnection } from '../connection.js';
 
 const pageSchema = z.strictObject({

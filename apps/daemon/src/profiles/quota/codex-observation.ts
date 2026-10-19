@@ -1,19 +1,17 @@
 import { z } from 'zod';
-import { ErrorCode } from '../../../../../packages/protocol/src/error-codes.js';
 import {
+  ErrorCode,
   profileQuotaObservationSchema,
   type ProfileQuotaObservation,
-} from '../../../../../packages/protocol/src/profile-quota.js';
-import type { ExecutionProfileSummary } from '../../../../../packages/protocol/src/execution-profile.js';
-import { AgentProvider } from '../../../../../packages/protocol/src/values/command.js';
-import { ProfileAuthMode } from '../../../../../packages/protocol/src/values/execution.js';
-import {
+  type ExecutionProfileSummary,
+  AgentProvider,
+  ProfileAuthMode,
   QuotaEvidenceKind,
   QuotaObservationStatus,
   QuotaScopeKind,
   QuotaSource,
   CodexRateLimitReachedType,
-} from '../../../../../packages/protocol/src/values/profile-routing.js';
+} from '@protocol';
 import { CodexQuotaMeter, CodexQuotaTime } from './values.js';
 
 const windowSchema = z.object({

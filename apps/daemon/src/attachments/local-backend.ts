@@ -1,4 +1,4 @@
-import type { AttachmentDescriptor, Session } from '../../../../packages/protocol/src/index.js';
+import type { AttachmentDescriptor, Session } from '@protocol';
 
 export interface LocalAttachmentBackend {
   request(session: Session, id?: string, init?: RequestInit): Promise<Response | null>;

@@ -1,4 +1,4 @@
-import { ErrorCode } from '../../../../packages/protocol/src/index.js';
+import { ErrorCode } from '@protocol';
 import { type Database } from '../db/database.js';
 import { Fault, hash, secret } from './security.js';
 

@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { expect, it } from 'vitest';
 import { CredentialEnrollmentService } from '../apps/daemon/src/profiles/enrollment/service.js';
-import { encryptEnrollment } from '../packages/transport/src/credentials/sealed-box.js';
+import { encryptEnrollment } from '@transport/credentials/sealed-box.js';
 import { enrollmentFixture } from './profiles/enrollment.fixture.js';
 
 it('issues an exact five-minute challenge and retains the recipient identity across restart', async () => {

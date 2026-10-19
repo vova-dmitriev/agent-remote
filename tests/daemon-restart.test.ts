@@ -7,7 +7,7 @@ import { Monitor } from '../apps/daemon/src/monitor/monitor.js';
 import { EventReplay } from '../apps/daemon/src/monitor/replay.js';
 import { PermissionBroker } from '../apps/daemon/src/commands/permission-broker.js';
 import { AdapterRegistry, SourceAdapter } from '../apps/daemon/src/adapters/registry.js';
-import type { EventEnvelope } from '../packages/protocol/src/index.js';
+import type { EventEnvelope } from '@protocol';
 
 const cleanups: Array<() => void> = [];
 

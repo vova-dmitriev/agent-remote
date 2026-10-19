@@ -6,7 +6,7 @@ import {
   ErrorCode,
   type AttachmentDescriptor,
   type Session,
-} from '../../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { nativeImageMime } from '../../attachments/image-content.js';
 import { attachmentSourceCurrent } from '../../attachments/source-current.js';
 import type { LocalPrincipal } from '../grants/types.js';

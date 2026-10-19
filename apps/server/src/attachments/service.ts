@@ -1,5 +1,5 @@
-import { ErrorCode } from '../../../../packages/protocol/src/index.js';
 import {
+  ErrorCode,
   BindingState,
   IntegrationState,
   attachmentSchema,
@@ -8,7 +8,7 @@ import {
   sessionSchema,
   type AttachmentDescriptor,
   type Session,
-} from '../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { ATTACHMENT_REUSE_EXPIRY_MARGIN_MS } from './limits.js';
 import { AttachmentFaultCode } from './errors.js';
 import { z } from 'zod';

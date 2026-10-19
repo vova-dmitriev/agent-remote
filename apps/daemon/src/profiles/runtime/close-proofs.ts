@@ -1,4 +1,4 @@
-import { ErrorCode, ProfileLimits } from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode, ProfileLimits } from '@protocol';
 import { RuntimeProfileCloseProofStatus } from './close-proof-values.js';
 import type { RuntimeProfileCloseProof } from './types.js';
 

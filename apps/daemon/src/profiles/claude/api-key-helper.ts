@@ -2,7 +2,7 @@ import { constants } from 'node:fs';
 import { lstat, open } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ErrorCode } from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode } from '@protocol';
 import { ClaudeProfileCredential, ClaudeProfileEnvironment } from './values.js';
 
 export async function readClaudeApiKey(path: string): Promise<string> {

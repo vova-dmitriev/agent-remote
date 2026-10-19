@@ -5,7 +5,7 @@ import { databaseFixture } from './helpers/database.js';
 import { createRelay } from '../apps/server/src/relay.js';
 import { persistEvent } from '../apps/server/src/history/events.js';
 import { initData, testBotToken } from './helpers/telegram.js';
-import type { EventEnvelope } from '../packages/protocol/src/index.js';
+import type { EventEnvelope } from '@protocol';
 
 const redisUrl = process.env.TEST_REDIS_URL ?? 'redis://127.0.0.1:56380';
 let fixture: Awaited<ReturnType<typeof databaseFixture>>;

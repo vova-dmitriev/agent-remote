@@ -2,7 +2,7 @@ import { ClaudeRecordType } from '../domain/claude.js';
 import { ASCII_CONTROL_CHARACTERS } from '../validation/control-characters.js';
 import { type FileHandle } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
-import { truncateUtf8 } from '../../../../packages/protocol/src/index.js';
+import { truncateUtf8 } from '@protocol';
 
 const tailBytes = 262_144;
 

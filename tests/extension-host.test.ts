@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ErrorCode, FrameType, LocalKind, LocalOperation } from '../packages/protocol/src/index.js';
+import { ErrorCode, FrameType, LocalKind, LocalOperation } from '@protocol';
 import { broker } from './extension-client.fixture.js';
 
 afterEach(() => vi.useRealTimers());

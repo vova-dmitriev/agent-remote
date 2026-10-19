@@ -4,7 +4,7 @@ import {
   profileLoginSchema,
   knownErrorCode,
   type ProfileOperation,
-} from '../../../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { assertProfileCaller, authenticationProfile, saveAuthentication } from '../state.js';
 import type { ProfileAuthenticationContext } from '../types.js';
 

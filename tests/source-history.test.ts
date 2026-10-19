@@ -3,7 +3,7 @@ import type { WebSocket } from 'ws';
 import { databaseFixture } from './helpers/database.js';
 import { SourceHistory } from '../apps/server/src/history/source.js';
 import type { Principal } from '../apps/server/src/auth/security.js';
-import type { HistoryRead, ServerFrame } from '../packages/protocol/src/index.js';
+import type { HistoryRead, ServerFrame } from '@protocol';
 
 it('authorizes native page requests and fences responses by owner, device, epoch, session and generation', async () => {
   const fixture = await databaseFixture();

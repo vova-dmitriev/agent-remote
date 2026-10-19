@@ -1,5 +1,5 @@
 import { DaemonErrorCode } from './error-codes.js';
-import { SharedPrivateErrorCode } from '../../../packages/protocol/src/private-error-codes.js';
+import { SharedPrivateErrorCode } from '@protocol/private';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { mkdir, readFile, writeFile, rename, chmod } from 'node:fs/promises';

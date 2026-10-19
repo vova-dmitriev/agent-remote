@@ -1,5 +1,5 @@
-import { ErrorCode } from '../../../../packages/protocol/src/index.js';
 import {
+  ErrorCode,
   HistoryDirection,
   EventType,
   FrameType,
@@ -10,7 +10,7 @@ import {
   type HistoryMessage,
   type HistoryRead,
   type ServerFrame,
-} from '../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import {
   HISTORY_MAX_PENDING_READS_PER_DEVICE,
   HISTORY_SOURCE_TIMEOUT_MS,

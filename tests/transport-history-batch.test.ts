@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { restoreHistoryWindow } from '../apps/mini-app/src/shared/api/history.js';
-import type { EventEnvelope, ServerFrame } from '../packages/protocol/src/index.js';
+import type { EventEnvelope, ServerFrame } from '@protocol';
 
 it('publishes a history response as one batch for synchronous external stores', async () => {
   const events: EventEnvelope[] = [1, 2].map((seq) => ({

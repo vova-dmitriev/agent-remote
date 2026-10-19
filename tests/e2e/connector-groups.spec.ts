@@ -6,7 +6,7 @@ import { byTestId } from './support/testid.js';
 import { DEVICE_ACCESS_IDS } from '../../apps/mini-app/src/features/device-access/config/test-ids.js';
 import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
 import { SHELL_IDS } from '../../apps/mini-app/src/widgets/application-shell/config/test-ids.js';
-import type { ConnectorDescriptor } from '../../packages/protocol/src/index.js';
+import type { ConnectorDescriptor } from '@protocol';
 
 const desktop = (connectorId: string): ConnectorDescriptor => ({
   connectorId,

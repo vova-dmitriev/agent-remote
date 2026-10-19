@@ -7,8 +7,8 @@ import {
   ProfileOperationPhase,
   ProfileRequestKind,
   type ProfileOperation,
-} from '../packages/protocol/src/index.js';
-import { encryptEnrollment } from '../packages/transport/src/credentials/sealed-box.js';
+} from '@protocol';
+import { encryptEnrollment } from '@transport/credentials/sealed-box.js';
 import { ProfileJournal } from '../apps/daemon/src/profiles/lifecycle/journal.js';
 import { CodexProfileNative } from '../apps/daemon/src/profiles/native/codex.js';
 import { RuntimeProfiles } from '../apps/daemon/src/profiles/runtime/service.js';

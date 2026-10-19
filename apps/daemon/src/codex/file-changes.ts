@@ -6,7 +6,7 @@ import {
   type SessionChanges,
   type SessionFileChange,
   truncateUtf8,
-} from '../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { object } from './events.js';
 
 const SESSION_BUDGET = 16384;

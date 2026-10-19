@@ -5,7 +5,7 @@ import {
   SessionStatus,
   clientCommandSchema,
   type ClientCommand,
-} from '../../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import type { LocalControllerOptions } from '../controller/types.js';
 import type { LocalPrincipal } from '../grants/types.js';
 import type { QueueRepository } from './repository.js';

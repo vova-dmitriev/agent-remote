@@ -8,7 +8,7 @@ import { startDaemon } from '../../../apps/daemon/src/main.js';
 import { saveConfig, localSecret, socketPath } from '../../../apps/daemon/src/config.js';
 import { requestLocal } from '../../../apps/daemon/src/code/ipc.js';
 import { initData, testBotToken } from '../../helpers/telegram.js';
-import type { ClientCommand } from '../../../packages/protocol/src/index.js';
+import type { ClientCommand } from '@protocol';
 import { cliProvider } from './cli.js';
 import { desktopProvider } from './desktop.js';
 import type { Kind, Provider } from './model.js';

@@ -1,7 +1,7 @@
 import { DaemonErrorCode } from '../error-codes.js';
-import { SharedPrivateErrorCode } from '../../../../packages/protocol/src/private-error-codes.js';
+import { SharedPrivateErrorCode } from '@protocol/private';
 import { TelegramButtonType } from '../domain/cli.js';
-import { Language } from '../../../../packages/protocol/src/index.js';
+import { Language } from '@protocol';
 
 export function personalBot(token: string, fetcher: typeof fetch = fetch) {
   if (!/^\d+:[A-Za-z0-9_-]+$/.test(token)) {

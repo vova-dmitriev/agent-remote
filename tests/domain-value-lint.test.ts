@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { DaemonErrorCode } from '../apps/daemon/src/error-codes.js';
-import { ErrorCode, knownErrorCode } from '../packages/protocol/src/index.js';
+import { ErrorCode, knownErrorCode } from '@protocol';
 import { expect, it } from 'vitest';
 
 function violations(source: string, frontend: boolean) {
@@ -30,7 +30,7 @@ function violations(source: string, frontend: boolean) {
   return report[0]!.messages.filter((message) => message.ruleId === 'domain/no-inline-values');
 }
 
-function errorCodeViolations(source: string, filename: string) {
+function ruleViolations(source: string, filename: string, ruleId: string) {
   const frontend = filename.startsWith('apps/mini-app/');
   const config = frontend ? 'apps/mini-app/eslint.config.mjs' : 'eslint.config.mjs';
 
@@ -56,7 +56,11 @@ function errorCodeViolations(source: string, filename: string) {
 
   const report = JSON.parse(result.stdout) as Array<{ messages: Array<{ ruleId: string | null }> }>;
 
-  return report[0]!.messages.filter((message) => message.ruleId === 'domain/no-inline-error-codes');
+  return report[0]!.messages.filter((message) => message.ruleId === ruleId);
+}
+
+function errorCodeViolations(source: string, filename: string) {
+  return ruleViolations(source, filename, 'domain/no-inline-error-codes');
 }
 
 for (const frontend of [false, true]) {
@@ -162,3 +166,17 @@ it('keeps private error values outside the protocol known-code fallback', () => 
   expect(knownErrorCode(new Error(ErrorCode.WRITE_FAILED))).toBe(ErrorCode.WRITE_FAILED);
   expect(knownErrorCode(new Error(ErrorCode.NOT_FOUND))).toBe(ErrorCode.NOT_FOUND);
 });
+
+it.each(['apps/daemon/src/example.ts', 'apps/mini-app/src/example.ts'])(
+  'requires package aliases instead of relative package source imports in %s',
+  (filename) => {
+    const relative = "import { ErrorCode } from '../../../../packages/protocol/src/index.js';";
+
+    expect(ruleViolations(relative, filename, 'no-restricted-imports')).not.toHaveLength(0);
+
+    expect(
+      ruleViolations("import { ErrorCode } from '@protocol';", filename, 'no-restricted-imports'),
+    ).toEqual([]);
+  },
+  30000,
+);

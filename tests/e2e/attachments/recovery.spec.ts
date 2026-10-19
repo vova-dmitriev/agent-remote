@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test';
-import type { ClientCommand } from '../../../packages/protocol/src/index.js';
+import type { ClientCommand } from '@protocol';
 import { test, delivered, setCommandOutcome } from '../support/relay-fixture.js';
 import { COMMAND_IDS } from '../../../apps/mini-app/src/features/send-command/config/test-ids.js';
 import { UPLOAD_IDS } from '../../../apps/mini-app/src/features/send-command/ui/attachments/test-ids.js';

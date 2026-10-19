@@ -7,7 +7,7 @@ import {
   waitFrame,
   type HandoffProofFixture,
 } from './helpers/handoff-proof-fixture.js';
-import { CommandActionType, CommandStatus } from '../packages/protocol/src/index.js';
+import { CommandActionType, CommandStatus } from '@protocol';
 import { dispatchAndCheckCreateEvidence } from './helpers/handoff-create-evidence.js';
 
 let fixture: HandoffProofFixture;

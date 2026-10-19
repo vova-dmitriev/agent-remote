@@ -6,7 +6,7 @@ import {
   type ProfileRequest,
   type ProfileResponse,
   type ExecutionLaunchSelection,
-} from '../../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { immutableProfileScope } from '../storage/scope.js';
 import { ProfileService } from '../service.js';
 import { ProfileAuthentication } from '../authentication/service.js';

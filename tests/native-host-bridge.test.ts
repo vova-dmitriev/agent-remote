@@ -8,7 +8,7 @@ import { localFixture, localTestOrigin } from './helpers/local-runtime.js';
 import { startLocalServer } from '../apps/daemon/src/local/server/server.js';
 import { FramedPeer } from '../apps/daemon/src/browser/transport/peer.js';
 import { runNativeHost } from '../apps/daemon/src/browser/host/bridge.js';
-import { LocalOrigin } from '../packages/protocol/src/values/local-client.js';
+import { LocalOrigin } from '@protocol';
 
 const cleanups: (() => Promise<unknown>)[] = [];
 

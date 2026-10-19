@@ -1,1 +1,1 @@
-export { ActivityKind } from '../../../../packages/protocol/src/index.js';
+export { ActivityKind } from '@protocol';

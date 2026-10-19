@@ -12,7 +12,7 @@ import { PermissionBroker } from '../apps/daemon/src/commands/permission-broker.
 import { installHooks } from '../apps/daemon/src/code/install-hooks.js';
 import { createDesktopSource } from '../apps/daemon/src/desktop/adapter.js';
 import { BridgeClient } from '../apps/daemon/src/desktop/bridge-client.js';
-import type { Command } from '../packages/protocol/src/index.js';
+import type { Command } from '@protocol';
 
 const cleanup: Array<() => void | Promise<void>> = [];
 

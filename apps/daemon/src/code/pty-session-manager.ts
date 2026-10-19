@@ -1,10 +1,9 @@
 import { DaemonErrorCode } from '../error-codes.js';
-import { ErrorCode } from '../../../../packages/protocol/src/index.js';
+import { ErrorCode, positiveInteger, validatePrompt } from '@protocol';
 
 import { randomUUID } from 'node:crypto';
 import { isAbsolute } from 'node:path';
 import { spawn as spawnPty } from 'node-pty';
-import { positiveInteger, validatePrompt } from '../../../../packages/protocol/src/index.js';
 
 export interface Disposable {
   dispose(): void;

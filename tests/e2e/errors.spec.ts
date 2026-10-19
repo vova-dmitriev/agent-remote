@@ -1,6 +1,6 @@
 import { chooseLanguage } from './support/preferences.js';
 import { expect } from '@playwright/test';
-import type { ServerFrame } from '../../packages/protocol/src/index.js';
+import type { ServerFrame } from '@protocol';
 import { COMMAND_IDS } from '../../apps/mini-app/src/features/send-command/config/test-ids.js';
 import { DEVICE_ACCESS_IDS } from '../../apps/mini-app/src/features/device-access/config/test-ids.js';
 import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';

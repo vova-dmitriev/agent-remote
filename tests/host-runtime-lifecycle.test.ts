@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest';
-import { ConnectionStatus } from '../packages/protocol/src/index.js';
+import { ConnectionStatus } from '@protocol';
 import { AppTransport } from '../apps/mini-app/src/shared/api/transport.js';
 import { TransportRuntime } from '../apps/mini-app/src/shared/lib/runtime/transport-runtime.js';
 import { connectHost } from '../apps/mini-app/src/shared/lib/host/connection.js';

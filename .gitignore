@@ -43,3 +43,5 @@ dump.rdb
 appendonlydir/
 **/storybook-static/
 apps/mini-app/.storybook/public/
+.dist-stage-*/
+!scripts/build/

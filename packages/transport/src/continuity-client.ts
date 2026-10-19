@@ -22,7 +22,7 @@ import {
   type ContinuityOperationRequest,
   type StartHandoffRequest,
   type HandoffOperation,
-} from '../../protocol/src/index.js';
+} from '@protocol';
 import { ContinuityClientScope } from './continuity-client-scope.js';
 import { validateContinuityLinks } from './continuity-client-validation.js';
 

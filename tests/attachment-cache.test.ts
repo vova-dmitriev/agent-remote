@@ -2,7 +2,7 @@ import { expect, it } from 'vitest';
 import { createHash, randomUUID } from 'node:crypto';
 import { databaseFixture } from './helpers/database.js';
 import { AttachmentService } from '../apps/server/src/attachments/service.js';
-import { sessionSchema } from '../packages/protocol/src/index.js';
+import { sessionSchema } from '@protocol';
 
 it('deduplicates derived blobs, keeps original upload bytes, evicts only rebuildable exports and preserves legacy IDs during migration', async () => {
   const fixture = await databaseFixture();

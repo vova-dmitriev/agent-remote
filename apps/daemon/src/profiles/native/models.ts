@@ -1,9 +1,5 @@
 import { z } from 'zod';
-import {
-  ErrorCode,
-  ReasoningEffort,
-  type ExecutionProfileSummary,
-} from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode, ReasoningEffort, type ExecutionProfileSummary } from '@protocol';
 import { CodexMethod } from '../../domain/codex.js';
 import type { CodexRpcClient } from '../../codex/rpc-client.js';
 import { ProfileNativeLimits } from './values.js';

@@ -1,4 +1,4 @@
-import { AttachmentKind, attachmentSchema } from '../../../../packages/protocol/src/index.js';
+import { AttachmentKind, attachmentSchema } from '@protocol';
 import { createHash } from 'node:crypto';
 
 export function imageMime(bytes: Buffer): string | undefined {

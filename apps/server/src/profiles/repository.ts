@@ -1,4 +1,4 @@
-import { ErrorCode, profileListSchema, type ProfileList } from '../../../../packages/protocol/src/index.js';
+import { ErrorCode, profileListSchema, type ProfileList } from '@protocol';
 import { Fault } from '../auth/security.js';
 import type { Database } from '../db/database.js';
 

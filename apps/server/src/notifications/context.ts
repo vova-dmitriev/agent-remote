@@ -1,5 +1,5 @@
 import { NotificationTurnReason } from '../domain/notifications.js';
-import { EventType, MessageRole } from '../../../../packages/protocol/src/index.js';
+import { EventType, MessageRole } from '@protocol';
 import { type PoolClient } from 'pg';
 import { notificationPreview, notificationTitle } from './format.js';
 

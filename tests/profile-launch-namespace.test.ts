@@ -3,7 +3,7 @@ import { chmod, lstat, mkdtemp, rm, symlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { profileExecutionNamespace } from '../apps/daemon/src/sessions/execution/namespace.js';
 import { executionProfile } from './helpers/execution-profile.js';
-import { ErrorCode, executionProfileSummarySchema } from '../packages/protocol/src/index.js';
+import { ErrorCode, executionProfileSummarySchema } from '@protocol';
 
 it('allocates short private deterministic namespaces without exposing profile identity in socket paths', async () => {
   const root = await mkdtemp('/tmp/ar-test-');

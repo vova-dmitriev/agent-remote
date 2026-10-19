@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { validatePrompt } from '../packages/protocol/src/index.js';
+import { validatePrompt } from '@protocol';
 
 it('enforces UTF-8 byte limits and rejects terminal control injection', () => {
   expect(validatePrompt('👋'.repeat(4096))).toBe('👋'.repeat(4096));

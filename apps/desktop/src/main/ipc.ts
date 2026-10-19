@@ -11,7 +11,7 @@ import {
   desktopBridgeResultSchema,
   profileAuthUrlSchema,
   type DesktopBridgeResult,
-} from '../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { shell } from 'electron';
 import {
   DesktopPrivateIpcChannel,

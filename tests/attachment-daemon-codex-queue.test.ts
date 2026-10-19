@@ -6,7 +6,7 @@ import { Monitor } from '../apps/daemon/src/monitor/monitor.js';
 import { PermissionBroker } from '../apps/daemon/src/commands/permission-broker.js';
 import { AdapterRegistry } from '../apps/daemon/src/adapters/registry.js';
 import type { AttachmentService } from '../apps/daemon/src/attachments/service.js';
-import type { HistoryMessage } from '../packages/protocol/src/index.js';
+import type { HistoryMessage } from '@protocol';
 
 const cleanups: (() => void)[] = [];
 

@@ -1,10 +1,5 @@
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
-import {
-  ErrorCode,
-  LocalGrantStatus,
-  LocalOrigin,
-  LOCAL_LIMITS,
-} from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode, LocalGrantStatus, LocalOrigin, LOCAL_LIMITS } from '@protocol';
 import type { LocalDatabase } from '../state/database.js';
 import type { GrantRow, LocalPrincipal } from './types.js';
 

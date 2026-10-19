@@ -1,10 +1,6 @@
 import { unlink } from 'node:fs/promises';
 import { join } from 'node:path';
-import {
-  AgentProvider,
-  ErrorCode,
-  type ExecutionProfileSummary,
-} from '../../../../../packages/protocol/src/index.js';
+import { AgentProvider, ErrorCode, type ExecutionProfileSummary } from '@protocol';
 import { profileHomes } from '../environment/paths.js';
 import { ProfileRuntimeFile } from '../environment/values.js';
 

@@ -5,7 +5,7 @@ import {
   preferencePatchSchema,
   type AccountPreferences,
   type PreferencePatch,
-} from '../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { type Database } from '../db/database.js';
 import { type Principal } from '../auth/security.js';
 

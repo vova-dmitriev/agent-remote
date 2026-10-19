@@ -13,3 +13,4 @@ export * from './credential-enrollment.js';
 export * from './http.js';
 export * from './profile-routing.js';
 export * from './continuity.js';
+export * from './local-control.js';

@@ -7,8 +7,8 @@ import {
   localRequestSchema,
   localGrantSchema,
   type LocalClientGrant,
-} from '../../../../packages/protocol/src/index.js';
-import { fragmentValue } from '../../../../packages/transport/src/native/fragments.js';
+} from '@protocol';
+import { fragmentValue } from '@transport/native/fragments.js';
 import { ExtensionConfig } from '../config/values.js';
 import type { ChromeApi, ChromePort } from '../config/chrome-api.js';
 import { workerIdentity } from './identity.js';

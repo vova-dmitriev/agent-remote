@@ -2,7 +2,7 @@ import { constants } from 'node:fs';
 import { lstat, open, unlink } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
-import { ErrorCode } from '../../../../../packages/protocol/src/error-codes.js';
+import { ErrorCode } from '@protocol';
 import { safeEntry, secureDirectory } from './runtime.js';
 import { CompanionStartup } from './values.js';
 

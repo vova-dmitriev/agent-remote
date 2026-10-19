@@ -1,13 +1,13 @@
 import { ServerErrorCode } from '../error-codes.js';
-import { ErrorCode } from '../../../../packages/protocol/src/index.js';
-
 import {
+  ErrorCode,
   EventType,
   HISTORY_PAGE_MESSAGES,
   HISTORY_CURSOR_MAX_LENGTH,
   eventSchema,
   type EventEnvelope,
-} from '../../../../packages/protocol/src/index.js';
+} from '@protocol';
+
 import {
   HISTORY_WINDOW_BEFORE_MESSAGES,
   HISTORY_WINDOW_AFTER_MESSAGES,

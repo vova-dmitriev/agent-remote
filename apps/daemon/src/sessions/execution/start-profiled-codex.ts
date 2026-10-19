@@ -1,4 +1,4 @@
-import { ErrorCode } from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode } from '@protocol';
 import { ensureManagedCodexSocket } from '../../codex/launcher.js';
 import { profileNativeArguments } from '../../profiles/native/config/arguments.js';
 import { profileExecutionNamespace } from './namespace.js';

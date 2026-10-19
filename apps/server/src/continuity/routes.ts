@@ -11,7 +11,7 @@ import {
   continuityPrepareRequestSchema,
   continuitySourceInspectionSchema,
   startHandoffRequestSchema,
-} from '../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { Fault, type Principal } from '../auth/security.js';
 import type { DeviceService } from '../devices/service.js';
 import { HttpMethod } from '../domain/http.js';

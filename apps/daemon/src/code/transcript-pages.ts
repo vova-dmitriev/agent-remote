@@ -1,11 +1,6 @@
 import { DaemonErrorCode } from '../error-codes.js';
-import { ErrorCode } from '../../../../packages/protocol/src/index.js';
+import { ErrorCode, HistoryDirection, type HistoryMessage, type HistoryRead } from '@protocol';
 
-import {
-  HistoryDirection,
-  type HistoryMessage,
-  type HistoryRead,
-} from '../../../../packages/protocol/src/index.js';
 import {
   TRANSCRIPT_PAGE_MESSAGES,
   TRANSCRIPT_AROUND_BEFORE_MESSAGES,

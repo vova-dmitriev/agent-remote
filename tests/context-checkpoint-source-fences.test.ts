@@ -10,7 +10,7 @@ import {
   TargetKind,
   type HistoryMessage,
   type Session,
-} from '../packages/protocol/src/index.js';
+} from '@protocol';
 import { createCodexCheckpointSource } from '../apps/daemon/src/continuity/source/native.js';
 import type {
   RepositoryProbe,

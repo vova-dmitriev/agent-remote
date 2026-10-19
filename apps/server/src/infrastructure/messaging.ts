@@ -1,4 +1,4 @@
-import { ErrorCode } from '../../../../packages/protocol/src/index.js';
+import { ErrorCode } from '@protocol';
 import { RedisConnectionStatus } from '../domain/infrastructure.js';
 import { createHash } from 'node:crypto';
 import { RedisCache, redisClient } from './redis.js';

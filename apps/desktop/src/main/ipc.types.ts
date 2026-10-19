@@ -1,4 +1,4 @@
-import { DesktopBridgeChannel, type DesktopBridgeEvent } from '../../../../packages/protocol/src/index.js';
+import { DesktopBridgeChannel, type DesktopBridgeEvent } from '@protocol';
 import type { DesktopPrivateIpcChannel as DesktopPrivateIpcChannelType } from '../shared/private-ipc.js';
 
 export interface DesktopWebContentsPort {

@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
-import { BoundProfileRoutingClient } from '../packages/transport/src/profile-routing-client.js';
-import { HttpRequestMethod } from '../packages/protocol/src/values/http.js';
+import { BoundProfileRoutingClient } from '@transport/profile-routing-client.js';
+import { HttpRequestMethod } from '@protocol';
 
 it('uses only the owner-bound routing endpoint and validates saved values', async () => {
   const calls: Array<[string, string, unknown]> = [];

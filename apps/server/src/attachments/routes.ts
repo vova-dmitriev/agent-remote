@@ -1,5 +1,4 @@
-import { ErrorCode } from '../../../../packages/protocol/src/index.js';
-import { AttachmentKind, MAX_ATTACHMENT_BYTES } from '../../../../packages/protocol/src/index.js';
+import { ErrorCode, AttachmentKind, MAX_ATTACHMENT_BYTES } from '@protocol';
 import {
   ATTACHMENT_UPLOADS_PER_WINDOW,
   ATTACHMENT_MAX_ACTIVE_UPLOADS,

@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { LocalDatabase } from '../apps/daemon/src/local/state/database.js';
 import { LocalGrants } from '../apps/daemon/src/local/grants/service.js';
 import { startLocalServer } from '../apps/daemon/src/local/server/server.js';
-import { LocalOperation, LocalOrigin } from '../packages/protocol/src/index.js';
+import { LocalOperation, LocalOrigin } from '@protocol';
 import { createDesktopCompanionConnector } from '../apps/desktop/src/runtime/connector.js';
 import { desktopRuntimeFixture } from './helpers/desktop-runtime-fixture.js';
 import { localFixture } from './helpers/local-runtime.js';

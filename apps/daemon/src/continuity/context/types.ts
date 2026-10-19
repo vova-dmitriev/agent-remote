@@ -1,7 +1,4 @@
-import type {
-  CheckpointApproval,
-  ContextCheckpointSummary,
-} from '../../../../../packages/protocol/src/index.js';
+import type { CheckpointApproval, ContextCheckpointSummary } from '@protocol';
 import type {
   CheckpointAttachmentStatus,
   CheckpointCoverage,

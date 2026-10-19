@@ -1,11 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import {
-  CommandActionType,
-  ConnectionStatus,
-  ErrorCode,
-  LocalOperation,
-  serverFrameSchema,
-} from '../packages/protocol/src/index.js';
+import { CommandActionType, ConnectionStatus, ErrorCode, LocalOperation, serverFrameSchema } from '@protocol';
 import { ExtensionConnection } from '../apps/chrome-extension/src/client/connection.js';
 import { ExtensionApplicationClient } from '../apps/chrome-extension/src/client/application-client.js';
 import { createSessionStore } from '../apps/mini-app/src/entities/session/model/store/create-session-store.js';

@@ -1,4 +1,4 @@
-import { CommandActionType } from '../../../../../packages/protocol/src/index.js';
+import { CommandActionType } from '@protocol';
 import { LocalDocumentKind } from '../state/values.js';
 import type { LocalControllerOptions } from '../controller/types.js';
 import type { QueuedIntent } from './types.js';

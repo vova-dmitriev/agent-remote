@@ -1,10 +1,6 @@
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
-import {
-  CheckpointApprovalKind,
-  CheckpointCoverage,
-  contextCheckpointSummarySchema,
-} from '../../../../../packages/protocol/src/index.js';
+import { CheckpointApprovalKind, CheckpointCoverage, contextCheckpointSummarySchema } from '@protocol';
 import type { CheckpointManualDecision } from './values.js';
 import {
   assertCurrent,

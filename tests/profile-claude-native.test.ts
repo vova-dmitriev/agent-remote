@@ -2,7 +2,7 @@ import { chmodSync, mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from 'n
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { expect, it } from 'vitest';
-import { AgentProvider, ProfileAuthMode } from '../packages/protocol/src/index.js';
+import { AgentProvider, ProfileAuthMode } from '@protocol';
 import { buildClaudeProfileLaunch } from '../apps/daemon/src/profiles/claude/launch.js';
 import { readClaudeApiKey } from '../apps/daemon/src/profiles/claude/api-key-helper.js';
 import { verifyClaudeApiKey } from '../apps/daemon/src/profiles/claude/api.js';

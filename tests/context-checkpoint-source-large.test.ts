@@ -9,7 +9,7 @@ import {
   SessionStatus,
   TargetKind,
   type Session,
-} from '../packages/protocol/src/index.js';
+} from '@protocol';
 import { createClaudeCheckpointSource } from '../apps/daemon/src/continuity/source/native.js';
 import { TranscriptSources } from '../apps/daemon/src/monitor/history.js';
 import { AttachmentService } from '../apps/daemon/src/attachments/service.js';

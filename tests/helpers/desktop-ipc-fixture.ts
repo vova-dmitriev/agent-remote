@@ -1,9 +1,5 @@
 import { vi } from 'vitest';
-import {
-  DesktopBridgeChannel,
-  type LocalAction,
-  type ServerFrame,
-} from '../../packages/protocol/src/index.js';
+import { DesktopBridgeChannel, type LocalAction, type ServerFrame } from '@protocol';
 import { installDesktopIpc, type DesktopInvokeEvent } from '../../apps/desktop/src/main/ipc.js';
 import type { DesktopCompanionConnector } from '../../apps/desktop/src/main/companion-port.js';
 import { DESKTOP_ASSET_URL } from '../../apps/desktop/src/main/config/links.js';

@@ -1,8 +1,4 @@
-import type {
-  ExecutionProfileSummary,
-  EnrollmentChallenge,
-  ProfileOperation,
-} from '../../../../../packages/protocol/src/index.js';
+import type { ExecutionProfileSummary, EnrollmentChallenge, ProfileOperation } from '@protocol';
 import type { LocalDatabase } from '../../local/state/database.js';
 import type { ProfileRegistry } from '../registry.js';
 import type { ProfileScope, ProfileVerification } from '../types.js';

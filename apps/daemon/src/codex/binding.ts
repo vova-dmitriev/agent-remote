@@ -26,7 +26,7 @@ import {
   sessionSchema,
   type Session,
   type HistoryMessage,
-} from '../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { RuntimeEvent } from '../domain/runtime.js';
 import { CodexFileChanges } from './file-changes.js';
 import { codexCurrentStep } from './current-step.js';

@@ -1,11 +1,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { expect, it } from 'vitest';
 import { CredentialEnrollmentService } from '../apps/daemon/src/profiles/enrollment/service.js';
-import {
-  CredentialEnrollmentLimits,
-  ErrorCode,
-  ProfileOperationPhase,
-} from '../packages/protocol/src/index.js';
+import { CredentialEnrollmentLimits, ErrorCode, ProfileOperationPhase } from '@protocol';
 import { enrollmentFixture } from './profiles/enrollment.fixture.js';
 
 it('terminalizes an unused expired challenge so recovery no longer blocks further changes', async () => {

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { AgentProvider, ErrorCode, HttpRequestMethod } from '../../../../../packages/protocol/src/index.js';
+import { AgentProvider, ErrorCode, HttpRequestMethod } from '@protocol';
 import { withCodexApiKey, readCodexCredentialIdentity, credentialReference } from '../credentials.js';
 import { profileApiBody } from './body.js';
 import { ProfileApiEndpoint, ProfileApiLimit, ProfileApiRequest, ProfileApiStatus } from './values.js';

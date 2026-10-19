@@ -1,4 +1,4 @@
-import type { DesktopBridge, DesktopBridgeChannel } from '../../../../../packages/protocol/src/index.js';
+import type { DesktopBridge, DesktopBridgeChannel } from '@protocol';
 import type { DesktopPrivateIpcChannel } from '../../shared/private-ipc.js';
 
 export type DesktopPreloadBridge = DesktopBridge;

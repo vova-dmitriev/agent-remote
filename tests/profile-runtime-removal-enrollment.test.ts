@@ -6,8 +6,8 @@ import {
   ProfileAuthMode,
   ProfileOperationPhase,
   ProfileRequestKind,
-} from '../packages/protocol/src/index.js';
-import { encryptEnrollment } from '../packages/transport/src/credentials/sealed-box.js';
+} from '@protocol';
+import { encryptEnrollment } from '@transport/credentials/sealed-box.js';
 import { CodexProfileNative } from '../apps/daemon/src/profiles/native/codex.js';
 import { RuntimeProfiles } from '../apps/daemon/src/profiles/runtime/service.js';
 import { deferred } from './profiles/runtime/deferred.js';

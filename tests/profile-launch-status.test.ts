@@ -4,7 +4,7 @@ import {
   ProfileStatus,
   CapabilitySupport,
   type ExecutionProfileSummary,
-} from '../packages/protocol/src/index.js';
+} from '@protocol';
 import { describe, expect, it } from 'vitest';
 import { resolveSessionProfileStatus } from '../apps/mini-app/src/features/create-session/model/profile-status.js';
 import {

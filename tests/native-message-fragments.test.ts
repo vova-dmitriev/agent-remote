@@ -1,8 +1,7 @@
 import { expect, it } from 'vitest';
-import { fragmentValue, FragmentReader } from '../packages/transport/src/native/fragments.js';
-import { decodeBase64 } from '../packages/transport/src/native/base64.js';
-import { ErrorCode } from '../packages/protocol/src/error-codes.js';
-import { LocalKind } from '../packages/protocol/src/values/local-client.js';
+import { fragmentValue, FragmentReader } from '@transport/native/fragments.js';
+import { decodeBase64 } from '@transport/native/base64.js';
+import { ErrorCode, LocalKind } from '@protocol';
 
 function piece(transferId: string, total: number, data = 'Ig==', seq = 0) {
   return { kind: LocalKind.Fragment, transferId, seq, total, data };

@@ -4,7 +4,7 @@ import {
   CredentialEnrollmentLimits,
   enrollmentChallengeSchema,
   type EnrollmentChallenge,
-} from '../../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import type { LocalDatabase } from '../../local/state/database.js';
 import type { ProfileScope } from '../types.js';
 import type { EnrollmentRecord } from './types.js';

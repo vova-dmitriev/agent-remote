@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { isAbsolute, relative, resolve, sep } from 'node:path';
-import { AgentProvider, ErrorCode, ProfileAuthMode } from '../../../../../packages/protocol/src/index.js';
+import { AgentProvider, ErrorCode, ProfileAuthMode } from '@protocol';
 import { credentialReference } from '../credentials.js';
 import { readClaudeApiKey } from './api-key-helper.js';
 import { ClaudeProfileApi } from './values.js';

@@ -9,8 +9,8 @@ import {
   LocalOperation,
   localHelloSchema,
   localRequestSchema,
-} from '../../../../../packages/protocol/src/index.js';
-import { LocalControl } from '../../../../../packages/protocol/src/values/local-control.js';
+  LocalControl,
+} from '@protocol';
 import { FramedPeer } from '../../browser/transport/peer.js';
 import type { LocalPrincipal } from '../grants/types.js';
 import type { LocalServerOptions } from './types.js';

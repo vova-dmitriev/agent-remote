@@ -8,14 +8,14 @@ import {
   type ClientCommand,
   type HistoryPageDirection,
   type ServerFrame,
-} from '../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { CommandSubmission, type ApplicationClient, type TransportHandlers } from '@/shared/api';
 import { ExtensionPersistence } from './persistence/client.js';
 import { ExtensionOperations } from './operations.js';
 import { ExtensionMedia } from './media/transfer.js';
 import { ExtensionHistory } from './history/controller.js';
 import type { ExtensionConnection } from './connection.js';
-import { BoundProfileClient } from '../../../../packages/transport/src/profile-client.js';
+import { BoundProfileClient } from '@transport/profile-client.js';
 
 const devicesSchema = z.array(z.strictObject({ id: z.string(), last_seen_at: z.string() }));
 

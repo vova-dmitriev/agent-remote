@@ -1,5 +1,5 @@
 import type { WebSocket } from 'ws';
-import type { ProfileResponse } from '../../../../packages/protocol/src/index.js';
+import type { ProfileResponse } from '@protocol';
 
 export interface ProfileConnection {
   socket: WebSocket;

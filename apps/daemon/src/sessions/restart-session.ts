@@ -1,5 +1,4 @@
-import { ErrorCode } from '../../../../packages/protocol/src/index.js';
-import { ConnectorId, TargetKind, type Session } from '../../../../packages/protocol/src/index.js';
+import { ErrorCode, ConnectorId, TargetKind, type Session } from '@protocol';
 import { fileURLToPath } from 'node:url';
 import { type NativeProcess } from './native-process.js';
 import { type LaunchContext } from './launch-context.js';

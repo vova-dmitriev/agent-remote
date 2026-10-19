@@ -1,14 +1,9 @@
 import { DaemonErrorCode } from '../error-codes.js';
-import { ErrorCode } from '../../../../packages/protocol/src/index.js';
+import { ErrorCode, PermissionDecision, type RemotePermissionDecision, positiveInteger } from '@protocol';
 
-import {
-  PermissionDecision,
-  type RemotePermissionDecision,
-  positiveInteger,
-} from '../../../../packages/protocol/src/index.js';
 import { ClaudeHookEvent } from '../domain/claude.js';
 
-export { PermissionDecision } from '../../../../packages/protocol/src/index.js';
+export { PermissionDecision } from '@protocol';
 export interface PendingPermission {
   requestId: string;
   sessionId: string;

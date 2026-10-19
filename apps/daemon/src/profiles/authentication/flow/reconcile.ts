@@ -5,7 +5,7 @@ import {
   ProfileStatus,
   knownErrorCode,
   type ProfileOperation,
-} from '../../../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import type { ProfileVerification } from '../../types.js';
 import { assertProfileCaller, authenticationProfile, saveAuthentication } from '../state.js';
 import type { ProfileAuthenticationReconcileContext } from '../types.js';

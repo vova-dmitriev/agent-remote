@@ -1,4 +1,4 @@
-import type { HistoryMessage } from '../../../packages/protocol/src/index.js';
+import type { HistoryMessage } from '@protocol';
 
 export const conversation: HistoryMessage[] = Array.from({ length: 35 }, (_, index) => ({
   id: 'navigation-' + index,

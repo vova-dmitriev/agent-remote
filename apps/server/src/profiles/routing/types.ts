@@ -1,8 +1,4 @@
-import type { ProfileQuotaObservation } from '../../../../../packages/protocol/src/profile-quota.js';
-import type {
-  ProfileRoutingSettings,
-  SaveProfileRouting,
-} from '../../../../../packages/protocol/src/profile-routing.js';
+import type { ProfileQuotaObservation, ProfileRoutingSettings, SaveProfileRouting } from '@protocol';
 
 export interface ProfileRoutingSnapshot {
   settings: ProfileRoutingSettings;

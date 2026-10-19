@@ -15,11 +15,7 @@ import { nativeClaudeMedia } from '../attachments/native.js';
 import { type NativeMedia } from '../attachments/types.js';
 import { openTranscript } from './transcript-file.js';
 import { createHash } from 'node:crypto';
-import {
-  positiveInteger,
-  truncateUtf8,
-  type HistoryMessage,
-} from '../../../../packages/protocol/src/index.js';
+import { positiveInteger, truncateUtf8, type HistoryMessage } from '@protocol';
 import { TranscriptTitle } from './transcript-title.js';
 import { transcriptWindow } from './transcript-window.js';
 

@@ -3,12 +3,7 @@ import { EventEmitter } from 'node:events';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import {
-  BindingState,
-  HistoryDirection,
-  IntegrationState,
-  TargetKind,
-} from '../packages/protocol/src/index.js';
+import { BindingState, HistoryDirection, IntegrationState, TargetKind } from '@protocol';
 import { RuntimeEvent } from '../apps/daemon/src/domain/runtime.js';
 import { CodexItemType, CodexMethod, CodexRuntimeStatus } from '../apps/daemon/src/domain/codex.js';
 import { CodexManager } from '../apps/daemon/src/codex/manager.js';

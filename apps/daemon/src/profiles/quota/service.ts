@@ -1,13 +1,14 @@
-import { ErrorCode } from '../../../../../packages/protocol/src/error-codes.js';
-import type { ExecutionProfileSummary } from '../../../../../packages/protocol/src/execution-profile.js';
-import type { ProfileQuotaObservation } from '../../../../../packages/protocol/src/profile-quota.js';
-import { AgentProvider } from '../../../../../packages/protocol/src/values/command.js';
-import { ProfileAuthMode, ProfileStatus } from '../../../../../packages/protocol/src/values/execution.js';
 import {
+  ErrorCode,
+  type ExecutionProfileSummary,
+  type ProfileQuotaObservation,
+  AgentProvider,
+  ProfileAuthMode,
+  ProfileStatus,
   QuotaObservationStatus,
   QuotaScopeKind,
   QuotaSource,
-} from '../../../../../packages/protocol/src/values/profile-routing.js';
+} from '@protocol';
 import type { ProfileRegistry } from '../registry.js';
 import { RuntimeProfileNative } from '../runtime/native.js';
 import { ProfileExecutionOwnership } from '../runtime/execution-ownership.js';

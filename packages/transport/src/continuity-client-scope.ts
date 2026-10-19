@@ -1,5 +1,5 @@
 import type { ZodType } from 'zod';
-import { ErrorCode, type HttpRequestMethod } from '../../protocol/src/index.js';
+import { ErrorCode, type HttpRequestMethod } from '@protocol';
 import type { ContinuityExchange } from './continuity-client.types.js';
 
 export class ContinuityClientScope {

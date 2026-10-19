@@ -1,6 +1,5 @@
-import { ErrorCode } from '../../../../packages/protocol/src/index.js';
+import { ErrorCode, CommandStatus, TargetKind } from '@protocol';
 import { WrapperActionType, IpcMessageType } from '../domain/ipc.js';
-import { CommandStatus, TargetKind } from '../../../../packages/protocol/src/index.js';
 import { CmuxClient } from '../cmux/client.js';
 import { type CmuxContext } from '../cmux/context.js';
 import { loadConfig, localSecret, socketPath } from '../config.js';

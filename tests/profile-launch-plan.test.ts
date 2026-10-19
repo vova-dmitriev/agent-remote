@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { AgentProvider, ErrorCode, ReasoningEffort } from '../packages/protocol/src/index.js';
+import { AgentProvider, ErrorCode, ReasoningEffort } from '@protocol';
 import { prepareExecutionLaunch } from '../apps/daemon/src/sessions/execution/plan.js';
 import { profileServiceFixture } from './profiles/service.fixture.js';
 import { codexSubscription, verifiedAccount } from './profiles/registry.fixture.js';

@@ -1,4 +1,4 @@
-import { FragmentReader } from '../packages/transport/src/native/fragments.js';
+import { FragmentReader } from '@transport/native/fragments.js';
 import {
   LocalKind,
   LocalOperation,
@@ -6,7 +6,7 @@ import {
   ErrorCode,
   type LocalAction,
   type CommandResult,
-} from '../packages/protocol/src/index.js';
+} from '@protocol';
 import { ViewerRegistry } from '../apps/chrome-extension/src/background/registry.js';
 import { workerFixture, workerPort } from './extension-worker.fixture.js';
 import { snapshotFrame } from './extension-client.fixture.js';

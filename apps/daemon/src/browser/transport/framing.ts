@@ -1,6 +1,5 @@
 import { endianness } from 'node:os';
-import { LOCAL_LIMITS } from '../../../../../packages/protocol/src/local-limits.js';
-import { ErrorCode } from '../../../../../packages/protocol/src/error-codes.js';
+import { LOCAL_LIMITS, ErrorCode } from '@protocol';
 
 export class NativeFrameCodec {
   private header = Buffer.alloc(4);

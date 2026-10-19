@@ -6,7 +6,7 @@ import {
   CodexMethod,
 } from '../domain/codex.js';
 import { object, type Data } from './events.js';
-import { userInputQuestionSchema } from '../../../../packages/protocol/src/index.js';
+import { userInputQuestionSchema } from '@protocol';
 
 const OPEN = '<send_user_message_question_reply>',
   CLOSE = '</send_user_message_question_reply>';

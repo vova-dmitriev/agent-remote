@@ -2,7 +2,7 @@ import { chmod, link, lstat, mkdir, open, rm } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { dirname } from 'node:path';
-import { ErrorCode } from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode } from '@protocol';
 
 export async function privateFile(path: string, initial: () => string): Promise<string> {
   const directory = dirname(path);

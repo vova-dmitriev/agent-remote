@@ -4,7 +4,7 @@ import { randomBytes, randomUUID, createHash } from 'node:crypto';
 import { writeFile, mkdir } from 'node:fs/promises';
 import { createRelay } from '../apps/server/src/relay.js';
 import { initData, testBotToken } from '../tests/helpers/telegram.js';
-import type { Session, AppSnapshot, ServerFrame } from '../packages/protocol/src/index.js';
+import type { Session, AppSnapshot, ServerFrame } from '@protocol';
 
 const reportPrefix = process.env.LOAD_REPORT_PREFIX ?? 'load-relay';
 

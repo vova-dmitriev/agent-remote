@@ -1,4 +1,4 @@
-import type { HttpRequestMethod } from '../../protocol/src/index.js';
+import type { HttpRequestMethod } from '@protocol';
 
 export type ContinuityExchange = (
   method: HttpRequestMethod,

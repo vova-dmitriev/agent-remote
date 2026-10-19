@@ -1,4 +1,4 @@
-import { ErrorCode, type ContinuityLinks } from '../../protocol/src/index.js';
+import { ErrorCode, type ContinuityLinks } from '@protocol';
 
 export function validateContinuityLinks(
   result: ContinuityLinks,

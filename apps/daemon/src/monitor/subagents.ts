@@ -1,4 +1,4 @@
-import { SubagentStatus, type Session, type SubagentInfo } from '../../../../packages/protocol/src/index.js';
+import { SubagentStatus, type Session, type SubagentInfo } from '@protocol';
 
 /** Keep child metadata within the shared snapshot transport budget, favoring active recent work. */
 export function boundSubagentSnapshots(sessions: Session[]): Session[] {

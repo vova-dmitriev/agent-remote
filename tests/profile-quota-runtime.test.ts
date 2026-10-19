@@ -1,9 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { ProfileRequestKind } from '../packages/protocol/src/values/profile-management.js';
-import {
-  QuotaEvidenceKind,
-  QuotaObservationStatus,
-} from '../packages/protocol/src/values/profile-routing.js';
+import { ProfileRequestKind, QuotaEvidenceKind, QuotaObservationStatus } from '@protocol';
 import { CodexProfileNative } from '../apps/daemon/src/profiles/native/codex.js';
 import { RuntimeProfiles } from '../apps/daemon/src/profiles/runtime/service.js';
 import { profileServiceFixture } from './profiles/service.fixture.js';

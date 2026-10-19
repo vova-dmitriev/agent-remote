@@ -11,7 +11,7 @@ import { Monitor } from '../apps/daemon/src/monitor/monitor.js';
 import { AdapterRegistry } from '../apps/daemon/src/adapters/registry.js';
 import { PermissionBroker } from '../apps/daemon/src/commands/permission-broker.js';
 import { Dispatcher } from '../apps/daemon/src/commands/dispatcher.js';
-import type { Command } from '../packages/protocol/src/index.js';
+import type { Command } from '@protocol';
 
 // Opt-in compatibility probe: creates a new disposable thread; never resumes a user thread.
 const endpoint = await ensureManagedCodexSocket(

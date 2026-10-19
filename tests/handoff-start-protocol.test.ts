@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { startHandoffRequestSchema } from '../packages/protocol/src/index.js';
+import { startHandoffRequestSchema } from '@protocol';
 
 const request = {
   ownerId: '11111111-1111-4111-8111-111111111111',

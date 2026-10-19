@@ -1,5 +1,4 @@
-import type { ProfileQuotaObservation } from '../../../../../packages/protocol/src/profile-quota.js';
-import type { SaveProfileRouting } from '../../../../../packages/protocol/src/profile-routing.js';
+import type { ProfileQuotaObservation, SaveProfileRouting } from '@protocol';
 import type { Principal } from '../../auth/security.js';
 import type { DeviceService } from '../../devices/service.js';
 import { ProfileRoutingRepository } from './repository.js';

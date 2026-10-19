@@ -1,14 +1,14 @@
 import { DaemonErrorCode } from '../error-codes.js';
-import { ErrorCode } from '../../../../packages/protocol/src/index.js';
-
 import {
+  ErrorCode,
   ConnectorId,
   TargetKind,
   ConnectorTransport,
   AttachmentMode,
   IntegrationState,
   CommandStatus,
-} from '../../../../packages/protocol/src/index.js';
+} from '@protocol';
+
 import { DesktopMode } from '../domain/desktop.js';
 import { IpcMessageType, WrapperActionType } from '../domain/ipc.js';
 import { RuntimeEvent, SourceVersion } from '../domain/runtime.js';

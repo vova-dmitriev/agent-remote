@@ -1,9 +1,4 @@
-import {
-  ErrorCode,
-  LocalOperation,
-  accountPreferencesSchema,
-  type LocalAction,
-} from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode, LocalOperation, accountPreferencesSchema, type LocalAction } from '@protocol';
 import { RuntimeEvent } from '../../domain/runtime.js';
 import { LocalDocumentKind } from '../state/values.js';
 import type { LocalPrincipal } from '../grants/types.js';

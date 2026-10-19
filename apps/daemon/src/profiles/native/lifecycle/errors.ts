@@ -1,4 +1,4 @@
-import { ErrorCode } from '../../../../../../packages/protocol/src/index.js';
+import { ErrorCode } from '@protocol';
 
 export class ProfileProcessCleanupError extends Error {
   constructor() {

@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test';
-import type { ClientCommand } from '../../packages/protocol/src/index.js';
+import type { ClientCommand } from '@protocol';
 import { COMMAND_IDS } from '../../apps/mini-app/src/features/send-command/config/test-ids.js';
 import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
 import { SHELL_IDS } from '../../apps/mini-app/src/widgets/application-shell/config/test-ids.js';

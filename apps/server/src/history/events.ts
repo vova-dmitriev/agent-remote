@@ -1,4 +1,4 @@
-import { EventType, historySchema, type EventEnvelope } from '../../../../packages/protocol/src/index.js';
+import { EventType, historySchema, type EventEnvelope } from '@protocol';
 import { type Database } from '../db/database.js';
 import { hash } from '../auth/security.js';
 

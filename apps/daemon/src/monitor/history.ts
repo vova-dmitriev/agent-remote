@@ -1,6 +1,5 @@
-import { ErrorCode } from '../../../../packages/protocol/src/index.js';
+import { ErrorCode, type HistoryMessage, type HistoryRead } from '@protocol';
 import { type NativeMedia } from '../attachments/types.js';
-import { type HistoryMessage, type HistoryRead } from '../../../../packages/protocol/src/index.js';
 import { TranscriptActivity } from '../code/transcript-activity.js';
 import { TranscriptPages } from '../code/transcript-pages.js';
 import { TranscriptReader } from '../code/transcript-reader.js';

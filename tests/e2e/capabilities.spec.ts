@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test';
-import type { Session } from '../../packages/protocol/src/index.js';
+import type { Session } from '@protocol';
 import { COMMAND_IDS } from '../../apps/mini-app/src/features/send-command/config/test-ids.js';
 import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
 import { PERMISSION_IDS, SESSION_PAGE_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';

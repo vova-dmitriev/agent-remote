@@ -1,7 +1,7 @@
 import { cp, lstat, rename, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { ErrorCode } from '../../../../packages/protocol/src/index.js';
+import { ErrorCode } from '@protocol';
 import { secureDirectory } from '../../../daemon/src/local/supervisor/runtime.js';
 import { verifyDesktopRuntime } from '../../../../scripts/desktop/verify-runtime-lib.mjs';
 

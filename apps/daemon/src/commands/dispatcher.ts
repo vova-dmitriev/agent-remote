@@ -13,7 +13,7 @@ import {
   type CommandResult,
   type AttachmentDescriptor,
   type Session,
-} from '../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { DispatchScheduler } from './scheduling/index.js';
 import { CommandStoreOutcome, RuntimeEvent } from '../domain/runtime.js';
 import { type PreparedAttachment } from '../attachments/types.js';

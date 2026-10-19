@@ -2,21 +2,19 @@ import { expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import { databaseFixture } from './helpers/database.js';
 import { ProfileRoutingRepository } from '../apps/server/src/profiles/routing/repository.js';
-import { fallbackPolicySchema } from '../packages/protocol/src/profile-routing.js';
-import { profileQuotaObservationSchema } from '../packages/protocol/src/profile-quota.js';
-import { AgentProvider } from '../packages/protocol/src/values/command.js';
 import {
+  fallbackPolicySchema,
+  profileQuotaObservationSchema,
+  AgentProvider,
   CapabilitySupport,
   ProfileAuthMode,
   ProfileStatus,
-} from '../packages/protocol/src/values/execution.js';
-import {
   FallbackMode,
   QuotaEvidenceKind,
   QuotaObservationStatus,
   QuotaScopeKind,
   QuotaSource,
-} from '../packages/protocol/src/values/profile-routing.js';
+} from '@protocol';
 
 it('persists fenced routing settings and only current ready-profile quota observations', async () => {
   const fixture = await databaseFixture();

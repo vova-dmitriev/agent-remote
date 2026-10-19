@@ -1,5 +1,5 @@
 import { CodexMethod, CodexApprovalDecision } from '../domain/codex.js';
-import { SessionStatus, PermissionDecision, type Session } from '../../../../packages/protocol/src/index.js';
+import { SessionStatus, PermissionDecision, type Session } from '@protocol';
 import { CodexDesktopHost } from '../domain/codex-desktop.js';
 import { randomUUID } from 'node:crypto';
 import { type PermissionBroker } from '../commands/permission-broker.js';

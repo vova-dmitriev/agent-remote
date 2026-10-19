@@ -1,4 +1,4 @@
-import { type AttachmentDescriptor } from '../../../../packages/protocol/src/index.js';
+import { type AttachmentDescriptor } from '@protocol';
 
 export interface PreparedAttachment {
   descriptor: AttachmentDescriptor;

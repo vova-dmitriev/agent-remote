@@ -1,5 +1,5 @@
 import { isAbsolute, resolve } from 'node:path';
-import { NATIVE_HOST_NAME } from '../../../../../packages/protocol/src/local-limits.js';
+import { NATIVE_HOST_NAME } from '@protocol';
 import type { NativeHostManifest, NativeHostRegistration } from './types.js';
 import { NATIVE_HOST_DESCRIPTION, NativeHostInterface } from './values.js';
 

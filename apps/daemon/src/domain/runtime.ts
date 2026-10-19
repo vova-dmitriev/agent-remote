@@ -27,7 +27,7 @@ export const CommandStoreOutcome = {
 
 export type CommandStoreOutcome = (typeof CommandStoreOutcome)[keyof typeof CommandStoreOutcome];
 
-export { ConnectorId } from '../../../../packages/protocol/src/index.js';
+export { ConnectorId } from '@protocol';
 
 export const NativeProcessKind = {
   Interactive: 'interactive',

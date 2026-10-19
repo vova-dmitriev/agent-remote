@@ -2,7 +2,7 @@ import { afterEach, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { LocalDatabase } from '../apps/daemon/src/local/state/database.js';
 import { LocalGrants } from '../apps/daemon/src/local/grants/service.js';
-import { LocalOrigin } from '../packages/protocol/src/values/local-client.js';
+import { LocalOrigin } from '@protocol';
 
 const chromeOrigin = 'chrome-extension://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/';
 const database = new LocalDatabase(':memory:');

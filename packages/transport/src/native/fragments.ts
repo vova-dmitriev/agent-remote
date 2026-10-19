@@ -1,7 +1,5 @@
 import { z } from 'zod';
-import { LOCAL_LIMITS } from '../../../protocol/src/local-limits.js';
-import { LocalKind } from '../../../protocol/src/values/local-client.js';
-import { ErrorCode } from '../../../protocol/src/error-codes.js';
+import { LOCAL_LIMITS, LocalKind, ErrorCode } from '@protocol';
 import { decodeBase64, encodeBase64 } from './base64.js';
 
 const maximumSequence = Math.ceil(LOCAL_LIMITS.logicalBytes / LOCAL_LIMITS.chunkBytes) - 1;

@@ -1,7 +1,7 @@
 import { afterEach, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
-import { LocalOperation } from '../packages/protocol/src/index.js';
+import { LocalOperation } from '@protocol';
 import { AttachmentService } from '../apps/daemon/src/attachments/service.js';
 import { attachmentPrompt } from '../apps/daemon/src/attachments/input.js';
 import { attachmentLocalRelay, syntheticBytes } from './helpers/attachment-local-relay.js';

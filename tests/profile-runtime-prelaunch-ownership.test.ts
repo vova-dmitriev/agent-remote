@@ -1,11 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { afterEach, expect, it, vi } from 'vitest';
-import {
-  AgentProvider,
-  ErrorCode,
-  ProfileAction,
-  ProfileRequestKind,
-} from '../packages/protocol/src/index.js';
+import { AgentProvider, ErrorCode, ProfileAction, ProfileRequestKind } from '@protocol';
 import { CodexProfileNative } from '../apps/daemon/src/profiles/native/codex.js';
 import { ProfileProcessCleanupError } from '../apps/daemon/src/profiles/native/lifecycle/errors.js';
 import { RuntimeProfiles } from '../apps/daemon/src/profiles/runtime/service.js';

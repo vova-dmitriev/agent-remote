@@ -1,4 +1,4 @@
-import { localHelloSchema, type LocalClientGrant } from '../../../../packages/protocol/src/index.js';
+import { localHelloSchema, type LocalClientGrant } from '@protocol';
 import { ExtensionApiValue, ExtensionConfig } from '../config/values.js';
 import type { ChromeApi } from '../config/chrome-api.js';
 

@@ -1,4 +1,4 @@
-import { IntegrationState } from '../../../../../packages/protocol/src/index.js';
+import { IntegrationState } from '@protocol';
 import type { bindCodex, CodexClient } from '../binding.js';
 
 export type CodexBinding = Awaited<ReturnType<typeof bindCodex>>;

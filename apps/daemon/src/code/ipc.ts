@@ -1,4 +1,4 @@
-import { ErrorCode } from '../../../../packages/protocol/src/index.js';
+import { ErrorCode } from '@protocol';
 import { connect, type Socket } from 'node:net';
 
 export function lineReader(socket: Socket, onFrame: (frame: unknown) => void, maxBytes = 131072) {

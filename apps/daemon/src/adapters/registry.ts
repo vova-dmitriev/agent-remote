@@ -7,7 +7,7 @@ import {
   targetSchema,
   type Target,
   type ConnectorDescriptor,
-} from '../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { type PreparedAttachment } from '../attachments/types.js';
 
 export class AdapterError extends Error {

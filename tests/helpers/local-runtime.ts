@@ -1,10 +1,4 @@
-import {
-  AttachmentMode,
-  CommandStatus,
-  ConnectorTransport,
-  IntegrationState,
-  TargetKind,
-} from '../../packages/protocol/src/index.js';
+import { AttachmentMode, CommandStatus, ConnectorTransport, IntegrationState, TargetKind } from '@protocol';
 import { ClaudeHookEvent } from '../../apps/daemon/src/domain/claude.js';
 import { randomUUID } from 'node:crypto';
 import { AdapterRegistry, SourceAdapter } from '../../apps/daemon/src/adapters/registry.js';

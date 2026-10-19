@@ -1,8 +1,4 @@
-import type {
-  ErrorCode,
-  HandoffOperation,
-  HandoffSeedProofFrame,
-} from '../../../../packages/protocol/src/index.js';
+import type { ErrorCode, HandoffOperation, HandoffSeedProofFrame } from '@protocol';
 import type { Principal } from '../auth/security.js';
 import type { Database } from '../db/database.js';
 import type {

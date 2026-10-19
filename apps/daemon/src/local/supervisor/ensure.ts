@@ -1,7 +1,6 @@
 import { spawn } from 'node:child_process';
 import { setTimeout as pause } from 'node:timers/promises';
-import { ErrorCode } from '../../../../../packages/protocol/src/error-codes.js';
-import { LOCAL_LIMITS } from '../../../../../packages/protocol/src/local-limits.js';
+import { ErrorCode, LOCAL_LIMITS } from '@protocol';
 import { acquireStartLock } from './lock.js';
 import { secureDirectory, verifyCompanionRuntime } from './runtime.js';
 import type { EnsureCompanionOptions } from './types.js';

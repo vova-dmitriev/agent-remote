@@ -1,5 +1,5 @@
 import { ServerErrorCode } from '../error-codes.js';
-import { ErrorCode } from '../../../../packages/protocol/src/index.js';
+import { ErrorCode } from '@protocol';
 
 import {
   NotificationBackoffType,

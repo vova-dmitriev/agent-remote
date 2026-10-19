@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { AppTransport } from '../apps/mini-app/src/shared/api/transport.js';
-import type { ServerFrame } from '../packages/protocol/src/index.js';
+import type { ServerFrame } from '@protocol';
 
 class Socket {
   static OPEN = 1;

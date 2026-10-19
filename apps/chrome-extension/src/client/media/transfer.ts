@@ -6,8 +6,8 @@ import {
   MAX_ATTACHMENT_BYTES,
   attachmentSchema,
   type AttachmentDescriptor,
-} from '../../../../../packages/protocol/src/index.js';
-import { decodeBase64, encodeBase64 } from '../../../../../packages/transport/src/native/base64.js';
+} from '@protocol';
+import { decodeBase64, encodeBase64 } from '@transport/native/base64.js';
 import type { AttachmentAccess } from '@/shared/api';
 import type { ExtensionConnection } from '../connection.js';
 

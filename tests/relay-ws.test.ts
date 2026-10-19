@@ -5,7 +5,7 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { createRelay } from '../apps/server/src/relay.js';
 import { NotificationWorker } from '../apps/server/src/notifications/worker.js';
 import { initData, testBotToken } from './helpers/telegram.js';
-import type { Session, AppSnapshot, ServerFrame, ClientCommand } from '../packages/protocol/src/index.js';
+import type { Session, AppSnapshot, ServerFrame, ClientCommand } from '@protocol';
 
 const url =
     process.env.TEST_DATABASE_URL ??

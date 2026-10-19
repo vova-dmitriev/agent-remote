@@ -9,7 +9,7 @@ import { sessionSnapshot } from './support/session-fixtures.js';
 import { TranscriptSources } from '../../apps/daemon/src/monitor/history.js';
 import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
 import { SESSION_PAGE_IDS, SESSION_FEED_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
-import type { HistoryRead } from '../../packages/protocol/src/index.js';
+import type { HistoryRead } from '@protocol';
 
 const row = (i: number) =>
   JSON.stringify({

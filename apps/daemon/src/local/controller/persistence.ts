@@ -4,7 +4,7 @@ import {
   localActionSchema,
   type ClientCommand,
   type LocalAction,
-} from '../../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { LocalQueueEngine } from '../queue/index.js';
 import { assertQueuePrincipal, queueBudget, queueSession } from '../queue/validation.js';
 import { LocalDocumentKind } from '../state/values.js';

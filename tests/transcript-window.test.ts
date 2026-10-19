@@ -43,7 +43,7 @@ it('starts at recent messages without replaying the backlog, including after res
       allowedRoot: root,
       sessionId: 'source',
       initialWindow: 30,
-      transform: async (message: import('../packages/protocol/src/index.js').HistoryMessage) => {
+      transform: async (message: import('@protocol').HistoryMessage) => {
         normalized++;
 
         return message;

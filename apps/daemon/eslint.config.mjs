@@ -25,6 +25,17 @@ export function nodeSourceConfig(files, ignores = []) {
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
       ],
       'no-empty': ['error', { allowEmptyCatch: true }],
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/packages/*/src/**'],
+              message: 'Import through @protocol, @protocol/private or @transport/*.',
+            },
+          ],
+        },
+      ],
       'no-nested-ternary': 'error',
       'max-statements-per-line': ['error', { max: 1 }],
       curly: ['error', 'all'],

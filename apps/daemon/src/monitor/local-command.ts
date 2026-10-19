@@ -1,12 +1,6 @@
 import { createHash } from 'node:crypto';
 import type Sqlite from 'better-sqlite3';
-import {
-  ErrorCode,
-  LOCAL_LIMITS,
-  clientCommandSchema,
-  type ClientCommand,
-  type Command,
-} from '../../../../packages/protocol/src/index.js';
+import { ErrorCode, LOCAL_LIMITS, clientCommandSchema, type ClientCommand, type Command } from '@protocol';
 
 interface IntentReservation {
   fingerprint: string;

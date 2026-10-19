@@ -6,7 +6,7 @@ import {
   type ExecutionProfileAccess,
   type ProfileRequest,
   type ProfileResponse,
-} from '../../protocol/src/index.js';
+} from '@protocol';
 
 function responseRecords(response: ProfileResponse) {
   if (response.kind === ProfileRequestKind.List || response.kind === ProfileRequestKind.ListPage) {

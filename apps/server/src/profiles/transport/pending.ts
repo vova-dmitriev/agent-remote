@@ -1,4 +1,4 @@
-import { ErrorCode, FrameType, type ServerFrame } from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode, FrameType, type ServerFrame } from '@protocol';
 import { Fault } from '../../auth/security.js';
 import type { PendingProfileRequest, ProfileConnection } from '../types.js';
 

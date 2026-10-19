@@ -2,7 +2,7 @@ import { expect } from '@playwright/test';
 import { test, selectSession } from './fixture.js';
 import { byTestId } from '../e2e/support/testid.js';
 import { SESSION_PAGE_IDS, SESSION_FEED_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
-import { EventType, MessageRole } from '../../packages/protocol/src/index.js';
+import { EventType, MessageRole } from '@protocol';
 import { LocalDocumentKind } from '../../apps/daemon/src/local/state/values.js';
 
 test('restores a middle message and active marker in a new extension viewer', async ({ extension }) => {

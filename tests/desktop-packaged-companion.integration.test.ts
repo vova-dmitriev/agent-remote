@@ -4,7 +4,7 @@ import { mkdir, readFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
 import { afterEach, expect, it } from 'vitest';
-import { ErrorCode, LocalOperation } from '../packages/protocol/src/index.js';
+import { ErrorCode, LocalOperation } from '@protocol';
 import { createDesktopCompanionConnector } from '../apps/desktop/src/runtime/connector.js';
 import { desktopRuntimeFixture } from './helpers/desktop-runtime-fixture.js';
 

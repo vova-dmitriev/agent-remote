@@ -1,5 +1,5 @@
-import { ErrorCode } from '../../../../packages/protocol/src/index.js';
 import {
+  ErrorCode,
   ConnectorId,
   SubagentStatus,
   EventType,
@@ -18,7 +18,7 @@ import {
   noCapabilities,
   sessionSchema,
   historySchema,
-} from '../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { ClaudeHookEvent } from '../domain/claude.js';
 import { RuntimeEvent, ModelOrigin } from '../domain/runtime.js';
 import { boundSnapshotChanges } from '../codex/file-changes.js';

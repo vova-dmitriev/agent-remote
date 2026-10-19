@@ -8,7 +8,7 @@ import {
   ProfileRequestKind,
   type ProfileRequest,
   type ProfileResponse,
-} from '../packages/protocol/src/index.js';
+} from '@protocol';
 import { ProfileOperationJournal } from '../apps/mini-app/src/pages/accounts/lib/management/operation-journal.js';
 import { profileServiceFixture } from './profiles/service.fixture.js';
 

@@ -1,4 +1,4 @@
-import { ErrorCode } from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode } from '@protocol';
 import { stateDirectory } from '../../config.js';
 import { BrowserAction } from '../../domain/browser.js';
 import { browserKind, extensionOrigin, installBrowser, uninstallBrowser } from './install.js';

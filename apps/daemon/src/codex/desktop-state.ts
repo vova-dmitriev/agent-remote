@@ -1,4 +1,4 @@
-import { ErrorCode } from '../../../../packages/protocol/src/index.js';
+import { ErrorCode } from '@protocol';
 import { CodexItemType } from '../domain/codex.js';
 import { JsonPatchOperation } from '../domain/codex-desktop.js';
 import { object, type Data } from './events.js';

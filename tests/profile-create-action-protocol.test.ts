@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { commandSchema } from '../packages/protocol/src/index.js';
+import { commandSchema } from '@protocol';
 
 it('accepts an optional versioned profile selection on session creation', () => {
   const parsed = commandSchema.safeParse({

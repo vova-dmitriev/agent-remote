@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import * as protocol from '../packages/protocol/src/index.js';
+import * as protocol from '@protocol';
 
 it('exposes reusable device and receipt values without changing the wire vocabulary', () => {
   expect(protocol.DeviceStatus).toEqual({ Online: 'online', Offline: 'offline' });

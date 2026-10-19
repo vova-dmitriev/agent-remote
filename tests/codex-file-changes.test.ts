@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { CodexFileChanges, boundChangeSnapshots } from '../apps/daemon/src/codex/file-changes.js';
-import { sessionChangesSchema, type Session } from '../packages/protocol/src/index.js';
+import { sessionChangesSchema, type Session } from '@protocol';
 
 const item = (id: string, path = 'src/app.ts', diff = '@@ -1 +1 @@\n-old\n+const value = 2;') => ({
   id,

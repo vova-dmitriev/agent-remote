@@ -2,7 +2,7 @@ import { constants } from 'node:fs';
 import { chmod, lstat, mkdir, open, rename, rm } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { dirname } from 'node:path';
-import { ErrorCode } from '../../../../packages/protocol/src/index.js';
+import { ErrorCode } from '@protocol';
 
 const stateSchema = (value: unknown, clientId: string): string | undefined => {
   if (!value || typeof value !== 'object' || !('clientId' in value) || !('handle' in value)) {

@@ -1,8 +1,4 @@
-import {
-  CommandActionType,
-  CommandStatus,
-  HandoffPhase,
-} from '../../../../../packages/protocol/src/index.js';
+import { CommandActionType, CommandStatus, HandoffPhase } from '@protocol';
 import { Fault, type Principal } from '../../auth/security.js';
 import type { Database } from '../../db/database.js';
 import { ContinuityRepository } from '../repository.js';

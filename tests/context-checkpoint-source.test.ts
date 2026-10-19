@@ -10,7 +10,7 @@ import {
   SessionStatus,
   TargetKind,
   type Session,
-} from '../packages/protocol/src/index.js';
+} from '@protocol';
 import { AttachmentService } from '../apps/daemon/src/attachments/service.js';
 import { ContextCheckpointManager } from '../apps/daemon/src/continuity/context/checkpoint.js';
 import { createClaudeCheckpointSource } from '../apps/daemon/src/continuity/source/native.js';

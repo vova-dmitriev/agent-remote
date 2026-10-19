@@ -1,8 +1,4 @@
-import {
-  CapabilitySupport,
-  ErrorCode,
-  type ExecutionProfileSummary,
-} from '../../../../packages/protocol/src/index.js';
+import { CapabilitySupport, ErrorCode, type ExecutionProfileSummary } from '@protocol';
 import { profileVerificationSchema, type ProfileVerification } from './types.js';
 
 export function verifyProfileObservation(profile: ExecutionProfileSummary, input: ProfileVerification) {

@@ -1,4 +1,4 @@
-import { ErrorCode } from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode } from '@protocol';
 import type { LocalDatabase } from './database.js';
 import type { LocalDocumentKind } from './values.js';
 

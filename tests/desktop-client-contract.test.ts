@@ -15,7 +15,7 @@ import {
   desktopBridgeEventSchema,
   desktopBridgeLeaseSchema,
   desktopBridgeRequestSchema,
-} from '../packages/protocol/src/index.js';
+} from '@protocol';
 import { DesktopBridgeConnection } from '../apps/mini-app/src/shared/api/desktop/desktop-connection.js';
 import { DesktopApplicationClient } from '../apps/mini-app/src/shared/api/desktop/application-client.js';
 import { DesktopMedia } from '../apps/mini-app/src/shared/api/desktop/media.js';

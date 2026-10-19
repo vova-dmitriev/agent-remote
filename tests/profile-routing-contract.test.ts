@@ -1,10 +1,11 @@
 import { expect, it } from 'vitest';
-import { AgentProvider } from '../packages/protocol/src/values/command.js';
 import {
+  AgentProvider,
   fallbackPolicySchema,
   profileRoutingSettingsSchema,
-} from '../packages/protocol/src/profile-routing.js';
-import { FallbackMode, FallbackOverrideMode } from '../packages/protocol/src/values/profile-routing.js';
+  FallbackMode,
+  FallbackOverrideMode,
+} from '@protocol';
 
 const id = (digit: string) =>
   `${digit.repeat(8)}-${digit.repeat(4)}-4${digit.repeat(3)}-8${digit.repeat(3)}-${digit.repeat(12)}`;

@@ -1,9 +1,5 @@
 import { CodexSubagentActivityKind, CodexAgentStatus, CodexItemType } from '../domain/codex.js';
-import {
-  SubagentStatus,
-  subagentSchema,
-  type SubagentInfo,
-} from '../../../../packages/protocol/src/index.js';
+import { SubagentStatus, subagentSchema, type SubagentInfo } from '@protocol';
 import { object } from './events.js';
 
 const states: Record<string, SubagentInfo['status']> = {

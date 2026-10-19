@@ -1,4 +1,4 @@
-import type { ExecutionProfileSummary } from '../../../../../packages/protocol/src/index.js';
+import type { ExecutionProfileSummary } from '@protocol';
 import type { LocalDatabase } from '../../local/state/database.js';
 import type { ProfileScope } from '../types.js';
 

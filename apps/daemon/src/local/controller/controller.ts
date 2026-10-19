@@ -9,7 +9,7 @@ import {
   type CommandResult,
   type LocalAction,
   type ServerFrame,
-} from '../../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { RuntimeEvent } from '../../domain/runtime.js';
 import { LocalDocumentKind } from '../state/values.js';
 import type { LocalPrincipal } from '../grants/types.js';
@@ -101,7 +101,7 @@ export class LocalController {
       }
     };
 
-    const event = (envelope: import('../../../../../packages/protocol/src/index.js').EventEnvelope) => {
+    const event = (envelope: import('@protocol').EventEnvelope) => {
       if (envelope.sessionId === selected() && this.options.grants.current(principal)) {
         notify({ type: FrameType.Event, event: envelope });
       }

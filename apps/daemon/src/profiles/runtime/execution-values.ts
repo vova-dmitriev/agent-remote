@@ -1,4 +1,4 @@
-import { ProfileOperationPhase } from '../../../../../packages/protocol/src/index.js';
+import { ProfileOperationPhase } from '@protocol';
 
 export const ExecutionOwnershipKind = {
   Execution: 'execution',

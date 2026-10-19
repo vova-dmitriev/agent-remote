@@ -1,5 +1,5 @@
 import type { PoolClient } from 'pg';
-import { ErrorCode, HandoffPhase } from '../../../../packages/protocol/src/index.js';
+import { ErrorCode, HandoffPhase } from '@protocol';
 import { Fault } from '../auth/security.js';
 import { ContinuityError } from './types.js';
 

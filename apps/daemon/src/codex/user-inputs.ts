@@ -1,12 +1,12 @@
-import { ErrorCode } from '../../../../packages/protocol/src/index.js';
-import { CodexMethod } from '../domain/codex.js';
 import {
+  ErrorCode,
   BindingState,
   IntegrationState,
   SessionStatus,
   userInputQuestionSchema,
   type Session,
-} from '../../../../packages/protocol/src/index.js';
+} from '@protocol';
+import { CodexMethod } from '../domain/codex.js';
 import { randomUUID } from 'node:crypto';
 import { type UserInputBroker } from '../commands/user-input-broker.js';
 import { type CodexClient } from './binding.js';

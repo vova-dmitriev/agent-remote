@@ -3,7 +3,7 @@ import { chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { CmuxClient } from '../apps/daemon/src/cmux/client.js';
-import type { CmuxTarget } from '../packages/protocol/src/index.js';
+import type { CmuxTarget } from '@protocol';
 
 const target: CmuxTarget = {
   kind: 'cmux',

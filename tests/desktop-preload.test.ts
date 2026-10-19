@@ -1,9 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import {
-  DesktopBridgeChannel,
-  DesktopBridgeKind,
-  DesktopBridgeVersion,
-} from '../packages/protocol/src/index.js';
+import { DesktopBridgeChannel, DesktopBridgeKind, DesktopBridgeVersion } from '@protocol';
 import { createDesktopPreloadBridge } from '../apps/desktop/src/preload/bridge.js';
 import type { DesktopIpcRendererPort } from '../apps/desktop/src/preload/types/bridge.js';
 import type { DesktopPrivateIpcChannel } from '../apps/desktop/src/shared/private-ipc.js';

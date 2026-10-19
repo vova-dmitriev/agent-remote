@@ -9,7 +9,7 @@ import {
   type ProfileAuthenticationRequest,
   type ProfileLogin,
   type ProfileOperation,
-} from '../../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { startProfileAuthentication } from './flow/start.js';
 import { reconcileProfileAuthentication } from './flow/reconcile.js';
 import { authenticationOptions } from './options.js';

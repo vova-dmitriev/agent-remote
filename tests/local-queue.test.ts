@@ -1,5 +1,5 @@
 import { afterEach, expect, it } from 'vitest';
-import { CommandStatus, LocalOperation, PromptDelivery } from '../packages/protocol/src/index.js';
+import { CommandStatus, LocalOperation, PromptDelivery } from '@protocol';
 import { ClaudeHookEvent } from '../apps/daemon/src/domain/claude.js';
 import { RuntimeEvent } from '../apps/daemon/src/domain/runtime.js';
 import { setup, closeFixtures, restartQueue, command, save, hook } from './helpers/local-queue.js';

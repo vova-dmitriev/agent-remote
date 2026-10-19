@@ -1,4 +1,4 @@
-import { ErrorCode } from '../../../../packages/protocol/src/index.js';
+import { ErrorCode } from '@protocol';
 import { RuntimeEvent } from '../domain/runtime.js';
 import { CodexMethod } from '../domain/codex.js';
 import { EventEmitter } from 'node:events';

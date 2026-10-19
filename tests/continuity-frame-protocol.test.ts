@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  ContinuityLocalRequestKind,
-  FrameType,
-  serverFrameSchema,
-  deviceFrameSchema,
-} from '../packages/protocol/src/index.js';
+import { ContinuityLocalRequestKind, FrameType, serverFrameSchema, deviceFrameSchema } from '@protocol';
 
 describe('continuity local request frames', () => {
   it('correlates local inspect replies to a server request and rejects extra fields', () => {

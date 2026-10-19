@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { expect, it } from 'vitest';
 import { RuntimeProfiles } from '../apps/daemon/src/profiles/runtime/service.js';
-import { encryptEnrollment } from '../packages/transport/src/credentials/sealed-box.js';
+import { encryptEnrollment } from '@transport/credentials/sealed-box.js';
 import { profileServiceFixture } from './profiles/service.fixture.js';
 
 function fixture() {

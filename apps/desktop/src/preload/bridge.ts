@@ -8,11 +8,11 @@ import {
   desktopBridgeRequestSchema,
   desktopBridgeResultSchema,
   type DesktopBridge,
-} from '../../../../packages/protocol/src/index.js';
+  profileAuthUrlSchema,
+} from '@protocol';
 import type { DesktopContextBridgePort, DesktopIpcRendererPort } from './types/bridge.js';
 import type { DesktopDocumentPort } from './types/bridge.js';
 import { DesktopPrivateIpcChannel } from '../shared/private-ipc.js';
-import { profileAuthUrlSchema } from '../../../../packages/protocol/src/profile-auth-url.js';
 
 export function createDesktopPreloadBridge(ipcRenderer: DesktopIpcRendererPort): DesktopBridge {
   return {

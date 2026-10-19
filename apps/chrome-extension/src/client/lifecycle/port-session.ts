@@ -10,7 +10,7 @@ import {
   type LocalAction,
   type LocalClientGrant,
   type ServerFrame,
-} from '../../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import type { ChromeApi, ChromePort } from '../../config/chrome-api.js';
 import { ExtensionConfig } from '../../config/values.js';
 import { PendingRequests, localError } from '../pending-requests.js';

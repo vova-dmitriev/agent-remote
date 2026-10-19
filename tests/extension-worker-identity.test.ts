@@ -1,7 +1,7 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { attachViewer } from '../apps/chrome-extension/src/background/broker.js';
 import { ViewerRegistry } from '../apps/chrome-extension/src/background/registry.js';
-import { ErrorCode, LocalKind, LocalOperation } from '../packages/protocol/src/index.js';
+import { ErrorCode, LocalKind, LocalOperation } from '@protocol';
 import { nativeValue, workerFixture, workerPort } from './extension-worker.fixture.js';
 
 afterEach(() => vi.useRealTimers());

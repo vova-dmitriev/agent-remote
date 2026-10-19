@@ -1,5 +1,5 @@
 import { DaemonErrorCode } from '../../error-codes.js';
-import { ErrorCode } from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode } from '@protocol';
 
 import { z } from 'zod';
 import { createHash, randomBytes } from 'node:crypto';

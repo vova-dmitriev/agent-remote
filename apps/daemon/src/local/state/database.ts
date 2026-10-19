@@ -1,7 +1,7 @@
 import Sqlite from 'better-sqlite3';
 import { chmodSync, lstatSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { ErrorCode } from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode } from '@protocol';
 
 export class LocalDatabase {
   readonly connection: Sqlite.Database;

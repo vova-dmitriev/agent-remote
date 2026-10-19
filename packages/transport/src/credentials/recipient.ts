@@ -1,9 +1,5 @@
 import sodium from 'libsodium-wrappers';
-import {
-  CredentialEnrollmentLimits,
-  CredentialEnrollmentDigest,
-  ErrorCode,
-} from '../../../protocol/src/index.js';
+import { CredentialEnrollmentLimits, CredentialEnrollmentDigest, ErrorCode } from '@protocol';
 import type { EnrollmentRecipient } from './types.js';
 
 export function decodeEnrollmentBase64(value: string) {

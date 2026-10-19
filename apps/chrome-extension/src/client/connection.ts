@@ -1,10 +1,4 @@
-import {
-  ConnectionStatus,
-  ErrorCode,
-  FrameType,
-  type LocalAction,
-  type ServerFrame,
-} from '../../../../packages/protocol/src/index.js';
+import { ConnectionStatus, ErrorCode, FrameType, type LocalAction, type ServerFrame } from '@protocol';
 import { chromeApi, type ChromeApi } from '../config/chrome-api.js';
 import { localError } from './pending-requests.js';
 import { ReconnectBackoff } from './lifecycle/backoff.js';

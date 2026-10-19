@@ -3,7 +3,7 @@ import { isDeepStrictEqual } from 'node:util';
 import { WebSocket } from 'ws';
 import { createRelay } from '../../apps/server/src/relay.js';
 import { hash } from '../../apps/server/src/auth/security.js';
-import { sessionSchema, type ServerFrame, type Session } from '../../packages/protocol/src/index.js';
+import { sessionSchema, type ServerFrame, type Session } from '@protocol';
 import { databaseFixture } from './database.js';
 import { initData, testBotToken } from './telegram.js';
 

@@ -1,5 +1,5 @@
 import type { PoolClient } from 'pg';
-import { executionLinkSchema, type Conversation } from '../../../../../packages/protocol/src/index.js';
+import { executionLinkSchema, type Conversation } from '@protocol';
 import { Fault } from '../../auth/security.js';
 import { ContinuityError, type InitialExecution } from '../types.js';
 import { asConversation, asExecution, type ContinuityRow } from './mapping.js';

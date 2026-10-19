@@ -1,4 +1,4 @@
-import { ErrorCode } from '../../../../packages/protocol/src/index.js';
+import { ErrorCode } from '@protocol';
 import { readFile, lstat, realpath, unlink } from 'node:fs/promises';
 import { dirname, basename, join } from 'node:path';
 import { stateDirectory } from '../config.js';

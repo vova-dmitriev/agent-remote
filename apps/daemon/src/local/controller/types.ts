@@ -1,4 +1,4 @@
-import type { HistoryMessage, HistoryRead, LocalAction } from '../../../../../packages/protocol/src/index.js';
+import type { HistoryMessage, HistoryRead, LocalAction } from '@protocol';
 import type { Monitor } from '../../monitor/monitor.js';
 import type { LocalStore } from '../../monitor/store.js';
 import type { AdapterRegistry } from '../../adapters/registry.js';

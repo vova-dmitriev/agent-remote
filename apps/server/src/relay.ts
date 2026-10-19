@@ -26,7 +26,9 @@ import {
   type Cursor,
   type ServerFrame,
   type ConnectorDescriptor,
-} from '../../../packages/protocol/src/index.js';
+  profileRequestSchema,
+  ProfileRequestKind,
+} from '@protocol';
 import { HealthStatus, HttpMethod } from './domain/http.js';
 import { type IncomingMessage } from 'node:http';
 import { type Duplex } from 'node:stream';
@@ -37,11 +39,10 @@ import { ReadingPositionService } from './reading-position/service.js';
 import { SourceHistory } from './history/source.js';
 import { SessionHistory } from './history/service.js';
 import { persistEvent, eventNotificationId } from './history/events.js';
-import { BoundedSender } from '../../../packages/transport/src/bounded-sender.js';
+import { BoundedSender } from '@transport/bounded-sender.js';
 import { ProfileProxy } from './profiles/proxy.js';
 import { ServerProfiles } from './profiles/service.js';
 import { ProfileMetadataCache } from './profiles/repository.js';
-import { profileRequestSchema, ProfileRequestKind } from '../../../packages/protocol/src/index.js';
 import { DeviceFence } from './devices/fence.js';
 import { AttachmentService } from './attachments/service.js';
 import { mountAttachmentRoutes } from './attachments/routes.js';

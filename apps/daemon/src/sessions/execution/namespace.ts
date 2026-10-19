@@ -1,11 +1,7 @@
 import { createHash } from 'node:crypto';
 import { mkdir, lstat } from 'node:fs/promises';
 import { join, isAbsolute } from 'node:path';
-import {
-  ErrorCode,
-  ProfileStatus,
-  type ExecutionProfileSummary,
-} from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode, ProfileStatus, type ExecutionProfileSummary } from '@protocol';
 import { managedCodexSocketPath } from '../../codex/launch/paths.js';
 import { ProfileExecutionSocket } from './values.js';
 

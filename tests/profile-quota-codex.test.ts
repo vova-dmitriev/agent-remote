@@ -1,13 +1,14 @@
 import { expect, it } from 'vitest';
 import { readCodexQuota } from '../apps/daemon/src/profiles/quota/codex-observation.js';
-import { AgentProvider } from '../packages/protocol/src/values/command.js';
 import {
+  AgentProvider,
   ProfileAuthMode,
   ProfileStatus,
   CapabilitySupport,
-} from '../packages/protocol/src/values/execution.js';
-import { QuotaObservationStatus, QuotaScopeKind } from '../packages/protocol/src/values/profile-routing.js';
-import { executionProfileSummarySchema } from '../packages/protocol/src/execution-profile.js';
+  QuotaObservationStatus,
+  QuotaScopeKind,
+  executionProfileSummarySchema,
+} from '@protocol';
 
 const profile = executionProfileSummarySchema.parse({
   id: '11111111-1111-4111-8111-111111111111',

@@ -4,7 +4,7 @@ import { constants } from 'node:fs';
 import { open, realpath, stat } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { isAbsolute, join, relative } from 'node:path';
-import { sessionSchema } from '../../../../packages/protocol/src/index.js';
+import { sessionSchema } from '@protocol';
 import { object, type Data } from './events.js';
 
 function records(

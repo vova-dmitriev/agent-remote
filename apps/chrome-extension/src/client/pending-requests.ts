@@ -1,4 +1,4 @@
-import { ErrorCode, LOCAL_LIMITS } from '../../../../packages/protocol/src/index.js';
+import { ErrorCode, LOCAL_LIMITS } from '@protocol';
 
 export function localError(code: string) {
   return Object.assign(new Error(code), code === ErrorCode.NOT_FOUND ? { status: 404 } : {});

@@ -3,7 +3,7 @@ import {
   createEnrollmentRecipient,
   encryptEnrollment,
   decryptEnrollment,
-} from '../packages/transport/src/credentials/sealed-box.js';
+} from '@transport/credentials/sealed-box.js';
 
 async function fixture() {
   const recipient = await createEnrollmentRecipient();

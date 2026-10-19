@@ -1,9 +1,4 @@
-import {
-  ATTACHMENT_TTL_MS,
-  attachmentSchema,
-  type AttachmentDescriptor,
-  type Session,
-} from '../../../../packages/protocol/src/index.js';
+import { ATTACHMENT_TTL_MS, attachmentSchema, type AttachmentDescriptor, type Session } from '@protocol';
 import { AttachmentErrorCode, RETRYABLE_ATTACHMENT_ERRORS } from './errors.js';
 import { ATTACHMENT_EXPORT_RESPONSE_MAX_BYTES, ATTACHMENT_MAX_EXPORTED_DESCRIPTORS } from './limits.js';
 import { boundedBody } from './io.js';

@@ -2,7 +2,7 @@ import { expect, it } from 'vitest';
 import type { WebSocket } from 'ws';
 import { ProfileProxy } from '../apps/server/src/profiles/proxy.js';
 import { Fault } from '../apps/server/src/auth/security.js';
-import type { ServerFrame } from '../packages/protocol/src/index.js';
+import type { ServerFrame } from '@protocol';
 
 function fixture() {
   const connection = {

@@ -1,6 +1,6 @@
 import { RuntimeEvent } from './domain/runtime.js';
-import { FrameType, serverFrameSchema, type DeviceFrame } from '../../../packages/protocol/src/index.js';
-import { BoundedSender } from '../../../packages/transport/src/bounded-sender.js';
+import { FrameType, serverFrameSchema, type DeviceFrame } from '@protocol';
+import { BoundedSender } from '@transport/bounded-sender.js';
 import { EventEmitter } from 'node:events';
 import { WebSocket } from 'ws';
 import { validateRelayUrl } from './config.js';

@@ -1,12 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { afterEach, expect, it, vi } from 'vitest';
-import {
-  ErrorCode,
-  ProfileAuthMode,
-  ProfileOperationPhase,
-  ProfileRequestKind,
-} from '../packages/protocol/src/index.js';
-import { encryptEnrollment } from '../packages/transport/src/credentials/sealed-box.js';
+import { ErrorCode, ProfileAuthMode, ProfileOperationPhase, ProfileRequestKind } from '@protocol';
+import { encryptEnrollment } from '@transport/credentials/sealed-box.js';
 import { CodexProfileNative } from '../apps/daemon/src/profiles/native/codex.js';
 import { ProfileProcessCleanupError } from '../apps/daemon/src/profiles/native/lifecycle/errors.js';
 import { RuntimeProfiles } from '../apps/daemon/src/profiles/runtime/service.js';

@@ -1,8 +1,8 @@
 import { once } from 'node:events';
 import type { Readable, Writable } from 'node:stream';
 import { randomUUID } from 'node:crypto';
-import { ErrorCode, LOCAL_LIMITS } from '../../../../../packages/protocol/src/index.js';
-import { fragmentValue, FragmentReader } from '../../../../../packages/transport/src/native/fragments.js';
+import { ErrorCode, LOCAL_LIMITS } from '@protocol';
+import { fragmentValue, FragmentReader } from '@transport/native/fragments.js';
 import { NativeFrameCodec } from './framing.js';
 
 export class FramedPeer {

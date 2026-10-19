@@ -5,7 +5,7 @@ import {
   ErrorCode,
   type AttachmentDescriptor,
   type Session,
-} from '../../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { MediaFiles } from './files.js';
 import {
   assertIntegrity,

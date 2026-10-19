@@ -1,6 +1,6 @@
 import { createServer, type Socket } from 'node:net';
 import { chmod, lstat } from 'node:fs/promises';
-import { LOCAL_LIMITS } from '../../../../../packages/protocol/src/index.js';
+import { LOCAL_LIMITS } from '@protocol';
 import { acceptLocalPeer } from './connection.js';
 import { prepareLocalSocket, removeOwnedSocket } from './socket-path.js';
 import type { LocalServerOptions } from './types.js';

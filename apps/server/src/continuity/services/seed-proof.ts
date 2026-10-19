@@ -5,7 +5,7 @@ import {
   HandoffPhase,
   handoffSeedProofFrameSchema,
   type HandoffSeedProofFrame,
-} from '../../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { Fault, type Principal } from '../../auth/security.js';
 import type { Database } from '../../db/database.js';
 import { ContinuityRepository } from '../repository.js';

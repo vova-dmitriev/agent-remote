@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import type { Session } from '../../../../../packages/protocol/src/index.js';
+import type { Session } from '@protocol';
 import { LocalDatabase } from '../state/database.js';
 import { LocalDocuments } from '../state/documents.js';
 import { LocalGrants } from '../grants/service.js';

@@ -5,7 +5,7 @@ import { randomBytes, randomUUID, createHash } from 'node:crypto';
 import { NotificationWorker } from '../../../apps/server/src/notifications/worker.js';
 import { createRelay } from '../../../apps/server/src/relay.js';
 import { initData, testBotToken } from '../../helpers/telegram.js';
-import type { ClientCommand, HistoryMessage } from '../../../packages/protocol/src/index.js';
+import type { ClientCommand, HistoryMessage } from '@protocol';
 import { sessionSnapshot } from './session-fixtures.js';
 import { commandOutcome, setCommandOutcome } from '../runtime/command-outcome.js';
 import { appOrigin } from '../runtime/app-origin.js';

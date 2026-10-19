@@ -1,6 +1,5 @@
-import { DesktopBridgeError } from '../../../../packages/protocol/src/index.js';
-import { randomUUID } from 'node:crypto';
 import {
+  DesktopBridgeError,
   DesktopBridgeChannel,
   DesktopBridgeKind,
   DesktopBridgeVersion,
@@ -10,7 +9,8 @@ import {
   type DesktopBridgeLease,
   type ServerFrame,
   serverFrameSchema,
-} from '../../../../packages/protocol/src/index.js';
+} from '@protocol';
+import { randomUUID } from 'node:crypto';
 import type { DesktopCompanionConnector } from './companion-port.js';
 import type { DesktopWindowPort } from './ipc.js';
 

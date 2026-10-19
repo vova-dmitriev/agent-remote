@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { validateUserInputAnswers } from '../packages/protocol/src/index.js';
+import { validateUserInputAnswers } from '@protocol';
 
 const request = {
   questions: [

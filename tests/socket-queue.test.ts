@@ -1,5 +1,5 @@
 import { it, expect } from 'vitest';
-import { BoundedSender } from '../packages/transport/src/bounded-sender.js';
+import { BoundedSender } from '@transport/bounded-sender.js';
 
 class Socket {
   readyState = 1;

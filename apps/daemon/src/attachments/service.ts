@@ -1,5 +1,5 @@
-import { ErrorCode } from '../../../../packages/protocol/src/index.js';
 import {
+  ErrorCode,
   MessageRole,
   ATTACHMENT_TTL_MS,
   MAX_ATTACHMENTS,
@@ -10,7 +10,7 @@ import {
   type AttachmentDescriptor,
   type HistoryMessage,
   type Session,
-} from '../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { createHash, randomUUID } from 'node:crypto';
 import { chmod, lstat, mkdir, rm, writeFile, readFile, rename, readdir } from 'node:fs/promises';
 import { join, relative } from 'node:path';

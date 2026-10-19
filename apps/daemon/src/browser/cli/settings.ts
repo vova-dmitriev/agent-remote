@@ -3,7 +3,7 @@ import { constants } from 'node:fs';
 import { link, lstat, open, readFile, unlink } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { dirname, join } from 'node:path';
-import { ErrorCode } from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode } from '@protocol';
 import { browserSettings } from '../../local/bootstrap/configuration.js';
 import { missing, safeEntry, secureDirectory } from '../../local/supervisor/runtime.js';
 import type { BrowserSettings } from './types.js';

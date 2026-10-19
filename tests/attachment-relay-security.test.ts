@@ -2,11 +2,7 @@ import { request } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 import { attachmentRelayFixture } from './helpers/attachment-relay.js';
-import {
-  MAX_ATTACHMENT_BYTES,
-  type AttachmentDescriptor,
-  type Session,
-} from '../packages/protocol/src/index.js';
+import { MAX_ATTACHMENT_BYTES, type AttachmentDescriptor, type Session } from '@protocol';
 
 let fixture: Awaited<ReturnType<typeof attachmentRelayFixture>>;
 

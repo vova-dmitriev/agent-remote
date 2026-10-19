@@ -1,11 +1,5 @@
 import { DaemonErrorCode } from '../error-codes.js';
-import {
-  TargetKind,
-  positiveInteger,
-  truncateUtf8,
-  validatePrompt,
-  type CmuxTarget,
-} from '../../../../packages/protocol/src/index.js';
+import { TargetKind, positiveInteger, truncateUtf8, validatePrompt, type CmuxTarget } from '@protocol';
 import { execFile } from 'node:child_process';
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

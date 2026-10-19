@@ -1,4 +1,4 @@
-import { ProfileAction, type ProfileMutation } from '../../../../../packages/protocol/src/index.js';
+import { ProfileAction, type ProfileMutation } from '@protocol';
 import type { ProfileRegistry } from '../registry.js';
 
 export function mutateProfile(registry: ProfileRegistry, request: ProfileMutation) {

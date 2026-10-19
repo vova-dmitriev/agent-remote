@@ -11,7 +11,7 @@ import {
   type Session,
   type Target,
   validatePrompt,
-} from '../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import { randomUUID } from 'node:crypto';
 import { SourceAdapter, type Binding, type DispatchReceipt } from '../adapters/registry.js';
 

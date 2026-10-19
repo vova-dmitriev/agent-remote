@@ -1,8 +1,4 @@
-import {
-  AgentProvider,
-  ProfileRequestKind,
-  type ProfileRequest,
-} from '../../../../packages/protocol/src/index.js';
+import { AgentProvider, ProfileRequestKind, type ProfileRequest } from '@protocol';
 import type { Principal } from '../auth/security.js';
 import type { DeviceService } from '../devices/service.js';
 import type { ProfileProxy } from './proxy.js';

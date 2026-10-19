@@ -1,4 +1,4 @@
-import { HostKind } from '../../../../packages/protocol/src/index.js';
+import { HostKind } from '@protocol';
 import type { HostAdapter } from '@/shared/lib/host';
 import { chromeApi } from '../config/chrome-api.js';
 import { ExtensionConfig } from '../config/values.js';

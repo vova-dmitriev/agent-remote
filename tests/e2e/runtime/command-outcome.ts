@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test';
 import { delivered, deviceFixture } from '../support/relay-fixture.js';
-import { CommandStatus, FrameType } from '../../../packages/protocol/src/index.js';
+import { CommandStatus, FrameType } from '@protocol';
 import { FixtureCommandOutcome } from './command-outcome-values.js';
 
 let outcome: FixtureCommandOutcome = FixtureCommandOutcome.Dispatched;

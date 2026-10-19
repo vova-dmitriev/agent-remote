@@ -1,4 +1,4 @@
-import { LOCAL_LIMITS } from '../../../../packages/protocol/src/index.js';
+import { LOCAL_LIMITS } from '@protocol';
 import type { ChromeApi, ChromePort } from '../config/chrome-api.js';
 import { attachViewer } from './broker.js';
 import { trustedViewer } from './sender.js';

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { Socket, connect } from 'node:net';
 import type { Stats } from 'node:fs';
 import { lstat, unlink } from 'node:fs/promises';
-import { ErrorCode } from '../packages/protocol/src/index.js';
+import { ErrorCode } from '@protocol';
 import { LOCAL_SOCKET_LIMITS, prepareLocalSocket } from '../apps/daemon/src/local/server/socket-path.js';
 
 vi.mock('node:net', async (original) => ({

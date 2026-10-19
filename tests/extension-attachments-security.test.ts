@@ -2,7 +2,7 @@ import { expect, it, vi, afterEach } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { LocalOperation, ErrorCode, type AttachmentDescriptor } from '../packages/protocol/src/index.js';
+import { LocalOperation, ErrorCode, type AttachmentDescriptor } from '@protocol';
 import { restartWithExpiredStage } from './helpers/extension-media-runtime.js';
 import { fixture, begin, session, principal, controlledBody } from './helpers/extension-media-runtime.js';
 

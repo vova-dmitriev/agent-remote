@@ -1,9 +1,4 @@
-import {
-  ErrorCode,
-  IntegrationState,
-  TargetKind,
-  SessionStatus,
-} from '../../../../packages/protocol/src/index.js';
+import { ErrorCode, IntegrationState, TargetKind, SessionStatus } from '@protocol';
 import { RuntimeEvent } from '../domain/runtime.js';
 import { CodexMethod } from '../domain/codex.js';
 import { type AttachmentService } from '../attachments/service.js';

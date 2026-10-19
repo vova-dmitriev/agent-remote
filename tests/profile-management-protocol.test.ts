@@ -1,9 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { expect, it } from 'vitest';
-import {
-  profileMutationSchema,
-  profileOperationSchema,
-} from '../packages/protocol/src/profile-management.js';
+import { profileMutationSchema, profileOperationSchema } from '@protocol';
 import { codexSubscription } from './profiles/registry.fixture.js';
 
 it('accepts only owned actions and bounded safe metadata for profile lifecycle', () => {

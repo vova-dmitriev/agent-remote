@@ -5,7 +5,7 @@ import {
   type AttachmentDescriptor,
   type LocalAction,
   type Session,
-} from '../../../../../packages/protocol/src/index.js';
+} from '@protocol';
 import type { LocalPrincipal } from '../grants/types.js';
 import { MediaCatalog } from './catalog.js';
 import { MediaTransfers } from './transfers.js';

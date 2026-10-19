@@ -1,6 +1,5 @@
-import { ErrorCode } from '../../../../packages/protocol/src/index.js';
+import { ErrorCode, NativeRestartState } from '@protocol';
 import { NativePidDomain, NativeProcessKind } from '../domain/runtime.js';
-import { NativeRestartState } from '../../../../packages/protocol/src/index.js';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { lstat, readdir, readFile, realpath } from 'node:fs/promises';

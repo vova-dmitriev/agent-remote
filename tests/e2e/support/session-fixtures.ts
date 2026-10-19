@@ -1,4 +1,4 @@
-import type { Session, AppSnapshot } from '../../../packages/protocol/src/index.js';
+import type { Session, AppSnapshot } from '@protocol';
 import { codexFixtures } from './codex-fixtures.js';
 
 export function sessionSnapshot(deviceId: string): AppSnapshot {

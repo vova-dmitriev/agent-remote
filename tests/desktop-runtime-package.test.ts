@@ -2,7 +2,7 @@ import { afterEach, expect, it } from 'vitest';
 import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { LOCAL_LIMITS } from '../packages/protocol/src/index.js';
+import { LOCAL_LIMITS } from '@protocol';
 import { installDesktopRuntime } from '../apps/desktop/src/runtime/install-runtime.js';
 import { verifyDesktopRuntime } from '../scripts/desktop/verify-runtime-lib.mjs';
 import { desktopRuntimeFixture } from './helpers/desktop-runtime-fixture.js';

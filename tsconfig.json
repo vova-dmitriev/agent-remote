@@ -12,6 +12,7 @@
     "jsx": "react-jsx",
     "paths": {
       "@/*": ["./apps/mini-app/src/*"],
+      "@protocol/private": ["./packages/protocol/src/private-error-codes.ts"],
       "@protocol": ["./packages/protocol/src/index.ts"],
       "@storybook-fixtures/*": ["./apps/mini-app/.storybook/fixtures/*"],
       "@storybook-components/*": ["./apps/mini-app/.storybook/components/*"],

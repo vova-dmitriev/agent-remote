@@ -1,5 +1,5 @@
 import { isAbsolute, relative, resolve, sep } from 'node:path';
-import { AgentProvider, ErrorCode, ProfileAuthMode } from '../../../../../packages/protocol/src/index.js';
+import { AgentProvider, ErrorCode, ProfileAuthMode } from '@protocol';
 import { ClaudeProfileArgument, ClaudeProfileEnvironment } from './values.js';
 import type { ClaudeProfileLaunch, ClaudeProfileLaunchInput } from './types.js';
 

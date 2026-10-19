@@ -9,7 +9,7 @@ import { PermissionBroker } from '../apps/daemon/src/commands/permission-broker.
 import { profileExecutionNamespace } from '../apps/daemon/src/sessions/execution/namespace.js';
 import type { ProfiledExecutionLaunch } from '../apps/daemon/src/sessions/execution/types.js';
 import { executionProfile, executionSelection } from './helpers/execution-profile.js';
-import { executionProfileSummarySchema } from '../packages/protocol/src/index.js';
+import { executionProfileSummarySchema } from '@protocol';
 import { ManagedCodexLaunchEvidenceType } from '../apps/daemon/src/codex/launch/types.js';
 
 const connectSocket = vi.hoisted(() => vi.fn());

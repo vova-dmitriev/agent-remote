@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest';
-import { ErrorCode, LocalKind, LocalOperation } from '../packages/protocol/src/index.js';
+import { ErrorCode, LocalKind, LocalOperation } from '@protocol';
 import { broker } from './extension-client.fixture.js';
 import { ExtensionMedia } from '../apps/chrome-extension/src/client/media/transfer.js';
 

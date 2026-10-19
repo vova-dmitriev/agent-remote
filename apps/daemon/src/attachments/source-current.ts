@@ -1,4 +1,4 @@
-import { SessionStatus, IntegrationState, type Session } from '../../../../packages/protocol/src/index.js';
+import { SessionStatus, IntegrationState, type Session } from '@protocol';
 
 /** Reading already-authorized history does not require a writable terminal binding. */
 export function attachmentSourceCurrent(current: Session | undefined, source: Session): boolean {

@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { localActionSchema, localRequestSchema } from '../packages/protocol/src/local-client.js';
+import { localActionSchema, localRequestSchema } from '@protocol';
 
 it('accepts typed history and commands while rejecting caller-supplied authority and arbitrary URLs', () => {
   const request = {

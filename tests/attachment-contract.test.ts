@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { clientCommandSchema, historySchema } from '../packages/protocol/src/index.js';
+import { clientCommandSchema, historySchema } from '@protocol';
 
 const attachment = {
   id: 'file-one',

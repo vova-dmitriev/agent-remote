@@ -1,9 +1,4 @@
-import type {
-  Conversation,
-  ExecutionLink,
-  HandoffOperation,
-  StartHandoffRequest,
-} from '../../../../packages/protocol/src/index.js';
+import type { Conversation, ExecutionLink, HandoffOperation, StartHandoffRequest } from '@protocol';
 
 export const ContinuityError = {
   NotFound: 'CONTINUITY_NOT_FOUND',

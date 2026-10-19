@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { sessionSchema } from '../packages/protocol/src/index.js';
+import { sessionSchema } from '@protocol';
 import { sessionSnapshot } from './e2e/support/session-fixtures.js';
 
 describe('session model contract', () => {

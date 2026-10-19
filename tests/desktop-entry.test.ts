@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { DesktopBridgeError, HostKind } from '../packages/protocol/src/index.js';
+import { DesktopBridgeError, HostKind } from '@protocol';
 import { createDesktopHost } from '../apps/mini-app/src/shared/lib/host/desktop-host.js';
 
 describe('desktop shared UI entry', () => {

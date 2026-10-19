@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { join } from 'node:path';
-import { ErrorCode, LocalFeature, LOCAL_LIMITS } from '../../../../packages/protocol/src/index.js';
+import { ErrorCode, LocalFeature, LOCAL_LIMITS } from '@protocol';
 import { loadLocalIdentity, localClientSecret } from '../../../daemon/src/local/bootstrap/identity.js';
 import { probeCompanion } from '../../../daemon/src/local/bootstrap/probe.js';
 import { ensureCompanion } from '../../../daemon/src/local/supervisor/index.js';

@@ -3,7 +3,7 @@ import { open } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { z } from 'zod';
-import { ErrorCode, ProfileAuthMode, AgentProvider } from '../../../../packages/protocol/src/index.js';
+import { ErrorCode, ProfileAuthMode, AgentProvider } from '@protocol';
 import { ProfileCredentialLimits, ProfileRuntimeFile } from './environment/values.js';
 import { ProfileIdentityPrefix, ProfileNativeLimits } from './native/values.js';
 

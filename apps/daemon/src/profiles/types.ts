@@ -1,14 +1,10 @@
 import { z } from 'zod';
-import { executionProfileSummarySchema } from '../../../../packages/protocol/src/index.js';
+import { executionProfileSummarySchema, profileCreateInputSchema, profileUpdateInputSchema } from '@protocol';
 
 export {
   profileCreateInputSchema as createProfileSchema,
   profileUpdateInputSchema as updateProfileSchema,
-} from '../../../../packages/protocol/src/index.js';
-import {
-  profileCreateInputSchema,
-  profileUpdateInputSchema,
-} from '../../../../packages/protocol/src/index.js';
+} from '@protocol';
 
 const fields = executionProfileSummarySchema.shape;
 

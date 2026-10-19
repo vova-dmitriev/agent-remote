@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { chmod, lstat, mkdir, realpath } from 'node:fs/promises';
 import { join, isAbsolute } from 'node:path';
 import { z } from 'zod';
-import { ErrorCode } from '../../../../../packages/protocol/src/index.js';
+import { ErrorCode } from '@protocol';
 import type { ProfileScope } from '../types.js';
 import { ProfileDirectoryName, ProfileCredentialLimits, ProfileRuntimeFile } from './values.js';
 import type { ProfileHomes } from './types.js';

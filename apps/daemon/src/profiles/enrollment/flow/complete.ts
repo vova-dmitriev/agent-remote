@@ -4,8 +4,8 @@ import {
   ProfileOperationPhase,
   encryptedEnrollmentSchema,
   type EncryptedEnrollment,
-} from '../../../../../../packages/protocol/src/index.js';
-import { decryptEnrollment } from '../../../../../../packages/transport/src/credentials/sealed-box.js';
+} from '@protocol';
+import { decryptEnrollment } from '@transport/credentials/sealed-box.js';
 import { credentialReference } from '../../credentials.js';
 import { enrollmentProfile, finishEnrollment, uncertainEnrollment } from './state.js';
 import type { EnrollmentContext } from './types.js';
