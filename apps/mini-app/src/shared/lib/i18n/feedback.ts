@@ -1,6 +1,9 @@
 import { DesktopBridgeError, ErrorCode, IntegrationReason } from "@protocol"
 import type { MessageKey, Translate } from "./types"
 
+// legacy daemon < reason codes
+const LEGACY_NATIVE_PROMPT_REASON = "Для отправки промптов запусти remote claude"
+
 const keys: Record<string, MessageKey> = {
   [ErrorCode.PROFILE_NOT_READY]: "accountsNotReady",
   [ErrorCode.PROFILE_MISMATCH]: "accountsChanged",
@@ -144,6 +147,7 @@ const keys: Record<string, MessageKey> = {
   [ErrorCode.IPC_TIMEOUT]: "commandUncertain",
   [ErrorCode.AX_CHAT_OR_COMPOSER_UNVERIFIED]: "setupRequired",
   [IntegrationReason.CliWrapperRequired]: "nativePromptHint",
+  [LEGACY_NATIVE_PROMPT_REASON]: "nativePromptHint",
 }
 
 export function feedbackText(code: string, t: Translate) {

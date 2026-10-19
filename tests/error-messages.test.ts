@@ -23,6 +23,13 @@ describe.each(['ru', 'en'] as const)('safe %s feedback', (language) => {
     },
   );
 
+  it.each(['CLI_WRAPPER_REQUIRED', 'Для отправки промптов запусти remote claude'])(
+    'explains the native prompt hint for %s',
+    (code) => {
+      expect(feedbackText(code, t)).toBe(t('nativePromptHint'));
+    },
+  );
+
   it.each([
     'SOME_NEW_CODE',
     'constructor',
