@@ -1,6 +1,7 @@
 import { ConnectionStatus, DeviceStatus, type Session } from "@protocol"
-import { sourceAvailable, type SessionState } from "@/entities/session"
+import { sourceObserved, type SessionState } from "@/entities/session"
 
-export function sessionAvailable(state: SessionState, session: Session) {
-  return state.connection === ConnectionStatus.Online && state.snapshot?.deviceStatus === DeviceStatus.Online && sourceAvailable(session)
+/** The app and device are online and the session source is observed live, with or without remote input. */
+export function sessionObserved(state: SessionState, session: Session) {
+  return state.connection === ConnectionStatus.Online && state.snapshot?.deviceStatus === DeviceStatus.Online && sourceObserved(session)
 }

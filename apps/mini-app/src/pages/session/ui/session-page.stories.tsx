@@ -74,6 +74,7 @@ export const NativeObservation: StoryObj<typeof meta> = {
     },
   },
 }
+export const NativeObservationEnglish: StoryObj<typeof meta> = { ...NativeObservation, globals: { language: Language.En } }
 export const CodexModelUnavailable: StoryObj<typeof meta> = {
   args: { session: { ...codexCliSession, errorCode: ErrorCode.CODEX_MODEL_UNAVAILABLE } },
 }

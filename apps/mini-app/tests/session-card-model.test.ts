@@ -2,10 +2,12 @@ import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { I18nextProvider } from "react-i18next"
 import { expect, it } from "vitest"
-import { BindingState, ErrorCode, IntegrationState, Language, SessionStatus, type Session } from "@protocol"
+import { BindingState, ConnectionStatus, DeviceStatus, ErrorCode, IntegrationState, Language, SessionStatus, type Session } from "@protocol"
 import { createLanguageInstance } from "../src/shared/lib/i18n/index.js"
 import { SessionCard } from "../src/entities/session/ui/session-card.js"
 import { SESSION_CARD_IDS } from "../src/entities/session/config/test-ids.js"
+import { initialState } from "../src/entities/session/model/session-state.js"
+import { sessionObserved } from "../src/pages/session/lib/session-availability.js"
 import { sessionSnapshot } from "../../../tests/e2e/support/session-fixtures.js"
 
 function render(session: Session, language: Language) {
@@ -73,4 +75,57 @@ it.each([
 
   expect(html).toContain(label)
   expect(html).not.toContain(generic)
+})
+
+function liveTerminalObservation(): Session {
+  const session = sessionSnapshot("device").sessions[0]!
+
+  return {
+    ...session,
+    status: SessionStatus.Unknown,
+    binding: BindingState.Unverified,
+    integrationState: IntegrationState.NeedsRestart,
+    capabilities: { ...session.capabilities, prompt: false, interrupt: false },
+  }
+}
+
+it.each([
+  [Language.En, "Observation only · restart for input", "Session unavailable"],
+  [Language.Ru, "Только наблюдение · для ввода нужен перезапуск", "Сессия недоступна"],
+] as const)("labels a live terminal session that needs a restart for input as observed in %s", (language, label, generic) => {
+  const html = render(liveTerminalObservation(), language)
+
+  expect(html).toContain(label)
+  expect(html).not.toContain(generic)
+})
+
+it("keeps a needs-restart session without live observation unavailable", () => {
+  const session = liveTerminalObservation()
+
+  for (const capabilities of [
+    { ...session.capabilities, observe: false },
+    { ...session.capabilities, history: false },
+  ]) {
+    expect(render({ ...session, capabilities }, Language.En)).toContain("Session unavailable")
+  }
+
+  expect(render({ ...session, status: SessionStatus.Ended }, Language.En)).not.toContain("Observation only")
+})
+
+it("observes a needs-restart session only while the app and device are online", () => {
+  const session = liveTerminalObservation()
+
+  const state = (connection: ConnectionStatus, deviceStatus: DeviceStatus) => ({
+    ...initialState(),
+    connection,
+    snapshot: { ...sessionSnapshot("device"), deviceStatus },
+  })
+
+  expect(sessionObserved(state(ConnectionStatus.Online, DeviceStatus.Online), session)).toBe(true)
+  expect(sessionObserved(state(ConnectionStatus.Offline, DeviceStatus.Online), session)).toBe(false)
+  expect(sessionObserved(state(ConnectionStatus.Online, DeviceStatus.Offline), session)).toBe(false)
+
+  expect(
+    sessionObserved(state(ConnectionStatus.Online, DeviceStatus.Online), { ...session, integrationState: IntegrationState.Disconnected }),
+  ).toBe(false)
 })
