@@ -50,7 +50,8 @@ export const targetSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal(TargetKind.CodexCli), ...base, threadId: id }),
   z.strictObject({ kind: z.literal(TargetKind.CodexDesktop), ...base, threadId: id }),
 ]);
-export const capabilitySchema = z.strictObject({
+/** Readers strip capabilities added by a newer writer instead of rejecting the snapshot. */
+export const capabilitySchema = z.object({
   observe: z.boolean(),
   history: z.boolean(),
   historyWindow: z.boolean().optional(),
@@ -219,7 +220,8 @@ export const permissionSchema = z.strictObject({
   input: z.unknown(),
   expiresAt: time,
 });
-export const historySchema = z.strictObject({
+/** Readers strip fields added by a newer writer instead of rejecting the history frame. */
+export const historySchema = z.object({
   id,
   historyCursor: z.string().max(2048).optional(),
   role: z.enum(MessageRole),

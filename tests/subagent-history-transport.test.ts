@@ -7,6 +7,7 @@ import {
   FrameType,
   HistoryDirection,
   HistoryCursorPrefix,
+  HistoryQueryKey,
   LocalOperation,
   historyReadSchema,
   historySchema,
@@ -29,6 +30,7 @@ import { DesktopHistory } from '../apps/mini-app/src/app/api/desktop/history.js'
 import type { DesktopBridgeConnection } from '../apps/mini-app/src/app/api/desktop/desktop-connection.js';
 import { HistoryWindow } from '../apps/mini-app/src/entities/session/api/history-window.js';
 import { sessionSnapshot } from './e2e/support/session-fixtures.js';
+import { attachmentRelayFixture } from './helpers/attachment-relay.js';
 
 type HistoryAction = Extract<LocalAction, { operation: typeof LocalOperation.History }>;
 
@@ -85,6 +87,45 @@ describe('subagent wire tolerance', () => {
         tool: { id: 'toolu_1', phase: ToolActivityPhase.Started, kind: 'future_kind', extra: 1 },
       }).tool,
     ).toEqual({ id: 'toolu_1', phase: ToolActivityPhase.Started, kind: ActivityKind.Tool });
+  });
+
+  it('strips unknown history and capability keys and reads an unknown tool phase as completed', () => {
+    const plain = { id: 'm', role: 'assistant', text: 'Synthetic', occurredAt: 1 };
+
+    expect(historySchema.parse({ ...plain, futureField: { nested: true } })).toEqual(plain);
+
+    expect(historySchema.parse({ ...plain, tool: { id: 'toolu_1', phase: 'future_phase' } }).tool).toEqual({
+      id: 'toolu_1',
+      phase: ToolActivityPhase.Completed,
+    });
+
+    const session = sessionSnapshot('device').sessions[0]!;
+
+    const parsed = sessionSchema.parse({
+      ...session,
+      capabilities: { ...session.capabilities, subagentHistory: true, futureCapability: true },
+    });
+
+    expect(parsed.capabilities).toEqual({ ...session.capabilities, subagentHistory: true });
+
+    // Known fields keep their validation.
+    expect(historySchema.safeParse({ ...plain, role: 'system' }).success).toBe(false);
+    expect(historySchema.safeParse({ ...plain, text: 'x'.repeat(65_537) }).success).toBe(false);
+
+    expect(
+      sessionSchema.safeParse({ ...session, capabilities: { ...session.capabilities, prompt: 'yes' } })
+        .success,
+    ).toBe(false);
+
+    expect(
+      sessionSchema.safeParse({
+        ...session,
+        capabilities: {
+          ...session.capabilities,
+          attachments: { images: 'native', files: 'reference', extra: 1 },
+        },
+      }).success,
+    ).toBe(false);
   });
 
   it('accepts only a single safe path component as a subagent id on both transports', () => {
@@ -393,5 +434,69 @@ describe('client subagent history plumbing', () => {
     );
 
     expect(queries).toEqual(['?before=source%3Acursor&agentId=' + AGENT]);
+  });
+});
+
+describe('relay subagent history route', () => {
+  it('never answers a subagent read from cached session events', async () => {
+    const f = await attachmentRelayFixture();
+
+    try {
+      const device = f.connect('/ws/device', f.deviceToken);
+
+      await device.next('authenticated');
+      const headers = { authorization: 'Bearer ' + f.token };
+      const url = (query: string) => f.origin + '/sessions/' + f.session.id + '/events?' + query;
+
+      // Supported daemon without a live history window: no fallback to the session cache.
+      await f.publish(device, {
+        ...f.session,
+        capabilities: { ...f.session.capabilities, subagentHistory: true },
+      });
+
+      const unwindowed = await fetch(url(HistoryQueryKey.AgentId + '=' + AGENT), { headers });
+
+      expect(unwindowed.status).toBe(404);
+      expect(await unwindowed.json()).toMatchObject({ code: ErrorCode.NOT_FOUND });
+      expect(device.frames.filter((frame) => frame.type === FrameType.HistoryRead)).toHaveLength(0);
+
+      // A window around a message the subagent transcript does not contain: no fallback either.
+      await f.publish(device, {
+        ...f.session,
+        capabilities: { ...f.session.capabilities, historyWindow: true, subagentHistory: true },
+      });
+
+      const around = fetch(url('around=missing&' + HistoryQueryKey.AgentId + '=' + AGENT), { headers });
+      const request = await device.next(FrameType.HistoryRead);
+
+      expect(request).toMatchObject({
+        direction: HistoryDirection.Around,
+        agentId: AGENT,
+        anchor: 'missing',
+      });
+
+      device.send({
+        type: FrameType.HistoryDone,
+        requestId: request.requestId,
+        sessionId: request.sessionId,
+        generation: request.generation,
+        before: null,
+        after: null,
+      });
+
+      const response = await around;
+
+      expect(response.status).toBe(404);
+      expect(await response.json()).toMatchObject({ code: ErrorCode.NOT_FOUND });
+
+      // Another owner cannot reach the session at all.
+      const foreign = await fetch(url(HistoryQueryKey.AgentId + '=' + AGENT), {
+        headers: { authorization: 'Bearer ' + f.otherToken },
+      });
+
+      expect(foreign.status).toBe(404);
+    } finally {
+      await f.close();
+    }
   });
 });

@@ -2,10 +2,7 @@ import { ToolActivityPhase, truncateUtf8, type ToolActivity } from '@protocol';
 import { ClaudeContentType } from '../../domain/claude.js';
 import { TOOL_ACTIVITY_KINDS } from '../../activity/tool-kinds.js';
 import { ActivityKind } from '../../activity/activity-kind.js';
-import {
-  TRANSCRIPT_TOOL_DETAIL_BYTES,
-  TRANSCRIPT_TOOL_RESULT_BYTES,
-} from '../../domain/transcript/limits.js';
+import { TRANSCRIPT_TOOL_DETAIL_BYTES } from '../../domain/transcript/limits.js';
 
 /** Input fields that say what a tool call is doing, in order of preference. */
 const TOOL_DETAIL_KEYS = [
@@ -44,17 +41,6 @@ export function transcriptToolCount(content: unknown): number {
   return blocks(content).filter(isToolBlock).length;
 }
 
-function resultText(content: unknown): string {
-  if (typeof content === 'string') {
-    return content;
-  }
-
-  return blocks(content)
-    .filter((block) => block.type === ClaudeContentType.Text && typeof block.text === 'string')
-    .map((block) => block.text as string)
-    .join('\n');
-}
-
 function useDetail(input: unknown): string | undefined {
   if (!input || typeof input !== 'object') {
     return;
@@ -69,7 +55,10 @@ function useDetail(input: unknown): string | undefined {
   }
 }
 
-/** Tool calls and results of one record as bounded activity items; text and media stay with the reader. */
+/**
+ * Tool calls (with a bounded input summary) and results (status only) of one record as activity items;
+ * text and media stay with the reader.
+ */
 export function transcriptToolItems(content: unknown): TranscriptToolItem[] {
   return blocks(content).flatMap((block, index): TranscriptToolItem[] => {
     if (!isToolBlock(block)) {
@@ -96,10 +85,11 @@ export function transcriptToolItems(content: unknown): TranscriptToolItem[] {
       ];
     }
 
+    // A result says only how the call ended; its output never leaves the device.
     return [
       {
         index,
-        text: truncateUtf8(resultText(block.content), TRANSCRIPT_TOOL_RESULT_BYTES),
+        text: '',
         tool: {
           id: String(block.tool_use_id).slice(0, 512),
           phase: block.is_error === true ? ToolActivityPhase.Failed : ToolActivityPhase.Completed,

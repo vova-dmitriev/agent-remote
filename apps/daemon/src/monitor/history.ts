@@ -12,6 +12,8 @@ import {
 
 /** Subagent transcripts kept open per session generation; each has its own page cursors. */
 const SUBAGENT_PAGE_SOURCES = 8;
+/** Minimum time between two scans of one session's `subagents` directory; views poll more often. */
+const SUBAGENT_RESCAN_INTERVAL_MS = 5_000;
 
 /** The session's subagent list: the only ids whose transcripts may be read, and where backfill lands. */
 export interface SubagentListing {
@@ -25,8 +27,9 @@ interface Source {
   reader: TranscriptReader;
   pages: TranscriptPages;
   activity: TranscriptActivity;
-  agents: Map<string, TranscriptPages>;
+  agents: Map<string, { directory: string; pages: TranscriptPages }>;
   backfill?: Promise<void> | undefined;
+  scannedAt?: number | undefined;
 }
 
 export class MessageTracker {
@@ -145,7 +148,10 @@ export class TranscriptSources {
 
     return page;
   }
-  /** Re-list the session's subagent files; concurrent callers share one directory scan. */
+  /**
+   * Re-list the session's subagent files. Concurrent callers share one directory scan, and a scan that
+   * finished within the rescan interval stands for the next one.
+   */
   refreshSubagents(sessionId: string): Promise<void> {
     const source = this.sources.get(sessionId);
 
@@ -153,9 +159,17 @@ export class TranscriptSources {
       return Promise.resolve();
     }
 
+    if (source.backfill) {
+      return source.backfill;
+    }
+
+    if (source.scannedAt !== undefined && Date.now() - source.scannedAt < SUBAGENT_RESCAN_INTERVAL_MS) {
+      return Promise.resolve();
+    }
+
     const listing = this.subagents;
 
-    source.backfill ??= (async () => {
+    source.backfill = (async () => {
       try {
         const directory = await subagentDirectory(source.path, source.claudeSessionId!, this.allowedRoot);
         const found = directory ? await listSubagentFiles(directory) : [];
@@ -166,6 +180,7 @@ export class TranscriptSources {
       } catch {
         /* An unreadable subagent directory leaves the hook-observed list unchanged. */
       } finally {
+        source.scannedAt = Date.now();
         source.backfill = undefined;
       }
     })();
@@ -199,16 +214,17 @@ export class TranscriptSources {
       throw new CodedError(ErrorCode.NOT_FOUND);
     }
 
-    const cached = source.agents.get(agentId);
-
-    if (cached) {
-      return cached;
-    }
-
+    // Every read re-checks the directory against the Claude root; a cached reader never outlives it.
     const directory = await subagentDirectory(source.path, claudeSessionId, this.allowedRoot);
 
     if (!directory) {
       throw new CodedError(ErrorCode.TRANSCRIPT_UNAVAILABLE);
+    }
+
+    const cached = source.agents.get(agentId);
+
+    if (cached?.directory === directory) {
+      return cached.pages;
     }
 
     const pages = new TranscriptPages({
@@ -219,7 +235,8 @@ export class TranscriptSources {
       refuseSymlinks: true,
     });
 
-    source.agents.set(agentId, pages);
+    source.agents.delete(agentId);
+    source.agents.set(agentId, { directory, pages });
 
     if (source.agents.size > SUBAGENT_PAGE_SOURCES) {
       source.agents.delete(source.agents.keys().next().value!);

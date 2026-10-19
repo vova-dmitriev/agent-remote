@@ -57,3 +57,10 @@ export const HistoryCursorPrefix = {
 } as const;
 
 export type HistoryCursorPrefix = (typeof HistoryCursorPrefix)[keyof typeof HistoryCursorPrefix];
+
+/** Query parameters of the relay's session history route beyond the cursor directions. */
+export const HistoryQueryKey = {
+  AgentId: 'agentId',
+} as const;
+
+export type HistoryQueryKey = (typeof HistoryQueryKey)[keyof typeof HistoryQueryKey];

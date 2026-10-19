@@ -1,7 +1,7 @@
 import { mkdir, mkdtemp, rm, symlink, utimes, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import {
   ActivityKind,
   FrameType,
@@ -22,6 +22,8 @@ const OTHER = '22222222-2222-4222-8222-222222222222';
 const cleanup: (() => unknown)[] = [];
 
 afterEach(async () => {
+  vi.useRealTimers();
+
   for (const step of cleanup.splice(0).reverse()) {
     await step();
   }
@@ -89,16 +91,20 @@ async function fixture() {
     }),
   );
 
-  const monitor = new Monitor({ deviceId: 'device', store, adapters, permissions });
+  const sources = (owner: Monitor) =>
+    new TranscriptSources(root, undefined, undefined, 100, {
+      ids: (id, generation) => {
+        const session = owner.session(id);
 
-  const readers = new TranscriptSources(root, undefined, undefined, 100, {
-    ids: (id, generation) => {
-      const session = monitor.session(id);
+        return session?.generation === generation ? (session.subagents ?? []).map((agent) => agent.id) : [];
+      },
+      merge: (id, generation, found) => owner.backfillSubagents(id, generation, found),
+    });
 
-      return session?.generation === generation ? (session.subagents ?? []).map((agent) => agent.id) : [];
-    },
-    merge: (id, generation, found) => monitor.backfillSubagents(id, generation, found),
-  });
+  /** A new daemon process over the same store: native sessions come back restored. */
+  const restart = () => new Monitor({ deviceId: 'device', store, adapters, permissions });
+  const monitor = restart();
+  const readers = sources(monitor);
 
   const session = () => monitor.snapshot().sessions[0]!;
 
@@ -127,7 +133,7 @@ async function fixture() {
       ...(anchor ? { anchor } : {}),
     });
 
-  return { root, project, parentPath, agent, monitor, readers, session, start, read };
+  return { root, project, parentPath, agent, monitor, readers, session, start, read, sources, restart };
 }
 
 it('backfills finished and unfinished subagents from meta files when the session is first observed', async () => {
@@ -202,7 +208,9 @@ it('keeps the newest 50 meta files and lets a finished file complete only an unk
     'native',
   );
 
-  // Opening the view re-lists the directory; the stale finished flag does not override a live start.
+  // Opening the view after the rescan interval re-lists the directory; the stale finished flag does
+  // not override a live start.
+  vi.setSystemTime(Date.now() + 6_000);
   await read('b0000000000000051');
 
   expect(session().subagents?.find((child) => child.id === 'b0000000000000051')?.status).toBe(
@@ -235,12 +243,12 @@ it('reads a listed subagent transcript with tool activity while the parent page 
         { type: 'tool_use', id: 'toolu_2', name: 'constructor', input: {} },
       ]) +
       row('s-3', 'user', [
-        { type: 'tool_result', tool_use_id: 'toolu_1', content: 'synthetic.txt' },
+        { type: 'tool_result', tool_use_id: 'toolu_1', content: 'SYNTHETIC-RESULT-OUTPUT' },
         {
           type: 'tool_result',
           tool_use_id: 'toolu_2',
           is_error: true,
-          content: [{ type: 'text', text: 'denied' }],
+          content: [{ type: 'text', text: 'SYNTHETIC-RESULT-ERROR' }],
         },
       ]),
   );
@@ -263,14 +271,17 @@ it('reads a listed subagent transcript with tool activity while the parent page 
       text: 'constructor',
       tool: { id: 'toolu_2', phase: ToolActivityPhase.Started, name: 'constructor', kind: ActivityKind.Tool },
     },
-    {
-      id: 's-3/0',
-      role: 'user',
-      text: 'synthetic.txt',
-      tool: { id: 'toolu_1', phase: ToolActivityPhase.Completed },
-    },
-    { id: 's-3/1', role: 'user', text: 'denied', tool: { id: 'toolu_2', phase: ToolActivityPhase.Failed } },
+    { id: 's-3/0', role: 'user', text: '', tool: { id: 'toolu_1', phase: ToolActivityPhase.Completed } },
+    { id: 's-3/1', role: 'user', text: '', tool: { id: 'toolu_2', phase: ToolActivityPhase.Failed } },
   ]);
+
+  // A tool result's output never reaches any history item, in any field.
+  for (const direction of [HistoryDirection.Latest, HistoryDirection.Around]) {
+    const serialized = JSON.stringify((await read('a0000000000000001', direction)).messages);
+
+    expect(serialized).not.toContain('SYNTHETIC-RESULT-OUTPUT');
+    expect(serialized).not.toContain('SYNTHETIC-RESULT-ERROR');
+  }
 
   const parent = await read(undefined);
 
@@ -389,4 +400,82 @@ it('refuses a symlinked subagents directory', async () => {
   );
 
   await expect(read('a0000000000000003')).rejects.toThrow('TRANSCRIPT_OUTSIDE_ROOT');
+});
+
+it('lets a finished meta file complete a child restored as unknown', async () => {
+  const { agent, start, monitor, session, restart, sources, parentPath } = await fixture();
+
+  await start();
+
+  monitor.ingestHook(
+    {
+      hook_event_name: 'SubagentStart',
+      session_id: PARENT,
+      agent_id: 'a0000000000000001',
+      agent_type: 'reviewer',
+    },
+    'native',
+  );
+
+  expect(session().subagents?.[0]?.status).toBe(SubagentStatus.Running);
+  await agent('a0000000000000001', { agentType: 'reviewer', finished: true });
+
+  const restored = restart();
+  const restoredSession = () => restored.snapshot().sessions[0]!;
+
+  expect(restoredSession().subagents?.[0]?.status).toBe(SubagentStatus.Unknown);
+  const readers = sources(restored);
+
+  readers.open(restoredSession().id, restoredSession().generation, parentPath, PARENT);
+  await readers.refreshSubagents(restoredSession().id);
+
+  expect(restoredSession().subagents?.[0]).toMatchObject({
+    status: SubagentStatus.Completed,
+    transcriptAvailable: true,
+  });
+});
+
+it('skips malformed and oversized meta files', async () => {
+  const { agent, start, session } = await fixture();
+  const directory = await agent('a0000000000000001', { agentType: 'reviewer' });
+
+  await agent('a0000000000000002', null);
+  await writeFile(join(directory, 'agent-a0000000000000002.meta.json'), '{ not json');
+  await agent('a0000000000000003', null);
+  await writeFile(join(directory, 'agent-a0000000000000003.meta.json'), '["synthetic"]');
+  await agent('a0000000000000004', { agentType: 'reviewer', description: 'x'.repeat(70 * 1024) });
+
+  await start();
+  expect((session().subagents ?? []).map((child) => child.id)).toEqual(['a0000000000000001']);
+});
+
+it('rescans the subagents directory at most once per interval', async () => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  const { agent, start, read, session } = await fixture();
+
+  await start();
+  await agent('a0000000000000001', { agentType: 'reviewer' });
+
+  // A recent scan stands: neither the session page nor the view rescans, so the new child is unknown.
+  await read(undefined);
+  await expect(read('a0000000000000001')).rejects.toThrow('NOT_FOUND');
+  expect(session().subagents ?? []).toEqual([]);
+
+  vi.setSystemTime(Date.now() + 6_000);
+  await expect(read('a0000000000000001')).resolves.toMatchObject({ messages: [expect.anything()] });
+  expect((session().subagents ?? []).map((child) => child.id)).toEqual(['a0000000000000001']);
+});
+
+it('re-checks the subagents directory on every read of a cached transcript', async () => {
+  const { project, agent, start, read } = await fixture();
+
+  await agent('a0000000000000001', { agentType: 'reviewer' });
+  await agent('a0000000000000001', { agentType: 'reviewer' }, undefined, OTHER);
+  await start();
+  await expect(read('a0000000000000001')).resolves.toMatchObject({ messages: [expect.anything()] });
+
+  await rm(join(project, PARENT), { recursive: true });
+  await mkdir(join(project, PARENT));
+  await symlink(join(project, OTHER, 'subagents'), join(project, PARENT, 'subagents'));
+  await expect(read('a0000000000000001', HistoryDirection.Around)).rejects.toThrow('TRANSCRIPT_OUTSIDE_ROOT');
 });

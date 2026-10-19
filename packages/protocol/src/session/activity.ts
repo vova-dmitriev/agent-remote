@@ -18,11 +18,11 @@ export type SessionActivity = z.infer<typeof sessionActivitySchema>;
 
 /**
  * One tool call or result carried by a history item. Readers tolerate a newer writer: unknown keys are
- * stripped and an unknown kind reads as the generic tool kind.
+ * stripped, an unknown phase reads as completed and an unknown kind reads as the generic tool kind.
  */
 export const toolActivitySchema = z.object({
   id: z.string().min(1).max(512),
-  phase: z.enum(ToolActivityPhase),
+  phase: z.enum(ToolActivityPhase).catch(ToolActivityPhase.Completed),
   name: z.string().min(1).max(256).optional().catch(undefined),
   kind: z.enum(ActivityKind).catch(ActivityKind.Tool).optional(),
 });

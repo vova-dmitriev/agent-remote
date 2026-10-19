@@ -182,6 +182,7 @@ export class TranscriptPages {
 
     const messages = await reader.readNext();
 
+    // Known limit: one record with more items than a page (over 100 tool blocks) keeps only its last ones.
     return {
       messages: messages.slice(-TRANSCRIPT_PAGE_MESSAGES).map((message) => ({
         ...message,

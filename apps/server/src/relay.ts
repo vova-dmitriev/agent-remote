@@ -2,6 +2,7 @@ import { ServerErrorCode } from './error-codes.js';
 import {
   ConnectorId,
   ErrorCode,
+  HistoryQueryKey,
   FrameType,
   canDeliverPrompt,
   DeviceStatus,
@@ -867,7 +868,7 @@ export async function createRelay(config: RelayConfig) {
     const p = await principal(req),
       id = String(req.params.id);
 
-    const agentId = req.query.agentId;
+    const agentId = req.query[HistoryQueryKey.AgentId];
 
     const source = await sourceHistory.page(
       p,

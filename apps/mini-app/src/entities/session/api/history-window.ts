@@ -1,4 +1,4 @@
-import { HistoryPageDirection, HistoryDirection, type EventEnvelope } from "@protocol"
+import { HistoryPageDirection, HistoryDirection, HistoryQueryKey, type EventEnvelope } from "@protocol"
 import type { HistoryCursors } from "./history"
 
 export class HistoryWindow {
@@ -34,7 +34,7 @@ export class HistoryWindow {
     this.busy = true
 
     try {
-      const subagent = agentId ? "&agentId=" + encodeURIComponent(agentId) : ""
+      const subagent = agentId ? "&" + HistoryQueryKey.AgentId + "=" + encodeURIComponent(agentId) : ""
 
       const events = await request("?" + direction + "=" + encodeURIComponent(cursor) + subagent, (response) => {
         if (current())

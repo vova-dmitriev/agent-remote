@@ -50,6 +50,7 @@ exports[`keeps the public @protocol export set stable 1`] = `
   "HistoryDirection",
   "HistoryNavigationDirection",
   "HistoryPageDirection",
+  "HistoryQueryKey",
   "HistoryStatus",
   "HostKind",
   "HttpRequestMethod",

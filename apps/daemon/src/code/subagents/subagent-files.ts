@@ -104,7 +104,15 @@ async function readMeta(path: string) {
       return;
     }
 
-    const parsed = metaSchema.safeParse(JSON.parse((await file.readFile()).toString('utf8')));
+    // At most the checked size plus one byte, which detects a file that grew after the check.
+    const buffer = Buffer.alloc(info.size + 1);
+    const { bytesRead } = await file.read(buffer, 0, buffer.length, 0);
+
+    if (bytesRead > info.size) {
+      return;
+    }
+
+    const parsed = metaSchema.safeParse(JSON.parse(buffer.toString('utf8', 0, bytesRead)));
 
     return parsed.success ? parsed.data : undefined;
   } catch {
