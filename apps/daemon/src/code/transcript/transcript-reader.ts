@@ -10,7 +10,7 @@ import {
   TRANSCRIPT_ANCHOR_BYTES,
   TRANSCRIPT_POSITION_PREFIX,
   JSONL_NEWLINE_BYTE,
-} from './transcript-limits.js';
+} from '../../domain/transcript/limits.js';
 import { nativeClaudeMedia } from '../../attachments/content/native.js';
 import { type NativeMedia } from '../../attachments/types.js';
 import { openTranscript } from './transcript-file.js';

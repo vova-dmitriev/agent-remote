@@ -2,7 +2,7 @@ import { EventType } from '@protocol';
 import { attachmentSourceCurrent } from '../../attachments/content/source-current.js';
 import { AttachmentService } from '../../attachments/service.js';
 import type { Monitor } from '../../monitor/monitor.js';
-import type { LocalServices } from '../../local/bootstrap/services.js';
+import type { LocalServices } from '../services/local-services.js';
 import type { runtimeConfiguration } from '../../local/bootstrap/configuration.js';
 
 type RuntimeConfiguration = Awaited<ReturnType<typeof runtimeConfiguration>>;

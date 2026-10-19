@@ -1,17 +1,11 @@
 import { CodedError, ErrorCode } from '@protocol';
 import { RuntimeEvent } from '../../domain/runtime.js';
 import { CodexMethod } from '../../domain/codex/codex.js';
+import type { RpcFrame } from '../../domain/codex/client.js';
 import { EventEmitter } from 'node:events';
 import { type Readable, type Writable } from 'node:stream';
 
 export const MAX_CODEX_FRAME_BYTES = 32 * 1024 * 1024;
-export interface RpcFrame {
-  id?: string | number;
-  method?: string;
-  params?: unknown;
-  result?: unknown;
-  error?: { code?: number };
-}
 interface Options {
   input: Writable;
   output: Readable;

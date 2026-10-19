@@ -9,7 +9,7 @@ import {
 } from '@protocol';
 import { encryptEnrollment } from '@transport/credentials/sealed-box.js';
 import { CodexProfileNative } from '../apps/daemon/src/profiles/native/codex.js';
-import { RuntimeProfiles } from '../apps/daemon/src/profiles/runtime/service.js';
+import { RuntimeProfiles } from '../apps/daemon/src/runtime/services/runtime-profiles.js';
 import { deferred } from './profiles/runtime/deferred.js';
 import { codexSubscription, verifiedAccount } from './profiles/registry.fixture.js';
 import { profileServiceFixture } from './profiles/service.fixture.js';

@@ -3,7 +3,7 @@ import { expect, it } from 'vitest';
 import { ProfileExecutionOwnership } from '../apps/daemon/src/profiles/runtime/execution/execution-ownership.js';
 import { ExecutionChildState } from '../apps/daemon/src/profiles/runtime/execution/execution-values.js';
 import { ProfileService } from '../apps/daemon/src/profiles/service.js';
-import { RuntimeProfiles } from '../apps/daemon/src/profiles/runtime/service.js';
+import { RuntimeProfiles } from '../apps/daemon/src/runtime/services/runtime-profiles.js';
 import { profileServiceFixture } from './profiles/service.fixture.js';
 import { codexSubscription, verifiedAccount } from './profiles/registry.fixture.js';
 

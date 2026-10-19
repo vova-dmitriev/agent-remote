@@ -2,7 +2,7 @@ import { DesktopOperation } from '../../domain/desktop.js';
 import { LegacyHookSocketState } from '../../domain/ipc.js';
 import { createDesktopSource, type DesktopBinding } from '../../desktop/adapter.js';
 import type { BridgeClient } from '../../desktop/bridge-client.js';
-import type { CodexManager } from '../../codex/manager.js';
+import type { CodexManager } from '../services/codex-manager.js';
 import type { Monitor } from '../../monitor/monitor.js';
 import { MessageTracker, type TranscriptSources } from '../../monitor/history.js';
 import type { AdapterRegistry } from '../../adapters/registry.js';

@@ -7,7 +7,7 @@ import { LocalStore } from '../apps/daemon/src/monitor/store.js';
 import { Monitor } from '../apps/daemon/src/monitor/monitor.js';
 import { Dispatcher } from '../apps/daemon/src/commands/dispatcher.js';
 import { bindCodex } from '../apps/daemon/src/codex/binding/binding.js';
-import type { RpcFrame } from '../apps/daemon/src/codex/rpc/rpc-client.js';
+import type { RpcFrame } from '../apps/daemon/src/domain/codex/client.js';
 
 const question = {
   id: 'q',

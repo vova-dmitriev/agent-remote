@@ -4,7 +4,7 @@ import { join, resolve } from 'node:path';
 import { writeFileSync } from 'node:fs';
 import { expect, it, vi } from 'vitest';
 import { LocalKind, LocalOperation, ProfileAction, ProfileRequestKind, ProfileStatus } from '@protocol';
-import { RuntimeProfiles } from '../apps/daemon/src/profiles/runtime/service.js';
+import { RuntimeProfiles } from '../apps/daemon/src/runtime/services/runtime-profiles.js';
 import { startLocalServer } from '../apps/daemon/src/local/server/server.js';
 import { FramedPeer } from '../apps/daemon/src/browser/transport/peer.js';
 import { encryptEnrollment } from '@transport/credentials/sealed-box.js';

@@ -1,7 +1,7 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { ProfileRequestKind, QuotaEvidenceKind, QuotaObservationStatus } from '@protocol';
 import { CodexProfileNative } from '../apps/daemon/src/profiles/native/codex.js';
-import { RuntimeProfiles } from '../apps/daemon/src/profiles/runtime/service.js';
+import { RuntimeProfiles } from '../apps/daemon/src/runtime/services/runtime-profiles.js';
 import { profileServiceFixture } from './profiles/service.fixture.js';
 import { codexSubscription, verifiedAccount } from './profiles/registry.fixture.js';
 

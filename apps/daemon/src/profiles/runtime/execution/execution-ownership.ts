@@ -5,7 +5,7 @@ import type { LocalDatabase } from '../../../local/state/database.js';
 import { immutableProfileScope } from '../../storage/scope.js';
 import type { ProfileRegistry } from '../../registry.js';
 import type { ProfileScope } from '../../types.js';
-import type { ExecutionOwnershipLease } from '../../../sessions/execution/types.js';
+import type { ExecutionOwnershipLease } from '../../../domain/ports/execution-lease.js';
 import {
   ExecutionOwnershipKind,
   type ExecutionChildState as ChildState,

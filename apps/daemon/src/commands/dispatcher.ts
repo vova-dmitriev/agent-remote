@@ -18,8 +18,8 @@ import {
 import { DispatchScheduler } from './scheduling/index.js';
 import { CommandStoreOutcome, RuntimeEvent } from '../domain/runtime.js';
 import { type PreparedAttachment } from '../attachments/types.js';
-import { type LocalStore } from '../monitor/store.js';
-import { type Monitor } from '../monitor/monitor.js';
+import type { LocalStorePort } from '../domain/ports/local-store.js';
+import type { MonitorPort } from '../domain/ports/monitor.js';
 import { type AdapterRegistry } from '../adapters/registry.js';
 import { type UserInputBroker } from './user-input-broker.js';
 import { type PermissionBroker } from './permission-broker.js';
@@ -27,8 +27,8 @@ import { type PermissionBroker } from './permission-broker.js';
 export interface DispatcherOptions {
   deviceId: string;
   scheduler?: DispatchScheduler;
-  store: LocalStore;
-  monitor: Monitor;
+  store: LocalStorePort;
+  monitor: MonitorPort;
   adapters: AdapterRegistry;
   permissions: PermissionBroker;
   userInputs?: UserInputBroker;

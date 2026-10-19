@@ -3,7 +3,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { ProfileAction, ProfileAuthMode, ProfileOperationPhase, ProfileRequestKind } from '@protocol';
 import { CodexProfileNative } from '../apps/daemon/src/profiles/native/codex.js';
 import { ProfileAuthenticationPool } from '../apps/daemon/src/profiles/authentication/pool.js';
-import { RuntimeProfiles } from '../apps/daemon/src/profiles/runtime/service.js';
+import { RuntimeProfiles } from '../apps/daemon/src/runtime/services/runtime-profiles.js';
 import { deferred } from './profiles/runtime/deferred.js';
 import { codexSubscription, verifiedAccount } from './profiles/registry.fixture.js';
 import { profileServiceFixture } from './profiles/service.fixture.js';

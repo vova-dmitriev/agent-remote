@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import type { CodexBindingOptions } from './binding.js';
+import type { CodexBindingOptions } from '../../domain/codex/client.js';
 
 /** Stable session and connector identity of one Codex thread on one endpoint of this device. */
 export function codexSessionIdentity(options: CodexBindingOptions, deviceId: string) {

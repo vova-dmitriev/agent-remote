@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { expect, it } from 'vitest';
 import { RuntimeProfileRelay } from '../apps/daemon/src/profiles/runtime/router/relay.js';
-import type { RuntimeProfiles } from '../apps/daemon/src/profiles/runtime/service.js';
+import type { RuntimeProfiles } from '../apps/daemon/src/runtime/services/runtime-profiles.js';
 import type { DeviceFrame } from '@protocol';
 
 it('cancels the caller fence before the next native effect and suppresses its reply', async () => {

@@ -4,7 +4,7 @@ import {
   TRANSCRIPT_WINDOW_BYTES,
   TRANSCRIPT_BACKWARD_CHUNK_BYTES,
   JSONL_NEWLINE_BYTE,
-} from './transcript-limits.js';
+} from '../../domain/transcript/limits.js';
 import { type FileHandle } from 'node:fs/promises';
 import { CodedError } from '@protocol';
 

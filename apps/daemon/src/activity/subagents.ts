@@ -1,5 +1,5 @@
 import { SubagentStatus, type Session, type SubagentInfo } from '@protocol';
-import { ClaudeHookEvent } from '../../domain/claude.js';
+import { ClaudeHookEvent } from '../domain/claude.js';
 
 const SUBAGENT_LIMIT = 50;
 

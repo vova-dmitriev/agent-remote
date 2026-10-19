@@ -7,7 +7,7 @@ import {
   ProfileLimits,
   type ServerFrame,
 } from '@protocol';
-import type { RuntimeProfiles } from '../service.js';
+import type { RuntimeProfilesPort } from '../../../domain/ports/runtime-profiles.js';
 
 type ProfileRelayFrame = Extract<
   ServerFrame,
@@ -18,7 +18,7 @@ export class RuntimeProfileRelay {
   private active = new Map<string, AbortController>();
 
   constructor(
-    private service: RuntimeProfiles,
+    private service: RuntimeProfilesPort,
     private epoch: () => string | undefined,
     private send: (frame: DeviceFrame) => boolean,
   ) {}

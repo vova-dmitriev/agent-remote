@@ -1,6 +1,6 @@
 import { CodexMethod } from '../../domain/codex/codex.js';
 import { SessionStatus, type Session } from '@protocol';
-import { clearCurrentStep, currentToolStep } from '../../monitor/activity/current-step.js';
+import { clearCurrentStep, currentToolStep } from '../../activity/current-step.js';
 import { CODEX_TOOL_ITEM_TYPES } from './tool-item-type.js';
 import { object } from '../events.js';
 

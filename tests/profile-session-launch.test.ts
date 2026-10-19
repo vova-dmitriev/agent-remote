@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events';
 import { expect, it, vi } from 'vitest';
 import { mkdtemp, rm } from 'node:fs/promises';
-import { CodexManager } from '../apps/daemon/src/codex/manager.js';
+import { CodexManager } from '../apps/daemon/src/runtime/services/codex-manager.js';
 import { LocalStore } from '../apps/daemon/src/monitor/store.js';
 import { Monitor } from '../apps/daemon/src/monitor/monitor.js';
 import { AdapterRegistry } from '../apps/daemon/src/adapters/registry.js';

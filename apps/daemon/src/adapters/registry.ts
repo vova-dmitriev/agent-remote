@@ -9,17 +9,14 @@ import {
   type ConnectorDescriptor,
 } from '@protocol';
 import { type PreparedAttachment } from '../attachments/types.js';
+import type { Binding } from '../domain/ports/binding.js';
 
 export class AdapterError extends Error {
   constructor(public code: string) {
     super(code);
   }
 }
-export interface Binding {
-  target: Target;
-  generation: string;
-  localProof: string;
-}
+export type { Binding };
 export interface DispatchReceipt {
   status: typeof CommandStatus.Dispatched | typeof CommandStatus.Unknown;
   code?: string;

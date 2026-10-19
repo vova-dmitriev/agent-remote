@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { expect, it } from 'vitest';
-import { RuntimeProfiles } from '../apps/daemon/src/profiles/runtime/service.js';
+import { RuntimeProfiles } from '../apps/daemon/src/runtime/services/runtime-profiles.js';
 import { encryptEnrollment } from '@transport/credentials/sealed-box.js';
 import { profileServiceFixture } from './profiles/service.fixture.js';
 

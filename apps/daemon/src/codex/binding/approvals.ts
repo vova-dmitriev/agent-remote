@@ -3,8 +3,7 @@ import { SessionStatus, PermissionDecision, type Session } from '@protocol';
 import { CodexDesktopHost } from '../../domain/codex/codex-desktop.js';
 import { randomUUID } from 'node:crypto';
 import { type PermissionBroker } from '../../commands/permission-broker.js';
-import { type CodexClient } from './binding.js';
-import { type RpcFrame } from '../rpc/rpc-client.js';
+import type { CodexClient, RpcFrame } from '../../domain/codex/client.js';
 import { object } from '../events.js';
 
 export class CodexApprovals {

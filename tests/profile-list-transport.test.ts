@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { expect, it } from 'vitest';
-import { RuntimeProfiles } from '../apps/daemon/src/profiles/runtime/service.js';
+import { RuntimeProfiles } from '../apps/daemon/src/runtime/services/runtime-profiles.js';
 import { RuntimeProfileRelay } from '../apps/daemon/src/profiles/runtime/router/relay.js';
 import { BoundedSender } from '@transport/bounded-sender.js';
 import {

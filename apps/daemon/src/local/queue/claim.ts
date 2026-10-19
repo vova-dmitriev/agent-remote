@@ -9,12 +9,12 @@ import {
 } from '@protocol';
 import type { LocalControllerOptions } from '../controller/types.js';
 import type { LocalPrincipal } from '../grants/types.js';
-import type { QueueRepository } from './repository.js';
+import type { QueueClaimStorage } from './types.js';
 import { assertQueuePrincipal, queueSession, sameQueuedCommand, validateQueueCommand } from './validation.js';
 
 export function claimQueuedCommand(
   options: LocalControllerOptions,
-  repository: QueueRepository,
+  repository: QueueClaimStorage,
   command: ClientCommand,
   principal: LocalPrincipal,
 ) {

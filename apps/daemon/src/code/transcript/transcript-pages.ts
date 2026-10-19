@@ -17,7 +17,7 @@ import {
   TRANSCRIPT_MAX_POSITION_ENTRIES,
   TRANSCRIPT_POSITION_PREFIX,
   JSONL_NEWLINE_BYTE,
-} from './transcript-limits.js';
+} from '../../domain/transcript/limits.js';
 import { z } from 'zod';
 import { openTranscript } from './transcript-file.js';
 import { transcriptWindow, visibleTranscriptRow } from './transcript-window.js';

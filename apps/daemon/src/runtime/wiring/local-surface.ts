@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import { browserSettings, type runtimeConfiguration } from '../../local/bootstrap/configuration.js';
 import { localClientSecret } from '../../local/bootstrap/identity.js';
-import type { LocalServices } from '../../local/bootstrap/services.js';
+import type { LocalServices } from '../services/local-services.js';
 import { LocalController } from '../../local/controller/controller.js';
 import type { LocalControllerOptions } from '../../local/controller/types.js';
 import type { TranscriptSources } from '../../monitor/history.js';

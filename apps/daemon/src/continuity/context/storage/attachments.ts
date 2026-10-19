@@ -1,11 +1,7 @@
 import { hasErrorCode } from '@protocol';
 import { createHash } from 'node:crypto';
-import {
-  CheckpointAttachmentStatus,
-  CheckpointError,
-  CheckpointLimits,
-  checkpointFailure,
-} from '../values.js';
+import { CheckpointAttachmentStatus } from '../../../domain/continuity/checkpoint.js';
+import { CheckpointError, CheckpointLimits, checkpointFailure } from '../values.js';
 import type { CheckpointAttachmentReference } from '../types.js';
 import { readPrivateFile, writePrivateFile } from './storage.js';
 

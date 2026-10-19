@@ -1,37 +1,33 @@
 import { CodedError, ErrorCode, IntegrationState, SessionStatus, TargetKind } from '@protocol';
-import { RuntimeEvent } from '../domain/runtime.js';
-import { CodexMethod } from '../domain/codex/codex.js';
-import { type AttachmentService } from '../attachments/service.js';
+import { RuntimeEvent } from '../../domain/runtime.js';
+import { CodexMethod } from '../../domain/codex/codex.js';
+import { type AttachmentService } from '../../attachments/service.js';
 import { homedir } from 'node:os';
-import { join, isAbsolute } from 'node:path';
+import { join } from 'node:path';
 import { mkdir, readFile, writeFile, rename, readdir } from 'node:fs/promises';
 import Sqlite from 'better-sqlite3';
 import { z } from 'zod';
-import { ensureManagedCodexSocket, managedCodexChildState } from './launcher.js';
-import { bindCodex, type CodexClient } from './binding/binding.js';
-import { connectCodexSocket } from './rpc/transport.js';
-import { DesktopIpcClient } from './desktop/desktop-ipc.js';
-import { DesktopCodexClient } from './desktop/desktop-client.js';
-import { object } from './events.js';
-import { retainConnectedBinding, type CodexBinding } from './lifecycle/bindings.js';
-import { markCodexThreadTooLarge } from './lifecycle/too-large.js';
-import { type Monitor } from '../monitor/monitor.js';
-import { type AdapterRegistry } from '../adapters/registry.js';
-import { type UserInputBroker } from '../commands/user-input-broker.js';
-import { type PermissionBroker } from '../commands/permission-broker.js';
-import { startProfiledCodexRuntime } from '../sessions/execution/start-profiled-codex.js';
-import { ManagedCodexChildState } from './launch/types.js';
-import type { ProfiledExecutionLaunch } from '../sessions/execution/types.js';
-import type { CodexRpcClient } from './rpc/rpc-client.js';
-import { nativeProfileIdentity } from '../profiles/native/metadata.js';
-import { nativeProfileModels } from '../profiles/native/models.js';
+import { ensureManagedCodexSocket, managedCodexChildState } from '../../codex/launcher.js';
+import { bindCodex } from '../../codex/binding/binding.js';
+import type { CodexClient } from '../../domain/codex/client.js';
+import { connectCodexSocket } from '../../codex/rpc/transport.js';
+import { DesktopIpcClient } from '../../codex/desktop/desktop-ipc.js';
+import { DesktopCodexClient } from '../../codex/desktop/desktop-client.js';
+import { object } from '../../codex/events.js';
+import { retainConnectedBinding, type CodexBinding } from '../../codex/lifecycle/bindings.js';
+import { markCodexThreadTooLarge } from '../../codex/lifecycle/too-large.js';
+import { type Monitor } from '../../monitor/monitor.js';
+import { type AdapterRegistry } from '../../adapters/registry.js';
+import { type UserInputBroker } from '../../commands/user-input-broker.js';
+import { type PermissionBroker } from '../../commands/permission-broker.js';
+import { startProfiledCodexRuntime } from '../../sessions/execution/start-profiled-codex.js';
+import { ManagedCodexChildState } from '../../codex/launch/types.js';
+import type { ProfiledExecutionLaunch } from '../../sessions/execution/types.js';
+import type { CodexRpcClient } from '../../codex/rpc/rpc-client.js';
+import { nativeProfileIdentity } from '../../profiles/native/metadata.js';
+import { nativeProfileModels } from '../../profiles/native/models.js';
+import { codexConnectionSchema, type CodexConnection } from '../../domain/codex/connection.js';
 
-export const codexConnectionSchema = z.strictObject({
-  kind: z.enum([TargetKind.CodexCli, TargetKind.CodexDesktop]),
-  socketPath: z.string().min(1).max(4096).refine(isAbsolute),
-  threadId: z.string().min(1).max(512).optional(),
-});
-export type CodexConnection = z.infer<typeof codexConnectionSchema>;
 interface Dependencies {
   monitor: Monitor;
   adapters: AdapterRegistry;

@@ -7,9 +7,10 @@ import type {
   ProfileAuthenticationOptions,
   ProfileAuthenticationEntry,
   ProfileAuthenticationNative,
+  ProfileAuthenticationNatives,
 } from './types.js';
 
-export class ProfileAuthenticationPool {
+export class ProfileAuthenticationPool implements ProfileAuthenticationNatives {
   private pending = new Map<string, ProfileAuthenticationEntry>();
 
   constructor(private options: ProfileAuthenticationOptions) {}

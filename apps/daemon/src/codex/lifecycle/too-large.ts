@@ -10,8 +10,8 @@ import {
 } from '@protocol';
 import { RuntimeEvent } from '../../domain/runtime.js';
 import { type AdapterRegistry } from '../../adapters/registry.js';
-import { type Monitor } from '../../monitor/monitor.js';
-import { type CodexBindingOptions } from '../binding/binding.js';
+import type { MonitorPort } from '../../domain/ports/monitor.js';
+import type { CodexBindingOptions } from '../../domain/codex/client.js';
 import { codexSessionIdentity } from '../binding/identity.js';
 
 /**
@@ -20,7 +20,7 @@ import { codexSessionIdentity } from '../binding/identity.js';
  */
 export function markCodexThreadTooLarge(
   options: CodexBindingOptions,
-  deps: { monitor: Monitor; adapters: AdapterRegistry },
+  deps: { monitor: MonitorPort; adapters: AdapterRegistry },
 ) {
   const { sessionId, connectorId, target } = codexSessionIdentity(options, deps.adapters.deviceIdentity());
   const existing = deps.monitor.session(sessionId);

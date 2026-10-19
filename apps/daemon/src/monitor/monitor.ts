@@ -24,30 +24,15 @@ import {
 import { ClaudeHookEvent } from '../domain/claude.js';
 import { RuntimeEvent, ModelOrigin } from '../domain/runtime.js';
 import { boundSnapshotChanges } from '../codex/binding/file-changes.js';
-import { currentToolStep, clearCurrentStep } from './activity/current-step.js';
-import { boundSubagentSnapshots, recordSubagent, subagentActivityStatus } from './activity/subagents.js';
+import { currentToolStep, clearCurrentStep } from '../activity/current-step.js';
+import { boundSubagentSnapshots, recordSubagent, subagentActivityStatus } from '../activity/subagents.js';
 import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
-import { z } from 'zod';
 import { SourceAdapter, type Binding, type AdapterRegistry } from '../adapters/registry.js';
 import { type UserInputBroker } from '../commands/user-input-broker.js';
 import { type PermissionBroker } from '../commands/permission-broker.js';
 import { type LocalStore } from './store.js';
-
-export const hookSchema = z.object({
-  hook_event_name: z.string().min(1).max(128),
-  session_id: z.string().min(1).max(512),
-  transcript_path: z.string().max(4096).optional(),
-  source: z.string().max(128).optional(),
-  model: sessionSchema.shape.model.optional(),
-  cwd: sessionSchema.shape.cwd.optional(),
-  agent_id: z.string().min(1).max(512).optional(),
-  agent_type: z.string().max(512).optional(),
-  tool_use_id: z.string().min(1).max(512).optional(),
-  tool_name: z.string().max(512).optional(),
-  tool_input: z.unknown().optional(),
-});
-export type HookEnvelope = z.infer<typeof hookSchema>;
+import { hookSchema, type HookEnvelope, type MonitorPort } from '../domain/ports/monitor.js';
 
 /** Hooks a subagent fires for its own work. With `agent_id` they describe that child, never the parent turn. */
 const SUBAGENT_ACTIVITY_HOOKS: readonly ClaudeHookEvent[] = [
@@ -67,7 +52,7 @@ interface Options {
   userInputs?: UserInputBroker;
   allowSessionCreation?: boolean;
 }
-export class Monitor extends EventEmitter {
+export class Monitor extends EventEmitter implements MonitorPort {
   private sessions = new Map<string, Session>();
   private bindings = new Map<string, Binding>();
   private restored = new Set<string>();
