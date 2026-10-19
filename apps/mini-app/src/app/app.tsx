@@ -1,5 +1,6 @@
 import { SessionProvider } from "@/entities/session"
-import { HostContext, telegramHost } from "@/shared/lib/host"
+import { HostContext } from "@/shared/lib/host"
+import { telegramHost } from "./host"
 import { LanguageProvider } from "./_providers/language-provider"
 import { QueryProvider } from "./_providers/query-provider"
 import { ThemeProvider } from "./_providers/theme-provider"

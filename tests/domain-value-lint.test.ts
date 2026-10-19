@@ -112,7 +112,7 @@ it.each([
   ['desktop', 'apps/desktop/src/example.ts'],
   ['protocol', 'packages/protocol/src/example.ts'],
   ['transport', 'packages/transport/src/example.ts'],
-  ['application client', 'apps/mini-app/src/shared/api/desktop/application-client.ts'],
+  ['application client', 'apps/mini-app/src/app/api/desktop/application-client.ts'],
 ])(
   'rejects raw uppercase Error/Fault codes in %s source',
   (_name, filename) => {
@@ -245,7 +245,7 @@ it.each(['const matches = response.status === 404;', 'socket.close(4001, "UNAUTH
   'rejects numeric statuses and close codes in the frontend: %s',
   (source) => {
     expect(
-      ruleViolations(source, 'apps/mini-app/src/shared/api/example.ts', 'no-restricted-syntax'),
+      ruleViolations(source, 'apps/mini-app/src/app/api/example.ts', 'no-restricted-syntax'),
     ).not.toHaveLength(0);
   },
   30000,

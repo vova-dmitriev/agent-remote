@@ -2,7 +2,7 @@ import { vi } from "vitest"
 import { SessionStatus, ConnectionStatus, CommandStatus, CommandActionType, type Session } from "@protocol"
 import { PromptDeliveryMode } from "@/features/send-command/config/values"
 import { terminalSession, snapshot } from "../.storybook/fixtures/session"
-import { AppTransport } from "@/shared/api/transport"
+import { AppTransport } from "@/app/api/transport/app-transport"
 import { createSessionStore } from "@/entities/session/model/store/create-session-store"
 import { PromptDispatcher } from "@/features/send-command/model/outbox/dispatcher"
 

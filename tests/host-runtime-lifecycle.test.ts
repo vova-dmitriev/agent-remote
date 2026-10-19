@@ -1,6 +1,6 @@
 import { expect, it, vi } from 'vitest';
 import { ConnectionStatus } from '@protocol';
-import { AppTransport } from '../apps/mini-app/src/shared/api/transport.js';
+import { AppTransport } from '../apps/mini-app/src/app/api/transport/app-transport.js';
 import { TransportRuntime } from '../apps/mini-app/src/shared/lib/runtime/transport-runtime.js';
 import { connectHost } from '../apps/mini-app/src/shared/lib/host/connection.js';
 import { createSessionStore } from '../apps/mini-app/src/entities/session/model/store/create-session-store.js';

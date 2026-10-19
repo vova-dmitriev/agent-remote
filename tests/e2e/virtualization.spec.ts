@@ -3,12 +3,16 @@ import { expect } from '@playwright/test';
 import { test, publishMessages } from './support/relay-fixture.js';
 import { identity } from './support/identity.js';
 import { byTestId } from './support/testid.js';
+import { scrollSettled } from './support/scroll-settled.js';
 import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
 import { MARKDOWN_IDS } from '../../apps/mini-app/src/shared/ui/markdown/test-ids.js';
 
 import { SESSION_FEED_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
 
 test('reading stays anchored through the 500-message cap and earlier message growth', async ({ page }) => {
+  // Publishing 500 events and paging them in takes about 20 s even on an idle machine.
+  test.setTimeout(90000);
+
   const now = Date.now();
 
   const messages = Array.from({ length: 500 }, (_, index) => ({
@@ -34,6 +38,7 @@ test('reading stays anchored through the 500-message cap and earlier message gro
   const targetTop = await page.getByTestId(SESSION_FEED_IDS.root).evaluate(node => node.getBoundingClientRect().top + 22);
 
   await expect.poll(async () => Math.abs(await message.evaluate(node => node.getBoundingClientRect().top) - targetTop)).toBeLessThan(2);
+  await scrollSettled(page.getByTestId(SESSION_FEED_IDS.root));
   const position = await message.evaluate((node) => node.getBoundingClientRect().top);
 
   await publishMessages([
@@ -87,7 +92,8 @@ test('reading stays anchored through the 500-message cap and earlier message gro
     )
     .toBeLessThan(2);
 
-  for (const index of [1, 500, 10, 400, 250]) {
+  // Reaching the top loads capped-0 and trims capped-500 off the 500-message window, so 500 is visited before 1.
+  for (const index of [500, 1, 10, 400, 250]) {
     const target = byTestId(page, SESSION_FEED_IDS.marker, { 'message-id': 'capped-' + index });
 
     await target.click();

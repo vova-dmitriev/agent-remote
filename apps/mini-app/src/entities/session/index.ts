@@ -19,3 +19,6 @@ export { SessionChanges } from "./ui/changes/session-changes"
 
 export { SessionTab, AgentName, ProviderFilterValue } from "./config/session-values"
 export { PromptStatus } from "./model/store/outbox/constants"
+export { HistoryStream, loadSessionHistory, restoreHistoryWindow } from "./api/history"
+export { HistoryWindow } from "./api/history-window"
+export { ReadingPositions } from "./api/reading-position"

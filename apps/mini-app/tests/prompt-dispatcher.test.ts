@@ -8,7 +8,7 @@ import {
   type ClientCommand,
   type CommandResult,
 } from "@protocol"
-import type { AppTransport } from "../src/shared/api"
+import type { AppTransport } from "../src/app/api"
 import { createSessionStore } from "../src/entities/session/model/store/create-session-store"
 import { terminalSession, snapshot } from "../.storybook/fixtures/session"
 import { PromptDispatcher } from "../src/features/send-command/model/outbox/dispatcher"

@@ -1,6 +1,4 @@
 export { HostContext } from "./context"
 export { useHost } from "./use-host"
 export { connectHost } from "./connection"
-export { telegramHost } from "./telegram-host"
-export { createDesktopHost } from "./desktop-host"
 export type { HostAdapter } from "./types"

@@ -12,13 +12,17 @@ import {
   LocalOperation,
   ProfileRequestKind,
   AgentProvider,
+  ProfileAuthMode,
+  QuotaObservationStatus,
+  QuotaScopeKind,
+  QuotaSource,
   desktopBridgeEventSchema,
   desktopBridgeLeaseSchema,
   desktopBridgeRequestSchema,
 } from '@protocol';
-import { DesktopBridgeConnection } from '../apps/mini-app/src/shared/api/desktop/desktop-connection.js';
-import { DesktopApplicationClient } from '../apps/mini-app/src/shared/api/desktop/application-client.js';
-import { DesktopMedia } from '../apps/mini-app/src/shared/api/desktop/media.js';
+import { DesktopBridgeConnection } from '../apps/mini-app/src/app/api/desktop/desktop-connection.js';
+import { DesktopApplicationClient } from '../apps/mini-app/src/app/api/desktop/application-client.js';
+import { DesktopMedia } from '../apps/mini-app/src/app/api/desktop/media.js';
 
 describe('desktop bridge contract', () => {
   it('keeps native grant secrets and principals out of the renderer lease', () => {
@@ -145,6 +149,95 @@ describe('desktop bridge contract', () => {
 
     await expect(pending).rejects.toThrow(ErrorCode.STALE_EPOCH);
     client.close();
+  });
+
+  it('lists profiles without a prior target selection and rejects foreign device records', async () => {
+    const list = {
+      kind: ProfileRequestKind.List,
+      data: {
+        available: true,
+        observedAt: 1,
+        profiles: [],
+        operations: [],
+        defaults: { [AgentProvider.Claude]: null, [AgentProvider.Codex]: null },
+      },
+    };
+
+    const quota = {
+      kind: ProfileRequestKind.Quota,
+      data: {
+        ownerId: '22222222-2222-4222-8222-222222222222',
+        deviceId: 'device-b',
+        profileId: '11111111-1111-4111-8111-111111111111',
+        profileVersion: 2,
+        provider: AgentProvider.Codex,
+        authMode: ProfileAuthMode.Subscription,
+        accountRef: 'codex-account',
+        source: QuotaSource.CodexRateLimits,
+        supported: true,
+        scope: { kind: QuotaScopeKind.Account },
+        status: QuotaObservationStatus.Unknown,
+        evidence: null,
+        observedAt: 1,
+      },
+    };
+
+    const connection = {
+      request: vi.fn(async (): Promise<unknown> => list),
+      close: vi.fn(),
+    };
+
+    const client = new DesktopApplicationClient(connection as never, {
+      onConnection: () => {},
+      onFrame: () => {},
+    });
+
+    await expect(
+      client.profiles!('device-a').request({ kind: ProfileRequestKind.List }),
+    ).resolves.toMatchObject({
+      kind: ProfileRequestKind.List,
+    });
+
+    connection.request.mockResolvedValue(quota);
+
+    await expect(
+      client.profiles!('device-a').request({
+        kind: ProfileRequestKind.Quota,
+        profileId: quota.data.profileId,
+        expectedVersion: 2,
+      }),
+    ).rejects.toThrow(ErrorCode.ACCESS_DENIED);
+
+    client.close();
+  });
+
+  it('delivers events that arrive before the lease is set', async () => {
+    const lease = createLease('00000000-0000-4000-8000-000000000002', 1);
+    const listener = vi.fn();
+
+    const connection = new DesktopBridgeConnection({
+      open: async () => {
+        lease.emit(frame(lease.leaseId, 1));
+        lease.emit(frame('00000000-0000-4000-8000-000000000009', 7));
+
+        return { leaseId: lease.leaseId, epoch: lease.epoch };
+      },
+      request: async () => {
+        throw new Error(ErrorCode.REQUEST_FAILED);
+      },
+      subscribe: (callback) => {
+        lease.subscribe(callback as (event: unknown) => void);
+
+        return () => {};
+      },
+      close: async () => {},
+    });
+
+    connection.subscribe(listener);
+    await connection.start();
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    await connection.close();
   });
 
   it('does not submit a media chunk when abort arrives during file reading', async () => {

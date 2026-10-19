@@ -1,7 +1,7 @@
 import { useLayoutEffect } from "react"
 import { ConnectionStatus, FrameType, DeviceStatus, type Session } from "@protocol"
 import { useSessionStoreApi } from "@/entities/session"
-import { AppTransport } from "@/shared/api"
+import { AppTransport } from "@/app/api"
 import { useRuntime } from "@/shared/lib/runtime"
 
 export function useSyntheticRuntime(session?: Session) {

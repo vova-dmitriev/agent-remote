@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { restoreHistoryWindow } from '../apps/mini-app/src/shared/api/history.js';
+import { restoreHistoryWindow } from '../apps/mini-app/src/entities/session/api/history.js';
 import type { EventEnvelope, ServerFrame } from '@protocol';
 
 it('publishes a history response as one batch for synchronous external stores', async () => {

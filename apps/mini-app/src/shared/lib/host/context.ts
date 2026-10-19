@@ -1,4 +1,4 @@
 import { createContext } from "react"
-import { telegramHost } from "./telegram-host"
+import type { HostAdapter } from "./types"
 
-export const HostContext = createContext(telegramHost)
+export const HostContext = createContext<HostAdapter | null>(null)

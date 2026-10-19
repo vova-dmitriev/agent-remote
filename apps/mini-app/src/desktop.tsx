@@ -2,7 +2,7 @@ import { createRoot } from "react-dom/client"
 import { z } from "zod"
 import { App } from "@/app/app"
 import { resolveLanguage } from "@/shared/lib/i18n"
-import { createDesktopHost } from "@/shared/lib/host"
+import { createDesktopHost } from "@/app/host"
 import "@/app/styles/globals.css"
 
 z.config({ jitless: true })

@@ -664,6 +664,84 @@ Expected: every command exits 0.
 
 ---
 
+### Task 25: Desktop Accounts page works on first load (user bug 2026-10-19)
+
+Diagnosed (scratch repro): `DesktopApplicationClient.profiles()` allows a profile request only when `selectedDevice === deviceId`; `selectedDevice` is set only by `selectTarget()`, which `use-application.ts` calls only when `firstDevice !== state.deviceId`. The companion's initial Snapshot (replayed by main when the lease opens) sets `state.deviceId` first, so `selectTarget` never runs and every profile request throws `STALE_EPOCH` → the Accounts form stays disabled (`accounts-page.tsx` disables on `!data`) and shows "This session has changed…". Side race: `desktop-connection.ts` drops events that arrive before the lease is set, so the initial snapshot can also be lost.
+- [ ] Test first in `tests/desktop-client-contract.test.ts`: `profiles(deviceId).request({ kind: List })` succeeds with no prior `selectTarget`; update the existing reselect assertion only if the new guard makes it obsolete, keeping device scoping (per-record `deviceId` check in `packages/transport/src/profile-client.ts` and daemon controller) covered by a test that a foreign device id is rejected.
+- [ ] Fix: profile guard = connection not stopped (as the web transport does); device scope stays enforced by record checks.
+- [ ] Test + fix: events that arrive before the lease are buffered and delivered once the lease is set (no lost initial snapshot).
+- [ ] `npm run check:frontend`, `npm run test:desktop`; commit `fix(desktop): profile requests without prior target selection`.
+
+### Task 26: One huge Codex thread must not break every session (user bug 2026-10-19)
+
+Diagnosed (live companion + scratch repro): `DesktopIpcClient.receive` (`apps/daemon/src/codex/desktop/desktop-ipc.ts`) disconnects the whole shared Codex IPC socket on any frame > 32 MiB. A 43 MB thread snapshot does that every ~12 s, the disconnect invalidates all bindings, so the only other visible thread flips to "Session unavailable"; 26 `binding_lost` events and 594 replayed message rows were observed. Separately, leaked test companions (`/private/tmp/desktop-runtime-*`, started by desktop tests with the real `HOME`) kept polling the user's real `~/.codex/ipc/ipc.sock`.
+- [ ] Test first in `tests/codex-desktop-ipc.test.ts`: a frame header > 32 MiB followed by a valid frame → client stays connected, oversize bytes are drained without buffering them, the second frame is delivered, and only the request/thread that produced the oversize frame fails with a named code (add `CODEX_FRAME_TOO_LARGE` to `DaemonErrorCode` or reuse an existing equivalent) surfaced on that session as a distinct availability reason.
+- [ ] Fix `desktop-ipc.ts` accordingly; cap value unchanged (named constant).
+- [ ] Test isolation: every test that launches a companion/desktop runtime sets `HOME` (and `CODEX_HOME` if read) to its temp directory and terminates the child in `afterEach`/`afterAll`; add a check that no `runtime/node` child survives the test file.
+- [ ] Commit `fix(daemon): oversize Codex frame fails one thread, not the socket`.
+
+### Task 27: Desktop companion also receives Claude hooks on the legacy socket (user decision 2026-10-19)
+
+Diagnosed: `~/.claude/settings.json` hooks run `remote.mjs hook` without `CLAUDE_REMOTE_HOME`, so they post to `~/.claude-remote/hooks.sock` (`apps/daemon/src/config.ts`, `setup-cli.ts`); the desktop companion listens only at `…/agent-remote-desktop/desktop-companion/hooks.sock`, so Claude Code sessions never reach the desktop app. User decision: the companion ALSO listens on the legacy path; `~/.claude/settings.json` is not modified.
+- The legacy listener uses the same hook server, auth and validation as the companion's own socket (no second code path). Socket file mode 0600, parent directory owned by the current user and not group/other-writable (reuse the existing socket-safety helpers); refuse symlinks.
+- Never steal a live socket: if `~/.claude-remote/hooks.sock` is accepted by a running CLI daemon (connect succeeds), the companion does not bind it and logs/reports a named state; a stale socket file (connect refused, owned by the user) is replaced. On companion shutdown only a socket the companion created is removed.
+- [ ] Tests first (temp HOME): companion binds the legacy path when free; a hook posted there produces the same session as one posted to the companion socket; a live foreign listener is left untouched; a stale socket is replaced; a symlink or wrong-mode parent is refused; shutdown removes only the companion's own socket.
+- [ ] Implement in the daemon lane (after Task 26); commit `feat(daemon): desktop companion accepts legacy Claude hook socket`.
+
+### Task 24: Semgrep SecObserve gate next to Gitleaks
+
+User request 2026-10-19: the same checks as the team's other repositories — Semgrep with `.semgrep/secobserve-high.yml` blocking only NEW High/Critical findings, `# nosemgrep` ignored; Gitleaks on the staged diff. Measured: Gitleaks already runs (`scripts/security/check.mjs`: staged snapshot in pre-commit with `--ignore-gitleaks-allow`, worktree + history in pre-push, CI `repository-safety.yml`). Semgrep is absent. The rules file is identical (sha256 prefix `27f7e7d06277`) in report-service, fabric-cicd and two other repos (generated by `ai-automation/scripts/secobserve_rules.py`; 72 rules, JavaScript/TypeScript included). A full scan of this repo today: 3 findings, all `rules_lgpl_javascript_ssrf_rule-node-ssrf` — `apps/daemon/src/cli/pairing/connect.ts:63`, `apps/mini-app/src/shared/api/request-error.ts:14`, `scripts/smoke-image.ts:79` — plus 1 Semgrep parse error.
+
+**Files:**
+- Create: `.semgrep/secobserve-high.yml` — NOT a blind copy (user ruling 2026-10-19). The repository contains only TypeScript/JavaScript (+ Swift, SQL, shell); no Python or C#. From the source file keep only the 44 rules whose `languages` are JavaScript/TypeScript (38 `javascript`, 6 `javascript`+`typescript`); drop the 25 Python and 3 C# rules. Review each kept rule for applicability (Node server, Electron/desktop, browser Mini App) and drop rules for frameworks this repo does not use, listing every dropped rule id with a one-line reason in the task report. Header comment: source path, source sha256, generator (`ai-automation/scripts/secobserve_rules.py`), date, and the filter applied. A test asserts every rule's `languages` ⊆ {javascript, typescript}.
+- Runtime: the project has no Python toolchain. Run Semgrep from the official `semgrep/semgrep` Docker image pinned by digest (Docker is already required for the test databases), in both the hook and CI; do not add Python or pip steps. If Docker is unavailable, the hook fails with "Semgrep requires Docker. Scan did not run."
+- Modify: `scripts/security/check.mjs` (new `semgrep` step for `staged` mode), `.githooks/pre-commit` (unchanged entry point if check.mjs runs it), `scripts/security/check.test.mjs`, `.github/workflows/repository-safety.yml` (pinned Semgrep install, same flags), `SECURITY.md`, `AGENTS.md` security line
+- Modify, if the assessment says so: the three flagged files
+
+**Interfaces / exact behavior:**
+- Semgrep flags (match the team's pre-commit config): `--config .semgrep/secobserve-high.yml --disable-nosem --error --baseline-commit HEAD --metrics=off --disable-version-check --quiet --skip-unknown-extensions`, excluding `.semgrep/`.
+- It must scan the STAGED snapshot (like the Gitleaks step), not the working copy: e.g. a temporary detached worktree at HEAD with the staged diff applied, then `--baseline-commit HEAD` inside it, so only findings the commit adds block. Never print matched source lines (rule id, file, line only).
+- Pre-push and CI: full scan without baseline must report the three existing findings as known/assessed; decide per finding (Step 1) whether to fix or record it in `SECURITY.md` as assessed with reason — `# nosemgrep` cannot be used.
+
+**Steps:**
+- [ ] Step 1: Assess the 3 SSRF findings and the parse error (browser `fetch` in the Mini App is not server-side SSRF; daemon pairing URL comes from user config; smoke script is dev-only) — fix where a real allowlist/validation is cheap, otherwise document.
+- [ ] Step 2: Tests first in `scripts/security/check.test.mjs`: a staged file adding a known-High pattern (from the rules file, synthetic) is blocked; the same pattern already in HEAD is not blocked; `# nosemgrep` on the new line does not suppress; output contains no source text.
+- [ ] Step 3: Implement; `npm run security:test` and `npm run security:check` pass.
+- [ ] Step 4: Commit through the hook `chore(security): Semgrep SecObserve gate`.
+
+---
+
+### Task 23a: Make `tests/e2e/virtualization.spec.ts` pass reliably
+
+Found in Task 20: the mobile `virtualization.spec.ts` fails 3/3 when run alone, also at baseline `505c8a7` (Task 7 saw it pass alone in 24 s under a 30 s timeout, so it is load/timing sensitive). `npm run check:frontend` must be green for every frontend task.
+
+- [ ] Step 1: Reproduce alone and under load; capture the Playwright trace of a failing run.
+- [ ] Step 2: Root cause with superpowers:systematic-debugging (slow fixture generation, a wait on a fixed timeout, a real virtualization bug). Evidence, not guesses.
+- [ ] Step 3: Fix the root cause. Raising a timeout is acceptable only if the trace proves the work is legitimately slow and bounded; never weaken or delete an assertion.
+- [ ] Step 4: 5/5 passes alone and the full `npm run test:e2e` passes; commit `fix(e2e): stabilize virtualization spec` through the hook.
+
+---
+
+### Task 23: Mini-app styles on Tailwind, not global CSS classes
+
+User finding 2026-10-19: the Mini App styles most components with plain global CSS classes although Tailwind v4 is installed and `apps/mini-app/AGENTS.md` makes Tailwind tokens the styling system. Measured: 24 `.css` files, ≈2 000 lines, 123 global class selectors (`.muted`, `.notice`, `.status`, `.attachment-description`, …) mostly under `src/app/styles/**` plus `entities/session/ui/changes/session-changes.css`; of 217 `className=` uses in 68 `.tsx` files only ≈51 are Tailwind utilities. No Sass is installed. Ruling: Tailwind utilities (with the existing `cn`/`tailwind-merge` helper and shadcn primitives) — not SCSS modules — because Tailwind v4 + tokens is already the declared system; adding Sass would create a second one.
+
+**Files:**
+- Modify: every `.tsx` that uses a global class from `src/**/*.css`; move styling into Tailwind utility classes using the tokens in `src/app/styles/tokens.css` (no hardcoded colors, dark mode and Telegram theme preserved). Repeated combinations become a component in `shared/ui` or a `cva` variant if `class-variance-authority` is already installed; otherwise a small typed helper in the owning slice.
+- Delete: the migrated `.css` files.
+- Keep (allowlist): `src/app/styles/globals.css`, `src/app/styles/tokens.css`, and styles for HTML the app does not render as JSX (rendered Markdown, `chat/markdown.css`), which may stay as element selectors scoped under one root class inside `@layer components`.
+- Modify: `scripts/check-frontend-structure.mjs` — fail on any `.css`/`.scss` file under `apps/mini-app/src` outside the allowlist; `tests/frontend-structure-path.test.ts` (or a new test next to it) covers it.
+
+**Steps (split in two commits to keep reviews small):**
+- [ ] Step 1: Allowlist check test first — a fixture with `src/features/x/ui/x.css` is reported; allowlisted files are not. Run: FAIL.
+- [ ] Step 2: Visual baseline — capture screenshots of every Storybook story (light and dark, the iPhone 13 viewport used by e2e) with Playwright into the lane's scratch directory (not committed).
+- [ ] Step 3 (commit A `refactor(mini-app): layout, controls, sessions and menus on Tailwind`): migrate `layout.css`, `controls.css`, `responsive.css`, `sessions.css`, `menus/**`, `session-changes.css`.
+- [ ] Step 4 (commit B `refactor(mini-app): chat views on Tailwind`): migrate `chat/**` except `markdown.css`, plus `pairing.css`, `short-viewport.css`; enable the allowlist check.
+- [ ] Step 5: Re-capture screenshots and diff against the baseline (pixel diff, report every story whose diff exceeds 0.1 %); fix unintended differences; list intended ones in the report.
+- [ ] Step 6: `npm run check:frontend` exit 0 after each commit; commits through the hook.
+
+---
+
 ## Self-review notes
 
 - Coverage: finding 1 → Task 3 (+lint lock); finding 2 → Tasks 6–7 (+lint lock); finding 3 → Tasks 8–12; finding 4 → Tasks 4–5 (+structure gate); finding 5 → Tasks 1–2.
