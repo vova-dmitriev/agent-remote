@@ -16,4 +16,6 @@ export interface SessionPageProps {
   onBack: () => void
   rename?: RenameSessionController
   controller: CommandController
+  /** Opens a subagent's read-only view; offered only where the session's source can read subagent transcripts. */
+  onOpenSubagent?: ((agentId: string) => void) | undefined
 }

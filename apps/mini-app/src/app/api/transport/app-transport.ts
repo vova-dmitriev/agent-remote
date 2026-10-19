@@ -11,7 +11,14 @@ import {
   type TransportHandlers,
 } from "@/shared/api"
 import { AttachmentTransfer } from "@/entities/attachment"
-import { HistoryStream, HistoryWindow, ReadingPositions, loadSessionHistory, restoreHistoryWindow } from "@/entities/session"
+import {
+  HistoryStream,
+  HistoryWindow,
+  ReadingPositions,
+  SubagentHistory,
+  loadSessionHistory,
+  restoreHistoryWindow,
+} from "@/entities/session"
 import { RelayOperations } from "./relay-operations"
 
 export class AppTransport extends RelayOperations implements ApplicationClient {
@@ -26,6 +33,7 @@ export class AppTransport extends RelayOperations implements ApplicationClient {
   private selection = 0
   private historyStream = new HistoryStream()
   private window = new HistoryWindow()
+  private subagents = new SubagentHistory((path, observe) => this.request(path, {}, observe))
   private reading = new ReadingPositions(this)
   private restoreHistory: number | null = null
   private requests = new Set<AbortController>()
@@ -134,6 +142,7 @@ export class AppTransport extends RelayOperations implements ApplicationClient {
     this.deviceId = deviceId
     this.selectedId = sessionId
     this.window.reset()
+    this.subagents.reset()
     if (this.socket?.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify({ type: FrameType.Subscribe, deviceId, sessionId }))
   }
   resetTarget() {
@@ -175,6 +184,8 @@ export class AppTransport extends RelayOperations implements ApplicationClient {
       edge,
     )
   }
+  subagentHistory: NonNullable<ApplicationClient["subagentHistory"]> = (sessionId, agentId, direction, edge) =>
+    this.subagents.page(sessionId, agentId, direction, () => !this.stopped && this.selectedId === sessionId, edge)
   logout = () => logoutSession(this)
   close() {
     this.stopped = true

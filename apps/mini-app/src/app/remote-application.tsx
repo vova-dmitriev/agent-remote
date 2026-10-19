@@ -1,6 +1,7 @@
 import { ConnectionStatus } from "@protocol"
 import { AttachmentProvider } from "@/entities/attachment"
 import { useApplicationView } from "./model/navigation/use-application-view"
+import { useSubagentView } from "./model/navigation/use-subagent-view"
 import { ApplicationShell } from "@/widgets/application-shell"
 import { CommandNotice } from "@/features/send-command"
 import { StartupSkeleton } from "./startup-skeleton"
@@ -11,9 +12,11 @@ export function RemoteApplication() {
   const model = useApplication()
   const view = useApplicationView()
   const { state, selected, selection, commands } = model
+  const subagent = useSubagentView(state.selectedId)
 
   const back = () => {
     view.closeAccounts()
+    subagent.close()
     selection.back(state.deviceId)
   }
 
@@ -35,6 +38,7 @@ export function RemoteApplication() {
         <ApplicationContent
           model={model}
           accounts={view.accounts}
+          subagent={subagent}
           back={back}
           openAccounts={view.openAccounts}
           closeAccounts={view.closeAccounts}

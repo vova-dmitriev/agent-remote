@@ -58,6 +58,7 @@ export const SUBAGENT_IDS = {
   toggle: "subagents-toggle",
   list: "subagents-list",
   row: "subagent-row",
+  open: "subagent-open",
   status: "subagent-status",
   task: "subagent-task",
   offline: "subagents-offline",
@@ -67,4 +68,21 @@ export const ACTIVITY_IDS = {
   root: "session-activity",
   spinner: "session-activity-spinner",
   label: "session-activity-label",
+} as const
+
+export const SUBAGENT_VIEW_IDS = {
+  root: "subagent-view",
+  back: "subagent-view-back",
+  title: "subagent-view-title",
+  status: "subagent-view-status",
+  sessionStatus: "subagent-view-session-status",
+  unavailable: "subagent-view-unavailable",
+  error: "subagent-view-error",
+} as const
+
+export const TOOL_ACTIVITY_IDS = {
+  root: "tool-activity",
+  name: "tool-activity-name",
+  detail: "tool-activity-detail",
+  phase: "tool-activity-phase",
 } as const

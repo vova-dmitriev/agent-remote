@@ -38,6 +38,7 @@ export function SessionPage({
   onBack,
   controller,
   rename,
+  onOpenSubagent,
 }: SessionPageProps) {
   const { t, language } = useTranslation()
   const observed = sessionObserved(state, session)
@@ -115,7 +116,11 @@ export function SessionPage({
           </Button>
         </div>
       ) : null}
-      <SubagentPanel agents={session.subagents ?? []} online={observed} />
+      <SubagentPanel
+        agents={session.subagents ?? []}
+        online={observed}
+        onOpen={session.capabilities.subagentHistory ? onOpenSubagent : undefined}
+      />
       {session.changes ? <SessionChanges key={session.id + ":changes:" + session.generation} changes={session.changes} /> : null}
       <SessionFeed
         key={session.id + tab}

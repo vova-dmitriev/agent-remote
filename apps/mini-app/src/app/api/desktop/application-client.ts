@@ -3,9 +3,11 @@ import {
   ConnectionStatus,
   ErrorCode,
   FrameType,
+  HistoryDirection,
   LocalOperation,
   resultSchema,
   type ClientCommand,
+  type HistoryNavigationDirection,
   type HistoryPageDirection,
   type ServerFrame,
 } from "@protocol"
@@ -139,6 +141,10 @@ export class DesktopApplicationClient implements ApplicationClient {
 
   history = (sessionId: string, _latest = false) => this.historyClient.load(sessionId)
   historyPage = (sessionId: string, direction: HistoryPageDirection, edge?: string) => this.historyClient.page(sessionId, direction, edge)
+  subagentHistory = (sessionId: string, agentId: string, direction: HistoryNavigationDirection, edge?: string) =>
+    direction === HistoryDirection.Latest
+      ? this.historyClient.load(sessionId, agentId)
+      : this.historyClient.page(sessionId, direction, edge, agentId)
   send = (command: ClientCommand) => this.commands.send(command)
   retryPending = (commandId?: string) => this.commands.retryPending(commandId)
   checkPending = (commandId: string) => this.commands.checkPending(commandId)

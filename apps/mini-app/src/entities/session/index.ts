@@ -22,4 +22,5 @@ export { SessionTab, AgentName, ProviderFilterValue } from "./config/session-val
 export { PromptStatus } from "./model/store/outbox/constants"
 export { HistoryStream, loadSessionHistory, restoreHistoryWindow } from "./api/history"
 export { HistoryWindow } from "./api/history-window"
+export { SubagentHistory } from "./api/subagent-history"
 export { ReadingPositions } from "./api/reading-position"

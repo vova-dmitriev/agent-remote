@@ -34,3 +34,4 @@ export const Expanded: Story = {
 export const Offline: Story = { ...Expanded, args: { online: false } }
 export const Empty: Story = { args: { agents: [] } }
 export const Dark: Story = { ...Expanded, globals: { theme: ThemePreference.Dark } }
+export const Clickable: Story = { ...Expanded, args: { onOpen: () => {} } }
