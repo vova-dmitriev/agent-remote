@@ -48,7 +48,7 @@ export async function restartClaudeSession(
     directory: options.directory,
     cwd,
     node: process.execPath,
-    entry: fileURLToPath(new URL('./entry.js', import.meta.url)),
+    entry: fileURLToPath(new URL('../entry/entry.js', import.meta.url)),
     resumeId: session.claudeSessionId,
     launchContext,
     ...(cmux ? { cmux } : {}),

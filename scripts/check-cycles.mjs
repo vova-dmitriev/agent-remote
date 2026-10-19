@@ -8,7 +8,7 @@ export const CYCLE_LEVEL = Object.freeze({ file: 'file', module: 'module' });
 const appSourceRoots = ['apps/daemon/src', 'apps/server/src'];
 
 /** Source roots whose module-level graph must also be acyclic; every root is gated at file level. */
-const moduleGatedRoots = new Set([]);
+const moduleGatedRoots = new Set(['apps/daemon/src']);
 
 export function cycleRoots(repositoryRoot) {
   const packages = join(repositoryRoot, 'packages');

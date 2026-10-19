@@ -3,11 +3,11 @@ import { homedir } from 'node:os';
 import { SessionStatus } from '@protocol';
 import { NativeProcesses } from '../../sessions/native-process.js';
 import { restartClaudeSession } from '../../sessions/restart-session.js';
-import { createManagedSession, waitManagedSession } from '../../sessions/create-session.js';
+import { createManagedSession, waitManagedSession } from '../services/create-session.js';
 import { TranscriptSources } from '../../monitor/history.js';
 import { attachmentSourceCurrent } from '../../attachments/content/source-current.js';
 import type { AttachmentService } from '../../attachments/service.js';
-import type { CodexManager } from '../../codex/manager.js';
+import type { CodexManager } from '../services/codex-manager.js';
 import type { AdapterRegistry } from '../../adapters/registry.js';
 import type { PermissionBroker } from '../../commands/permission-broker.js';
 import type { UserInputBroker } from '../../commands/user-input-broker.js';
@@ -15,7 +15,7 @@ import type { LocalStore } from '../../monitor/store.js';
 import type { Monitor } from '../../monitor/monitor.js';
 import { DispatchScheduler } from '../../commands/scheduling/index.js';
 import type { DispatcherOptions } from '../../commands/dispatcher.js';
-import type { LocalServices } from '../../local/bootstrap/services.js';
+import type { LocalServices } from '../services/local-services.js';
 
 export const claudeConfigDirectory = () => process.env.CLAUDE_CONFIG_DIR ?? join(homedir(), '.claude');
 

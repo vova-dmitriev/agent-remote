@@ -10,7 +10,11 @@ import {
   secureDirectory,
   verifyCompanionRuntime,
 } from '../../local/supervisor/runtime.js';
-import { nativeHostManifestPath, registerNativeHost, unregisterNativeHost } from '../registration/index.js';
+import {
+  nativeHostManifestPath,
+  registerNativeHost,
+  unregisterNativeHost,
+} from '../../browser/registration/index.js';
 import {
   ownedContents,
   readSettings,

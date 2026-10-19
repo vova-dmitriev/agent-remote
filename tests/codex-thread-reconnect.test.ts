@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { BindingState, HistoryDirection, IntegrationState, TargetKind } from '@protocol';
 import { RuntimeEvent } from '../apps/daemon/src/domain/runtime.js';
 import { CodexItemType, CodexMethod, CodexRuntimeStatus } from '../apps/daemon/src/domain/codex/codex.js';
-import { CodexManager } from '../apps/daemon/src/codex/manager.js';
+import { CodexManager } from '../apps/daemon/src/runtime/services/codex-manager.js';
 import { LocalStore } from '../apps/daemon/src/monitor/store.js';
 import { Monitor } from '../apps/daemon/src/monitor/monitor.js';
 import { AdapterRegistry } from '../apps/daemon/src/adapters/registry.js';

@@ -9,7 +9,7 @@ import type { Dispatcher } from '../commands/dispatcher.js';
 import type { PermissionBroker } from '../commands/permission-broker.js';
 import type { UserInputBroker } from '../commands/user-input-broker.js';
 import type { LocalController } from '../local/controller/controller.js';
-import type { LocalServices } from '../local/bootstrap/services.js';
+import type { LocalServices } from './services/local-services.js';
 import { RuntimeProfileRelay } from '../profiles/runtime/router/relay.js';
 import type { DeviceFrame } from '@protocol';
 import type { EventEmitter } from 'node:events';

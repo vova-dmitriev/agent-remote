@@ -1,6 +1,7 @@
 import type { ExecutionLaunchSelection, ExecutionProfileSummary } from '@protocol';
 import type { ProfileRegistry } from '../../profiles/registry.js';
 import type { ProfileVerification } from '../../profiles/types.js';
+import type { ExecutionOwnershipLease } from '../../domain/ports/execution-lease.js';
 
 export interface ExecutionLaunchOptions {
   registry: ProfileRegistry;
@@ -14,16 +15,6 @@ export interface TrustedExecutionLaunch {
   selection: ExecutionLaunchSelection;
   environment: NodeJS.ProcessEnv;
   assertCurrent: () => void;
-}
-
-export interface ExecutionOwnershipLease {
-  readonly id: string;
-  bindSocket(path: string): void;
-  bindProcess(pid: number): void;
-  processId(): number | undefined;
-  markReady(): void;
-  releaseBeforeLaunch(): boolean;
-  releaseAfterExit(): boolean;
 }
 
 export interface ProfiledExecutionLaunch extends TrustedExecutionLaunch {

@@ -15,12 +15,12 @@ import { IpcMessageType, PrimaryHookMessageTypes, WrapperActionType } from '../.
 import { RuntimeEvent, SourceVersion } from '../../domain/runtime.js';
 import { ClaudeHookEvent } from '../../domain/claude.js';
 import { attachmentPrompt } from '../../attachments/content/input.js';
-import { codexConnectionSchema, type CodexConnection } from '../../codex/manager.js';
+import { codexConnectionSchema, type CodexConnection } from '../../domain/codex/connection.js';
 import { cmuxContextSchema, type CmuxContext } from '../../cmux/context.js';
 import { createServer, type Socket } from 'node:net';
 import { randomUUID, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
-import { type Monitor, hookSchema } from '../../monitor/monitor.js';
+import { type MonitorPort, hookSchema } from '../../domain/ports/monitor.js';
 import { SourceAdapter, type AdapterRegistry, type DispatchReceipt } from '../../adapters/registry.js';
 import { PermissionBroker, permissionHookOutput } from '../../commands/permission-broker.js';
 import { bindHookSocket } from './hook-socket.js';
@@ -38,7 +38,7 @@ export interface HookSocketOptions {
 }
 
 interface Options extends HookSocketOptions {
-  monitor: Monitor;
+  monitor: MonitorPort;
   adapters: AdapterRegistry;
   permissions: PermissionBroker;
   inputEnabled: boolean;

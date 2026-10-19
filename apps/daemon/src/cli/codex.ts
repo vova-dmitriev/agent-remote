@@ -7,7 +7,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { localSecret, socketPath, stateDirectory } from '../config.js';
 import { requestLocal } from '../code/hooks/ipc.js';
-import { codexConnectionSchema } from '../codex/manager.js';
+import { codexConnectionSchema } from '../domain/codex/connection.js';
 import { ensureManagedCodexSocket } from '../codex/launcher.js';
 
 export async function runCodex(args: string[]) {

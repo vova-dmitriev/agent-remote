@@ -16,10 +16,7 @@ export const profileVerificationSchema = z.strictObject({
   models: fields.models,
 });
 
-export interface ProfileScope {
-  readonly ownerId: string;
-  readonly deviceId: string;
-}
+export type { ProfileScope } from '../domain/ports/runtime-profiles.js';
 export type CreateProfile = z.infer<typeof profileCreateInputSchema>;
 export type UpdateProfile = z.infer<typeof profileUpdateInputSchema>;
 export type ProfileVerification = z.infer<typeof profileVerificationSchema>;

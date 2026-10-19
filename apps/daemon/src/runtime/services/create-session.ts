@@ -9,10 +9,10 @@ import {
 } from '@protocol';
 import { fileURLToPath } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
-import { type Monitor } from '../monitor/monitor.js';
-import { type CodexManager } from '../codex/manager.js';
-import { launchClaudeSession, validateProject } from './launch/launcher.js';
-import type { RuntimeProfiles } from '../profiles/runtime/service.js';
+import { type Monitor } from '../../monitor/monitor.js';
+import { type CodexManager } from './codex-manager.js';
+import { launchClaudeSession, validateProject } from '../../sessions/launch/launcher.js';
+import type { RuntimeProfiles } from './runtime-profiles.js';
 
 export async function createManagedSession(
   action: Extract<Command['action'], { type: typeof CommandActionType.CreateSession }>,
@@ -60,7 +60,7 @@ export async function createManagedSession(
     directory: options.directory,
     cwd,
     node: process.execPath,
-    entry: fileURLToPath(new URL('./entry.js', import.meta.url)),
+    entry: fileURLToPath(new URL('../../entry/entry.js', import.meta.url)),
   });
 
   return waitManagedSession(options.monitor, connectorId);

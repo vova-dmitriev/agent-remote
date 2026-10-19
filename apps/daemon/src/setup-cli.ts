@@ -27,7 +27,7 @@ export async function runCli(argv = process.argv.slice(2)) {
   }
 
   if (command === CliCommand.Browser) {
-    const { runBrowserCli } = await import('./browser/cli/index.js');
+    const { runBrowserCli } = await import('./runtime/browser-cli/index.js');
 
     await runBrowserCli(args);
 
@@ -162,7 +162,7 @@ export async function runCli(argv = process.argv.slice(2)) {
       rcPath: join(process.env.ZDOTDIR ?? homedir(), '.zshrc'),
       executable,
       node: process.execPath,
-      entry: fileURLToPath(new URL('./sessions/entry.js', import.meta.url)),
+      entry: fileURLToPath(new URL('./entry/entry.js', import.meta.url)),
     });
 
     process.stdout.write(

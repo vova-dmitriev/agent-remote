@@ -7,7 +7,7 @@ import { probeCompanion } from '../../local/bootstrap/probe.js';
 import { ensureCompanion } from '../../local/supervisor/index.js';
 import { missing, secureDirectory } from '../../local/supervisor/runtime.js';
 import { CompanionEnvironment, CompanionFlag } from '../../local/supervisor/values.js';
-import { runNativeHost } from '../host/bridge.js';
+import { runNativeHost } from '../../browser/host/bridge.js';
 import { requireSettings } from './settings.js';
 import type { BrowserCliContext } from './types.js';
 

@@ -3,7 +3,7 @@ import { EventEmitter } from 'node:events';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { CodexManager } from '../apps/daemon/src/codex/manager.js';
+import { CodexManager } from '../apps/daemon/src/runtime/services/codex-manager.js';
 import { LocalStore } from '../apps/daemon/src/monitor/store.js';
 import { Monitor } from '../apps/daemon/src/monitor/monitor.js';
 import { AdapterRegistry } from '../apps/daemon/src/adapters/registry.js';

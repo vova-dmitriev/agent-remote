@@ -18,6 +18,8 @@ import {
   TargetKind,
 } from '@protocol';
 import { CommandStoreOutcome } from '../domain/runtime.js';
+import type { NativeSessionRegistration } from '../domain/ports/monitor.js';
+import type { LocalStorePort } from '../domain/ports/local-store.js';
 import { cachedLocalHistory } from './local/local-history.js';
 import { localCommand } from './local/local-command.js';
 import Sqlite from 'better-sqlite3';
@@ -25,11 +27,7 @@ import { chmodSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 
-export interface NativeSessionRegistration {
-  session: Session;
-  transcriptPath?: string;
-}
-export class LocalStore {
+export class LocalStore implements LocalStorePort {
   private db: Sqlite.Database;
   constructor(
     path: string,

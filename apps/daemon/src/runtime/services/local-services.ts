@@ -1,11 +1,11 @@
 import { join } from 'node:path';
 import type { Session } from '@protocol';
-import { LocalDatabase } from '../state/database.js';
-import { LocalDocuments } from '../state/documents.js';
-import { LocalGrants } from '../grants/service.js';
-import { LocalMediaRepository } from '../media/repository.js';
-import { browserSettings } from './configuration.js';
-import { RuntimeProfiles } from '../../profiles/runtime/service.js';
+import { LocalDatabase } from '../../local/state/database.js';
+import { LocalDocuments } from '../../local/state/documents.js';
+import { LocalGrants } from '../../local/grants/service.js';
+import { LocalMediaRepository } from '../../local/media/repository.js';
+import { browserSettings } from '../../local/bootstrap/configuration.js';
+import { RuntimeProfiles } from './runtime-profiles.js';
 import type { RuntimeProfileConfiguration } from '../../profiles/runtime/types.js';
 
 export async function openLocalServices(

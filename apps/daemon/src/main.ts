@@ -1,6 +1,6 @@
 import { RuntimeEvent } from './domain/runtime.js';
 import { NativeProcesses } from './sessions/native-process.js';
-import { CodexManager } from './codex/manager.js';
+import { CodexManager } from './runtime/services/codex-manager.js';
 import { BridgeClient } from './desktop/bridge-client.js';
 import { join } from 'node:path';
 import { mkdir } from 'node:fs/promises';
@@ -24,7 +24,7 @@ import { startLocalSurface } from './runtime/wiring/local-surface.js';
 import { startHookWiring } from './runtime/wiring/hook-wiring.js';
 import { localSecret, socketPath, stateDirectory } from './config.js';
 import { runtimeConfiguration } from './local/bootstrap/configuration.js';
-import { openLocalServices } from './local/bootstrap/services.js';
+import { openLocalServices } from './runtime/services/local-services.js';
 import { NoRelay } from './local/bootstrap/no-relay.js';
 
 export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {}) {

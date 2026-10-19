@@ -5,7 +5,7 @@ import { promisify } from 'node:util';
 import type { PassThrough } from 'node:stream';
 import { join } from 'node:path';
 import { createBrowserFixture, cleanupBrowserFixture, pendingGrant } from './helpers/browser-cli-fixture.js';
-import { runBrowserCli } from '../apps/daemon/src/browser/cli/index.js';
+import { runBrowserCli } from '../apps/daemon/src/runtime/browser-cli/index.js';
 import { LocalOrigin } from '@protocol';
 import { CompanionEnvironment } from '../apps/daemon/src/local/supervisor/values.js';
 

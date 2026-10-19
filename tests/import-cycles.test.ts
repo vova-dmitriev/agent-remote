@@ -71,3 +71,7 @@ it('gates every source root at file level', () => {
     expect(gatedCycleLevels(sourceRoot)).toContain('file');
   }
 });
+
+it('gates the daemon at module level', () => {
+  expect(gatedCycleLevels('apps/daemon/src')).toEqual(['file', 'module']);
+});
