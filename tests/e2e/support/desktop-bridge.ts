@@ -4,6 +4,8 @@ import { DesktopBridgeKind, DesktopBridgeVersion, FrameType, LocalOperation, Err
 interface FakeBridgeOptions {
   deviceId: string;
   snapshot: AppSnapshot;
+  /** History events per subagent id, answered for history requests that name that agent. */
+  agents: Record<string, unknown[]>;
   values: {
     event: string;
     result: string;
@@ -15,10 +17,11 @@ interface FakeBridgeOptions {
 }
 
 /** Installs a synthetic `window.desktopBridge` so the desktop host runs in a plain browser page. */
-export async function installDesktopBridge(page: Page, deviceId: string, snapshot: AppSnapshot) {
+export async function installDesktopBridge(page: Page, deviceId: string, snapshot: AppSnapshot, agents: Record<string, unknown[]> = {}) {
   const options: FakeBridgeOptions = {
     deviceId,
     snapshot,
+    agents,
     values: {
       event: DesktopBridgeKind.Event,
       result: DesktopBridgeKind.Result,
@@ -37,7 +40,7 @@ export async function installDesktopBridge(page: Page, deviceId: string, snapsho
     },
   };
 
-  await page.addInitScript(({ deviceId, snapshot, values }: FakeBridgeOptions) => {
+  await page.addInitScript(({ deviceId, snapshot, agents, values }: FakeBridgeOptions) => {
     const leaseId = crypto.randomUUID();
     const epoch = 1;
     const listeners = new Set<(event: unknown) => void>();
@@ -64,9 +67,12 @@ export async function installDesktopBridge(page: Page, deviceId: string, snapsho
 
           return { leaseId, epoch };
         },
-        request: async (request: { requestId: string; action: { operation: string } }) => {
+        request: async (request: { requestId: string; action: { operation: string; agentId?: string } }) => {
           const base = { kind: values.result, version: values.version, requestId: request.requestId, leaseId, epoch };
-          const operation = request.action.operation;
+          const { operation, agentId } = request.action;
+
+          if (operation === operations.history && agentId !== undefined)
+            return { ...base, ok: true, data: { events: agents[agentId] ?? [], before: null, after: null } };
 
           return operation in data ? { ...base, ok: true, data: data[operation] } : { ...base, ok: false, code: values.unavailable };
         },

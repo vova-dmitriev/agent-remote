@@ -19,11 +19,11 @@ export function RemoteApplication() {
   const desktop = useDesktopLayout()
   const host = useHost()
   const { state, selected, selection, commands } = model
-  const subagent = useSubagentView(state.selectedId)
+  const subagent = useSubagentView(state.selectedId, host.kind === HostKind.Desktop)
 
   const back = () => {
     view.closeAccounts()
-    subagent.close()
+    subagent.clear()
     selection.back(state.deviceId)
   }
 
