@@ -32,4 +32,14 @@ export const HistoryPageOutcome = {
 
 export type HistoryPageOutcome = (typeof HistoryPageOutcome)[keyof typeof HistoryPageOutcome]
 
+/** Status mark shared by the session list and the desktop sidebar. */
+export const SessionStatusTone = {
+  Running: "running",
+  Attention: "attention",
+  Idle: "idle",
+  Unavailable: "unavailable",
+} as const
+
+export type SessionStatusTone = (typeof SessionStatusTone)[keyof typeof SessionStatusTone]
+
 export { ProviderFilterValue } from "@protocol"

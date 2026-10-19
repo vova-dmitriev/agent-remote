@@ -48,12 +48,16 @@ export function createDesktopIpcFixture() {
     overrides: {
       sender?: DesktopInvokeEvent['sender'];
       url?: string;
+      /** The live main frame's current URL (it stays the same frame object). */
+      mainFrameUrl?: string;
       frameParent?: unknown;
       differentFrame?: boolean;
       missingFrame?: boolean;
     } = {},
   ): DesktopInvokeEvent => {
     let senderFrame: DesktopInvokeEvent['senderFrame'] = mainFrame;
+
+    mainFrame.url = overrides.mainFrameUrl ?? DESKTOP_ASSET_URL;
 
     if (overrides.missingFrame) {
       senderFrame = null;

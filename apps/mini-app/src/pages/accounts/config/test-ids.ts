@@ -1,6 +1,5 @@
 export const ACCOUNTS_PAGE_IDS = {
   root: "accounts-page",
-  open: "accounts-open",
   back: "accounts-back",
   title: "accounts-title",
   refresh: "accounts-refresh",

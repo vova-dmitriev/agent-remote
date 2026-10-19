@@ -9,6 +9,25 @@ import { profileCompanion } from './accounts/companion.js';
 import { PROFILE_MANAGE_IDS } from '../../apps/mini-app/src/pages/accounts/config/management/test-ids.js';
 import { PROFILE_ENROLL_IDS } from '../../apps/mini-app/src/pages/accounts/config/enrollment/test-ids.js';
 import { PROFILE_CARD_IDS } from '../../apps/mini-app/src/pages/accounts/config/profile/test-ids.js';
+import { openAccounts } from './support/settings-menu.js';
+import { SHELL_IDS } from '../../apps/mini-app/src/widgets/application-shell/config/test-ids.js';
+
+/** The pre-menu "Accounts & keys" button under the session list; it must not come back. */
+const LEGACY_ACCOUNTS_BUTTON = 'accounts-open';
+
+test('opens Accounts & keys from the header settings menu instead of a button under the session list', async ({ page }) => {
+  await identity(page, '801', 'en');
+  await page.goto('/');
+  await expect(page.getByTestId(SESSIONS_PAGE_IDS.list)).toBeVisible();
+  await expect(page.getByTestId(LEGACY_ACCOUNTS_BUTTON)).toHaveCount(0);
+  await expect(page.getByTestId(SHELL_IDS.accounts)).toHaveCount(0);
+  await page.getByTestId(SHELL_IDS.settings).click();
+  await expect(page.getByTestId(SHELL_IDS.settingsMenu)).toBeVisible();
+  await page.getByTestId(SHELL_IDS.accounts).click();
+  await expect(page.getByTestId(ACCOUNTS_PAGE_IDS.root)).toBeVisible();
+  await expect(page.getByTestId(SHELL_IDS.settingsMenu)).toHaveCount(0);
+  await expect(page.getByTestId(SESSIONS_PAGE_IDS.root)).toHaveCount(0);
+});
 
 test('opens the shared Accounts & keys page and preserves the provider filter when returning', async ({ page }) => {
   const companion = await profileCompanion();
@@ -17,7 +36,7 @@ test('opens the shared Accounts & keys page and preserves the provider filter wh
   await identity(page, '801', 'en');
   await page.goto('/');
   await page.getByTestId(SESSIONS_PAGE_IDS.filterClaude).click();
-  await page.getByTestId(ACCOUNTS_PAGE_IDS.open).click();
+  await openAccounts(page);
   await page.getByTestId(ACCOUNTS_PAGE_IDS.add).click();
   await expect(page.getByTestId(ACCOUNTS_PAGE_IDS.title)).toBeVisible();
   await page.getByTestId(ACCOUNTS_PAGE_IDS.back).click();
@@ -31,7 +50,7 @@ test('encrypts an API key in the browser, verifies it on the Mac and retains pro
   try {
     await identity(page, '801', 'en');
     await page.goto('/');
-    await page.getByTestId(ACCOUNTS_PAGE_IDS.open).click();
+    await openAccounts(page);
     await page.getByTestId(ACCOUNTS_PAGE_IDS.add).click();
     await page.getByTestId(PROFILE_MANAGE_IDS.label).fill('Synthetic API account');
     await page.getByTestId(PROFILE_MANAGE_IDS.authMode).selectOption('api_key');
@@ -62,7 +81,7 @@ test('encrypts an API key in the browser, verifies it on the Mac and retains pro
     await expect(card.getByTestId(PROFILE_CARD_IDS.status)).toHaveText('Disabled');
     await expect(card.getByTestId(PROFILE_CARD_IDS.preferred)).toHaveCount(0);
     await page.reload();
-    await page.getByTestId(ACCOUNTS_PAGE_IDS.open).click();
+    await openAccounts(page);
     await page.getByTestId(ACCOUNTS_PAGE_IDS.add).click();
     await expect(card.getByTestId(PROFILE_CARD_IDS.label)).toHaveText('Renamed synthetic account');
     await expect(card.getByTestId(PROFILE_CARD_IDS.status)).toHaveText('Disabled');
@@ -78,7 +97,7 @@ test('retains two isolated OpenAI subscription identities without replacing the 
   try {
     await identity(page, '801', 'en');
     await page.goto('/');
-    await page.getByTestId(ACCOUNTS_PAGE_IDS.open).click();
+    await openAccounts(page);
     await page.getByTestId(ACCOUNTS_PAGE_IDS.add).click();
 
     for (const [index, label] of ['Synthetic personal', 'Synthetic work'].entries()) {
@@ -104,7 +123,7 @@ test('retains two isolated OpenAI subscription identities without replacing the 
     expect(before).toHaveLength(2);
     expect(new Set(before).size).toBe(2);
     await page.reload();
-    await page.getByTestId(ACCOUNTS_PAGE_IDS.open).click();
+    await openAccounts(page);
     await page.getByTestId(ACCOUNTS_PAGE_IDS.add).click();
     await expect(page.getByTestId(PROFILE_CARD_IDS.identity)).toHaveText(before);
   } finally { await companion.close(); }
@@ -116,7 +135,7 @@ test('restores safe cached metadata while the Mac is offline and disables accoun
   try {
     await identity(page, '801', 'en');
     await page.goto('/');
-    await page.getByTestId(ACCOUNTS_PAGE_IDS.open).click();
+    await openAccounts(page);
     await page.getByTestId(ACCOUNTS_PAGE_IDS.add).click();
     await page.getByTestId(PROFILE_MANAGE_IDS.label).fill('Synthetic offline account');
     await page.getByTestId(PROFILE_MANAGE_IDS.submit).click();
@@ -124,7 +143,7 @@ test('restores safe cached metadata while the Mac is offline and disables accoun
     deviceFixture().sockets[0]!.close();
     await expect(page.getByTestId(ACCOUNTS_PAGE_IDS.offline)).toBeVisible();
     await page.reload();
-    await page.getByTestId(ACCOUNTS_PAGE_IDS.open).click();
+    await openAccounts(page);
     await page.getByTestId(ACCOUNTS_PAGE_IDS.add).click();
     await expect(page.getByTestId(PROFILE_CARD_IDS.label)).toHaveText('Synthetic offline account');
     await expect(page.getByTestId(ACCOUNTS_PAGE_IDS.offline)).toBeVisible();

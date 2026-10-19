@@ -15,6 +15,7 @@ export function ChoiceDropdown<Value extends string>({
   onChange,
   ids,
   compactIcon = false,
+  compactChevron = false,
   className,
   labelClassName,
 }: ChoiceDropdownProps<Value>) {
@@ -33,7 +34,7 @@ export function ChoiceDropdown<Value extends string>({
           >
             <Icon aria-hidden="true" size={15} />
             <span className={cn(compactIcon && "phone:hidden", labelClassName)}>{triggerLabel}</span>
-            <ChevronDown aria-hidden="true" size={12} />
+            <ChevronDown aria-hidden="true" size={12} className={cn(compactChevron && "phone:hidden")} />
           </Button>
         </Menu.Trigger>
         <MenuContent data-testid={ids.panel}>

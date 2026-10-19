@@ -1,4 +1,4 @@
-import { SessionStatus } from "@protocol"
+import { SessionStatusTone } from "../config/session-values"
 
 /**
  * `[&:hover]` instead of `hover:` keeps the pre-Tailwind sticky tap feedback on touch screens
@@ -9,14 +9,13 @@ export const sessionCardClass =
 
 export const sessionCardBodyClass = "grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] gap-x-[8px] gap-y-[4px]"
 
-export const statusDotClass: Record<SessionStatus, string> = {
-  [SessionStatus.Unknown]: "bg-status-muted",
-  [SessionStatus.Idle]: "bg-status-ready",
-  [SessionStatus.Running]: "bg-status-busy",
-  [SessionStatus.WaitingPermission]: "bg-primary",
-  [SessionStatus.WaitingInput]: "bg-status-muted",
-  [SessionStatus.Ended]: "bg-status-muted",
-}
+/** The single status → style map: running blue (pulses), waiting amber, idle solid grey, unavailable a hollow ring. */
+export const statusToneClass = {
+  [SessionStatusTone.Running]: "bg-primary",
+  [SessionStatusTone.Attention]: "bg-warning",
+  [SessionStatusTone.Idle]: "bg-status-muted",
+  [SessionStatusTone.Unavailable]: "border-[1.5px] border-status-muted bg-card",
+} as const satisfies Record<SessionStatusTone, string>
 
 /** Session source line ("agent · model · source"); denser inside the compact session shell. */
 export const sourceTextClass = "text-[11px] tracking-[0.4px] text-muted-foreground session:text-[10px] session:tracking-normal"

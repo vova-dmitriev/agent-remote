@@ -36,6 +36,7 @@ export function SessionPage({
   tab,
   setTab,
   onBack,
+  showBack = true,
   controller,
   rename,
 }: SessionPageProps) {
@@ -45,16 +46,18 @@ export function SessionPage({
   return (
     <section className="session:flex session:min-h-0 session:flex-1 session:flex-col" data-testid={SESSION_PAGE_IDS.root}>
       <div className="session:flex session:items-center session:gap-[8px] session:pt-[8px] session:short:pt-[4px]">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="mt-[3px] mb-[25px] session:m-0 session:size-[32px] session:flex-none session:p-0"
-          data-testid={SESSION_PAGE_IDS.back}
-          aria-label={t("allSessions")}
-          onClick={onBack}
-        >
-          <ArrowLeft aria-hidden="true" size={20} />
-        </Button>
+        {showBack ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="mt-[3px] mb-[25px] session:m-0 session:size-[32px] session:flex-none session:p-0"
+            data-testid={SESSION_PAGE_IDS.back}
+            aria-label={t("allSessions")}
+            onClick={onBack}
+          >
+            <ArrowLeft aria-hidden="true" size={20} />
+          </Button>
+        ) : null}
         <div className="flex items-center justify-between gap-[14px] phone:items-start session:min-w-0 session:flex-1 session:items-center session:gap-[8px]">
           <div className="session:min-w-0">
             <h1 className={titleClass} data-testid={SESSION_PAGE_IDS.title}>

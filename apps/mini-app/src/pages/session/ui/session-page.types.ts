@@ -14,6 +14,8 @@ export interface SessionPageProps {
   tab: SessionTab
   setTab: (value: SessionTab) => void
   onBack: () => void
+  /** The back arrow; the desktop sidebar layout hides it (the sidebar is the way back). */
+  showBack?: boolean
   rename?: RenameSessionController
   controller: CommandController
 }

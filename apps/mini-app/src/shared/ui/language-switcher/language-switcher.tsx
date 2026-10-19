@@ -13,6 +13,7 @@ export function LanguageSwitcher() {
       label={t("language")}
       triggerLabel={language.toUpperCase()}
       icon={Globe}
+      compactChevron
       onChange={setLanguage}
       ids={LANGUAGE_SWITCHER_IDS}
       options={[

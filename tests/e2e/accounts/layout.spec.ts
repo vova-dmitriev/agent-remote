@@ -6,6 +6,7 @@ import { PROFILE_CARD_IDS as CARD } from '../../../apps/mini-app/src/pages/accou
 import { identity } from '../support/identity.js';
 import { test } from '../support/relay-fixture.js';
 import { profileCompanion } from './companion.js';
+import { openAccounts } from '../support/settings-menu.js';
 
 test('offers account creation, explains provider support and keeps collapsed cards compact with a checked-at gap', async ({ page }) => {
   const companion = await profileCompanion();
@@ -13,7 +14,7 @@ test('offers account creation, explains provider support and keeps collapsed car
   try {
     await identity(page, '801', 'en');
     await page.goto('/');
-    await page.getByTestId(PAGE.open).click();
+    await openAccounts(page);
     await expect(page.getByTestId(PAGE.add)).toBeVisible();
     await expect(page.getByTestId(FORM.create)).toHaveCount(0);
     await page.getByTestId(PAGE.add).click();

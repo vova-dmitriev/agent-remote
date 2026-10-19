@@ -1,5 +1,5 @@
 import { useTranslation } from "@/shared/lib/hooks"
-import { SessionCard, SessionCardSkeleton } from "@/entities/session"
+import { SessionCard, SessionCardSkeleton, useSessionsAwaitingInput } from "@/entities/session"
 import { emptyStateTextClass } from "@/shared/ui/text"
 import { ProviderFilter } from "./provider-filter/provider-filter"
 import { useSessionFilter } from "../model/use-session-filter"
@@ -9,6 +9,7 @@ import type { SessionsPageProps } from "./sessions-page.types"
 export function SessionsPage({ sessions, connected, loading, onSelect, children, creation }: SessionsPageProps) {
   const { t } = useTranslation()
   const filter = useSessionFilter(sessions)
+  const awaiting = useSessionsAwaitingInput()
 
   return (
     <section data-testid={SESSIONS_PAGE_IDS.root}>
@@ -29,7 +30,9 @@ export function SessionsPage({ sessions, connected, loading, onSelect, children,
             <SessionCardSkeleton />
           </div>
         ) : (
-          filter.filtered.map((session) => <SessionCard key={session.id} session={session} onSelect={onSelect} />)
+          filter.filtered.map((session) => (
+            <SessionCard key={session.id} session={session} awaitingInput={awaiting.has(session.id)} onSelect={onSelect} />
+          ))
         )}
         {connected && !loading && !sessions.length ? (
           <div className="p-[30px] text-center phone:px-0 phone:pt-[45px] phone:pb-[60px]" data-testid={SESSIONS_PAGE_IDS.empty}>
