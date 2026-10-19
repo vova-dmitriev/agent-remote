@@ -17,12 +17,32 @@ import { TranscriptSources } from '../apps/daemon/src/monitor/history.js';
 import { AdapterRegistry, SourceAdapter } from '../apps/daemon/src/adapters/registry.js';
 import { PermissionBroker } from '../apps/daemon/src/commands/permission-broker.js';
 
+/** Runs between the per-read directory check and the transcript open, to race a swap into that window. */
+const race = vi.hoisted(() => ({ afterDirectoryCheck: async () => {} }));
+
+vi.mock('../apps/daemon/src/code/subagents/subagent-files.js', async (original) => {
+  const actual = await original<typeof import('../apps/daemon/src/code/subagents/subagent-files.js')>();
+
+  return {
+    ...actual,
+    subagentDirectory: async (...args: Parameters<typeof actual.subagentDirectory>) => {
+      const directory = await actual.subagentDirectory(...args);
+
+      await race.afterDirectoryCheck();
+
+      return directory;
+    },
+  };
+});
+
 const PARENT = '11111111-1111-4111-8111-111111111111';
 const OTHER = '22222222-2222-4222-8222-222222222222';
 const cleanup: (() => unknown)[] = [];
 
 afterEach(async () => {
   vi.useRealTimers();
+
+  race.afterDirectoryCheck = async () => {};
 
   for (const step of cleanup.splice(0).reverse()) {
     await step();
@@ -477,5 +497,31 @@ it('re-checks the subagents directory on every read of a cached transcript', asy
   await rm(join(project, PARENT), { recursive: true });
   await mkdir(join(project, PARENT));
   await symlink(join(project, OTHER, 'subagents'), join(project, PARENT, 'subagents'));
+  await expect(read('a0000000000000001', HistoryDirection.Around)).rejects.toThrow('TRANSCRIPT_OUTSIDE_ROOT');
+});
+
+it('refuses a subagents directory swapped for a symlink between the check and the open', async () => {
+  const { project, agent, start, read } = await fixture();
+
+  await agent('a0000000000000001', { agentType: 'reviewer' }, row('own-1', 'user', 'Synthetic own task'));
+
+  await agent(
+    'a0000000000000001',
+    { agentType: 'reviewer' },
+    row('foreign-1', 'user', 'Synthetic foreign'),
+    OTHER,
+  );
+
+  await start();
+  await expect(read('a0000000000000001')).resolves.toMatchObject({ messages: [{ id: 'own-1' }] });
+
+  race.afterDirectoryCheck = async () => {
+    race.afterDirectoryCheck = async () => {};
+
+    await rm(join(project, PARENT), { recursive: true });
+    await mkdir(join(project, PARENT));
+    await symlink(join(project, OTHER, 'subagents'), join(project, PARENT, 'subagents'));
+  };
+
   await expect(read('a0000000000000001', HistoryDirection.Around)).rejects.toThrow('TRANSCRIPT_OUTSIDE_ROOT');
 });

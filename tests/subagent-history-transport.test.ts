@@ -99,6 +99,10 @@ describe('subagent wire tolerance', () => {
       phase: ToolActivityPhase.Completed,
     });
 
+    // A phase is required: only an unknown value is tolerated, never a missing one.
+    expect(historySchema.safeParse({ ...plain, tool: { id: 'toolu_1' } }).success).toBe(false);
+    expect(historySchema.safeParse({ ...plain, tool: { id: 'toolu_1', phase: 1 } }).success).toBe(false);
+
     const session = sessionSnapshot('device').sessions[0]!;
 
     const parsed = sessionSchema.parse({

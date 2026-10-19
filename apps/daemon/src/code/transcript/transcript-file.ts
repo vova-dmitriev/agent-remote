@@ -4,12 +4,22 @@ import { lstat, open, realpath, stat } from 'node:fs/promises';
 import { isAbsolute, relative } from 'node:path';
 import { CodedError } from '@protocol';
 
+export interface TranscriptOpenOptions {
+  /** Refuse a transcript that is itself a symlink or not a regular file. */
+  refuseSymlinks?: boolean;
+  /**
+   * `allowedRoot` is an already-checked real path: it is compared as is and never re-resolved, so a
+   * symlink swapped into its place after the check is not followed.
+   */
+  rootResolved?: boolean;
+}
+
 /** Opens a regular transcript file whose real path stays inside `allowedRoot`; `undefined` when it is missing. */
-export async function openTranscript(path: string, allowedRoot: string, refuseSymlinks = false) {
+export async function openTranscript(path: string, allowedRoot: string, options: TranscriptOpenOptions = {}) {
   let root: string, resolved: string;
 
   try {
-    if (refuseSymlinks) {
+    if (options.refuseSymlinks) {
       const link = await lstat(path);
 
       if (link.isSymbolicLink() || !link.isFile()) {
@@ -17,7 +27,10 @@ export async function openTranscript(path: string, allowedRoot: string, refuseSy
       }
     }
 
-    [root, resolved] = await Promise.all([realpath(allowedRoot), realpath(path)]);
+    [root, resolved] = await Promise.all([
+      options.rootResolved ? allowedRoot : realpath(allowedRoot),
+      realpath(path),
+    ]);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       return;

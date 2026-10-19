@@ -22,7 +22,8 @@ export type SessionActivity = z.infer<typeof sessionActivitySchema>;
  */
 export const toolActivitySchema = z.object({
   id: z.string().min(1).max(512),
-  phase: z.enum(ToolActivityPhase).catch(ToolActivityPhase.Completed),
+  // Required: an unknown phase from a newer writer reads as completed; a missing one is rejected.
+  phase: z.union([z.enum(ToolActivityPhase), z.string().transform(() => ToolActivityPhase.Completed)]),
   name: z.string().min(1).max(256).optional().catch(undefined),
   kind: z.enum(ActivityKind).catch(ActivityKind.Tool).optional(),
 });

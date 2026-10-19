@@ -232,7 +232,8 @@ export class TranscriptSources {
       allowedRoot: directory,
       sessionId: claudeSessionId,
       includeTools: true,
-      refuseSymlinks: true,
+      // The directory was just checked; opens compare against it instead of resolving it again.
+      open: { refuseSymlinks: true, rootResolved: true },
     });
 
     source.agents.delete(agentId);

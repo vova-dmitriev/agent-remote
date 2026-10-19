@@ -13,7 +13,7 @@ import {
 } from '../../domain/transcript/limits.js';
 import { nativeClaudeMedia } from '../../attachments/content/native.js';
 import { type NativeMedia } from '../../attachments/types.js';
-import { openTranscript } from './transcript-file.js';
+import { openTranscript, type TranscriptOpenOptions } from './transcript-file.js';
 import { createHash } from 'node:crypto';
 import { positiveInteger, truncateUtf8, type HistoryMessage } from '@protocol';
 import { TranscriptTitle } from './transcript-title.js';
@@ -30,7 +30,7 @@ interface ReaderOptions {
   sessionId?: string;
   /** Tool calls and results become history items (subagent transcripts); the parent feed keeps text only. */
   includeTools?: boolean;
-  refuseSymlinks?: boolean;
+  open?: TranscriptOpenOptions;
   withPosition?: boolean;
   onPosition?: (id: string, offset: number) => void;
   initialWindow?: number;
@@ -97,11 +97,7 @@ export class TranscriptReader {
   }
 
   private async read(): Promise<HistoryMessage[]> {
-    const opened = await openTranscript(
-      this.options.path,
-      this.options.allowedRoot,
-      this.options.refuseSymlinks,
-    );
+    const opened = await openTranscript(this.options.path, this.options.allowedRoot, this.options.open);
 
     if (!opened) {
       return [];

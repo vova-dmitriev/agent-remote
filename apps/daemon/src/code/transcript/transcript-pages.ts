@@ -19,7 +19,7 @@ import {
   JSONL_NEWLINE_BYTE,
 } from '../../domain/transcript/limits.js';
 import { z } from 'zod';
-import { openTranscript } from './transcript-file.js';
+import { openTranscript, type TranscriptOpenOptions } from './transcript-file.js';
 import { transcriptRowItems, transcriptWindow } from './transcript-window.js';
 import { TranscriptReader } from './transcript-reader.js';
 
@@ -35,7 +35,7 @@ interface Options {
   sessionId?: string;
   /** Tool calls and results become history items (subagent transcripts). */
   includeTools?: boolean;
-  refuseSymlinks?: boolean;
+  open?: TranscriptOpenOptions;
   transform?: (
     message: HistoryMessage,
     media: import('../../attachments/types.js').NativeMedia[],
@@ -45,11 +45,7 @@ export class TranscriptPages {
   private positions = new Map<string, number>();
   constructor(private options: Options) {}
   async page(request: Pick<HistoryRead, 'direction' | 'anchor'>) {
-    const opened = await openTranscript(
-      this.options.path,
-      this.options.allowedRoot,
-      this.options.refuseSymlinks,
-    );
+    const opened = await openTranscript(this.options.path, this.options.allowedRoot, this.options.open);
 
     if (!opened) {
       throw new CodedError(ErrorCode.TRANSCRIPT_UNAVAILABLE);
