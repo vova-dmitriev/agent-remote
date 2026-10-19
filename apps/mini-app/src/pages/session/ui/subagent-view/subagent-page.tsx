@@ -10,7 +10,7 @@ export function SubagentPage({ session, state, agentId, onBack }: SubagentPagePr
   const available = sessionObserved(state, session)
   const agent = session.subagents?.find((candidate) => candidate.id === agentId)
   const live = available && !!agent && SUBAGENT_ACTIVE_STATUSES.includes(agent.status)
-  const history = useSubagentHistory({ sessionId: session.id, generation: session.generation, agentId, live })
+  const history = useSubagentHistory({ sessionId: session.id, agentId, live, revision: agent?.updatedAt ?? -1 })
 
   useTelegramBackButton(onBack)
 
@@ -23,6 +23,7 @@ export function SubagentPage({ session, state, agentId, onBack }: SubagentPagePr
       status={history.status}
       error={history.error}
       onBack={onBack}
+      onRetry={history.retry}
       onHistoryPage={history.page}
     />
   )

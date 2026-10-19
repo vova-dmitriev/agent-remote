@@ -5,25 +5,35 @@ import {
   historySchema,
   type EventEnvelope,
   type HistoryMessage,
-  type HistoryPageDirection,
+  type HistoryNavigationDirection,
 } from "@protocol"
 import { SUBAGENT_MESSAGE_LIMIT } from "../config/subagent"
 
-/** Adds one transcript page to a subagent view: items are replaced by id, ordered by time and bounded from the far end. */
+function pageMessages(events: readonly EventEnvelope[]) {
+  return events.flatMap((event) => {
+    if (event.type !== EventType.Message) return []
+    const parsed = historySchema.safeParse(event.payload)
+
+    return parsed.success ? [parsed.data] : []
+  })
+}
+
+/**
+ * Adds one transcript page to a subagent view: items are replaced by id, ordered by time and bounded from the far end.
+ * A latest page that shares no item with the loaded ones replaces them, so missed polls never leave a silent hole;
+ * the earlier items stay reachable by paging back from the new page's oldest item.
+ */
 export function mergeSubagentPage(
   current: readonly HistoryMessage[],
   events: readonly EventEnvelope[],
-  direction: HistoryPageDirection = HistoryDirection.After,
+  direction: HistoryNavigationDirection = HistoryDirection.Latest,
 ): HistoryMessage[] {
-  const byId = new Map(current.map((message) => [message.id, message]))
+  const page = pageMessages(events)
+  const loaded = new Set(current.map((message) => message.id))
+  const gap = direction === HistoryDirection.Latest && current.length > 0 && page.length > 0 && !page.some((m) => loaded.has(m.id))
+  const byId = new Map(gap ? [] : current.map((message) => [message.id, message]))
 
-  for (const event of events) {
-    if (event.type !== EventType.Message) continue
-    const parsed = historySchema.safeParse(event.payload)
-
-    if (parsed.success) byId.set(parsed.data.id, parsed.data)
-  }
-
+  for (const message of page) byId.set(message.id, message)
   const merged = [...byId.values()].sort((a, b) => a.occurredAt - b.occurredAt)
 
   return direction === HistoryDirection.Before ? merged.slice(0, SUBAGENT_MESSAGE_LIMIT) : merged.slice(-SUBAGENT_MESSAGE_LIMIT)
@@ -57,4 +67,19 @@ export function foldToolResults(messages: readonly HistoryMessage[]): HistoryMes
 /** The oldest loaded item's page cursor, so earlier pages continue from what the view shows. */
 export function oldestCursor(messages: readonly HistoryMessage[]) {
   return messages.find((message) => message.historyCursor)?.historyCursor
+}
+
+/** Conversation messages only: tool activity lines get no navigation marker. */
+export function railMessages(messages: HistoryMessage[]) {
+  return messages.some((message) => message.tool) ? messages.filter((message) => !message.tool) : messages
+}
+
+/** The marker to highlight for the item being read: a tool line maps to the nearest conversation message before it, else after it. */
+export function railActiveId(messages: readonly HistoryMessage[], activeId: string | null) {
+  const index = messages.findIndex((message) => message.id === activeId)
+
+  if (index < 0 || !messages[index]!.tool) return activeId
+  const before = messages.slice(0, index).findLast((message) => !message.tool)
+
+  return (before ?? messages.slice(index + 1).find((message) => !message.tool))?.id ?? null
 }

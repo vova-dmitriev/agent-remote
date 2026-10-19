@@ -10,7 +10,7 @@ import {
   type HistoryMessage,
 } from "@protocol"
 import { SubagentHistory } from "../src/entities/session/api/subagent-history"
-import { foldToolResults, mergeSubagentPage, oldestCursor } from "../src/pages/session/lib/subagent-history"
+import { foldToolResults, mergeSubagentPage, oldestCursor, railActiveId, railMessages } from "../src/pages/session/lib/subagent-history"
 import { SUBAGENT_MESSAGE_LIMIT } from "../src/pages/session/config/subagent"
 
 let seq = 0
@@ -59,6 +59,37 @@ it("bounds the window from the far end of the paging direction", () => {
 
   expect(mergeSubagentPage([], many)[0]!.id).toBe("m5")
   expect(mergeSubagentPage([], many, HistoryDirection.Before).at(-1)!.id).toBe("m" + (SUBAGENT_MESSAGE_LIMIT - 1))
+})
+
+it("replaces the window when a latest page shares no item with it, so missed polls leave no silent hole", () => {
+  const loaded = mergeSubagentPage([], [event(text("a", 1)), event(text("b", 2))])
+
+  const appended = Array.from({ length: 100 }, (_, index) =>
+    event(text("late-" + index, 100 + index, { historyCursor: "position:" + index })),
+  )
+
+  const replaced = mergeSubagentPage(loaded, appended)
+
+  expect(replaced).toHaveLength(100)
+  expect(replaced[0]!.id).toBe("late-0")
+  expect(oldestCursor(replaced)).toBe("position:0")
+  expect(mergeSubagentPage(loaded, [event(text("b", 2)), event(text("c", 3))]).map((m) => m.id)).toEqual(["a", "b", "c"])
+  expect(mergeSubagentPage(loaded, appended, HistoryDirection.Before)).toHaveLength(102)
+  expect(mergeSubagentPage(loaded, [])).toEqual(loaded)
+})
+
+it("gives tool lines no rail marker and maps a tool line being read to the nearest message", () => {
+  const items = [text("ask", 1), call("use-1", "tool-1", 2), call("use-2", "tool-2", 3), text("answer", 4)]
+
+  expect(railMessages(items).map((m) => m.id)).toEqual(["ask", "answer"])
+  const plain = [text("x", 1)]
+
+  expect(railMessages(plain)).toBe(plain)
+  expect(railActiveId(items, "use-2")).toBe("ask")
+  expect(railActiveId([call("use-0", "tool-0", 0), ...items], "use-0")).toBe("ask")
+  expect(railActiveId(items, "answer")).toBe("answer")
+  expect(railActiveId(items, null)).toBeNull()
+  expect(railActiveId([call("only", "tool", 1)], "only")).toBeNull()
 })
 
 it("shows each tool call once with the outcome of its loaded result", () => {

@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { ErrorCode, IntegrationState, Language, ThemePreference } from "@protocol"
 import { finishedSubagentId, runningSubagentId, subagentMessages, subagentSession } from "@storybook-fixtures/subagent"
+import { SessionLayout } from "@storybook-components/session-layout"
 import { SubagentHistoryStatus } from "@/pages/session/config/subagent"
 import { SubagentView } from "./subagent-view"
 
@@ -14,7 +15,16 @@ const meta = {
     status: SubagentHistoryStatus.Ready,
     error: "",
     onBack: () => {},
+    onRetry: () => {},
   },
+  decorators: [
+    (Story) => (
+      <SessionLayout>
+        <Story />
+      </SessionLayout>
+    ),
+  ],
+  parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof SubagentView>
 
 export default meta

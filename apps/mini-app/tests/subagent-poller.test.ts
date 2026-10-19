@@ -15,7 +15,7 @@ class FakeVisibility extends EventTarget {
 function poller(live = true) {
   const visibility = new FakeVisibility()
   const refresh = vi.fn(async () => undefined)
-  const instance = new SubagentPoller({ refresh, interval: INTERVAL, live, visibility: visibility as unknown as Document })
+  const instance = new SubagentPoller({ refresh, delay: () => (live ? INTERVAL : null), visibility: visibility as unknown as Document })
 
   return { visibility, refresh, instance }
 }
@@ -64,7 +64,7 @@ it("does not schedule another read when stopped while a read is in flight", asyn
   let finish = () => {}
 
   const refresh = vi.fn(() => new Promise<void>((resolve) => (finish = resolve)))
-  const instance = new SubagentPoller({ refresh, interval: INTERVAL, live: true, visibility: visibility as unknown as Document })
+  const instance = new SubagentPoller({ refresh, delay: () => INTERVAL, visibility: visibility as unknown as Document })
 
   instance.start()
   instance.stop()
@@ -106,7 +106,7 @@ it("does not start polling a finished subagent when the page is shown again", as
 it("keeps polling after a failed read", async () => {
   const { visibility } = poller()
   const refresh = vi.fn(async () => Promise.reject(new Error("SERVICE_UNAVAILABLE")))
-  const instance = new SubagentPoller({ refresh, interval: INTERVAL, live: true, visibility: visibility as unknown as Document })
+  const instance = new SubagentPoller({ refresh, delay: () => INTERVAL, visibility: visibility as unknown as Document })
 
   instance.start()
   await vi.advanceTimersByTimeAsync(INTERVAL * 2)

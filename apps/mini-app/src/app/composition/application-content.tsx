@@ -18,7 +18,16 @@ export function ApplicationContent({ model, accounts, subagent, back, openAccoun
       />
     )
   if (!selected) return <HomeView model={model} openAccounts={openAccounts} />
-  if (subagent.agentId) return <SubagentPage session={selected} state={state} agentId={subagent.agentId} onBack={subagent.close} />
+  if (subagent.agentId)
+    return (
+      <SubagentPage
+        key={[selected.id, subagent.agentId, selected.generation].join(":")}
+        session={selected}
+        state={state}
+        agentId={subagent.agentId}
+        onBack={subagent.close}
+      />
+    )
 
   return (
     <SessionPage

@@ -75,9 +75,11 @@ export const SUBAGENT_VIEW_IDS = {
   back: "subagent-view-back",
   title: "subagent-view-title",
   status: "subagent-view-status",
-  sessionStatus: "subagent-view-session-status",
+  task: "subagent-view-task",
+  offline: "subagent-view-offline",
   unavailable: "subagent-view-unavailable",
   error: "subagent-view-error",
+  retry: "subagent-view-retry",
 } as const
 
 export const TOOL_ACTIVITY_IDS = {

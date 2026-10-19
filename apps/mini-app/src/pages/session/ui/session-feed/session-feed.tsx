@@ -7,6 +7,7 @@ import { cn } from "@/shared/lib/utils"
 import { SESSION_FEED_IDS } from "@/pages/session/config/test-ids"
 import { useFollowMessages } from "@/pages/session/model/use-follow-messages"
 import { navigationScrollBehavior } from "@/pages/session/lib/message-navigation"
+import { railActiveId, railMessages } from "@/pages/session/lib/subagent-history"
 import type { SessionFeedProps } from "@/pages/session/model/types/session-feed.types"
 import { MessageRail } from "./message-rail"
 import { HistorySkeleton } from "./loading/history-skeleton"
@@ -64,7 +65,9 @@ export function SessionFeed({
           <HistorySkeleton />
         </div>
       ) : null}
-      {showMessages && settled ? <MessageRail messages={messages} activeId={activeId} jump={jump} agent={agent} /> : null}
+      {showMessages && settled ? (
+        <MessageRail messages={railMessages(messages)} activeId={railActiveId(messages, activeId)} jump={jump} agent={agent} />
+      ) : null}
       {!atBottom ? (
         <Button
           variant="outline"

@@ -56,16 +56,19 @@ const view = (overrides: Partial<Parameters<typeof SubagentView>[0]> = {}) =>
       status: SubagentHistoryStatus.Ready,
       error: "",
       onBack: () => {},
+      onRetry: () => {},
       ...overrides,
     }),
   )
 
-it("shows the subagent, its status and the parent session's availability label", () => {
-  const html = view({ available: false })
+it("shows the subagent with its own labelled status, and the offline notice only when the session is not observed", () => {
+  const offline = view({ available: false })
+  const online = view()
 
-  expect(html).toContain(`data-testid="${SUBAGENT_VIEW_IDS.title}">Reviewer<`)
-  expect(html).toContain(`data-testid="${SUBAGENT_VIEW_IDS.status}">Running<`)
-  expect(html).toContain(`data-testid="${SUBAGENT_VIEW_IDS.sessionStatus}">Session unavailable<`)
+  expect(online).toContain(`data-testid="${SUBAGENT_VIEW_IDS.title}">Reviewer<`)
+  expect(online).toContain(`data-testid="${SUBAGENT_VIEW_IDS.status}">Subagent: Running<`)
+  expect(online).not.toContain(`data-testid="${SUBAGENT_VIEW_IDS.offline}"`)
+  expect(offline).toContain(`data-testid="${SUBAGENT_VIEW_IDS.offline}">Session unavailable<`)
 })
 
 it("says the transcript is unavailable instead of an empty feed", () => {
@@ -73,6 +76,7 @@ it("says the transcript is unavailable instead of an empty feed", () => {
 
   expect(html).toContain(`data-testid="${SUBAGENT_VIEW_IDS.unavailable}"`)
   expect(html).toContain("Transcript unavailable")
+  expect(html).toContain(`data-testid="${SUBAGENT_VIEW_IDS.retry}"`)
   expect(html).not.toContain(`data-testid="${SESSION_FEED_IDS.frame}"`)
 })
 
