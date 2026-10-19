@@ -43,7 +43,7 @@ it("maps every status to one tone: running, waiting, idle and unavailable", () =
 
 it("marks a session with a pending permission or question for attention even when its status lags", () => {
   const snapshot = sessionSnapshot("device")
-  const awaiting = sessionsAwaitingInput(snapshot)
+  const awaiting = sessionsAwaitingInput(snapshot.sessions, snapshot.permissions, snapshot.userInputs)
   const [withPermission] = snapshot.sessions as [Session]
 
   expect(withPermission.status).toBe(SessionStatus.Idle)
@@ -55,7 +55,7 @@ it("marks a session with a pending permission or question for attention even whe
 
   const staleGeneration = { ...snapshot, permissions: snapshot.permissions.map((item) => ({ ...item, generation: "old" })) }
 
-  expect(sessionsAwaitingInput(staleGeneration).size).toBe(0)
+  expect(sessionsAwaitingInput(staleGeneration.sessions, staleGeneration.permissions, staleGeneration.userInputs).size).toBe(0)
 })
 
 it("renders the shared tone on the session card", () => {

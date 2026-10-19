@@ -7,29 +7,29 @@ export function selectedSession(state: SessionState) {
   return state.snapshot?.sessions.find((session) => session.id === state.selectedId)
 }
 
-type Snapshot = AppSnapshot | null | undefined
+type Permissions = AppSnapshot["permissions"] | undefined
+type UserInputs = AppSnapshot["userInputs"]
 
 const NO_RECENCY = 0
 
-function snapshotPermissions(snapshot: Snapshot, session: Session) {
+function pendingPermissions(permissions: Permissions, session: Session) {
   return session.capabilities.permission
-    ? (snapshot?.permissions.filter((permission) => permission.sessionId === session.id && permission.generation === session.generation) ??
-        [])
+    ? (permissions?.filter((permission) => permission.sessionId === session.id && permission.generation === session.generation) ?? [])
     : []
 }
 
-function snapshotUserInputs(snapshot: Snapshot, session: Session) {
+function pendingUserInputs(userInputs: UserInputs, session: Session) {
   return session.capabilities.userInput && session.status !== SessionStatus.Ended
-    ? (snapshot?.userInputs?.filter((request) => request.sessionId === session.id && request.generation === session.generation) ?? [])
+    ? (userInputs?.filter((request) => request.sessionId === session.id && request.generation === session.generation) ?? [])
     : []
 }
 
 export function sessionPermissions(state: SessionState, session: Session) {
-  return snapshotPermissions(state.snapshot, session)
+  return pendingPermissions(state.snapshot?.permissions, session)
 }
 
 export function sessionUserInputs(state: SessionState, session: Session) {
-  return snapshotUserInputs(state.snapshot, session)
+  return pendingUserInputs(state.snapshot?.userInputs, session)
 }
 
 export function filterByProvider(sessions: Session[], provider: ProviderFilterValue) {
@@ -50,11 +50,15 @@ export function sortByRecency(sessions: Session[]) {
 }
 
 /** Ids of sessions with a pending permission or question in the snapshot, for the attention tone. */
-export function sessionsAwaitingInput(snapshot: Snapshot): ReadonlySet<string> {
+export function sessionsAwaitingInput(
+  sessions: Session[] | undefined,
+  permissions: Permissions,
+  userInputs: UserInputs,
+): ReadonlySet<string> {
   const ids = new Set<string>()
 
-  for (const session of snapshot?.sessions ?? []) {
-    if (snapshotPermissions(snapshot, session).length || snapshotUserInputs(snapshot, session).length) ids.add(session.id)
+  for (const session of sessions ?? []) {
+    if (pendingPermissions(permissions, session).length || pendingUserInputs(userInputs, session).length) ids.add(session.id)
   }
 
   return ids
