@@ -521,6 +521,23 @@ export class Monitor extends EventEmitter {
   session(id: string) {
     return this.sessions.get(id);
   }
+  applyDesktopRead(
+    id: string,
+    read: { status: Session['status']; canPrompt: boolean; canInterrupt: boolean },
+  ) {
+    const session = this.sessions.get(id);
+
+    if (!session) {
+      return false;
+    }
+
+    session.status = read.status;
+    session.lastEventAt = Date.now();
+    session.capabilities.prompt = read.canPrompt;
+    session.capabilities.interrupt = read.canInterrupt;
+
+    return true;
+  }
   setSessionActivity(id: string, generation: string, time: number) {
     const session = this.sessions.get(id);
 

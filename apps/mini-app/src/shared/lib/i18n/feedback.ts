@@ -1,4 +1,4 @@
-import { DesktopBridgeError, ErrorCode } from "@protocol"
+import { DesktopBridgeError, ErrorCode, IntegrationReason } from "@protocol"
 import type { MessageKey, Translate } from "./types"
 
 const keys: Record<string, MessageKey> = {
@@ -143,7 +143,7 @@ const keys: Record<string, MessageKey> = {
   [ErrorCode.HELPER_TIMEOUT]: "commandUncertain",
   [ErrorCode.IPC_TIMEOUT]: "commandUncertain",
   [ErrorCode.AX_CHAT_OR_COMPOSER_UNVERIFIED]: "setupRequired",
-  "Для отправки промптов запусти remote claude": "nativePromptHint",
+  [IntegrationReason.CliWrapperRequired]: "nativePromptHint",
 }
 
 export function feedbackText(code: string, t: Translate) {

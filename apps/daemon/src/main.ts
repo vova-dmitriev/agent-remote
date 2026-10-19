@@ -1,24 +1,16 @@
 import {
   ConnectorId,
   ConnectorTransport,
-  ErrorCode,
   EventType,
   FrameType,
-  historySchema,
+  IntegrationReason,
   IntegrationState,
-  NativeRestartState,
   type ServerFrame,
   SessionStatus,
   TargetKind,
 } from '@protocol';
-import { ModelOrigin, RuntimeEvent } from './domain/runtime.js';
+import { RuntimeEvent } from './domain/runtime.js';
 import { DesktopOperation } from './domain/desktop.js';
-import {
-  SOURCE_POLL_INTERVAL_MS,
-  SESSION_ACTIVITY_POLL_INTERVAL_MS,
-  NATIVE_PROCESS_POLL_INTERVAL_MS,
-  ATTACHMENT_RETRY_INTERVAL_MS,
-} from './runtime-timings.js';
 import { NativeProcesses } from './sessions/native-process.js';
 import { restartClaudeSession } from './sessions/restart-session.js';
 import { createManagedSession, waitManagedSession } from './sessions/create-session.js';
@@ -41,6 +33,9 @@ import { Dispatcher, type DispatcherOptions } from './commands/dispatcher.js';
 import { MessageTracker, TranscriptSources } from './monitor/history.js';
 import { startHookServer } from './code/hooks/hook-server.js';
 import { RelayClient } from './relay-client.js';
+import { RelayFrameRouter } from './runtime/relay-frame-router.js';
+import { SourcePoller, type DesktopBindingEntry } from './runtime/source-poller.js';
+import { NativeRestartPoller } from './runtime/native-restart-poller.js';
 import { localSecret, socketPath, stateDirectory } from './config.js';
 
 import { runtimeConfiguration, browserSettings } from './local/bootstrap/configuration.js';
@@ -80,7 +75,7 @@ export async function startDaemon() {
         terminalSnapshot: false,
       },
       state: IntegrationState.Ready,
-      reason: 'Для отправки промптов запусти remote claude',
+      reason: IntegrationReason.CliWrapperRequired,
     }),
   );
 
@@ -154,10 +149,7 @@ export async function startDaemon() {
   dispatcher.setConnection(false);
   const desktopBridge = new BridgeClient();
 
-  const desktopBindings = new Map<
-    string,
-    { desktop: DesktopBinding; connectorId: string; tracker: MessageTracker }
-  >();
+  const desktopBindings = new Map<string, DesktopBindingEntry>();
 
   const readers = new TranscriptSources(
     process.env.CLAUDE_CONFIG_DIR ?? join(homedir(), '.claude'),
@@ -315,15 +307,7 @@ export async function startDaemon() {
     snapshot();
     setImmediate(flush);
 
-    void attachments
-      .retryExports((source, message) => {
-        const current = monitor.session(source.id);
-
-        if (attachmentSourceCurrent(current, source)) {
-          monitor.publish(source.id, EventType.Message, message);
-        }
-      })
-      .catch(() => {});
+    void retryAttachmentExports().catch(() => {});
   });
 
   relay.on(RuntimeEvent.Offline, () => {
@@ -341,255 +325,51 @@ export async function startDaemon() {
     }
   });
 
-  relay.on(RuntimeEvent.Frame, (frame: ServerFrame) => {
-    if (frame.type === FrameType.ProfilesRequest || frame.type === FrameType.ProfilesCancel) {
-      void profileRelay.receive(frame);
+  const retryAttachmentExports = () =>
+    attachments.retryExports((source, message) => {
+      const current = monitor.session(source.id);
 
-      return;
-    }
+      if (attachmentSourceCurrent(current, source)) {
+        monitor.publish(source.id, EventType.Message, message);
+      }
+    });
 
-    if (frame.type === FrameType.HistoryRead) {
-      void readers
-        .page(frame)
-        .then(async (page) => {
-          for (const message of page.messages) {
-            if (
-              !relay.send({
-                type: FrameType.HistoryItem,
-                requestId: frame.requestId,
-                sessionId: frame.sessionId,
-                generation: frame.generation,
-                message,
-              })
-            ) {
-              return;
-            }
-
-            await new Promise<void>((resolve) => setImmediate(resolve));
-          }
-
-          relay.send({
-            type: FrameType.HistoryDone,
-            requestId: frame.requestId,
-            sessionId: frame.sessionId,
-            generation: frame.generation,
-            before: page.before,
-            after: page.after,
-          });
-        })
-        .catch(() =>
-          relay.send({
-            type: FrameType.HistoryDone,
-            requestId: frame.requestId,
-            sessionId: frame.sessionId,
-            generation: frame.generation,
-            before: null,
-            after: null,
-            error: ErrorCode.HISTORY_RELOAD_FAILED,
-          }),
-        );
-    } else if (frame.type === FrameType.Ack) {
-      replay.acknowledge(frame.cursor);
-    } else if (frame.type === FrameType.Select) {
-      try {
-        monitor.select(frame.sessionId);
-      } catch {}
-    } else if (frame.type === FrameType.Command) {
-      void dispatcher.dispatch(frame.command).then((result) => {
-        if (result.sessionId) {
-          relay.send({ type: FrameType.Snapshot, snapshot: monitor.snapshot(), connectors: adapters.list() });
-        }
-
-        relay.send({ type: FrameType.CommandResult, result });
-      });
-    }
+  const router = new RelayFrameRouter({
+    relay,
+    profileRelay,
+    readers,
+    replay,
+    monitor,
+    adapters,
+    dispatcher,
   });
 
-  let exportRetryAt = 0;
-  let reading = false;
-  let polling: Promise<void> = Promise.resolve();
+  relay.on(RuntimeEvent.Frame, (frame: ServerFrame) => void router.route(frame));
 
-  const poll = setInterval(() => {
-    if (reading) {
-      return;
-    }
+  const sourcePoller = new SourcePoller({
+    monitor,
+    adapters,
+    store,
+    readers,
+    desktopBridge,
+    desktopBindings,
+    inputEnabled,
+    online: () => online,
+    stopping: () => stopping,
+    snapshot,
+    flush,
+    retryAttachmentExports,
+  });
 
-    reading = true;
+  const nativePoller = new NativeRestartPoller({
+    monitor,
+    nativeProcesses,
+    inputEnabled,
+    stopping: () => stopping,
+  });
 
-    polling = (async () => {
-      const chosen = monitor.selectedId ? monitor.session(monitor.selectedId) : undefined;
-
-      if (chosen?.target.kind === TargetKind.Cmux) {
-        const adapter = adapters.resolve(chosen.target),
-          binding = monitor.binding(chosen.id);
-
-        if (adapter instanceof SourceAdapter && binding) {
-          try {
-            const text = await adapter.readScreen(binding);
-
-            monitor.setTerminal({
-              sessionId: chosen.id,
-              generation: chosen.generation,
-              text,
-              capturedAt: Date.now(),
-            });
-          } catch {
-            monitor.invalidate(chosen.target.connectorId);
-          }
-        }
-      }
-
-      for (const [sessionId, item] of desktopBindings) {
-        try {
-          const result = (await desktopBridge.request({
-            operation: DesktopOperation.Read,
-            bindingId: item.desktop.bindingId,
-          })) as {
-            messages: unknown[];
-            status: typeof SessionStatus.Idle | typeof SessionStatus.Running;
-            canInterrupt: boolean;
-            canPrompt: boolean;
-          };
-
-          const session = monitor.session(sessionId);
-
-          if (session) {
-            session.status = result.status;
-            session.lastEventAt = Date.now();
-            session.capabilities.prompt = inputEnabled && result.canPrompt;
-            session.capabilities.interrupt = inputEnabled && result.canInterrupt;
-
-            for (const value of result.messages) {
-              const message = historySchema.safeParse(value);
-
-              if (message.success && item.tracker.accept(message.data)) {
-                monitor.publish(sessionId, EventType.Message, message.data);
-              }
-            }
-
-            snapshot();
-          }
-        } catch {
-          monitor.invalidate(item.connectorId);
-          desktopBindings.delete(sessionId);
-        }
-      }
-
-      for (const [sessionId, reader] of readers.entries()) {
-        const session = monitor.session(sessionId);
-
-        if (!session || session.status === SessionStatus.Ended) {
-          readers.delete(sessionId);
-          continue;
-        }
-
-        try {
-          const generation = session.generation;
-          const modelRevision = monitor.sessionModelRevision(sessionId);
-          const messages = await reader.readNext();
-
-          if (
-            monitor.session(sessionId)?.generation !== generation ||
-            !Array.from(readers.entries()).some(([id, current]) => id === sessionId && current === reader)
-          ) {
-            continue;
-          }
-
-          for (const message of messages) {
-            monitor.publish(sessionId, EventType.Message, message);
-          }
-
-          monitor.setSessionTitle(sessionId, reader.title);
-          monitor.setSessionModel(sessionId, reader.model, ModelOrigin.Transcript, modelRevision);
-        } catch {
-          if (
-            monitor.session(sessionId)?.generation !== session.generation ||
-            !readers.delete(sessionId, reader)
-          ) {
-            continue;
-          }
-
-          monitor.publish(sessionId, EventType.Diagnostic, { code: ErrorCode.TRANSCRIPT_UNAVAILABLE });
-        }
-      }
-
-      if (online && Date.now() >= exportRetryAt) {
-        exportRetryAt = Date.now() + ATTACHMENT_RETRY_INTERVAL_MS;
-
-        await attachments.retryExports((source, message) => {
-          const current = monitor.session(source.id);
-
-          if (attachmentSourceCurrent(current, source)) {
-            monitor.publish(source.id, EventType.Message, message);
-          }
-        });
-      }
-
-      store.prune();
-      flush();
-    })()
-      .catch(() => {
-        /* Source failures must not terminate the local daemon. */
-      })
-      .finally(() => {
-        reading = false;
-      });
-  }, SOURCE_POLL_INTERVAL_MS);
-
-  let activityBusy = false;
-  let activityTask: Promise<void> = Promise.resolve();
-
-  const refreshActivity = () => {
-    if (stopping || activityBusy) {
-      return;
-    }
-
-    activityBusy = true;
-
-    activityTask = readers
-      .refreshActivity()
-      .catch(() => {})
-      .finally(() => {
-        activityBusy = false;
-      });
-  };
-
-  const activityPoll = setInterval(refreshActivity, SESSION_ACTIVITY_POLL_INTERVAL_MS);
-
-  refreshActivity();
-  let inspectingNative = false;
-
-  const refreshNative = async () => {
-    if (inspectingNative || stopping || !inputEnabled || process.platform !== 'darwin') {
-      return;
-    }
-
-    inspectingNative = true;
-
-    try {
-      for (const source of monitor
-        .snapshot()
-        .sessions.filter(
-          (session) =>
-            session.target.connectorId === ConnectorId.Native &&
-            session.target.kind === TargetKind.ClaudeCodeCli,
-        )) {
-        const inspection = source.claudeSessionId
-          ? await nativeProcesses.inspect(source.claudeSessionId, source.cwd)
-          : { state: NativeRestartState.Missing };
-
-        if (!stopping) {
-          monitor.setNativeRestartState(source.id, source.generation, inspection.state);
-        }
-      }
-    } finally {
-      inspectingNative = false;
-    }
-  };
-
-  const nativePoll = setInterval(() => void refreshNative().catch(() => {}), NATIVE_PROCESS_POLL_INTERVAL_MS);
-
-  void refreshNative().catch(() => {});
+  sourcePoller.start();
+  nativePoller.start();
   await codex.start();
   relay.connect();
 
@@ -600,9 +380,8 @@ export async function startDaemon() {
 
     stopping = true;
     profileRelay.disconnect();
-    clearInterval(poll);
-    clearInterval(nativePoll);
-    clearInterval(activityPoll);
+    sourcePoller.stop();
+    nativePoller.stop();
     dispatcher.setConnection(false);
     localDispatcher.setConnection(false);
     await localServer.close();
@@ -613,8 +392,7 @@ export async function startDaemon() {
     userInputs.close();
     desktopBridge.close();
     await hookServer.close();
-    await polling;
-    await activityTask;
+    await sourcePoller.drain();
     await dispatcher.drain();
     await localDispatcher.drain();
     await codex.close();
