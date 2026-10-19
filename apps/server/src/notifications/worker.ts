@@ -4,7 +4,7 @@ import { type NotificationQueue } from './queue.js';
 import { randomUUID } from 'node:crypto';
 import { DeviceService } from '../devices/service.js';
 import { hash } from '../auth/security.js';
-import { Fault } from '../http/fault.js';
+import { Fault } from '../http/errors/fault.js';
 import { type Database } from '../db/database.js';
 
 interface TelegramResult<T> {

@@ -1,5 +1,5 @@
 import { ErrorCode, MessageRole } from '@protocol';
-import { Fault } from '../http/fault.js';
+import { Fault } from '../http/errors/fault.js';
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 
 export const hash = (value: string) => createHash('sha256').update(value).digest('hex');
@@ -74,6 +74,18 @@ export function telegramIdentity(raw: string, botToken: string, now = Date.now()
     throw new Fault(ErrorCode.UNAUTHORIZED);
   }
 }
+
+export const RateLimitKey = {
+  Auth: 'auth:',
+  Refresh: 'refresh:',
+  PairStart: 'pair-start:',
+  PairIp: 'pair-ip:',
+  PairOwner: 'pair-owner:',
+  Profiles: 'profiles:',
+  Attachment: 'attachment:',
+} as const;
+
+export type RateLimitKey = (typeof RateLimitKey)[keyof typeof RateLimitKey];
 
 export class Limiter {
   private buckets = new Map<string, { count: number; until: number }>();

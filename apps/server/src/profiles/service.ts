@@ -1,7 +1,7 @@
 import { AgentProvider, ProfileRequestKind, type ProfileRequest } from '@protocol';
 import type { Principal } from '../auth/security.js';
 import type { DeviceService } from '../devices/service.js';
-import type { ProfileProxy } from './proxy.js';
+import type { ProfileProxy } from './transport/proxy.js';
 import type { ProfileConnection } from './types.js';
 import type { ProfileMetadataCache } from './repository.js';
 import { readProfilePages } from './transport/list.js';

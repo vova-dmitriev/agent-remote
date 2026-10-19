@@ -1,7 +1,7 @@
 import type { PoolClient } from 'pg';
 import { ErrorCode, HandoffPhase } from '@protocol';
-import { Fault } from '../http/fault.js';
-import { ContinuityError } from './types.js';
+import { Fault } from '../http/errors/fault.js';
+import { ContinuityError } from '../continuity/types.js';
 
 export const CommandClaimKind = {
   Command: 'command',

@@ -2,7 +2,7 @@ import { afterAll, beforeAll, expect, it } from 'vitest';
 import { Redis } from 'ioredis';
 import { randomUUID } from 'node:crypto';
 import { databaseFixture } from './helpers/database.js';
-import { createRelay } from '../apps/server/src/relay.js';
+import { createRelay } from '../apps/server/src/app/create-relay.js';
 import { persistEvent } from '../apps/server/src/history/events.js';
 import { initData, testBotToken } from './helpers/telegram.js';
 import type { EventEnvelope } from '@protocol';

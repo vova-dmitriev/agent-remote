@@ -5,14 +5,14 @@ import { LocalDatabase } from '../../../apps/daemon/src/local/state/database.js'
 import { RuntimeProfiles } from '../../../apps/daemon/src/runtime/services/runtime-profiles.js';
 import { RuntimeProfileRelay } from '../../../apps/daemon/src/profiles/runtime/router/relay.js';
 import { FrameType, serverFrameSchema, type ProfileRequest } from '@protocol';
-import { deviceFixture } from '../support/relay-fixture.js';
+import { deviceFixture, liveEpoch, rememberEpoch } from '../support/relay-fixture.js';
 import { WebSocket } from 'ws';
 import { sessionSnapshot } from '../support/session-fixtures.js';
 
 interface ProfileCompanionOptions { beforeApi?: () => Promise<void> }
 
 export async function profileCompanion(options: ProfileCompanionOptions = {}) {
-  const { relay, deviceId, deviceToken, sockets } = deviceFixture();
+  const { deviceId, deviceToken, sockets } = deviceFixture();
   const directory = await mkdtemp(join(tmpdir(), 'remote-e2e-profiles-'));
   const database = new LocalDatabase(join(directory, 'profiles.sqlite'));
   const settings = join(directory, 'native-settings.json');
@@ -28,7 +28,7 @@ export async function profileCompanion(options: ProfileCompanionOptions = {}) {
     },
   });
 
-  const bridge = new RuntimeProfileRelay(runtime, () => relay.live.get(deviceId)?.epoch, (frame) => {
+  const bridge = new RuntimeProfileRelay(runtime, liveEpoch, (frame) => {
     sockets[0]!.send(JSON.stringify(frame));
 
     return true;
@@ -70,7 +70,12 @@ export async function profileCompanion(options: ProfileCompanionOptions = {}) {
         socket.once('error', reject);
 
         socket.on('message', (raw) => {
-          if (JSON.parse(String(raw)).type === FrameType.Authenticated) resolve();
+          const frame = JSON.parse(String(raw));
+
+          if (frame.type === FrameType.Authenticated) {
+            rememberEpoch(socket, frame.epoch);
+            resolve();
+          }
         });
       });
 

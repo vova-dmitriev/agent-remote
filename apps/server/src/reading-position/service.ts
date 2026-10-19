@@ -7,7 +7,7 @@ import {
 } from '@protocol';
 import { type Pool, type PoolClient } from 'pg';
 import { hash, type Principal } from '../auth/security.js';
-import { Fault } from '../http/fault.js';
+import { Fault } from '../http/errors/fault.js';
 import { type Database } from '../db/database.js';
 import { type RedisCache } from '../infrastructure/redis.js';
 

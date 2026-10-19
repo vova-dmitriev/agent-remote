@@ -1,5 +1,5 @@
 import type { PoolClient } from 'pg';
-import { CommandClaimKind } from '../command-claims.js';
+import { CommandClaimKind } from '../../commands/command-claims.js';
 
 export interface SeedProofRecord {
   device_generation: string;

@@ -12,7 +12,7 @@ import {
   ProfileStatus,
   AgentProvider,
 } from '@protocol';
-import { Fault } from '../../http/fault.js';
+import { Fault } from '../../http/errors/fault.js';
 import type { Database } from '../../db/database.js';
 import { ProfileRoutingStorage } from './values.js';
 

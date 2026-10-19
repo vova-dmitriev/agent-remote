@@ -1,7 +1,7 @@
 import { ErrorCode, HttpStatus } from '@protocol';
-import { AttachmentFaultCode } from '../attachments/errors.js';
-import { ContinuityError } from '../continuity/types.js';
-import type { ServerErrorCode } from '../error-codes.js';
+import { AttachmentFaultCode } from '../../attachments/errors.js';
+import { ContinuityError } from '../../continuity/types.js';
+import type { ServerErrorCode } from '../../error-codes.js';
 
 export type FaultCode = ErrorCode | ServerErrorCode | AttachmentFaultCode | ContinuityError;
 

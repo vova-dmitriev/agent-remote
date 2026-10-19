@@ -2,7 +2,7 @@ import { ErrorCode } from '@protocol';
 import { randomUUID } from 'node:crypto';
 import { type Database } from '../db/database.js';
 import { hash, secret, telegramIdentity, type Principal } from './security.js';
-import { Fault } from '../http/fault.js';
+import { Fault } from '../http/errors/fault.js';
 
 export class AuthService {
   constructor(

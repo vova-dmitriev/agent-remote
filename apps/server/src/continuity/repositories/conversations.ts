@@ -1,6 +1,6 @@
 import type { PoolClient } from 'pg';
 import { executionLinkSchema, type Conversation } from '@protocol';
-import { Fault } from '../../http/fault.js';
+import { Fault } from '../../http/errors/fault.js';
 import { ContinuityError, type InitialExecution } from '../types.js';
 import { asConversation, asExecution, type ContinuityRow } from './mapping.js';
 

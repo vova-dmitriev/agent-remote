@@ -35,7 +35,7 @@ async function until(read: () => Promise<boolean>, timeout = 15000) {
 
 try {
   await db.query(`CREATE SCHEMA ${schema}`);
-  const module = `import {createRelay} from './dist/apps/server/src/relay.js';const relay=await createRelay({databaseUrl:process.env.SMOKE_DATABASE_URL,schema:process.env.SMOKE_SCHEMA,redisUrl:process.env.SMOKE_REDIS_URL,botToken:process.env.SMOKE_BOT_TOKEN,publicOrigin:'http://127.0.0.1:4173',staticDirectory:'/app/dist/mini-app'});await relay.listen(3000,'0.0.0.0');`;
+  const module = `import {createRelay} from './dist/apps/server/src/app/create-relay.js';const relay=await createRelay({databaseUrl:process.env.SMOKE_DATABASE_URL,schema:process.env.SMOKE_SCHEMA,redisUrl:process.env.SMOKE_REDIS_URL,botToken:process.env.SMOKE_BOT_TOKEN,publicOrigin:'http://127.0.0.1:4173',staticDirectory:'/app/dist/mini-app'});await relay.listen(3000,'0.0.0.0');`;
   const dockerUrl = new URL(url);
 
   dockerUrl.hostname = 'host.docker.internal';

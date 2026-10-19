@@ -5,7 +5,7 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { mkdtemp, rm, mkdir, writeFile, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createRelay } from '../../apps/server/src/relay.js';
+import { createRelay } from '../../apps/server/src/app/create-relay.js';
 import { startDaemon } from '../../apps/daemon/src/main.js';
 import { saveConfig, localSecret, socketPath } from '../../apps/daemon/src/config.js';
 import { requestLocal, lineReader, writeFrame } from '../../apps/daemon/src/code/hooks/ipc.js';

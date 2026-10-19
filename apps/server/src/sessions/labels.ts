@@ -2,7 +2,7 @@ import { ErrorCode, AgentProvider, type Session } from '@protocol';
 import { z } from 'zod';
 import { type Database } from '../db/database.js';
 import { hash, type Principal } from '../auth/security.js';
-import { Fault } from '../http/fault.js';
+import { Fault } from '../http/errors/fault.js';
 
 const renameSchema = z.strictObject({
   title: z.string().trim().min(1).max(512),

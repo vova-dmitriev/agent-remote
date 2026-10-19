@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { WebSocket } from 'ws';
-import { createRelay } from '../../apps/server/src/relay.js';
+import { createRelay } from '../../apps/server/src/app/create-relay.js';
 import { hash } from '../../apps/server/src/auth/security.js';
 import { sessionSchema, type ServerFrame, type Session } from '@protocol';
 import { databaseFixture } from './database.js';
