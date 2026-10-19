@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 import { attachmentRelayFixture } from './helpers/attachment-relay.js';
 import { MAX_ATTACHMENT_BYTES, type AttachmentDescriptor, type Session } from '@protocol';
+import { AttachmentRepository } from '../apps/server/src/attachments/repositories/attachments.js';
 
 let fixture: Awaited<ReturnType<typeof attachmentRelayFixture>>;
 
@@ -342,7 +343,7 @@ it('expires reads and command attachments, and explicit pruning removes the byte
   app.send({ type: 'command', command: command([descriptor]) });
   expect((await app.next('error')).code).toBe('ATTACHMENT_EXPIRED');
   expect(device.frames.filter((frame) => frame.type === 'command')).toHaveLength(0);
-  await fixture.relay.attachments.prune();
+  await new AttachmentRepository(fixture.relay.db).prune(Date.now());
 
   expect((await fixture.database.db.pool.query('SELECT count(*)::int AS n FROM attachments')).rows[0].n).toBe(
     0,

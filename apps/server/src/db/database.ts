@@ -28,6 +28,7 @@ export class Database {
         [MigrationVersion.HandoffCreateEvidence, '005_handoff_create_evidence.sql'],
         [MigrationVersion.AttachmentCache, '006_attachment_cache.sql'],
         [MigrationVersion.ProfileRouting, '007_profile_routing.sql'],
+        [MigrationVersion.CommandAuditCreatedAt, '008_command_audit_created_at.sql'],
       ].map(async ([version, file]) => ({
         version: version as MigrationVersion,
         sql: await readFile(new URL(`./migrations/${file}`, import.meta.url), 'utf8'),

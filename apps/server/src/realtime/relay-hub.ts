@@ -47,9 +47,12 @@ export class RelayHub {
 
   readonly send = (socket: WebSocket, frame: ServerFrame) => this.sender.send(socket, frame);
 
+  /** Sends to the owner's sockets on a device; a socket whose token expired gets nothing while it awaits closing. */
   readonly fanout = (owner: string, deviceId: string, frame: ServerFrame) => {
+    const now = Date.now();
+
     for (const client of this.clients) {
-      if (client.principal.userId === owner && client.deviceId === deviceId) {
+      if (client.principal.userId === owner && client.deviceId === deviceId && client.expiresAt > now) {
         this.send(client.socket, frame);
       }
     }

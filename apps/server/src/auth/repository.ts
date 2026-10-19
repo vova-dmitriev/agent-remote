@@ -1,5 +1,6 @@
 import type { PoolClient } from 'pg';
 import type { Database } from '../db/database.js';
+import { AUTH_RECHECK_CHUNK } from '../maintenance/limits.js';
 
 /** Users and their short-lived access tokens, stored by token hash. */
 export class AuthRepository {
@@ -41,16 +42,27 @@ export class AuthRepository {
     ).rows[0];
   }
 
-  /** The expiry of each given token hash that is still stored and unexpired; revoked and expired ones are absent. */
+  /**
+   * The expiry of each given token hash that is still stored and unexpired; revoked and expired ones are absent.
+   * Queries `AUTH_RECHECK_CHUNK` hashes at a time.
+   */
   async unexpired(tokenHashes: readonly string[], now: number): Promise<Map<string, number>> {
-    const rows = (
-      await this.db.pool.query<{ token_hash: string; expires_at: string }>(
-        'SELECT token_hash,expires_at FROM auth_sessions WHERE token_hash=ANY($1::text[]) AND expires_at>$2',
-        [tokenHashes, now],
-      )
-    ).rows;
+    const found = new Map<string, number>();
 
-    return new Map(rows.map((row) => [row.token_hash, Number(row.expires_at)]));
+    for (let start = 0; start < tokenHashes.length; start += AUTH_RECHECK_CHUNK) {
+      const rows = (
+        await this.db.pool.query<{ token_hash: string; expires_at: string }>(
+          'SELECT token_hash,expires_at FROM auth_sessions WHERE token_hash=ANY($1::text[]) AND expires_at>$2',
+          [tokenHashes.slice(start, start + AUTH_RECHECK_CHUNK), now],
+        )
+      ).rows;
+
+      for (const row of rows) {
+        found.set(row.token_hash, Number(row.expires_at));
+      }
+    }
+
+    return found;
   }
 
   async lockToken(tx: PoolClient, tokenHash: string) {

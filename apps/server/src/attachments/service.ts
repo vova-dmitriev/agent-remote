@@ -273,8 +273,4 @@ export class AttachmentService {
       }
     }
   }
-
-  async prune() {
-    return this.repository.prune(Date.now());
-  }
 }

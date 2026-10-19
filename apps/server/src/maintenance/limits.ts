@@ -4,6 +4,12 @@ export const MAINTENANCE_TICK_MS = 1_000;
 export const DEVICE_SILENCE_MS = 30_000;
 /** How often every open app socket's token is checked against PostgreSQL, to catch revocations made elsewhere. */
 export const AUTH_RECHECK_MS = 30_000;
+/** Tokens checked by one recheck query. */
+export const AUTH_RECHECK_CHUNK = 1_000;
+/** Consecutive failed rechecks after which every app socket is closed: tokens are unverified for this many intervals. */
+export const AUTH_RECHECK_MAX_FAILURES = 3;
+/** How often every relay marks unacknowledged commands; the update is idempotent, so all relays may run it. */
+export const COMMAND_ACK_SWEEP_MS = 5_000;
 
 /** How often retention runs: once per interval across all relays when Redis is configured, else per process. */
 export const RETENTION_INTERVAL_MS = 60_000;

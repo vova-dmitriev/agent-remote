@@ -199,9 +199,13 @@ export class HistoryRepository {
     ).rows.map((row) => row.data);
   }
 
-  /** Every device that may hold events, revoked ones included. */
+  /** Every device, revoked ones included, that holds at least one event. */
   async deviceIds(): Promise<string[]> {
-    return (await this.db.pool.query<{ id: string }>('SELECT id FROM devices')).rows.map((row) => row.id);
+    return (
+      await this.db.pool.query<{ id: string }>(
+        'SELECT d.id FROM devices d WHERE EXISTS(SELECT 1 FROM events e WHERE e.device_id=d.id)',
+      )
+    ).rows.map((row) => row.id);
   }
 
   /** Drops up to `limit` of a device's events older than `before`, through `events_retention`; returns how many. */

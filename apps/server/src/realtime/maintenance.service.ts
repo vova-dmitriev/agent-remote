@@ -1,14 +1,18 @@
 import { Inject, Injectable, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
-import { SocketCloseCode, SocketCloseReason } from '@protocol';
+import { ErrorCode, SocketCloseCode, SocketCloseReason } from '@protocol';
 import { MESSAGING } from '../app/relay-config.js';
 import { AttachmentRepository } from '../attachments/repositories/attachments.js';
 import { AuthService } from '../auth/auth-service.js';
 import { CommandRepository } from '../commands/repositories/audit.js';
 import { DeviceState } from '../devices/device-state.js';
+import { ServerErrorCode } from '../error-codes.js';
 import { HistoryRepository } from '../history/repository.js';
 import type { Messaging } from '../infrastructure/messaging.js';
 import {
+  AUTH_RECHECK_MAX_FAILURES,
   AUTH_RECHECK_MS,
+  COMMAND_ACK_SWEEP_MS,
+  COMMAND_ACK_TIMEOUT_MS,
   DEVICE_SILENCE_MS,
   MAINTENANCE_TICK_MS,
   RETENTION_INTERVAL_MS,
@@ -21,13 +25,17 @@ const closeExpired = (client: AppConnection) =>
 
 /**
  * Every second, without storage: drops devices silent for 30 s and app sockets whose token expired.
- * Every 30 s: one query re-checks every app socket's token, to catch revocations made on another relay.
- * Every 60 s: retention, from one shared BullMQ job when Redis is configured, else in this process.
+ * Every 5 s, on every relay: marks commands unacknowledged for 15 s as unknown.
+ * Every 30 s: re-checks every app socket's token in PostgreSQL, to catch revocations made on another relay;
+ * after 3 failed rechecks in a row it closes every app socket rather than trust unverified tokens.
+ * Every 60 s: retention deletes, from one shared BullMQ job when Redis is configured, else in this process.
  */
 @Injectable()
 export class MaintenanceService implements OnModuleInit, OnModuleDestroy {
   private timer: ReturnType<typeof setInterval> | undefined;
   private recheck: ReturnType<typeof setInterval> | undefined;
+  private recheckFailures = 0;
+  private ackSweep: ReturnType<typeof setInterval> | undefined;
   private retention: ReturnType<typeof setInterval> | undefined;
 
   constructor(
@@ -64,8 +72,15 @@ export class MaintenanceService implements OnModuleInit, OnModuleDestroy {
 
     this.timer.unref();
 
-    this.recheck = setInterval(() => void this.recheckTokens().catch(() => {}), AUTH_RECHECK_MS);
+    this.recheck = setInterval(() => void this.recheckTokens(), AUTH_RECHECK_MS);
     this.recheck.unref();
+
+    this.ackSweep = setInterval(
+      () => void this.commands.expireUnacknowledged(Date.now() - COMMAND_ACK_TIMEOUT_MS).catch(() => {}),
+      COMMAND_ACK_SWEEP_MS,
+    );
+
+    this.ackSweep.unref();
 
     if (this.messaging) {
       await this.messaging.retention.start(() => retention.run());
@@ -75,7 +90,10 @@ export class MaintenanceService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  /** Closes the sockets whose token was revoked or expired; a stored expiry only ever brings a deadline closer. */
+  /**
+   * Closes the sockets whose token was revoked or expired; a stored expiry only ever brings a deadline closer.
+   * A failed check is recorded; after `AUTH_RECHECK_MAX_FAILURES` in a row every app socket is closed.
+   */
   private async recheckTokens() {
     const clients = [...this.hub.clients];
 
@@ -83,7 +101,24 @@ export class MaintenanceService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    const unexpired = await this.auth.unexpired([...new Set(clients.map((client) => client.token))]);
+    let unexpired: Map<string, number>;
+
+    try {
+      unexpired = await this.auth.unexpired([...new Set(clients.map((client) => client.token))]);
+    } catch {
+      this.recheckFailures++;
+      process.stderr.write(ServerErrorCode.AUTH_RECHECK_FAILED + '\n');
+
+      if (this.recheckFailures >= AUTH_RECHECK_MAX_FAILURES) {
+        for (const client of this.hub.clients) {
+          client.socket.close(SocketCloseCode.TryAgainLater, ErrorCode.SERVICE_UNAVAILABLE);
+        }
+      }
+
+      return;
+    }
+
+    this.recheckFailures = 0;
 
     for (const client of clients) {
       const expiresAt = unexpired.get(client.token);
@@ -100,6 +135,7 @@ export class MaintenanceService implements OnModuleInit, OnModuleDestroy {
   async onModuleDestroy() {
     clearInterval(this.timer);
     clearInterval(this.recheck);
+    clearInterval(this.ackSweep);
     clearInterval(this.retention);
     await this.messaging?.retention.stop();
   }

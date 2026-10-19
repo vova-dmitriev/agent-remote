@@ -139,6 +139,7 @@ describe('ordered PostgreSQL migration journal', () => {
       '005_handoff_create_evidence',
       '006_attachment_cache',
       '007_profile_routing',
+      '008_command_audit_created_at',
     ]);
 
     expect(
@@ -160,6 +161,7 @@ describe('ordered PostgreSQL migration journal', () => {
       '005_handoff_create_evidence',
       '006_attachment_cache',
       '007_profile_routing',
+      '008_command_audit_created_at',
     ]);
 
     expect(
@@ -199,6 +201,25 @@ describe('ordered PostgreSQL migration journal', () => {
     await db.migrate();
 
     expect((await journal()).rows).toEqual(first);
+  });
+
+  it('indexes command audit by creation time for batched retention', async () => {
+    const db = await fixture();
+
+    await db.migrate();
+    await db.migrate();
+
+    expect(
+      (await db.pool.query("SELECT to_regclass('command_audit_created_at') AS index")).rows[0].index,
+    ).toBe('command_audit_created_at');
+
+    expect(
+      (
+        await db.pool.query(
+          "SELECT 1 FROM server_schema_migrations WHERE version='008_command_audit_created_at'",
+        )
+      ).rowCount,
+    ).toBe(1);
   });
 
   it('adopts profile routing tables created by hand before the journal knew them', async () => {

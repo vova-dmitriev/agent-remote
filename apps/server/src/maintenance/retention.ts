@@ -2,7 +2,6 @@ import type { AttachmentRepository } from '../attachments/repositories/attachmen
 import type { CommandRepository } from '../commands/repositories/audit.js';
 import type { HistoryRepository } from '../history/repository.js';
 import {
-  COMMAND_ACK_TIMEOUT_MS,
   COMMAND_AUDIT_RETENTION_MS,
   EVENT_RETENTION_MS,
   EVENTS_PER_DEVICE,
@@ -16,7 +15,7 @@ async function drain(batch: (limit: number) => Promise<number>) {
   }
 }
 
-/** One retention pass over every owner: unacknowledged commands, expired attachments, old or surplus events, old commands. */
+/** One retention pass over every owner: expired attachments, old or surplus events, old commands. Deletions only. */
 export class Retention {
   constructor(
     private readonly history: HistoryRepository,
@@ -27,7 +26,6 @@ export class Retention {
   async run(now = Date.now()) {
     const { history, commands, attachments } = this;
 
-    await commands.expireUnacknowledged(now - COMMAND_ACK_TIMEOUT_MS);
     await attachments.prune(now);
 
     for (const deviceId of await history.deviceIds()) {

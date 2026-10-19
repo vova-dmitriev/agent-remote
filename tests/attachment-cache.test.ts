@@ -130,7 +130,7 @@ it('deduplicates derived blobs, keeps original upload bytes, evicts only rebuild
     ).toBe(true);
 
     await fixture.db.pool.query('UPDATE attachments SET expires_at=0 WHERE device_export');
-    await service.prune();
+    await new AttachmentRepository(fixture.db).prune(Date.now());
     expect((await service.read(context, legacy.id)).bytes).toEqual(legacyBytes);
   } finally {
     await fixture.close();

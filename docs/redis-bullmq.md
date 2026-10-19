@@ -32,7 +32,7 @@ Delivery is at least once: a crash after Telegram accepts a send but before the 
 
 ## Retention scheduler
 
-Every relay upserts the same BullMQ job scheduler (`retention`, every 60 seconds) and runs a worker, so each interval produces one job and one relay runs it. The job marks commands unacknowledged after 15 seconds as unknown, prunes expired attachments, drops events older than 24 hours or beyond each device's newest 10 000, and drops command audit older than 24 hours. Deletes run in batches of 5 000 rows until a batch removes nothing. Without Redis the relay runs the same pass in-process every 60 seconds.
+Every relay upserts the same BullMQ job scheduler (`retention`, every 60 seconds) and runs a worker, so each interval produces one job and one relay runs it. The job prunes expired attachments, drops events older than 24 hours or beyond each device's newest 10 000, and drops command audit older than 24 hours. Deletes run in batches of 5 000 rows until a batch removes nothing. Without Redis the relay runs the same pass in-process every 60 seconds. Marking commands unacknowledged after 15 seconds as unknown is not part of it: every relay runs that idempotent update itself every 5 seconds.
 
 ## Verification
 
