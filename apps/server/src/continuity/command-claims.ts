@@ -1,6 +1,6 @@
 import type { PoolClient } from 'pg';
 import { ErrorCode, HandoffPhase } from '@protocol';
-import { Fault } from '../auth/security.js';
+import { Fault } from '../http/fault.js';
 import { ContinuityError } from './types.js';
 
 export const CommandClaimKind = {
@@ -43,7 +43,7 @@ export async function reserveHandoffCommandIds(
   );
 
   if (existing.rows.length) {
-    throw new Fault(ContinuityError.CommandIdReserved, 409);
+    throw new Fault(ContinuityError.CommandIdReserved);
   }
 
   for (const entry of ids) {
@@ -83,11 +83,11 @@ export async function claimRelayCommandId(
       claim.device_id !== deviceId ||
       claim.kind !== CommandClaimKind.Command
     ) {
-      throw new Fault(ContinuityError.CommandIdReserved, 409);
+      throw new Fault(ContinuityError.CommandIdReserved);
     }
 
     if (claim.fingerprint !== fingerprint) {
-      throw new Fault(ErrorCode.COMMAND_ID_REUSED, 409);
+      throw new Fault(ErrorCode.COMMAND_ID_REUSED);
     }
 
     return false;
@@ -102,11 +102,11 @@ export async function claimRelayCommandId(
 
   if (oldAudit) {
     if (oldAudit.owner_id !== ownerId || oldAudit.device_id !== deviceId) {
-      throw new Fault(ContinuityError.CommandIdReserved, 409);
+      throw new Fault(ContinuityError.CommandIdReserved);
     }
 
     if (oldAudit.fingerprint !== fingerprint) {
-      throw new Fault(ErrorCode.COMMAND_ID_REUSED, 409);
+      throw new Fault(ErrorCode.COMMAND_ID_REUSED);
     }
 
     await tx.query(
@@ -160,7 +160,7 @@ export async function claimHandoffCreateCommandId(
     claim.operation_id !== operationId ||
     claim.kind !== CommandClaimKind.HandoffCreate
   ) {
-    throw new Fault(ContinuityError.CommandIdReserved, 409);
+    throw new Fault(ContinuityError.CommandIdReserved);
   }
 
   const oldAudit = (
@@ -172,18 +172,18 @@ export async function claimHandoffCreateCommandId(
 
   if (oldAudit) {
     if (oldAudit.owner_id !== ownerId || oldAudit.device_id !== deviceId) {
-      throw new Fault(ContinuityError.CommandIdReserved, 409);
+      throw new Fault(ContinuityError.CommandIdReserved);
     }
 
     if (oldAudit.fingerprint !== fingerprint) {
-      throw new Fault(ErrorCode.COMMAND_ID_REUSED, 409);
+      throw new Fault(ErrorCode.COMMAND_ID_REUSED);
     }
 
     return false;
   }
 
   if (!Number.isSafeInteger(now)) {
-    throw new Fault(ErrorCode.INVALID_REQUEST, 400);
+    throw new Fault(ErrorCode.INVALID_REQUEST);
   }
 
   return true;

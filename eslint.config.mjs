@@ -1,4 +1,4 @@
-import { nodeSourceConfig } from './apps/daemon/eslint.config.mjs';
+import { httpStatusConfig, nodeSourceConfig } from './apps/daemon/eslint.config.mjs';
 
 export default [
   {
@@ -28,4 +28,5 @@ export default [
     'tests/**/*.{ts,js,mjs}',
     '*.{ts,js,mjs}',
   ]),
+  ...httpStatusConfig(['apps/server/src/**/*.{ts,js,mjs}']),
 ];

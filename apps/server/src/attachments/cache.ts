@@ -1,5 +1,5 @@
 import { type PoolClient } from 'pg';
-import { Fault } from '../auth/security.js';
+import { Fault } from '../http/fault.js';
 import { ATTACHMENT_OWNER_QUOTA_BYTES } from './limits.js';
 import { AttachmentFaultCode } from './errors.js';
 
@@ -43,7 +43,7 @@ export async function reserveAttachmentBytes(tx: PoolClient, owner: string, need
   }
 
   if (used + needed > ATTACHMENT_OWNER_QUOTA_BYTES) {
-    throw new Fault(AttachmentFaultCode.Quota, 413);
+    throw new Fault(AttachmentFaultCode.Quota);
   }
 
   await tx.query(

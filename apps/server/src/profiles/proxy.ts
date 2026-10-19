@@ -8,8 +8,10 @@ import {
   type ProfileResponse,
   type ServerFrame,
   type DeviceFrame,
+  HttpStatus,
 } from '@protocol';
-import { Fault, type Principal } from '../auth/security.js';
+import { type Principal } from '../auth/security.js';
+import { Fault } from '../http/fault.js';
 import type { DeviceService } from '../devices/service.js';
 import { ProfileProxyLimit } from './values.js';
 import { ProfileRequestRegistry } from './transport/pending.js';
@@ -47,11 +49,11 @@ export class ProfileProxy {
       connection.device.owner_id !== principal.userId ||
       connection.device.generation !== device.generation
     ) {
-      throw new Fault(ErrorCode.DEVICE_OFFLINE, 409);
+      throw new Fault(ErrorCode.DEVICE_OFFLINE);
     }
 
     if (signal?.aborted) {
-      throw new Fault(ErrorCode.REQUEST_FAILED, 409);
+      throw new Fault(ErrorCode.REQUEST_FAILED);
     }
 
     if (
@@ -59,7 +61,7 @@ export class ProfileProxy {
       [...this.pending.values()].filter((item) => item.deviceId === deviceId).length >=
         ProfileProxyLimit.PerDevice
     ) {
-      throw new Fault(ErrorCode.QUEUE_FULL, 429);
+      throw new Fault(ErrorCode.QUEUE_FULL);
     }
 
     const requestId = randomUUID();
@@ -105,7 +107,7 @@ export class ProfileProxy {
       await authorize();
 
       if (this.live.get(deviceId) !== connection) {
-        throw new Fault(ErrorCode.STALE_EPOCH, 409);
+        throw new Fault(ErrorCode.STALE_EPOCH);
       }
 
       return response;
@@ -142,18 +144,18 @@ export class ProfileProxy {
       const reply = profileReplySchema.parse(frame.reply);
 
       if (!reply.ok) {
-        throw new Fault(reply.code, 409);
+        throw new Fault(reply.code, HttpStatus.Conflict);
       }
 
       if (reply.response.kind !== pending.kind) {
-        throw new Fault(ErrorCode.INVALID_FRAME, 409);
+        throw new Fault(ErrorCode.INVALID_FRAME);
       }
 
       this.pending.take(frame.requestId);
       pending.resolve(reply.response);
     } catch (error) {
       this.pending.take(frame.requestId);
-      pending.reject(error instanceof Fault ? error : new Fault(ErrorCode.INVALID_FRAME, 409));
+      pending.reject(error instanceof Fault ? error : new Fault(ErrorCode.INVALID_FRAME));
     }
   }
 

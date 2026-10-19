@@ -1,6 +1,6 @@
 import type { PoolClient } from 'pg';
 import { executionLinkSchema, type Conversation } from '@protocol';
-import { Fault } from '../../auth/security.js';
+import { Fault } from '../../http/fault.js';
 import { ContinuityError, type InitialExecution } from '../types.js';
 import { asConversation, asExecution, type ContinuityRow } from './mapping.js';
 
@@ -19,11 +19,11 @@ export class ConversationRepository {
     ).rows[0];
 
     if (!row || row.revoked_at !== null) {
-      throw new Fault(ContinuityError.NotFound, 404);
+      throw new Fault(ContinuityError.NotFound);
     }
 
     if (row.generation !== generation) {
-      throw new Fault(ContinuityError.DeviceGenerationChanged, 409);
+      throw new Fault(ContinuityError.DeviceGenerationChanged);
     }
 
     return { generation: row.generation, snapshot: row.snapshot };
@@ -38,7 +38,7 @@ export class ConversationRepository {
     ).rows[0];
 
     if (!row) {
-      throw new Fault(ContinuityError.NotFound, 404);
+      throw new Fault(ContinuityError.NotFound);
     }
 
     return asConversation(row);
@@ -64,7 +64,7 @@ export class ConversationRepository {
     ).rows[0];
 
     if (!row) {
-      throw new Fault(ContinuityError.NotFound, 404);
+      throw new Fault(ContinuityError.NotFound);
     }
 
     return asExecution(row);
@@ -157,7 +157,7 @@ export class ConversationRepository {
     );
 
     if (!result.rowCount) {
-      throw new Fault(ContinuityError.VersionConflict, 409);
+      throw new Fault(ContinuityError.VersionConflict);
     }
 
     return asConversation(result.rows[0] as ContinuityRow);
@@ -177,7 +177,7 @@ export class ConversationRepository {
     );
 
     if (!result.rowCount) {
-      throw new Fault(ContinuityError.VersionConflict, 409);
+      throw new Fault(ContinuityError.VersionConflict);
     }
 
     return asConversation(result.rows[0] as ContinuityRow);

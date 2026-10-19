@@ -1,7 +1,8 @@
 import { ErrorCode } from '@protocol';
 import { randomUUID } from 'node:crypto';
 import { type Database } from '../db/database.js';
-import { Fault, hash, secret, type Principal } from '../auth/security.js';
+import { hash, secret, type Principal } from '../auth/security.js';
+import { Fault } from '../http/fault.js';
 
 export interface DeviceRecord {
   id: string;
@@ -23,7 +24,7 @@ export class DeviceService {
     ).rows[0];
 
     if (!row) {
-      throw new Fault(ErrorCode.NOT_FOUND, 404);
+      throw new Fault(ErrorCode.NOT_FOUND);
     }
 
     return row;
@@ -37,7 +38,7 @@ export class DeviceService {
     ).rows[0];
 
     if (!row) {
-      throw new Fault(ErrorCode.UNAUTHORIZED, 401);
+      throw new Fault(ErrorCode.UNAUTHORIZED);
     }
 
     return row;
@@ -71,7 +72,7 @@ export class DeviceService {
         (await tx.query('SELECT id FROM devices WHERE owner_id=$1 AND revoked_at IS NULL', [p.userId]))
           .rowCount
       ) {
-        throw new Fault(ErrorCode.DEVICE_QUOTA, 409);
+        throw new Fault(ErrorCode.DEVICE_QUOTA);
       }
 
       const claimId = randomUUID();
@@ -82,7 +83,7 @@ export class DeviceService {
       );
 
       if (!row.rowCount) {
-        throw new Fault(ErrorCode.PAIRING_UNAVAILABLE, 409);
+        throw new Fault(ErrorCode.PAIRING_UNAVAILABLE);
       }
 
       return { claimId: row.rows[0].claim_id as string };
@@ -104,7 +105,7 @@ export class DeviceService {
     ).rows[0];
 
     if (!row) {
-      throw new Fault(ErrorCode.NOT_FOUND, 404);
+      throw new Fault(ErrorCode.NOT_FOUND);
     }
 
     return { claimId: row.claim_id, telegramId: row.telegram_id, expiresAt: Number(row.expires_at) };
@@ -119,7 +120,7 @@ export class DeviceService {
       ).rows[0];
 
       if (!row) {
-        throw new Fault(ErrorCode.NOT_FOUND, 404);
+        throw new Fault(ErrorCode.NOT_FOUND);
       }
 
       if (!approved) {
@@ -132,7 +133,7 @@ export class DeviceService {
         (await tx.query('SELECT id FROM devices WHERE owner_id=$1 AND revoked_at IS NULL', [row.owner_id]))
           .rowCount
       ) {
-        throw new Fault(ErrorCode.DEVICE_QUOTA, 409);
+        throw new Fault(ErrorCode.DEVICE_QUOTA);
       }
 
       const deviceId = randomUUID(),

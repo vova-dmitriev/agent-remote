@@ -1,5 +1,5 @@
 import { ErrorCode, profileListSchema, type ProfileList } from '@protocol';
-import { Fault } from '../auth/security.js';
+import { Fault } from '../http/fault.js';
 import type { Database } from '../db/database.js';
 
 export class ProfileMetadataCache {
@@ -14,7 +14,7 @@ export class ProfileMetadataCache {
     ).rows[0];
 
     if (!row) {
-      throw new Fault(ErrorCode.NOT_FOUND, 404);
+      throw new Fault(ErrorCode.NOT_FOUND);
     }
 
     if (!row.data) {
@@ -28,7 +28,7 @@ export class ProfileMetadataCache {
     const data = profileListSchema.parse(input);
 
     if ([...data.profiles, ...data.operations].some((value) => value.deviceId !== deviceId)) {
-      throw new Fault(ErrorCode.INVALID_DEVICE, 409);
+      throw new Fault(ErrorCode.INVALID_DEVICE);
     }
 
     const result = await this.database.pool.query(
@@ -37,7 +37,7 @@ export class ProfileMetadataCache {
     );
 
     if (!result.rowCount) {
-      throw new Fault(ErrorCode.NOT_FOUND, 404);
+      throw new Fault(ErrorCode.NOT_FOUND);
     }
   }
 }

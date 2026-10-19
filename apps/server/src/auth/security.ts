@@ -1,16 +1,9 @@
 import { ErrorCode, MessageRole } from '@protocol';
+import { Fault } from '../http/fault.js';
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 
 export const hash = (value: string) => createHash('sha256').update(value).digest('hex');
 export const secret = () => randomBytes(32).toString('hex');
-export class Fault extends Error {
-  constructor(
-    public code: string,
-    public status = 400,
-  ) {
-    super(code);
-  }
-}
 export interface Principal {
   userId: string;
   telegramId: string;
@@ -78,7 +71,7 @@ export function telegramIdentity(raw: string, botToken: string, now = Date.now()
 
     throw new Error();
   } catch {
-    throw new Fault(ErrorCode.UNAUTHORIZED, 401);
+    throw new Fault(ErrorCode.UNAUTHORIZED);
   }
 }
 
@@ -95,7 +88,7 @@ export class Limiter {
       }
 
       if (this.buckets.size >= 10000) {
-        throw new Fault(ErrorCode.RATE_LIMITED, 429);
+        throw new Fault(ErrorCode.RATE_LIMITED);
       }
     }
 
@@ -105,7 +98,7 @@ export class Limiter {
     }
 
     if (++bucket.count > limit) {
-      throw new Fault(ErrorCode.RATE_LIMITED, 429);
+      throw new Fault(ErrorCode.RATE_LIMITED);
     }
   }
 }

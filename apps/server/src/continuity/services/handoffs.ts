@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { startHandoffRequestSchema, type HandoffOperation } from '@protocol';
-import { Fault, type Principal } from '../../auth/security.js';
+import { type Principal } from '../../auth/security.js';
+import { Fault } from '../../http/fault.js';
 import type { Database } from '../../db/database.js';
 import { ContinuityRepository } from '../repository.js';
 import { ContinuityError, type ContinuityReadScope, type StartHandoffInput } from '../types.js';
@@ -23,7 +24,7 @@ export class HandoffContinuityService {
     const request = input.request;
 
     if (request.ownerId !== principal.userId || request.deviceId !== scope.deviceId) {
-      throw new Fault(ContinuityError.NotFound, 404);
+      throw new Fault(ContinuityError.NotFound);
     }
 
     const requestFingerprint = fingerprint(input);
@@ -41,7 +42,7 @@ export class HandoffContinuityService {
 
         if (prior) {
           if (prior.fingerprint !== requestFingerprint) {
-            throw new Fault(ContinuityError.ReplayConflict, 409);
+            throw new Fault(ContinuityError.ReplayConflict);
           }
 
           return prior.value;
@@ -56,11 +57,11 @@ export class HandoffContinuityService {
         );
 
         if (conversation.version !== request.expectedConversationVersion) {
-          throw new Fault(ContinuityError.VersionConflict, 409);
+          throw new Fault(ContinuityError.VersionConflict);
         }
 
         if (conversation.activeExecutionId !== request.sourceExecutionId) {
-          throw new Fault(ContinuityError.SourceNotActive, 409);
+          throw new Fault(ContinuityError.SourceNotActive);
         }
 
         const source = await this.repository.execution(
@@ -72,7 +73,7 @@ export class HandoffContinuityService {
         );
 
         if (source.generation !== request.sourceGeneration) {
-          throw new Fault(ContinuityError.SourceNotActive, 409);
+          throw new Fault(ContinuityError.SourceNotActive);
         }
 
         if (
@@ -83,7 +84,7 @@ export class HandoffContinuityService {
             request.conversationId,
           )
         ) {
-          throw new Fault(ContinuityError.OperationActive, 409);
+          throw new Fault(ContinuityError.OperationActive);
         }
 
         const now = this.now();
@@ -133,7 +134,7 @@ export class HandoffContinuityService {
       });
     } catch (error) {
       if (error && typeof error === 'object' && 'code' in error && error.code === '23505') {
-        throw new Fault(ContinuityError.ReplayConflict, 409);
+        throw new Fault(ContinuityError.ReplayConflict);
       }
 
       throw error;

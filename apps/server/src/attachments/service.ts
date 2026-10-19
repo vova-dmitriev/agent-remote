@@ -13,7 +13,7 @@ import { ATTACHMENT_REUSE_EXPIRY_MARGIN_MS } from './limits.js';
 import { AttachmentFaultCode } from './errors.js';
 import { z } from 'zod';
 import { pruneAttachmentBlobs, reserveAttachmentBytes } from './cache.js';
-import { Fault } from '../auth/security.js';
+import { Fault } from '../http/fault.js';
 import { type Database } from '../db/database.js';
 import { describeAttachment } from './media.js';
 
@@ -43,7 +43,7 @@ export class AttachmentService {
     ).rows[0];
 
     if (!row) {
-      throw new Fault(ErrorCode.NOT_FOUND, 404);
+      throw new Fault(ErrorCode.NOT_FOUND);
     }
 
     return sessionSchema.parse(row.data);
@@ -73,7 +73,7 @@ export class AttachmentService {
     }
 
     if (input.bytes.length > MAX_ATTACHMENT_BYTES) {
-      throw new Fault(AttachmentFaultCode.TooLarge, 413);
+      throw new Fault(AttachmentFaultCode.TooLarge);
     }
 
     const descriptor = describeAttachment(input.uploadId, input.name, input.mimeType, input.bytes);
@@ -87,7 +87,7 @@ export class AttachmentService {
       );
 
       if (!device.rowCount) {
-        throw new Fault(ErrorCode.NOT_FOUND, 404);
+        throw new Fault(ErrorCode.NOT_FOUND);
       }
 
       const sessionRow = (
@@ -98,13 +98,13 @@ export class AttachmentService {
       ).rows[0];
 
       if (!sessionRow) {
-        throw new Fault(ErrorCode.NOT_FOUND, 404);
+        throw new Fault(ErrorCode.NOT_FOUND);
       }
 
       const session = sessionSchema.parse(sessionRow.data);
 
       if (session.generation !== input.generation) {
-        throw new Fault(ErrorCode.STALE_SESSION, 409);
+        throw new Fault(ErrorCode.STALE_SESSION);
       }
 
       if (
@@ -114,7 +114,7 @@ export class AttachmentService {
           session.binding !== BindingState.Verified ||
           session.integrationState !== IntegrationState.Ready)
       ) {
-        throw new Fault(ErrorCode.CAPABILITY_UNAVAILABLE, 409);
+        throw new Fault(ErrorCode.CAPABILITY_UNAVAILABLE);
       }
 
       const existing = (
@@ -136,11 +136,11 @@ export class AttachmentService {
           existing.session_id !== context.sessionId ||
           JSON.stringify(attachmentSchema.parse(existing.descriptor)) !== JSON.stringify(descriptor)
         ) {
-          throw new Fault(AttachmentFaultCode.IdReused, 409);
+          throw new Fault(AttachmentFaultCode.IdReused);
         }
 
         if (Number(existing.expires_at) <= Date.now()) {
-          throw new Fault(AttachmentFaultCode.Expired, 410);
+          throw new Fault(AttachmentFaultCode.Expired);
         }
 
         if (existing.available) {
@@ -293,15 +293,15 @@ export class AttachmentService {
     ).rows[0];
 
     if (!row) {
-      throw new Fault(ErrorCode.NOT_FOUND, 404);
+      throw new Fault(ErrorCode.NOT_FOUND);
     }
 
     if (Number(row.expires_at) <= Date.now()) {
-      throw new Fault(AttachmentFaultCode.Expired, 410);
+      throw new Fault(AttachmentFaultCode.Expired);
     }
 
     if (!row.bytes) {
-      throw new Fault(AttachmentFaultCode.RebuildRequired, 503);
+      throw new Fault(AttachmentFaultCode.RebuildRequired);
     }
 
     return { descriptor: attachmentSchema.parse(row.descriptor), bytes: row.bytes };
@@ -324,7 +324,7 @@ export class AttachmentService {
     ).rows[0];
 
     if (!row) {
-      throw new Fault(ErrorCode.NOT_FOUND, 404);
+      throw new Fault(ErrorCode.NOT_FOUND);
     }
 
     return { messageId: row.source_message_id, position: row.source_position };
@@ -344,15 +344,15 @@ export class AttachmentService {
       const row = stored.get(descriptor.id);
 
       if (!row) {
-        throw new Fault(ErrorCode.NOT_FOUND, 404);
+        throw new Fault(ErrorCode.NOT_FOUND);
       }
 
       if (Number(row.expires_at) <= Date.now()) {
-        throw new Fault(AttachmentFaultCode.Expired, 410);
+        throw new Fault(AttachmentFaultCode.Expired);
       }
 
       if (JSON.stringify(attachmentSchema.parse(row.descriptor)) !== JSON.stringify(descriptor)) {
-        throw new Fault(AttachmentFaultCode.Mismatch, 409);
+        throw new Fault(AttachmentFaultCode.Mismatch);
       }
     }
   }

@@ -12,7 +12,7 @@ import {
   ProfileStatus,
   AgentProvider,
 } from '@protocol';
-import { Fault } from '../../auth/security.js';
+import { Fault } from '../../http/fault.js';
 import type { Database } from '../../db/database.js';
 import { ProfileRoutingStorage } from './values.js';
 
@@ -63,7 +63,7 @@ export class ProfileRoutingRepository {
       const current = row.rows[0];
 
       if (!current) {
-        throw new Fault(ErrorCode.NOT_FOUND, 404);
+        throw new Fault(ErrorCode.NOT_FOUND);
       }
 
       const previous = current.routing
@@ -71,7 +71,7 @@ export class ProfileRoutingRepository {
         : empty(ownerId, deviceId);
 
       if (previous.version !== input.expectedVersion) {
-        throw new Fault(ErrorCode.LOCAL_REVISION_CONFLICT, 409);
+        throw new Fault(ErrorCode.LOCAL_REVISION_CONFLICT);
       }
 
       this.validateDestinations(input, current.metadata);
@@ -103,7 +103,7 @@ export class ProfileRoutingRepository {
     const observation = profileQuotaObservationSchema.parse(raw);
 
     if (observation.ownerId !== ownerId || observation.deviceId !== deviceId) {
-      throw new Fault(ErrorCode.INVALID_DEVICE, 409);
+      throw new Fault(ErrorCode.INVALID_DEVICE);
     }
 
     const scopeKey = createHash('sha256')
@@ -117,7 +117,7 @@ export class ProfileRoutingRepository {
       );
 
       if (!row.rows[0]) {
-        throw new Fault(ErrorCode.NOT_FOUND, 404);
+        throw new Fault(ErrorCode.NOT_FOUND);
       }
 
       const profile = this.profiles(row.rows[0].metadata).find((item) => item.id === observation.profileId);
@@ -132,7 +132,7 @@ export class ProfileRoutingRepository {
         (observation.workspaceRef !== undefined &&
           profile.identity?.workspaceRef !== observation.workspaceRef)
       ) {
-        throw new Fault(ErrorCode.LOCAL_REVISION_CONFLICT, 409);
+        throw new Fault(ErrorCode.LOCAL_REVISION_CONFLICT);
       }
 
       await tx.query(
@@ -156,7 +156,7 @@ export class ProfileRoutingRepository {
     );
 
     if (!result.rows[0]) {
-      throw new Fault(ErrorCode.NOT_FOUND, 404);
+      throw new Fault(ErrorCode.NOT_FOUND);
     }
 
     return result.rows[0];
@@ -186,14 +186,14 @@ export class ProfileRoutingRepository {
           (rule.sourceModelId !== undefined &&
             !source.models.some((model) => model.id === rule.sourceModelId))
         ) {
-          throw new Fault(ErrorCode.PROFILE_NOT_READY, 409);
+          throw new Fault(ErrorCode.PROFILE_NOT_READY);
         }
 
         if (
           target.authMode === ProfileAuthMode.ApiKey &&
           (!policy.apiSpending.enabled || policy.apiSpending.limitUsd === null)
         ) {
-          throw new Fault(ErrorCode.INVALID_REQUEST, 400);
+          throw new Fault(ErrorCode.INVALID_REQUEST);
         }
       }
     }

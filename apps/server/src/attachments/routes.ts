@@ -1,4 +1,4 @@
-import { ErrorCode, AttachmentKind, MAX_ATTACHMENT_BYTES } from '@protocol';
+import { ErrorCode, AttachmentKind, MAX_ATTACHMENT_BYTES, HttpStatus } from '@protocol';
 import {
   ATTACHMENT_UPLOADS_PER_WINDOW,
   ATTACHMENT_MAX_ACTIVE_UPLOADS,
@@ -10,14 +10,15 @@ import { z } from 'zod';
 import { type Database } from '../db/database.js';
 import { type AuthService } from '../auth/auth-service.js';
 import { type DeviceService } from '../devices/service.js';
-import { Fault, Limiter } from '../auth/security.js';
+import { Limiter } from '../auth/security.js';
+import { Fault } from '../http/fault.js';
 import { AttachmentService, type AttachmentContext } from './service.js';
 
 const bearer = (req: Request) => {
   const value = req.headers.authorization;
 
   if (!value?.startsWith('Bearer ') || value.length > 520) {
-    throw new Fault(ErrorCode.UNAUTHORIZED, 401);
+    throw new Fault(ErrorCode.UNAUTHORIZED);
   }
 
   return value.slice(7);
@@ -31,7 +32,7 @@ const fail = (res: Response, error: unknown) => {
   } else if (error instanceof z.ZodError || error instanceof URIError) {
     fault = new Fault(AttachmentFaultCode.Invalid);
   } else {
-    fault = new Fault(ErrorCode.INTERNAL_ERROR, 503);
+    fault = new Fault(ErrorCode.INTERNAL_ERROR);
   }
 
   if (!res.headersSent) {
@@ -78,7 +79,7 @@ export function mountAttachmentRoutes(
           ).rows[0];
 
           if (!row) {
-            throw new Fault(ErrorCode.NOT_FOUND, 404);
+            throw new Fault(ErrorCode.NOT_FOUND);
           }
 
           contexts.set(req, { ownerId: principal.userId, deviceId: row.device_id, sessionId });
@@ -94,13 +95,13 @@ export function mountAttachmentRoutes(
       (req: Request, res: Response, next: NextFunction) => {
         try {
           if (!deviceMode && !inputEnabled) {
-            throw new Fault(ErrorCode.CAPABILITY_UNAVAILABLE, 409);
+            throw new Fault(ErrorCode.CAPABILITY_UNAVAILABLE);
           }
 
           limiter.take(contexts.get(req)!.ownerId, ATTACHMENT_UPLOADS_PER_WINDOW);
 
           if (Number(req.headers['content-length']) > MAX_ATTACHMENT_BYTES) {
-            throw new Fault(AttachmentFaultCode.TooLarge, 413);
+            throw new Fault(AttachmentFaultCode.TooLarge);
           }
 
           if (req.headers['content-encoding'] && req.headers['content-encoding'] !== 'identity') {
@@ -108,7 +109,7 @@ export function mountAttachmentRoutes(
           }
 
           if (active >= ATTACHMENT_MAX_ACTIVE_UPLOADS) {
-            throw new Fault(AttachmentFaultCode.UploadBusy, 429);
+            throw new Fault(AttachmentFaultCode.UploadBusy);
           }
 
           active++;
@@ -125,7 +126,7 @@ export function mountAttachmentRoutes(
           res.once('close', release);
 
           req.setTimeout(ATTACHMENT_UPLOAD_TIMEOUT_MS, () => {
-            fail(res, new Fault(AttachmentFaultCode.UploadTimeout, 408));
+            fail(res, new Fault(AttachmentFaultCode.UploadTimeout));
             req.destroy();
           });
 
@@ -181,9 +182,6 @@ export function mountAttachmentRoutes(
             error && typeof error === 'object' && 'type' in error && error.type === 'entity.too.large'
               ? AttachmentFaultCode.TooLarge
               : AttachmentFaultCode.Invalid,
-            error && typeof error === 'object' && 'type' in error && error.type === 'entity.too.large'
-              ? 413
-              : 400,
           ),
         );
       },
@@ -192,7 +190,7 @@ export function mountAttachmentRoutes(
     http.head(path + '/:attachmentId', authorize, (req, res) => {
       void service
         .available(contexts.get(req)!, String(req.params.attachmentId))
-        .then((available) => res.status(available ? 204 : 404).end())
+        .then((available) => res.status(available ? HttpStatus.NoContent : HttpStatus.NotFound).end())
         .catch((error) => fail(res, error));
     });
 

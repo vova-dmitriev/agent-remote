@@ -7,7 +7,8 @@ import {
   handoffSeedIntentFrameSchema,
   type HandoffSeedIntentFrame,
 } from '@protocol';
-import { Fault, type Principal } from '../../../auth/security.js';
+import { type Principal } from '../../../auth/security.js';
+import { Fault } from '../../../http/fault.js';
 import type { Database } from '../../../db/database.js';
 import { ContinuityRepository } from '../../repository.js';
 import { ContinuityError, type ContinuityReadScope } from '../../types.js';
@@ -25,7 +26,7 @@ export class AuthenticatedSeedIntentService {
     const intent = handoffSeedIntentFrameSchema.parse(raw);
 
     if (intent.type !== FrameType.HandoffSeedIntent) {
-      throw new Fault(ContinuityError.SeedIntentMismatch, 409);
+      throw new Fault(ContinuityError.SeedIntentMismatch);
     }
 
     return this.database.transaction(async (tx) => {
@@ -57,7 +58,7 @@ export class AuthenticatedSeedIntentService {
         operation.selection.model !== intent.selection.model ||
         operation.selection.effort !== intent.selection.effort
       ) {
-        throw new Fault(ContinuityError.SeedIntentMismatch, 409);
+        throw new Fault(ContinuityError.SeedIntentMismatch);
       }
 
       const target = await this.repository.execution(
@@ -81,7 +82,7 @@ export class AuthenticatedSeedIntentService {
         )) ||
         !readySnapshot(device.snapshot, target)
       ) {
-        throw new Fault(ContinuityError.SeedIntentMismatch, 409);
+        throw new Fault(ContinuityError.SeedIntentMismatch);
       }
 
       const fingerprint = createHash('sha256').update(JSON.stringify(intent)).digest('hex');
@@ -100,7 +101,7 @@ export class AuthenticatedSeedIntentService {
           previous.fingerprint !== fingerprint ||
           (previous.status !== CommandStatus.Accepted && previous.status !== CommandStatus.Dispatched)
         ) {
-          throw new Fault(ContinuityError.SeedIntentMismatch, 409);
+          throw new Fault(ContinuityError.SeedIntentMismatch);
         }
 
         return;

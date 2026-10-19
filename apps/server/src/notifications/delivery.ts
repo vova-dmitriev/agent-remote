@@ -1,4 +1,4 @@
-import { EventType } from '@protocol';
+import { EventType, HttpStatus } from '@protocol';
 import { NotificationKind } from '../domain/notifications.js';
 import { type Database } from '../db/database.js';
 import { notificationContext } from './context.js';
@@ -118,7 +118,7 @@ export class NotificationDelivery {
         return 0;
       }
 
-      if (response.error_code === 403) {
+      if (response.error_code === HttpStatus.Forbidden) {
         await tx.query('UPDATE users SET notifications_enabled=false WHERE id=$1', [row.owner_id]);
         await tx.query('UPDATE notification_outbox SET sent=true WHERE id=$1', [row.id]);
 
@@ -135,7 +135,7 @@ export class NotificationDelivery {
         row.id,
       ]);
 
-      if (response.error_code === 429) {
+      if (response.error_code === HttpStatus.TooManyRequests) {
         this.nextGlobal = now + retry;
       }
 

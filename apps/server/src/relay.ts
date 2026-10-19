@@ -57,7 +57,8 @@ import { Database } from './db/database.js';
 import { BrowserSessions, readRefreshCookie, refreshCookie } from './auth/browser-sessions.js';
 import { AuthService } from './auth/auth-service.js';
 import { DeviceService, type DeviceRecord } from './devices/service.js';
-import { Fault, Limiter, hash, telegramIdentity, type Principal } from './auth/security.js';
+import { Limiter, hash, telegramIdentity, type Principal } from './auth/security.js';
+import { Fault } from './http/fault.js';
 import { claimHandoffCreateCommandId, claimRelayCommandId } from './continuity/command-claims.js';
 import { ContinuityService } from './continuity/service.js';
 import { ContinuityError } from './continuity/types.js';
@@ -96,7 +97,7 @@ const bearer = (req: Request) => {
   const value = req.headers.authorization;
 
   if (!value?.startsWith('Bearer ') || value.length > 520) {
-    throw new Fault(ErrorCode.UNAUTHORIZED, 401);
+    throw new Fault(ErrorCode.UNAUTHORIZED);
   }
 
   return value.slice(7);
@@ -119,7 +120,7 @@ const fault = (error: unknown): Fault => {
     return new Fault(ErrorCode.INVALID_REQUEST);
   }
 
-  return new Fault(ErrorCode.INTERNAL_ERROR, 503);
+  return new Fault(ErrorCode.INTERNAL_ERROR);
 };
 
 function commandCapability(action: ClientCommand['action']['type']) {
@@ -209,7 +210,7 @@ export async function createRelay(config: RelayConfig) {
       );
 
       if (!page) {
-        throw new Fault(ErrorCode.ATTACHMENT_UNAVAILABLE, 503);
+        throw new Fault(ErrorCode.ATTACHMENT_UNAVAILABLE);
       }
     },
   );
@@ -319,7 +320,7 @@ export async function createRelay(config: RelayConfig) {
     ).rows[0];
 
     if (!row) {
-      throw new Fault(ErrorCode.NOT_FOUND, 404);
+      throw new Fault(ErrorCode.NOT_FOUND);
     }
 
     return fence.run(row.device_id, async () => {
@@ -328,7 +329,7 @@ export async function createRelay(config: RelayConfig) {
       const operation = await continuity.getHandoff(p, scope, operationId);
 
       if (operation.phase !== HandoffPhase.CreatingTarget) {
-        throw new Fault(ContinuityError.InvalidPhase, 409);
+        throw new Fault(ContinuityError.InvalidPhase);
       }
 
       const conversation = await continuity.getConversation(p, scope, operation.conversationId);
@@ -353,7 +354,7 @@ export async function createRelay(config: RelayConfig) {
         source.generation !== operation.sourceGeneration ||
         !session?.cwd
       ) {
-        throw new Fault(ErrorCode.STALE_SESSION, 409);
+        throw new Fault(ErrorCode.STALE_SESSION);
       }
 
       const input = clientCommandSchema.parse({
@@ -400,7 +401,7 @@ export async function createRelay(config: RelayConfig) {
 
     if (previous) {
       if (previous.fingerprint !== fingerprint) {
-        throw new Fault(ErrorCode.COMMAND_ID_REUSED, 409);
+        throw new Fault(ErrorCode.COMMAND_ID_REUSED);
       }
 
       await db.transaction((tx) =>
@@ -436,7 +437,7 @@ export async function createRelay(config: RelayConfig) {
     const connection = live.get(source.target.deviceId);
 
     if (!connection) {
-      throw new Fault(ErrorCode.DEVICE_OFFLINE, 409);
+      throw new Fault(ErrorCode.DEVICE_OFFLINE);
     }
 
     const device = await devices.owned(p, source.target.deviceId);
@@ -444,7 +445,7 @@ export async function createRelay(config: RelayConfig) {
     const session = data.sessions.find((s) => s.id === source.sessionId);
 
     if (!session || JSON.stringify(session.target) !== JSON.stringify(source.target)) {
-      throw new Fault(ErrorCode.NOT_FOUND, 404);
+      throw new Fault(ErrorCode.NOT_FOUND);
     }
 
     if (
@@ -452,7 +453,7 @@ export async function createRelay(config: RelayConfig) {
       (source.action.type !== CommandActionType.RestartSession &&
         (session.binding !== BindingState.Verified || session.integrationState !== IntegrationState.Ready))
     ) {
-      throw new Fault(ErrorCode.STALE_SESSION, 409);
+      throw new Fault(ErrorCode.STALE_SESSION);
     }
 
     const capability = commandCapability(source.action.type);
@@ -463,14 +464,14 @@ export async function createRelay(config: RelayConfig) {
         ? !config.permissionsEnabled
         : !config.inputEnabled)
     ) {
-      throw new Fault(ErrorCode.CAPABILITY_UNAVAILABLE, 409);
+      throw new Fault(ErrorCode.CAPABILITY_UNAVAILABLE);
     }
 
     if (
       source.action.type === CommandActionType.RestartSession &&
       (session.target.kind !== TargetKind.ClaudeCodeCli || session.target.connectorId !== ConnectorId.Native)
     ) {
-      throw new Fault(ErrorCode.CAPABILITY_UNAVAILABLE, 409);
+      throw new Fault(ErrorCode.CAPABILITY_UNAVAILABLE);
     }
 
     if (
@@ -479,23 +480,23 @@ export async function createRelay(config: RelayConfig) {
         (candidateValue) => candidateValue === session.target.kind,
       )
     ) {
-      throw new Fault(ErrorCode.CAPABILITY_UNAVAILABLE, 409);
+      throw new Fault(ErrorCode.CAPABILITY_UNAVAILABLE);
     }
 
     if (source.action.type === CommandActionType.CreateSession && source.action.cwd !== session.cwd) {
-      throw new Fault(ErrorCode.INVALID_PROJECT, 400);
+      throw new Fault(ErrorCode.INVALID_PROJECT);
     }
 
     if (
       source.action.type === CommandActionType.Prompt &&
       !canDeliverPrompt(session.status, source.action.delivery)
     ) {
-      throw new Fault(ErrorCode.SESSION_NOT_IDLE, 409);
+      throw new Fault(ErrorCode.SESSION_NOT_IDLE);
     }
 
     if (source.action.type === CommandActionType.Prompt && source.action.attachments?.length) {
       if (!session.capabilities.attachments) {
-        throw new Fault(ErrorCode.CAPABILITY_UNAVAILABLE, 409);
+        throw new Fault(ErrorCode.CAPABILITY_UNAVAILABLE);
       }
 
       await attachments.validate(
@@ -514,7 +515,7 @@ export async function createRelay(config: RelayConfig) {
       );
 
       if (!pending || pending.expiresAt <= Date.now()) {
-        throw new Fault(ErrorCode.PERMISSION_EXPIRED, 409);
+        throw new Fault(ErrorCode.PERMISSION_EXPIRED);
       }
 
       expiresAt = Math.min(expiresAt, pending.expiresAt);
@@ -531,7 +532,7 @@ export async function createRelay(config: RelayConfig) {
       );
 
       if (!pending || pending.expiresAt <= Date.now() || session.status === SessionStatus.Ended) {
-        throw new Fault(ErrorCode.USER_INPUT_EXPIRED, 409);
+        throw new Fault(ErrorCode.USER_INPUT_EXPIRED);
       }
 
       try {
@@ -545,7 +546,7 @@ export async function createRelay(config: RelayConfig) {
 
     const inserted = await db.transaction(async (tx) => {
       if (handoffOperationId && source.action.type !== CommandActionType.CreateSession) {
-        throw new Fault(ContinuityError.CommandIdReserved, 409);
+        throw new Fault(ContinuityError.CommandIdReserved);
       }
 
       const claimed = handoffOperationId
@@ -685,7 +686,7 @@ export async function createRelay(config: RelayConfig) {
 
   route(HttpMethod.Post, '/auth/refresh', async (req) => {
     if (req.headers.origin !== config.publicOrigin) {
-      throw new Fault(ErrorCode.ACCESS_DENIED, 403);
+      throw new Fault(ErrorCode.ACCESS_DENIED);
     }
 
     limiter.take('refresh:' + req.ip, 30);
@@ -711,7 +712,7 @@ export async function createRelay(config: RelayConfig) {
     } catch (error) {
       if (
         !(error instanceof Fault) ||
-        error.code !== 'UNAUTHORIZED' ||
+        error.code !== ErrorCode.UNAUTHORIZED ||
         req.headers.origin !== config.publicOrigin
       ) {
         throw error;
@@ -781,7 +782,7 @@ export async function createRelay(config: RelayConfig) {
       request.kind !== ProfileRequestKind.List &&
       request.kind !== ProfileRequestKind.Operation
     ) {
-      throw new Fault(ErrorCode.CAPABILITY_UNAVAILABLE, 409);
+      throw new Fault(ErrorCode.CAPABILITY_UNAVAILABLE);
     }
 
     const controller = new AbortController();
@@ -838,7 +839,7 @@ export async function createRelay(config: RelayConfig) {
   );
 
   route(
-    'get',
+    HttpMethod.Get,
     '/devices/:id/connectors',
     async (req) => (await devices.owned(await principal(req), String(req.params.id))).connectors,
   );
@@ -897,7 +898,7 @@ export async function createRelay(config: RelayConfig) {
     ).rows[0];
 
     if (!row) {
-      throw new Fault(ErrorCode.NOT_FOUND, 404);
+      throw new Fault(ErrorCode.NOT_FOUND);
     }
 
     return fence.run(row.device_id, async () => {
@@ -924,7 +925,7 @@ export async function createRelay(config: RelayConfig) {
     ).rows[0];
 
     if (!row) {
-      throw new Fault(ErrorCode.NOT_FOUND, 404);
+      throw new Fault(ErrorCode.NOT_FOUND);
     }
 
     if (row.sessionId === null) {
@@ -989,7 +990,7 @@ export async function createRelay(config: RelayConfig) {
 
           if (!client) {
             if (frame.type !== FrameType.Auth) {
-              throw new Fault(ErrorCode.UNAUTHORIZED, 401);
+              throw new Fault(ErrorCode.UNAUTHORIZED);
             }
 
             const p = await auth.authenticate(frame.token);
@@ -1021,7 +1022,7 @@ export async function createRelay(config: RelayConfig) {
             const data = await snapshot(client.principal, frame.deviceId);
 
             if (frame.sessionId && !data.snapshot.sessions.some((s) => s.id === frame.sessionId)) {
-              throw new Fault(ErrorCode.NOT_FOUND, 404);
+              throw new Fault(ErrorCode.NOT_FOUND);
             }
 
             client.deviceId = frame.deviceId;
@@ -1108,7 +1109,7 @@ export async function createRelay(config: RelayConfig) {
 
           if (!connection) {
             if (frame.type !== FrameType.Auth) {
-              throw new Fault(ErrorCode.UNAUTHORIZED, 401);
+              throw new Fault(ErrorCode.UNAUTHORIZED);
             }
 
             const found = await devices.authenticate(frame.token);
@@ -1152,7 +1153,7 @@ export async function createRelay(config: RelayConfig) {
 
           if (frame.type === FrameType.HistoryItem || frame.type === FrameType.HistoryDone) {
             if (live.get(connection.device.id) !== connection) {
-              throw new Fault(ErrorCode.STALE_EPOCH, 409);
+              throw new Fault(ErrorCode.STALE_EPOCH);
             }
 
             sourceHistory.accept(connection, frame);
@@ -1166,7 +1167,7 @@ export async function createRelay(config: RelayConfig) {
             }
 
             if (live.get(connection.device.id) !== connection) {
-              throw new Fault(ErrorCode.STALE_EPOCH, 409);
+              throw new Fault(ErrorCode.STALE_EPOCH);
             }
 
             const ctx = await devices.owned(
@@ -1175,7 +1176,7 @@ export async function createRelay(config: RelayConfig) {
             );
 
             if (ctx.generation !== connection.device.generation) {
-              throw new Fault(ErrorCode.STALE_EPOCH, 409);
+              throw new Fault(ErrorCode.STALE_EPOCH);
             }
 
             connection.lastSeen = Date.now();
@@ -1312,7 +1313,7 @@ export async function createRelay(config: RelayConfig) {
                   )
                 ).rowCount
               ) {
-                throw new Fault(ErrorCode.NOT_FOUND, 404);
+                throw new Fault(ErrorCode.NOT_FOUND);
               }
 
               if (await persistEvent(db, ctx.owner_id, event)) {
@@ -1370,7 +1371,7 @@ export async function createRelay(config: RelayConfig) {
         .catch((error) => {
           send(socket, { type: FrameType.Error, code: fault(error).code });
 
-          if (!connection || fault(error).code === 'STALE_EPOCH') {
+          if (!connection || fault(error).code === ErrorCode.STALE_EPOCH) {
             socket.close(4001, 'UNAUTHORIZED');
           }
         })

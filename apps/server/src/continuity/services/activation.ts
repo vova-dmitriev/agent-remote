@@ -1,5 +1,6 @@
 import { CommandActionType, CommandStatus, HandoffPhase } from '@protocol';
-import { Fault, type Principal } from '../../auth/security.js';
+import { type Principal } from '../../auth/security.js';
+import { Fault } from '../../http/fault.js';
 import type { Database } from '../../db/database.js';
 import { ContinuityRepository } from '../repository.js';
 import { ContinuityError, type ContinuityReadScope } from '../types.js';
@@ -50,7 +51,7 @@ export class ExecutionActivationService {
         conversation.version !== expectedConversationVersion ||
         state.version !== expectedOperationVersion
       ) {
-        throw new Fault(ContinuityError.VersionConflict, 409);
+        throw new Fault(ContinuityError.VersionConflict);
       }
 
       if (
@@ -59,7 +60,7 @@ export class ExecutionActivationService {
         op.phase !== HandoffPhase.DeliveringContext ||
         !op.targetExecutionId
       ) {
-        throw new Fault(ContinuityError.SourceNotActive, 409);
+        throw new Fault(ContinuityError.SourceNotActive);
       }
 
       const target = await this.repository.execution(
@@ -71,7 +72,7 @@ export class ExecutionActivationService {
       );
 
       if (!readySnapshot(device.snapshot, target)) {
-        throw new Fault(ContinuityError.TargetNotReady, 409);
+        throw new Fault(ContinuityError.TargetNotReady);
       }
 
       const proof = await this.repository.seedProof(tx, principal.userId, scope.deviceId, op.id);
@@ -89,7 +90,7 @@ export class ExecutionActivationService {
         proof.target_model !== op.selection.model ||
         proof.target_effort !== (op.selection.effort ?? null)
       ) {
-        throw new Fault(ContinuityError.SeedProofMismatch, 409);
+        throw new Fault(ContinuityError.SeedProofMismatch);
       }
 
       const receipt = await this.repository.command(tx, principal.userId, scope.deviceId, op.seedCommandId);
@@ -100,7 +101,7 @@ export class ExecutionActivationService {
         receipt.status !== CommandStatus.Dispatched ||
         receipt.session_id !== target.nativeSessionId
       ) {
-        throw new Fault(ContinuityError.SeedNotDispatched, 409);
+        throw new Fault(ContinuityError.SeedNotDispatched);
       }
 
       const updated = await this.repository.setActiveExecution(

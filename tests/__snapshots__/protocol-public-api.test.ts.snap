@@ -52,6 +52,7 @@ exports[`keeps the public @protocol export set stable 1`] = `
   "HistoryStatus",
   "HostKind",
   "HttpRequestMethod",
+  "HttpStatus",
   "IntegrationState",
   "LANGUAGE_PREFERENCES",
   "LOCAL_AUTH_ERROR_CODES",

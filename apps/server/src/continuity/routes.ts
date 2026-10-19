@@ -12,7 +12,8 @@ import {
   continuitySourceInspectionSchema,
   startHandoffRequestSchema,
 } from '@protocol';
-import { Fault, type Principal } from '../auth/security.js';
+import { type Principal } from '../auth/security.js';
+import { Fault } from '../http/fault.js';
 import type { DeviceService } from '../devices/service.js';
 import { HttpMethod } from '../domain/http.js';
 import type { Request } from 'express';
@@ -51,7 +52,7 @@ export function mountContinuityRoutes(
     );
 
     if (local.kind !== ContinuityLocalRequestKind.InspectSource) {
-      throw new Fault(ErrorCode.INVALID_FRAME, 409);
+      throw new Fault(ErrorCode.INVALID_FRAME);
     }
 
     const source = continuitySourceInspectionSchema.parse(local.data);
@@ -66,7 +67,7 @@ export function mountContinuityRoutes(
     const input = continuityInspectRequestSchema.parse(request.body);
 
     if (input.deviceId !== deviceId || input.sessionId !== request.params.sessionId) {
-      throw new Fault(ErrorCode.INVALID_REQUEST, 400);
+      throw new Fault(ErrorCode.INVALID_REQUEST);
     }
 
     return inspect(p, deviceId, input.sessionId, input.generation, () => authorize(request));
@@ -78,7 +79,7 @@ export function mountContinuityRoutes(
     const input = continuityConversationRequestSchema.parse(request.body);
 
     if (input.deviceId !== deviceId) {
-      throw new Fault(ErrorCode.INVALID_REQUEST, 400);
+      throw new Fault(ErrorCode.INVALID_REQUEST);
     }
 
     const result = await inspect(p, deviceId, input.sessionId, input.generation, () => authorize(request));
@@ -89,7 +90,7 @@ export function mountContinuityRoutes(
       !result.source.profileId ||
       !result.source.mode
     ) {
-      throw new Fault(ErrorCode.CAPABILITY_UNAVAILABLE, 409);
+      throw new Fault(ErrorCode.CAPABILITY_UNAVAILABLE);
     }
 
     if (result.conversation) {
@@ -119,7 +120,7 @@ export function mountContinuityRoutes(
       const input = continuityListLinksRequestSchema.parse({ deviceId, conversationId });
 
       if (input.deviceId !== deviceId || input.conversationId !== conversationId) {
-        throw new Fault(ErrorCode.INVALID_REQUEST, 400);
+        throw new Fault(ErrorCode.INVALID_REQUEST);
       }
 
       return continuity.listLinks(p, await scope(p, deviceId), conversationId);
@@ -131,7 +132,7 @@ export function mountContinuityRoutes(
     const input = continuityPrepareRequestSchema.parse(request.body);
 
     if (input.deviceId !== request.params.deviceId) {
-      throw new Fault(ErrorCode.INVALID_REQUEST, 400);
+      throw new Fault(ErrorCode.INVALID_REQUEST);
     }
 
     return proxy.request(p, input.deviceId, input, () => authorize(request));
@@ -145,7 +146,7 @@ export function mountContinuityRoutes(
       const input = continuityApproveRequestSchema.parse(request.body);
 
       if (input.deviceId !== request.params.deviceId || input.checkpointId !== request.params.checkpointId) {
-        throw new Fault(ErrorCode.INVALID_REQUEST, 400);
+        throw new Fault(ErrorCode.INVALID_REQUEST);
       }
 
       return proxy.request(p, input.deviceId, input, () => authorize(request));
@@ -158,7 +159,7 @@ export function mountContinuityRoutes(
     const device = await devices.owned(p, input.request.deviceId);
 
     if (input.request.ownerId !== p.userId) {
-      throw new Fault(ErrorCode.ACCESS_DENIED, 403);
+      throw new Fault(ErrorCode.ACCESS_DENIED);
     }
 
     const operation = await continuity.startHandoff(
@@ -190,7 +191,7 @@ export function mountContinuityRoutes(
     });
 
     if (input.deviceId !== request.params.deviceId || input.operationId !== request.params.operationId) {
-      throw new Fault(ErrorCode.INVALID_REQUEST, 400);
+      throw new Fault(ErrorCode.INVALID_REQUEST);
     }
 
     return continuity.getHandoff(p, await scope(p, input.deviceId), input.operationId);
@@ -201,7 +202,7 @@ export function mountContinuityRoutes(
     const input = continuityOperationRequestSchema.parse(request.body);
 
     if (input.deviceId !== request.params.deviceId || input.operationId !== request.params.operationId) {
-      throw new Fault(ErrorCode.INVALID_REQUEST, 400);
+      throw new Fault(ErrorCode.INVALID_REQUEST);
     }
 
     const currentScope = await scope(p, input.deviceId);

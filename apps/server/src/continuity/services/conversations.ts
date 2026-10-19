@@ -1,5 +1,5 @@
 import { conversationSchema } from '@protocol';
-import { Fault } from '../../auth/security.js';
+import { Fault } from '../../http/fault.js';
 import type { Principal } from '../../auth/security.js';
 import type { Database } from '../../db/database.js';
 import { ContinuityRepository } from '../repository.js';
@@ -44,7 +44,7 @@ export class ConversationContinuityService {
         );
 
         if (!sameSource) {
-          throw new Fault(ContinuityError.ReplayConflict, 409);
+          throw new Fault(ContinuityError.ReplayConflict);
         }
 
         return existing;

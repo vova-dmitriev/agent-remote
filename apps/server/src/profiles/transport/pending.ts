@@ -1,5 +1,5 @@
-import { ErrorCode, FrameType, type ServerFrame } from '@protocol';
-import { Fault } from '../../auth/security.js';
+import { ErrorCode, FrameType, type ServerFrame, HttpStatus } from '@protocol';
+import { Fault } from '../../http/fault.js';
 import type { PendingProfileRequest, ProfileConnection } from '../types.js';
 
 export class ProfileRequestRegistry extends Map<string, PendingProfileRequest> {
@@ -37,7 +37,7 @@ export class ProfileRequestRegistry extends Map<string, PendingProfileRequest> {
       });
     }
 
-    pending.reject(new Fault(code, 409));
+    pending.reject(new Fault(code, HttpStatus.Conflict));
   }
 
   cancelAuth(keys: readonly string[]) {

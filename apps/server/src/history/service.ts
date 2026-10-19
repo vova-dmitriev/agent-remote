@@ -16,7 +16,8 @@ import {
 } from './limits.js';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
-import { Fault, type Principal } from '../auth/security.js';
+import { type Principal } from '../auth/security.js';
+import { Fault } from '../http/fault.js';
 import { type Database } from '../db/database.js';
 import { type RedisCache } from '../infrastructure/redis.js';
 
@@ -107,7 +108,7 @@ export class SessionHistory {
     ).rows[0];
 
     if (!session) {
-      throw new Fault(ErrorCode.NOT_FOUND, 404);
+      throw new Fault(ErrorCode.NOT_FOUND);
     }
 
     const before = decode(cursor),

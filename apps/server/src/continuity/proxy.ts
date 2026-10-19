@@ -7,8 +7,10 @@ import {
   type ContinuityLocalResponse,
   type DeviceFrame,
   type ServerFrame,
+  HttpStatus,
 } from '@protocol';
-import { Fault, type Principal } from '../auth/security.js';
+import { type Principal } from '../auth/security.js';
+import { Fault } from '../http/fault.js';
 import type { DeviceService } from '../devices/service.js';
 import type { ProfileConnection } from '../profiles/types.js';
 
@@ -52,15 +54,15 @@ export class ContinuityProxy {
       connection.device.generation !== device.generation ||
       this.live.get(deviceId) !== connection
     ) {
-      throw new Fault(ErrorCode.DEVICE_OFFLINE, 409);
+      throw new Fault(ErrorCode.DEVICE_OFFLINE);
     }
 
     if (signal?.aborted) {
-      throw new Fault(ErrorCode.REQUEST_FAILED, 409);
+      throw new Fault(ErrorCode.REQUEST_FAILED);
     }
 
     if (this.pending.size >= 64) {
-      throw new Fault(ErrorCode.QUEUE_FULL, 429);
+      throw new Fault(ErrorCode.QUEUE_FULL);
     }
 
     const requestId = randomUUID();
@@ -101,7 +103,7 @@ export class ContinuityProxy {
       await this.devices.owned(principal, deviceId);
 
       if (this.live.get(deviceId) !== connection) {
-        throw new Fault(ErrorCode.STALE_EPOCH, 409);
+        throw new Fault(ErrorCode.STALE_EPOCH);
       }
 
       return result;
@@ -135,18 +137,18 @@ export class ContinuityProxy {
       }
 
       if (!frame.reply.ok) {
-        throw new Fault(frame.reply.code, 409);
+        throw new Fault(frame.reply.code, HttpStatus.Conflict);
       }
 
       if (frame.reply.response.kind !== pending.kind) {
-        throw new Fault(ErrorCode.INVALID_FRAME, 409);
+        throw new Fault(ErrorCode.INVALID_FRAME);
       }
 
       this.take(frame.requestId);
       pending.resolve(frame.reply.response);
     } catch (error) {
       this.take(frame.requestId);
-      pending.reject(error instanceof Fault ? error : new Fault(ErrorCode.INVALID_FRAME, 409));
+      pending.reject(error instanceof Fault ? error : new Fault(ErrorCode.INVALID_FRAME));
     }
   }
 
@@ -164,7 +166,7 @@ export class ContinuityProxy {
     }
   }
 
-  private cancel(id: string, code: string) {
+  private cancel(id: string, code: ErrorCode) {
     const request = this.pending.get(id);
 
     if (!request) {
@@ -172,7 +174,7 @@ export class ContinuityProxy {
     }
 
     this.take(id);
-    request.reject(new Fault(code, 409));
+    request.reject(new Fault(code, HttpStatus.Conflict));
   }
 
   private take(id: string) {

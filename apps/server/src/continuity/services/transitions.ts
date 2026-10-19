@@ -7,8 +7,10 @@ import {
   snapshotSchema,
   type ErrorCode as ErrorCodeType,
   type HandoffOperation,
+  HttpStatus,
 } from '@protocol';
-import { Fault, type Principal } from '../../auth/security.js';
+import { type Principal } from '../../auth/security.js';
+import { Fault } from '../../http/fault.js';
 import type { Database } from '../../db/database.js';
 import { ContinuityRepository } from '../repository.js';
 import {
@@ -52,7 +54,7 @@ export class HandoffTransitionService {
       const op = state.value;
 
       if (state.version !== expectedVersion || op.phase !== HandoffPhase.CreatingTarget) {
-        throw new Fault(ContinuityError.VersionConflict, 409);
+        throw new Fault(ContinuityError.VersionConflict);
       }
 
       const conversation = await this.repository.conversation(
@@ -67,7 +69,7 @@ export class HandoffTransitionService {
         conversation.activeExecutionId !== op.sourceExecutionId ||
         conversation.version !== op.expectedConversationVersion + 1
       ) {
-        throw new Fault(ContinuityError.SourceNotActive, 409);
+        throw new Fault(ContinuityError.SourceNotActive);
       }
 
       if (
@@ -75,7 +77,7 @@ export class HandoffTransitionService {
         input.provider !== op.selection.provider ||
         input.profileId !== op.selection.profileId
       ) {
-        throw new Fault(ContinuityError.TargetMismatch, 409);
+        throw new Fault(ContinuityError.TargetMismatch);
       }
 
       const receipt = await this.repository.command(tx, principal.userId, scope.deviceId, op.createCommandId);
@@ -87,7 +89,7 @@ export class HandoffTransitionService {
         receipt.result_session_id !== input.nativeSessionId ||
         receipt.create_expected_profile_version !== op.expectedProfileVersion
       ) {
-        throw new Fault(ContinuityError.TargetMismatch, 409);
+        throw new Fault(ContinuityError.TargetMismatch);
       }
 
       const selection = executionLaunchSelectionSchema.safeParse(receipt.create_selection);
@@ -107,7 +109,7 @@ export class HandoffTransitionService {
         observed.generation !== input.generation ||
         observed.model !== op.selection.model
       ) {
-        throw new Fault(ContinuityError.TargetMismatch, 409);
+        throw new Fault(ContinuityError.TargetMismatch);
       }
 
       const link = await this.repository.insertExecution(
@@ -172,7 +174,7 @@ export class HandoffTransitionService {
         conversation.activeExecutionId !== op.sourceExecutionId ||
         conversation.version !== op.expectedConversationVersion + 1
       ) {
-        throw new Fault(ContinuityError.SourceNotActive, 409);
+        throw new Fault(ContinuityError.SourceNotActive);
       }
 
       if (
@@ -180,7 +182,7 @@ export class HandoffTransitionService {
         input.provider !== op.selection.provider ||
         input.profileId !== op.selection.profileId
       ) {
-        throw new Fault(ContinuityError.TargetMismatch, 409);
+        throw new Fault(ContinuityError.TargetMismatch);
       }
 
       const receipt = await this.repository.command(tx, principal.userId, scope.deviceId, op.createCommandId);
@@ -192,7 +194,7 @@ export class HandoffTransitionService {
         receipt.result_session_id !== input.nativeSessionId ||
         receipt.create_expected_profile_version !== op.expectedProfileVersion
       ) {
-        throw new Fault(ContinuityError.TargetMismatch, 409);
+        throw new Fault(ContinuityError.TargetMismatch);
       }
 
       const selection = executionLaunchSelectionSchema.safeParse(receipt.create_selection);
@@ -212,7 +214,7 @@ export class HandoffTransitionService {
         observed.generation !== input.generation ||
         observed.model !== op.selection.model
       ) {
-        throw new Fault(ContinuityError.TargetMismatch, 409);
+        throw new Fault(ContinuityError.TargetMismatch);
       }
 
       const link = await this.repository.insertExecution(
@@ -246,7 +248,7 @@ export class HandoffTransitionService {
     code?: ErrorCodeType,
   ) {
     if (phase !== HandoffUnsuccessfulPhase.Failed && phase !== HandoffUnsuccessfulPhase.Unknown) {
-      throw new Fault(ContinuityError.InvalidPhase, 400);
+      throw new Fault(ContinuityError.InvalidPhase, HttpStatus.BadRequest);
     }
 
     return this.database.transaction(async (tx) => {
@@ -265,7 +267,7 @@ export class HandoffTransitionService {
         state.value.phase === HandoffPhase.Ready ||
         state.value.phase === HandoffPhase.Failed
       ) {
-        throw new Fault(ContinuityError.VersionConflict, 409);
+        throw new Fault(ContinuityError.VersionConflict);
       }
 
       const failureCode = phase === HandoffPhase.Failed ? (code ?? ErrorCode.REQUEST_FAILED) : null;

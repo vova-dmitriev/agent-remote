@@ -6,7 +6,8 @@ import {
   type ReadingPositionResponse,
 } from '@protocol';
 import { type Pool, type PoolClient } from 'pg';
-import { Fault, hash, type Principal } from '../auth/security.js';
+import { hash, type Principal } from '../auth/security.js';
+import { Fault } from '../http/fault.js';
 import { type Database } from '../db/database.js';
 import { type RedisCache } from '../infrastructure/redis.js';
 
@@ -34,7 +35,7 @@ export class ReadingPositionService {
     );
 
     if (!result.rows[0]) {
-      throw new Fault(ErrorCode.NOT_FOUND, 404);
+      throw new Fault(ErrorCode.NOT_FOUND);
     }
 
     return result.rows[0].device_id;

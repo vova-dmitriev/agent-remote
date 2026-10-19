@@ -6,7 +6,8 @@ import {
   handoffSeedProofFrameSchema,
   type HandoffSeedProofFrame,
 } from '@protocol';
-import { Fault, type Principal } from '../../../auth/security.js';
+import { type Principal } from '../../../auth/security.js';
+import { Fault } from '../../../http/fault.js';
 import type { Database } from '../../../db/database.js';
 import { ContinuityRepository } from '../../repository.js';
 import { ContinuityError, type ContinuityReadScope } from '../../types.js';
@@ -23,7 +24,7 @@ export class AuthenticatedSeedProofService {
     const proof = handoffSeedProofFrameSchema.parse(raw);
 
     if (proof.type !== FrameType.HandoffSeedProof) {
-      throw new Fault(ContinuityError.SeedProofMismatch, 409);
+      throw new Fault(ContinuityError.SeedProofMismatch);
     }
 
     return this.database.transaction(async (tx) => {
@@ -55,7 +56,7 @@ export class AuthenticatedSeedProofService {
         value.selection.model !== proof.selection.model ||
         value.selection.effort !== proof.selection.effort
       ) {
-        throw new Fault(ContinuityError.SeedProofMismatch, 409);
+        throw new Fault(ContinuityError.SeedProofMismatch);
       }
 
       if (
@@ -67,7 +68,7 @@ export class AuthenticatedSeedProofService {
           value.seedCommandId,
         ))
       ) {
-        throw new Fault(ContinuityError.SeedProofMismatch, 409);
+        throw new Fault(ContinuityError.SeedProofMismatch);
       }
 
       const target = await this.repository.execution(
@@ -94,7 +95,7 @@ export class AuthenticatedSeedProofService {
         receipt.status !== CommandStatus.Dispatched ||
         receipt.session_id !== target.nativeSessionId
       ) {
-        throw new Fault(ContinuityError.SeedProofMismatch, 409);
+        throw new Fault(ContinuityError.SeedProofMismatch);
       }
 
       const valueRecord = {
@@ -118,7 +119,7 @@ export class AuthenticatedSeedProofService {
             (key) => prior[key as keyof typeof prior] !== valueRecord[key as keyof typeof valueRecord],
           )
         ) {
-          throw new Fault(ContinuityError.SeedProofMismatch, 409);
+          throw new Fault(ContinuityError.SeedProofMismatch);
         }
 
         return;

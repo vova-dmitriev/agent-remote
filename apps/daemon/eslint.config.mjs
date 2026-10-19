@@ -44,3 +44,21 @@ export function nodeSourceConfig(files, ignores = []) {
 }
 
 export default nodeSourceConfig(['apps/daemon/src/**/*.ts']);
+
+// HTTP status literals are linted for the server only until the other packages migrate to HttpStatus.
+export function httpStatusConfig(files) {
+  return ts.config({
+    files,
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...[
+          "NewExpression[callee.name='Fault'] > Literal.arguments",
+          "CallExpression[callee.property.name='status'] > Literal",
+          'BinaryExpression[operator=/^[!=]==$/]:has(MemberExpression[property.name=/^(status|statusCode|error_code)$/]) > Literal[raw=/^[1-5]\\d\\d$/]',
+          "Property[key.name='status'] > Literal[raw=/^[1-5]\\d\\d$/]",
+        ].map((selector) => ({ selector, message: 'Use HttpStatus / derive from the error code.' })),
+      ],
+    },
+  });
+}

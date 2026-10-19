@@ -10,6 +10,8 @@ import {
   type HistoryMessage,
   type HistoryRead,
   type ServerFrame,
+  HttpStatus,
+  knownErrorCode,
 } from '@protocol';
 import {
   HISTORY_MAX_PENDING_READS_PER_DEVICE,
@@ -20,7 +22,8 @@ import {
 import { randomUUID } from 'node:crypto';
 import { type WebSocket } from 'ws';
 import { type Database } from '../db/database.js';
-import { Fault, type Principal } from '../auth/security.js';
+import { type Principal } from '../auth/security.js';
+import { Fault } from '../http/fault.js';
 import { type HistoryPage } from './service.js';
 
 interface Connection {
@@ -68,7 +71,7 @@ export class SourceHistory {
     ).rows[0];
 
     if (!row) {
-      throw new Fault(ErrorCode.NOT_FOUND, 404);
+      throw new Fault(ErrorCode.NOT_FOUND);
     }
 
     const connection = this.live.get(row.device_id);
@@ -79,14 +82,14 @@ export class SourceHistory {
           (value) => typeof value === 'string' && value.startsWith(HISTORY_SOURCE_CURSOR_PREFIX),
         )
       ) {
-        throw new Fault(ErrorCode.SERVICE_UNAVAILABLE, 503);
+        throw new Fault(ErrorCode.SERVICE_UNAVAILABLE);
       }
 
       return null;
     }
 
     if (connection.device.owner_id !== principal.userId) {
-      throw new Fault(ErrorCode.NOT_FOUND, 404);
+      throw new Fault(ErrorCode.NOT_FOUND);
     }
 
     if ([before, around, after].filter((value) => value !== undefined).length > 1) {
@@ -121,7 +124,7 @@ export class SourceHistory {
       [...this.pending.values()].filter((value) => value.deviceId === row.device_id).length >=
       HISTORY_MAX_PENDING_READS_PER_DEVICE
     ) {
-      throw new Fault(ErrorCode.RATE_LIMITED, 429);
+      throw new Fault(ErrorCode.RATE_LIMITED);
     }
 
     const requestId = randomUUID();
@@ -140,7 +143,7 @@ export class SourceHistory {
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         this.pending.delete(requestId);
-        reject(new Fault(ErrorCode.HISTORY_RELOAD_FAILED, 503));
+        reject(new Fault(ErrorCode.HISTORY_RELOAD_FAILED));
       }, HISTORY_SOURCE_TIMEOUT_MS);
 
       this.pending.set(requestId, {
@@ -176,7 +179,7 @@ export class SourceHistory {
       if (!this.send(connection.socket, request)) {
         clearTimeout(timer);
         this.pending.delete(requestId);
-        reject(new Fault(ErrorCode.SERVICE_UNAVAILABLE, 503));
+        reject(new Fault(ErrorCode.SERVICE_UNAVAILABLE));
       }
     });
   }
@@ -211,7 +214,12 @@ export class SourceHistory {
     this.pending.delete(frame.requestId);
 
     if (frame.error) {
-      pending.reject(new Fault(frame.error, 503));
+      pending.reject(
+        new Fault(
+          knownErrorCode(new Error(frame.error), ErrorCode.SERVICE_UNAVAILABLE),
+          HttpStatus.ServiceUnavailable,
+        ),
+      );
 
       return;
     }
@@ -243,7 +251,7 @@ export class SourceHistory {
   close() {
     for (const pending of this.pending.values()) {
       clearTimeout(pending.timer);
-      pending.reject(new Fault(ErrorCode.SERVICE_UNAVAILABLE, 503));
+      pending.reject(new Fault(ErrorCode.SERVICE_UNAVAILABLE));
     }
 
     this.pending.clear();

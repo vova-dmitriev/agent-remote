@@ -1,7 +1,8 @@
 import { ErrorCode, AgentProvider, type Session } from '@protocol';
 import { z } from 'zod';
 import { type Database } from '../db/database.js';
-import { Fault, hash, type Principal } from '../auth/security.js';
+import { hash, type Principal } from '../auth/security.js';
+import { Fault } from '../http/fault.js';
 
 const renameSchema = z.strictObject({
   title: z.string().trim().min(1).max(512),
@@ -57,11 +58,11 @@ export class SessionLabels {
       ).rows[0];
 
       if (!row) {
-        throw new Fault(ErrorCode.NOT_FOUND, 404);
+        throw new Fault(ErrorCode.NOT_FOUND);
       }
 
       if (row.data.generation !== body.generation) {
-        throw new Fault(ErrorCode.STALE_SESSION, 409);
+        throw new Fault(ErrorCode.STALE_SESSION);
       }
 
       await tx.query(

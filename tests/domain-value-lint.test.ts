@@ -180,3 +180,29 @@ it.each(['apps/daemon/src/example.ts', 'apps/mini-app/src/example.ts'])(
   },
   30000,
 );
+
+it.each([
+  'throw new Fault(ErrorCode.NOT_FOUND, 404);',
+  'res.status(404).end();',
+  'const gone = response.status === 410;',
+  'const response = new Response(null, { status: 405 });',
+])(
+  'rejects numeric HTTP statuses: %s',
+  (source) => {
+    expect(ruleViolations(source, 'apps/server/src/example.ts', 'no-restricted-syntax')).not.toHaveLength(0);
+  },
+  30000,
+);
+
+it.each([
+  'throw new Fault(ErrorCode.NOT_FOUND, HttpStatus.NotFound);',
+  'res.status(HttpStatus.NotFound).end();',
+  'const gone = response.status === HttpStatus.Gone;',
+  'const response = new Response(null, { status: HttpStatus.MethodNotAllowed });',
+])(
+  'accepts HttpStatus constants: %s',
+  (source) => {
+    expect(ruleViolations(source, 'apps/server/src/example.ts', 'no-restricted-syntax')).toEqual([]);
+  },
+  30000,
+);
