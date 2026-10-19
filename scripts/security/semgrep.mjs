@@ -1,14 +1,31 @@
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { createHash } from 'node:crypto';
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
+import { basename, dirname, join } from 'node:path';
 import { git } from './snapshot.mjs';
-import { fingerprint, newBeyondAssessed, withoutAssessed } from './semgrep-assessed.mjs';
+import {
+  ASSESSED_PATH,
+  fingerprint,
+  newBeyondAssessed,
+  parseAssessed,
+  withoutAssessed,
+} from './semgrep-assessed.mjs';
 import { ScanMode } from './policy.mjs';
 
 // Official image, pinned by digest (semgrep/semgrep:1.181.0). No Python toolchain is installed.
 export const SEMGREP_IMAGE =
   'semgrep/semgrep@sha256:81474464c1f07483ba0682a44787fd93c91397419762a04abe2bafaae396304b';
 export const RULES_PATH = '.semgrep/secobserve-high.yml';
+// The gate trusts no rules file from the tree under scan: an intended rules update changes this pin in the same commit.
+export const RULES_SHA256 = 'd00951ad8c1ea78be0516db400c88a668e822261f83dc7b3bf6badd3c495f820';
 export const DOCKER_REQUIRED = 'Semgrep requires Docker. Scan did not run.';
 export const IMAGE_UNAVAILABLE = `Semgrep image ${SEMGREP_IMAGE} is not present and could not be pulled. Run "docker pull ${SEMGREP_IMAGE}" with network access. Scan did not run.`;
 
@@ -16,6 +33,33 @@ const ExitCode = Object.freeze({ Clean: 0, Findings: 1 });
 const DOCKER_CHECK_TIMEOUT_MS = 30_000;
 const IMAGE_PULL_TIMEOUT_MS = 10 * 60_000;
 const SEMGREP_TIMEOUT_MS = 15 * 60_000;
+const SEMGREPIGNORE = '.semgrepignore';
+const GITIGNORE = '.gitignore';
+
+// Extensions Semgrep 1.181.0 parses as JavaScript/TypeScript. It skips .mts/.cts as unknown, so those are scanned
+// under a `.ts` suffix and reported under their own names.
+const SCANNED_EXTENSIONS = Object.freeze(['.js', '.jsx', '.mjs', '.cjs', '.ts', '.tsx']);
+const RENAMED_EXTENSIONS = Object.freeze(['.mts', '.cts']);
+const RENAMED_SUFFIX = '.ts';
+
+// Semgrep's built-in default ignores (measured on 1.181.0 when no .semgrepignore exists; .semgrep is excluded by flag).
+// Every other JavaScript/TypeScript file must appear in the scanned paths, or the scan is incomplete.
+const DEFAULT_IGNORED_DIRECTORIES = Object.freeze([
+  '.env',
+  '.npm',
+  '.semgrep',
+  '.tox',
+  '.venv',
+  '.yarn',
+  'build',
+  'dist',
+  'node_modules',
+  'test',
+  'tests',
+  'vendor',
+]);
+
+const DEFAULT_IGNORED_SUFFIX = '.min.js';
 
 const semgrepFlags = [
   '--config',
@@ -32,11 +76,34 @@ const semgrepFlags = [
   // apps/daemon/src/codex/binding/binding.ts at load average 42) and Semgrep reports that only as a warning.
   '--timeout',
   '0',
+  // No size limit: by default files over 1 MB are skipped silently.
+  '--max-target-bytes',
+  '0',
+  // .gitignore must not hide force-added files.
+  '--no-git-ignore',
 ];
 
 // Semgrep error types. Partial parsing still scans the rest of the file; every other error means a file or rule was
 // not scanned, so the gate fails closed.
 const SemgrepErrorType = Object.freeze({ PartialParsing: 'PartialParsing' });
+
+const scanName = (file) =>
+  RENAMED_EXTENSIONS.some((extension) => file.endsWith(extension)) ? `${file}${RENAMED_SUFFIX}` : file;
+
+const realName = (file) =>
+  RENAMED_EXTENSIONS.some((extension) => file.endsWith(`${extension}${RENAMED_SUFFIX}`))
+    ? file.slice(0, -RENAMED_SUFFIX.length)
+    : file;
+
+function isEligible(file) {
+  const segments = file.split('/');
+
+  return (
+    SCANNED_EXTENSIONS.some((extension) => file.endsWith(extension)) &&
+    !file.endsWith(DEFAULT_IGNORED_SUFFIX) &&
+    !segments.slice(0, -1).some((segment) => DEFAULT_IGNORED_DIRECTORIES.includes(segment))
+  );
+}
 
 function requireDocker() {
   const probe = spawnSync('docker', ['version', '--format', '{{.Server.Version}}'], {
@@ -72,20 +139,51 @@ function requireImage() {
   }
 }
 
+function rejectIgnoreFiles(files) {
+  const ignoreFiles = files.filter((file) => basename(file) === SEMGREPIGNORE);
+
+  if (ignoreFiles.length > 0) {
+    throw new Error(`Semgrep ignore files are not allowed: ${ignoreFiles.join(', ')}. Scan did not run.`);
+  }
+}
+
+function verifyRules(directory) {
+  const path = join(directory, RULES_PATH);
+  const digest = existsSync(path) ? createHash('sha256').update(readFileSync(path)).digest('hex') : 'missing';
+
+  if (digest !== RULES_SHA256) {
+    throw new Error(
+      `${RULES_PATH} does not match the pinned sha256 in scripts/security/semgrep.mjs (${digest}). Scan did not run.`,
+    );
+  }
+}
+
+function treeFiles(directory) {
+  return readdirSync(directory, { recursive: true })
+    .map((file) => file.split('\\').join('/'))
+    .filter((file) => !file.startsWith('.git/') && statSync(join(directory, file)).isFile());
+}
+
 // Semgrep's baseline compares against a git commit of the scanned directory, so the staged snapshot is a
 // small throwaway repository: HEAD versions of the changed files committed, staged versions in the tree.
+// .gitignore files are not copied, git ignores nothing (no global or system config, forced add) and
+// Semgrep runs with --no-git-ignore.
 function stagedRepository(root, directory) {
   // Git hooks export GIT_DIR/GIT_INDEX_FILE; without clearing them these commands would write to the real repository.
-  const environment = Object.fromEntries(
-    Object.entries(process.env).filter(([name]) => !name.startsWith('GIT_')),
-  );
+  const environment = {
+    ...Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('GIT_'))),
+    GIT_CONFIG_GLOBAL: '/dev/null',
+    GIT_CONFIG_NOSYSTEM: '1',
+  };
 
   const run = (...args) => git(args, directory, { env: environment });
+
+  rejectIgnoreFiles(git(['ls-files', '-z', '--cached'], root).toString().split('\0').filter(Boolean));
 
   const changed = git(['diff', '--cached', '--name-only', '--diff-filter=ACMR', '-z'], root)
     .toString()
     .split('\0')
-    .filter((file) => file && file !== RULES_PATH && !file.startsWith('.semgrep/'));
+    .filter((file) => file && !file.startsWith('.semgrep/') && basename(file) !== GITIGNORE);
 
   run('init', '--quiet');
 
@@ -93,12 +191,12 @@ function stagedRepository(root, directory) {
     const previous = spawnSync('git', ['show', `HEAD:${file}`], { cwd: root, maxBuffer: 64 * 1024 * 1024 });
 
     if (previous.status === 0) {
-      mkdirSync(dirname(join(directory, file)), { recursive: true });
-      writeFileSync(join(directory, file), previous.stdout);
+      mkdirSync(dirname(join(directory, scanName(file))), { recursive: true });
+      writeFileSync(join(directory, scanName(file)), previous.stdout);
     }
   }
 
-  run('add', '--all');
+  run('add', '--all', '--force');
 
   run(
     '-c',
@@ -116,19 +214,48 @@ function stagedRepository(root, directory) {
   );
 
   for (const file of changed) {
-    mkdirSync(dirname(join(directory, file)), { recursive: true });
-    writeFileSync(join(directory, file), git(['show', `:${file}`], root));
+    mkdirSync(dirname(join(directory, scanName(file))), { recursive: true });
+    writeFileSync(join(directory, scanName(file)), git(['show', `:${file}`], root));
   }
 
-  mkdirSync(join(directory, '.semgrep'), { recursive: true });
-  const staged = spawnSync('git', ['show', `:${RULES_PATH}`], { cwd: root, maxBuffer: 64 * 1024 * 1024 });
+  const read = (path) => {
+    const staged = spawnSync('git', ['show', `:${path}`], { cwd: root, maxBuffer: 64 * 1024 * 1024 });
 
-  writeFileSync(
-    join(directory, RULES_PATH),
-    staged.status === 0 ? staged.stdout : readFileSync(join(root, RULES_PATH)),
-  );
+    return staged.status === 0 ? staged.stdout : undefined;
+  };
 
-  return changed;
+  // Rules and assessments come from the index; the rules file falls back to the working copy and is verified.
+  const rules =
+    read(RULES_PATH) ??
+    (existsSync(join(root, RULES_PATH)) ? readFileSync(join(root, RULES_PATH)) : undefined);
+
+  if (rules !== undefined) {
+    mkdirSync(join(directory, '.semgrep'), { recursive: true });
+    writeFileSync(join(directory, RULES_PATH), rules);
+  }
+
+  return { changed, assessed: parseAssessed(read(ASSESSED_PATH)?.toString('utf8')) };
+}
+
+// Worktree snapshot: check.mjs exported it already; .mts/.cts files are renamed for scanning.
+function prepareSnapshot(snapshot) {
+  const files = treeFiles(snapshot);
+
+  rejectIgnoreFiles(files);
+
+  for (const file of files) {
+    if (scanName(file) !== file) {
+      if (existsSync(join(snapshot, scanName(file)))) {
+        throw new Error(`Cannot scan ${file}: ${scanName(file)} also exists. Scan did not run.`);
+      }
+
+      renameSync(join(snapshot, file), join(snapshot, scanName(file)));
+    }
+  }
+
+  const assessedFile = join(snapshot, ASSESSED_PATH);
+
+  return parseAssessed(existsSync(assessedFile) ? readFileSync(assessedFile, 'utf8') : undefined);
 }
 
 // Sources are mounted read-only. Only the throwaway repository's .git is writable (Semgrep's baseline adds a
@@ -197,13 +324,13 @@ function readReport(result, report, scanned) {
 
   for (const error of output.errors ?? []) {
     const raw = Array.isArray(error.path) ? error.path[0] : error.path;
-    const path = raw ? normalize(raw) : 'unknown file';
+    const path = raw ? realName(normalize(raw)) : 'unknown file';
     const type = Array.isArray(error.type) ? error.type[0] : error.type;
 
     if (type === SemgrepErrorType.PartialParsing) {
       process.stderr.write(`Semgrep partial parse: ${path}\n`);
     } else {
-      incomplete.push(`${path} (${type})`);
+      incomplete.push(`Semgrep could not scan: ${path} (${type}).`);
     }
   }
 
@@ -212,7 +339,7 @@ function readReport(result, report, scanned) {
     incomplete,
     findings: output.results.map((entry) => ({
       ruleId: entry.check_id.split('.').at(-1),
-      path: normalize(entry.path),
+      path: realName(normalize(entry.path)),
       line: entry.start.line,
       fingerprint: fingerprint(
         readFileSync(join(scanned, normalize(entry.path)), 'utf8'),
@@ -223,30 +350,51 @@ function readReport(result, report, scanned) {
   };
 }
 
-function scanSnapshot(snapshot, report) {
-  const { incomplete, findings } = readReport(scan(snapshot, report, [], ['.']), report, snapshot);
+// Every eligible file must have been scanned: catches size limits, ignore files and anything else that drops targets.
+function skippedTargets(directory, scanned) {
+  const targets = new Set(scanned);
+  const skipped = treeFiles(directory).filter((file) => isEligible(file) && !targets.has(file));
 
-  return { incomplete, findings: withoutAssessed(findings) };
+  return skipped.length > 0 ? [`Semgrep skipped eligible files: ${skipped.map(realName).join(', ')}.`] : [];
+}
+
+function scanSnapshot(snapshot, report) {
+  const assessed = prepareSnapshot(snapshot);
+
+  verifyRules(snapshot);
+
+  const { incomplete, findings, targets } = readReport(scan(snapshot, report, [], ['.']), report, snapshot);
+
+  return {
+    incomplete: [...incomplete, ...skippedTargets(snapshot, targets)],
+    findings: withoutAssessed(findings, assessed),
+  };
 }
 
 // Staged mode. Semgrep's baseline only inspects explicit targets, and explicit targets bypass its default ignore list
 // (tests/, build/, ...), so a plain scan of the staged tree first selects targets exactly as a worktree scan would.
-// Only when that scan finds something does a baseline scan against the HEAD versions decide which findings are new.
+// Only when that scan finds something unassessed does a baseline scan against the HEAD versions decide which findings
+// are new.
 function scanStaged(root, temporary, report) {
   const directory = join(temporary, 'semgrep-staged');
 
   mkdirSync(directory);
 
-  if (stagedRepository(root, directory).length === 0) {
+  const { changed, assessed } = stagedRepository(root, directory);
+
+  verifyRules(directory);
+
+  if (changed.length === 0) {
     process.stdout.write('Semgrep: no staged files to scan.\n');
 
     return { incomplete: [], findings: [] };
   }
 
   const selected = readReport(scan(directory, report, [], ['.']), report, directory);
+  const incomplete = [...selected.incomplete, ...skippedTargets(directory, selected.targets)];
 
-  if (selected.incomplete.length > 0 || withoutAssessed(selected.findings).length === 0) {
-    return { incomplete: selected.incomplete, findings: [] };
+  if (incomplete.length > 0 || withoutAssessed(selected.findings, assessed).length === 0) {
+    return { incomplete, findings: [] };
   }
 
   const baseline = readReport(
@@ -261,9 +409,17 @@ function scanStaged(root, temporary, report) {
     directory,
   );
 
+  const rescanned = new Set(baseline.targets);
+  const missing = selected.targets.filter((file) => !rescanned.has(file));
+
   return {
-    incomplete: baseline.incomplete,
-    findings: newBeyondAssessed(baseline.findings, selected.findings),
+    incomplete: [
+      ...baseline.incomplete,
+      ...(missing.length > 0
+        ? [`Semgrep baseline scan skipped targets: ${missing.map(realName).join(', ')}.`]
+        : []),
+    ],
+    findings: newBeyondAssessed(baseline.findings, selected.findings, assessed),
   };
 }
 
@@ -286,7 +442,7 @@ export function runSemgrep(root, mode, temporary) {
   }
 
   if (incomplete.length > 0) {
-    throw new Error(`Semgrep could not scan: ${incomplete.join(', ')}. Scan incomplete.`);
+    throw new Error(`${incomplete.join(' ')} Scan incomplete.`);
   }
 
   if (findings.length > 0) {

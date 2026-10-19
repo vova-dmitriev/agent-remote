@@ -15,7 +15,6 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, test } from 'node:test';
 import { isPrivatePath } from './policy.mjs';
-import { assessedFindings } from './semgrep-assessed.mjs';
 
 const repository = fileURLToPath(new URL('../../', import.meta.url));
 const directories = [];
@@ -192,8 +191,16 @@ test('vendored Semgrep rules cover only JavaScript and TypeScript', () => {
   assert.match(semgrepRules, /^# Source sha256: [0-9a-f]{64}$/m);
 });
 
+const assessedPath = 'scripts/security/semgrep-assessed.json';
+
 test('assessed Semgrep findings name an existing file and a vendored rule', () => {
-  for (const entry of assessedFindings) {
+  const entries = JSON.parse(readFileSync(join(repository, assessedPath), 'utf8'));
+
+  assert.equal(entries.length, 3);
+
+  for (const entry of entries) {
+    assert.match(entry.fingerprint, /^[0-9a-f]{16}$/);
+    assert.ok(entry.reason.length > 0);
     assert.equal(existsSync(join(repository, entry.path)), true, entry.path);
     assert.match(semgrepRules, new RegExp(`- id: ${entry.ruleId}$`, 'm'), entry.ruleId);
   }
@@ -318,8 +325,9 @@ function assessedFixture() {
   const directory = fixture();
   const assessed = 'scripts/smoke-image.ts';
 
-  mkdirSync(join(directory, 'scripts'), { recursive: true });
+  mkdirSync(join(directory, 'scripts/security'), { recursive: true });
   cpSync(join(repository, assessed), join(directory, assessed));
+  cpSync(join(repository, assessedPath), join(directory, assessedPath));
 
   return { directory, assessed, original: readFileSync(join(directory, assessed), 'utf8') };
 }
@@ -416,7 +424,8 @@ if (args[0] === 'version') process.exit(0);
 if (args[0] === 'image') process.exit(behavior.image ? 0 : 1);
 if (args[0] === 'pull') process.exit(1);
 const out = args[args.findIndex((arg) => arg.endsWith(':/out'))].slice(0, -':/out'.length);
-writeFileSync(out + '/semgrep-report.json', JSON.stringify({ results: [], errors: behavior.errors }));
+const pass = args.includes('--baseline-commit') ? behavior.baseline : behavior.plain;
+writeFileSync(out + '/semgrep-report.json', JSON.stringify({ results: [], errors: [], paths: { scanned: [] }, ...pass }));
 `,
     { mode: 0o755 },
   );
@@ -429,7 +438,7 @@ test('a missing Semgrep image that cannot be pulled fails the step with a clear 
 
   writeFileSync(join(directory, 'clean.ts'), 'export const clean = 1;\n');
   execFileSync('git', ['add', 'clean.ts'], { cwd: directory });
-  const result = scan(directory, 'staged', dockerStub({ image: false, errors: [] }));
+  const result = scan(directory, 'staged', dockerStub({ image: false }));
 
   assert.equal(result.status, 1);
 
@@ -449,7 +458,13 @@ test('a Semgrep timeout fails closed; a partial parse is reported but does not f
   const timeout = scan(
     directory,
     'worktree',
-    dockerStub({ image: true, errors: [{ type: 'Timeout', level: 'warn', path: 'clean.ts' }] }),
+    dockerStub({
+      image: true,
+      plain: {
+        errors: [{ type: 'Timeout', level: 'warn', path: 'clean.ts' }],
+        paths: { scanned: ['clean.ts'] },
+      },
+    }),
   );
 
   assert.equal(timeout.status, 1);
@@ -458,11 +473,168 @@ test('a Semgrep timeout fails closed; a partial parse is reported but does not f
   const partial = scan(
     directory,
     'worktree',
-    dockerStub({ image: true, errors: [{ type: ['PartialParsing', []], level: 'warn', path: 'clean.ts' }] }),
+    dockerStub({
+      image: true,
+      plain: {
+        errors: [{ type: ['PartialParsing', []], level: 'warn', path: 'clean.ts' }],
+        paths: { scanned: ['clean.ts'] },
+      },
+    }),
   );
 
   assert.equal(partial.status, 0, partial.stderr);
   assert.match(partial.stderr, /Semgrep partial parse: clean\.ts/);
+});
+
+test('a baseline pass that reports no scanned targets fails closed', () => {
+  const directory = fixture();
+
+  writeFileSync(join(directory, 'vulnerable.ts'), unsafeEval('markerAlpha'));
+  execFileSync('git', ['add', 'vulnerable.ts'], { cwd: directory });
+
+  const finding = {
+    check_id: 'semgrep.javascript_eval_rule-eval-with-expression',
+    path: 'vulnerable.ts',
+    start: { line: 1 },
+    end: { line: 1 },
+  };
+
+  const result = scan(
+    directory,
+    'staged',
+    dockerStub({
+      image: true,
+      plain: { results: [finding], paths: { scanned: ['vulnerable.ts'] } },
+      baseline: { paths: {} },
+    }),
+  );
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Semgrep baseline scan skipped targets: vulnerable\.ts\. Scan incomplete\./);
+});
+
+const modes = ['staged', 'worktree'];
+
+test('an eligible file missing from the scanned paths fails closed', () => {
+  for (const mode of modes) {
+    const directory = fixture();
+
+    writeFileSync(join(directory, 'clean.ts'), 'export const clean = 1;\n');
+    execFileSync('git', ['add', 'clean.ts'], { cwd: directory });
+    const result = scan(directory, mode, dockerStub({ image: true, plain: { paths: { scanned: [] } } }));
+
+    assert.equal(result.status, 1, mode);
+    assert.match(result.stderr, /Semgrep skipped eligible files: clean\.ts\. Scan incomplete\./);
+  }
+});
+
+test('a .semgrepignore file anywhere in the scanned tree fails the scan', () => {
+  for (const ignoreFile of ['.semgrepignore', 'nested/.semgrepignore']) {
+    for (const mode of modes) {
+      const directory = fixture();
+
+      mkdirSync(join(directory, 'nested'), { recursive: true });
+      writeFileSync(join(directory, 'nested/vulnerable.ts'), unsafeEval('markerAlpha'));
+      writeFileSync(join(directory, ignoreFile), 'vulnerable.ts\n');
+      execFileSync('git', ['add', '.'], { cwd: directory });
+      const result = scan(directory, mode);
+
+      assert.equal(result.status, 1, `${mode} ${ignoreFile}`);
+
+      assert.match(
+        result.stderr,
+        new RegExp(`Semgrep ignore files are not allowed: ${ignoreFile.replace('.', '\\.')}`),
+      );
+    }
+  }
+});
+
+test('a High finding in a file larger than 1 MB is blocked', () => {
+  for (const mode of modes) {
+    const directory = fixture();
+
+    writeFileSync(
+      join(directory, 'large.ts'),
+      `${unsafeEval('markerAlpha')}${'// padding padding padding\n'.repeat(45_000)}`,
+    );
+
+    execFileSync('git', ['add', 'large.ts'], { cwd: directory });
+    const result = scan(directory, mode);
+
+    assert.equal(result.status, 1, mode);
+    assert.match(result.stderr, /javascript_eval_rule-eval-with-expression: large\.ts:1\n/);
+  }
+});
+
+test('a force-added file listed in a staged .gitignore is still scanned', () => {
+  for (const mode of modes) {
+    const directory = fixture();
+
+    writeFileSync(join(directory, '.gitignore'), 'evil.ts\n');
+    writeFileSync(join(directory, 'evil.ts'), unsafeEval('markerAlpha'));
+    execFileSync('git', ['add', '--force', '.gitignore', 'evil.ts'], { cwd: directory });
+    const result = scan(directory, mode);
+
+    assert.equal(result.status, 1, mode);
+    assert.match(result.stderr, /javascript_eval_rule-eval-with-expression: evil\.ts:1\n/);
+  }
+});
+
+test('.mts and .cts files are scanned and reported under their own names', () => {
+  for (const mode of modes) {
+    const directory = fixture();
+
+    writeFileSync(join(directory, 'module.mts'), unsafeEval('markerAlpha'));
+    writeFileSync(join(directory, 'common.cts'), unsafeEval('markerBeta'));
+    execFileSync('git', ['add', '.'], { cwd: directory });
+    const result = scan(directory, mode);
+
+    assert.equal(result.status, 1, mode);
+    assert.match(result.stderr, /javascript_eval_rule-eval-with-expression: module\.mts:1\n/);
+    assert.match(result.stderr, /javascript_eval_rule-eval-with-expression: common\.cts:1\n/);
+  }
+});
+
+test('a rules file that differs from the pinned checksum fails the scan', () => {
+  const firstRule = semgrepRules.indexOf('\n  - id: ');
+  const secondRule = semgrepRules.indexOf('\n  - id: ', firstRule + 1);
+
+  for (const rules of ['', semgrepRules.slice(0, firstRule) + semgrepRules.slice(secondRule)]) {
+    for (const mode of modes) {
+      const directory = fixture();
+
+      writeFileSync(join(directory, '.semgrep/secobserve-high.yml'), rules);
+      writeFileSync(join(directory, 'clean.ts'), 'export const clean = 1;\n');
+      execFileSync('git', ['add', '.'], { cwd: directory });
+      const result = scan(directory, mode);
+
+      assert.equal(result.status, 1, mode);
+      assert.match(result.stderr, /does not match the pinned sha256/);
+    }
+  }
+});
+
+test('staged scan reads the assessed list from the index, not the working copy', () => {
+  const { directory } = assessedFixture();
+  const entries = readFileSync(join(directory, assessedPath), 'utf8');
+
+  writeFileSync(join(directory, assessedPath), '[]\n');
+  execFileSync('git', ['add', '.'], { cwd: directory });
+  writeFileSync(join(directory, assessedPath), entries);
+  const unassessed = scan(directory, 'staged');
+
+  assert.equal(unassessed.status, 1);
+
+  assert.match(
+    unassessed.stderr,
+    /rules_lgpl_javascript_ssrf_rule-node-ssrf: scripts\/smoke-image\.ts:\d+\n/,
+  );
+
+  execFileSync('git', ['add', assessedPath], { cwd: directory });
+  writeFileSync(join(directory, assessedPath), '[]\n');
+  const accepted = scan(directory, 'staged');
+
+  assert.equal(accepted.status, 0, accepted.stderr);
 });
 
 test('staged Semgrep scan inside a hook environment never touches the real repository', () => {

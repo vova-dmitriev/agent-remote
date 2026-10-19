@@ -1,36 +1,41 @@
-// Findings of the vendored SecObserve ruleset that were reviewed and accepted, mirrored in SECURITY.md.
-// `# nosemgrep` is ignored by the gate (--disable-nosem), so each acceptance is keyed here by rule id, path and
-// a fingerprint of the matched code: SHA-256 prefix of the source lines Semgrep matched, whitespace-normalised, so
-// it survives moves and re-indentation but not edits. Each entry accepts exactly one finding: a second finding of
-// the same rule in the same file, even with identical code, is blocked.
+// Findings of the vendored SecObserve ruleset that were reviewed and accepted live in semgrep-assessed.json (data
+// only, mirrored in SECURITY.md). The gate reads that file from the tree under scan (the index in staged mode), never
+// from an unstaged working copy. `# nosemgrep` is ignored (--disable-nosem), so each acceptance is keyed by rule id,
+// path and a fingerprint of the matched code: SHA-256 prefix of the source lines Semgrep matched, whitespace-
+// normalised, so it survives moves and re-indentation but not edits of those lines. Each entry accepts exactly one
+// finding: a second finding of the same rule in the same file, even with identical code, is blocked.
 import { createHash } from 'node:crypto';
 
-export const SemgrepRule = Object.freeze({
-  NodeSsrf: 'rules_lgpl_javascript_ssrf_rule-node-ssrf',
-});
+export const ASSESSED_PATH = 'scripts/security/semgrep-assessed.json';
 
-export const assessedFindings = Object.freeze([
-  {
-    ruleId: SemgrepRule.NodeSsrf,
-    path: 'apps/daemon/src/cli/pairing/connect.ts',
-    fingerprint: 'e6c8ce22eea6788b',
-    reason:
-      'Relay origin is checked by validateRelayUrl before any request; the daemon only calls its own configured relay.',
-  },
-  {
-    ruleId: SemgrepRule.NodeSsrf,
-    path: 'apps/mini-app/src/shared/api/request-error.ts',
-    fingerprint: '8d5f671da54f3ac3',
-    reason:
-      'Browser fetch to the app API origin from build configuration; no server-side network position to abuse.',
-  },
-  {
-    ruleId: SemgrepRule.NodeSsrf,
-    path: 'scripts/smoke-image.ts',
-    fingerprint: 'da9fecb8b7f344df',
-    reason: 'Developer smoke script requesting a loopback container port it started itself.',
-  },
-]);
+const FINGERPRINT = /^[0-9a-f]{16}$/;
+
+export function parseAssessed(text) {
+  if (text === undefined) {
+    return [];
+  }
+
+  const entries = JSON.parse(text);
+
+  const valid =
+    Array.isArray(entries) &&
+    entries.every(
+      (entry) =>
+        typeof entry?.ruleId === 'string' &&
+        typeof entry.path === 'string' &&
+        typeof entry.reason === 'string' &&
+        entry.reason.trim().length > 0 &&
+        FINGERPRINT.test(entry.fingerprint),
+    );
+
+  if (!valid) {
+    throw new Error(
+      `${ASSESSED_PATH} must list { ruleId, path, fingerprint, reason } entries. Scan did not run.`,
+    );
+  }
+
+  return entries;
+}
 
 export function fingerprint(source, startLine, endLine) {
   const matched = source
@@ -56,8 +61,8 @@ function countByKey(items) {
 }
 
 // Full scan: each assessed entry absorbs one matching finding; the rest are reported.
-export function withoutAssessed(findings) {
-  const allowance = countByKey(assessedFindings);
+export function withoutAssessed(findings, assessed) {
+  const allowance = countByKey(assessed);
 
   return findings.filter((finding) => {
     const left = allowance.get(keyOf(finding)) ?? 0;
@@ -70,8 +75,8 @@ export function withoutAssessed(findings) {
 
 // Baseline scan: a new finding is accepted only if its rule, path and fingerprint occur in the scanned files
 // (`scope`, all findings without baseline) no more often than they are assessed. Same verdict as a full scan.
-export function newBeyondAssessed(newFindings, scope) {
-  const allowance = countByKey(assessedFindings);
+export function newBeyondAssessed(newFindings, scope, assessed) {
+  const allowance = countByKey(assessed);
   const occurrences = countByKey(scope);
 
   return newFindings.filter(
