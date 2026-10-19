@@ -118,6 +118,65 @@ describe('relay HTTP surface', () => {
     }
   });
 
+  // One cheap rejection per public route proves the route is still mounted; a vanished route would answer 404.
+  const PUBLIC_PROBES: Array<[string, RequestInit, HttpStatus, { code: ErrorCode }]> = [
+    [
+      '/auth/telegram',
+      { method: 'POST', headers: jsonHeaders(), body: '{}' },
+      HttpStatus.BadRequest,
+      { code: ErrorCode.INVALID_REQUEST },
+    ],
+    [
+      '/auth/refresh',
+      { method: 'POST', headers: jsonHeaders(), body: '{}' },
+      HttpStatus.Forbidden,
+      { code: ErrorCode.ACCESS_DENIED },
+    ],
+    [
+      '/device/pair/start',
+      { method: 'POST', headers: jsonHeaders(), body: '{}' },
+      HttpStatus.BadRequest,
+      { code: ErrorCode.INVALID_REQUEST },
+    ],
+    [
+      '/device/pair/cancel',
+      { method: 'POST', headers: jsonHeaders(), body: '{}' },
+      HttpStatus.BadRequest,
+      { code: ErrorCode.INVALID_REQUEST },
+    ],
+    [
+      '/device/pair/status',
+      { method: 'POST', headers: jsonHeaders(), body: '{}' },
+      HttpStatus.BadRequest,
+      { code: ErrorCode.INVALID_REQUEST },
+    ],
+    [
+      '/device/pair/confirm',
+      { method: 'POST', headers: jsonHeaders(), body: '{}' },
+      HttpStatus.BadRequest,
+      { code: ErrorCode.INVALID_REQUEST },
+    ],
+  ];
+
+  it('probes every public route except health, which has its own case', () => {
+    const probed = new Set(PUBLIC_PROBES.map(([path]) => path));
+
+    const publicPaths = RELAY_ROUTES.filter(([, , auth]) => auth === RouteAuth.Public)
+      .map(([, path]) => path)
+      .filter((path) => path !== '/health');
+
+    expect(publicPaths.filter((path) => !probed.has(path))).toEqual([]);
+  });
+
+  it.each(PUBLIC_PROBES)('rejects a cheap request to public %s', async (path, init, status, body) => {
+    const response = await fetch(origin + path, init);
+
+    expect(response.status).not.toBe(HttpStatus.NotFound);
+    expect(response.status).not.toBe(HttpStatus.Unauthorized);
+    expect(response.status).toBe(status);
+    expect(await response.json()).toEqual(body);
+  });
+
   it('serves health with the hardening headers and no x-powered-by', async () => {
     const response = await fetch(origin + '/health');
 
