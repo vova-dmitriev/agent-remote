@@ -15,7 +15,18 @@ const JsonByte = {
   CloseArray: 0x5d,
   Comma: 0x2c,
   Colon: 0x3a,
+  Space: 0x20,
+  Tab: 0x09,
+  LineFeed: 0x0a,
+  CarriageReturn: 0x0d,
 } as const;
+
+const jsonWhitespace: ReadonlySet<number> = new Set([
+  JsonByte.Space,
+  JsonByte.Tab,
+  JsonByte.LineFeed,
+  JsonByte.CarriageReturn,
+]);
 
 const RouteDepth = { Frame: 1, Params: 2 } as const;
 
@@ -36,6 +47,10 @@ const ROUTE_STRING_LIMIT = 512;
  * Consumes one oversize IPC frame payload and discards it as it streams through. Only the
  * top-level `type`, `requestId` and `sourceClientId` and `params.conversationId` are kept,
  * so a nested id inside the payload is never mistaken for the frame's own route.
+ *
+ * A payload that is not one JSON object filling the whole length (a garbled length header,
+ * stray closers, bytes after the object, raw control bytes) is reported as `invalid` as soon
+ * as it is detected.
  */
 export class OversizeFrame {
   private remaining: number;
@@ -49,6 +64,8 @@ export class OversizeFrame {
   private frameKey: string | undefined;
   private paramsKey: string | undefined;
   private readonly fields: OversizeFrameRoute = {};
+  private malformed = false;
+  private complete = false;
 
   constructor(length: number) {
     this.remaining = length;
@@ -58,11 +75,16 @@ export class OversizeFrame {
     return this.remaining === 0;
   }
 
+  /** The bytes cannot be one framed JSON object; the stream position is no longer trustworthy. */
+  get invalid() {
+    return this.malformed || (this.done && !this.complete);
+  }
+
   /** Scans up to the rest of this frame from `chunk` and returns how many bytes belonged to it. */
   consume(chunk: Buffer): number {
     const used = Math.min(this.remaining, chunk.length);
 
-    for (let index = 0; index < used; index++) {
+    for (let index = 0; index < used && !this.malformed; index++) {
       this.scan(chunk[index]!);
     }
 
@@ -76,8 +98,26 @@ export class OversizeFrame {
   }
 
   private scan(byte: number) {
+    // JSON allows no raw control bytes anywhere; they are a following frame's length header.
+    if (byte < JsonByte.Space && !jsonWhitespace.has(byte)) {
+      this.malformed = true;
+
+      return;
+    }
+
     if (this.inString) {
       this.scanString(byte);
+
+      return;
+    }
+
+    if (jsonWhitespace.has(byte)) {
+      return;
+    }
+
+    // Only one object may fill the frame: nothing before its `{` and nothing after its `}`.
+    if (this.complete || (this.depth === 0 && byte !== JsonByte.OpenObject)) {
+      this.malformed = true;
 
       return;
     }
@@ -106,6 +146,7 @@ export class OversizeFrame {
       case JsonByte.CloseArray:
         this.depth--;
         this.expectKey = false;
+        this.complete = this.depth === 0;
         break;
       case JsonByte.Comma:
         this.expectKey = this.depth <= RouteDepth.Params && this.objects[this.depth - 1] === true;

@@ -454,17 +454,20 @@ export class CodexManager {
       }
 
       let client = entry.rpc;
+      let owner: string | null = null;
       const thread = { kind: selection.kind, endpoint: selection.socketPath, threadId: id };
-
-      // Each attach makes Codex send the whole snapshot again; retry only on a new IPC connection.
-      if (entry.ipc?.frameTooLarge(id)) {
-        markCodexThreadTooLarge(thread, this.deps);
-        continue;
-      }
 
       try {
         if (entry.ipc) {
-          if (!(await entry.ipc.owner(id))) {
+          owner = await entry.ipc.owner(id);
+
+          if (!owner) {
+            continue;
+          }
+
+          // Each attach makes Codex resend the whole snapshot; wait for the mark's retry time.
+          if (entry.ipc.frameTooLarge(id, owner)) {
+            markCodexThreadTooLarge(thread, this.deps);
             continue;
           }
 
@@ -484,7 +487,7 @@ export class CodexManager {
           await client?.close();
           entry.clients.delete(id);
 
-          if (entry.ipc?.frameTooLarge(id)) {
+          if (owner && entry.ipc?.frameTooLarge(id, owner)) {
             markCodexThreadTooLarge(thread, this.deps);
           }
         }

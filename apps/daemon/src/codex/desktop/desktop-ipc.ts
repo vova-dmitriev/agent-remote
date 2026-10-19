@@ -17,13 +17,20 @@ import { OversizeFrame, type OversizeFrameRoute } from './oversize-frame.js';
 
 /** Largest IPC frame buffered in memory; larger frames are drained and fail only their own route. */
 const MAX_FRAME_BYTES = 32 * 1024 * 1024;
-/** Conversations remembered as too large to mirror over this connection. */
+/** Oversize (conversation, sending client) marks remembered on this connection. */
 const MAX_OVERSIZED_CONVERSATIONS = 64;
+/** How long an oversize thread is left alone before one attach retries it (it may have shrunk). */
+const OVERSIZE_RETRY_MS = 10 * 60 * 1000;
 
-/** Emitted with `RuntimeEvent.FrameTooLarge` when a broadcast for one conversation exceeded the cap. */
+/** Emitted with `RuntimeEvent.FrameTooLarge` when an owner's broadcast for one conversation exceeded the cap. */
 export interface OversizedConversation {
   conversationId: string;
-  sourceClientId?: string;
+  sourceClientId: string;
+}
+
+/** Marks are per sending client, so another client's frame never replaces the owner's mark. */
+function oversizeMarkKey(conversationId: string, sourceClientId: string) {
+  return JSON.stringify([conversationId, sourceClientId]);
 }
 
 const versions: Record<string, number> = {
@@ -40,7 +47,8 @@ interface Pending {
 export class DesktopIpcClient extends EventEmitter {
   private buffer: Buffer = Buffer.alloc(0);
   private draining: OversizeFrame | null = null;
-  private oversized = new Set<string>();
+  /** Retry time per oversize (conversation, sending client). */
+  private oversized = new Map<string, number>();
   private pending = new Map<string, Pending>();
   private clientId = 'initializing-client';
   private closed = false;
@@ -118,9 +126,22 @@ export class DesktopIpcClient extends EventEmitter {
   async close() {
     this.disconnect();
   }
-  /** True once a broadcast for this conversation exceeded the frame cap on this connection. */
-  frameTooLarge(conversationId: string) {
-    return this.oversized.has(conversationId);
+  /** True while the owner's last broadcast for this conversation exceeded the frame cap, until its retry time. */
+  frameTooLarge(conversationId: string, ownerClientId: string) {
+    const key = oversizeMarkKey(conversationId, ownerClientId);
+    const retryAt = this.oversized.get(key);
+
+    if (retryAt === undefined) {
+      return false;
+    }
+
+    if (Date.now() >= retryAt) {
+      this.oversized.delete(key);
+
+      return false;
+    }
+
+    return true;
   }
   private call(
     method: string,
@@ -192,6 +213,12 @@ export class DesktopIpcClient extends EventEmitter {
     if (this.draining) {
       input = input.subarray(this.draining.consume(input));
 
+      if (this.draining.invalid) {
+        this.disconnect();
+
+        return;
+      }
+
       if (!this.draining.done) {
         return;
       }
@@ -218,6 +245,13 @@ export class DesktopIpcClient extends EventEmitter {
         const rest = this.buffer.subarray(4);
 
         this.buffer = rest.subarray(frame.consume(rest));
+
+        // A garbled length must not stall the shared socket: drop it so the manager reconnects.
+        if (frame.invalid) {
+          this.disconnect();
+
+          return;
+        }
 
         if (!frame.done) {
           this.draining = frame;
@@ -285,19 +319,24 @@ export class DesktopIpcClient extends EventEmitter {
       return;
     }
 
-    if (route.type !== CodexDesktopMessageType.Broadcast || !route.conversationId) {
+    // Only an owner's broadcast can be attributed to a followed thread; others are dropped.
+    if (route.type !== CodexDesktopMessageType.Broadcast || !route.conversationId || !route.sourceClientId) {
       return;
     }
 
-    if (!this.oversized.has(route.conversationId) && this.oversized.size >= MAX_OVERSIZED_CONVERSATIONS) {
-      this.oversized.delete(this.oversized.values().next().value!);
+    const key = oversizeMarkKey(route.conversationId, route.sourceClientId);
+
+    this.oversized.delete(key);
+
+    if (this.oversized.size >= MAX_OVERSIZED_CONVERSATIONS) {
+      this.oversized.delete(this.oversized.keys().next().value!);
     }
 
-    this.oversized.add(route.conversationId);
+    this.oversized.set(key, Date.now() + OVERSIZE_RETRY_MS);
 
     const conversation: OversizedConversation = {
       conversationId: route.conversationId,
-      ...(route.sourceClientId ? { sourceClientId: route.sourceClientId } : {}),
+      sourceClientId: route.sourceClientId,
     };
 
     this.emit(RuntimeEvent.FrameTooLarge, conversation);

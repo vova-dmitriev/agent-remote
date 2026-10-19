@@ -67,6 +67,22 @@ export const capabilitySchema = z.strictObject({
 });
 export const integrationStateSchema = z.enum(IntegrationState);
 export const statusSchema = z.enum(SessionStatus);
+
+/**
+ * Session-level reasons. Readers tolerate a reason added by a newer writer: an unknown code reads
+ * as the generic `SESSION_UNAVAILABLE` instead of rejecting the whole snapshot frame.
+ */
+const sessionErrorCodeSchema = z
+  .enum([
+    ErrorCode.CODEX_MODEL_UNAVAILABLE,
+    ErrorCode.CODEX_AUTH_REQUIRED,
+    ErrorCode.CODEX_NETWORK_ERROR,
+    ErrorCode.CODEX_TURN_FAILED,
+    ErrorCode.CODEX_FRAME_TOO_LARGE,
+    ErrorCode.SESSION_UNAVAILABLE,
+  ])
+  .catch(ErrorCode.SESSION_UNAVAILABLE);
+
 export const sessionSchema = z
   .strictObject({
     id,
@@ -89,15 +105,7 @@ export const sessionSchema = z
       // eslint-disable-next-line no-control-regex -- Intentionally reject control characters at the wire boundary.
       .regex(/^[^\u0000-\u001f\u007f<>]+$/u)
       .optional(),
-    errorCode: z
-      .enum([
-        ErrorCode.CODEX_MODEL_UNAVAILABLE,
-        ErrorCode.CODEX_AUTH_REQUIRED,
-        ErrorCode.CODEX_NETWORK_ERROR,
-        ErrorCode.CODEX_TURN_FAILED,
-        ErrorCode.CODEX_FRAME_TOO_LARGE,
-      ])
-      .optional(),
+    errorCode: sessionErrorCodeSchema.optional(),
     target: targetSchema,
     claudeSessionId: id.nullable(),
     generation: id,

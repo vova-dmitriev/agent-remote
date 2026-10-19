@@ -183,8 +183,8 @@ it('drains an oversize thread snapshot without buffering it and fails only that 
   await expect.poll(() => broadcasts.length, { timeout: 5000 }).toBe(1);
   expect(broadcasts[0]).toMatchObject({ params: { conversationId: 'small' } });
   expect(oversized).toEqual([{ conversationId: 'big', sourceClientId: 'owner' }]);
-  expect(f.client.frameTooLarge('big')).toBe(true);
-  expect(f.client.frameTooLarge('small')).toBe(false);
+  expect(f.client.frameTooLarge('big', 'owner')).toBe(true);
+  expect(f.client.frameTooLarge('small', 'owner')).toBe(false);
   expect(largestConcat).toBeLessThan(1024 * 1024);
   expect(disconnected).toBe(false);
   expect(await f.client.owner('small')).toBe('owner');

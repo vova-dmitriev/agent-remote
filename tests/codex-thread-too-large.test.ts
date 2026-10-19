@@ -74,7 +74,7 @@ async function setup() {
 
   const ipc = Object.assign(new EventEmitter(), {
     owner: async () => 'synthetic-owner',
-    frameTooLarge: (id: string) => drained.has(id),
+    frameTooLarge: (id: string, owner: string) => owner === 'synthetic-owner' && drained.has(id),
     close: vi.fn(async () => {}),
   });
 
@@ -180,4 +180,48 @@ it('marks a bound thread that later grows past the cap without touching its neig
   expect(t.session(SMALL)).toMatchObject({ integrationState: IntegrationState.Ready });
   expect(t.attaches(LARGE)).toBe(1);
   expect(t.attaches(SMALL)).toBe(1);
+});
+
+it('retries an oversize thread once its mark expires and recovers it when it has shrunk', async () => {
+  const t = await setup();
+
+  t.oversized.add(LARGE);
+  await expect(t.select(LARGE)).rejects.toThrow(ErrorCode.CODEX_THREAD_NOT_LOADED);
+  expect(t.session(LARGE)!.errorCode).toBe(ErrorCode.CODEX_FRAME_TOO_LARGE);
+
+  // The IPC forgets the mark after its retry interval; the thread meanwhile fits under the cap.
+  t.drained.delete(LARGE);
+  t.oversized.delete(LARGE);
+  await t.select(LARGE);
+
+  expect(t.attaches(LARGE)).toBe(2);
+
+  expect(t.session(LARGE)).toMatchObject({
+    integrationState: IntegrationState.Ready,
+    binding: BindingState.Verified,
+  });
+
+  expect(t.session(LARGE)!.errorCode).toBeUndefined();
+});
+
+it('reconnects the shared IPC after it disconnects and rebinds its threads', async () => {
+  const t = await setup();
+
+  const replacement = Object.assign(new EventEmitter(), {
+    owner: async () => 'synthetic-owner',
+    frameTooLarge: () => false,
+    close: vi.fn(async () => {}),
+  });
+
+  await t.select(SMALL);
+  const generation = t.session(SMALL)!.generation;
+
+  native.connect.mockResolvedValueOnce(replacement);
+  t.ipc.emit(RuntimeEvent.Disconnected);
+  expect(t.session(SMALL)!.integrationState).toBe(IntegrationState.Disconnected);
+  await t.select(SMALL);
+
+  expect(native.connect).toHaveBeenCalledTimes(2);
+  expect(t.session(SMALL)).toMatchObject({ integrationState: IntegrationState.Ready });
+  expect(t.session(SMALL)!.generation).not.toBe(generation);
 });

@@ -38,6 +38,10 @@ The application shows the local operating-system account's approved sessions and
 
 The sandboxed renderer has no Node.js access, generic IPC channel or native credential handle. Main-frame and origin checks fence IPC. Profile sign-in opens only the supported provider's validated authorization URL in the system browser. Other popup creation, arbitrary navigation, webviews and renderer permission requests are denied.
 
+## Release order
+
+Deploy the relay and the mini-app before shipping a desktop build whose daemon reports a new session error code. The first such code is `CODEX_FRAME_TOO_LARGE`, shown when a Codex thread's state exceeds the 32 MiB IPC frame cap. Relays and mini-app bundles that are already deployed validate session error codes strictly. They reject every snapshot from a device that reports an unknown code. Builds from this release onward read an unknown session error code as `SESSION_UNAVAILABLE` instead.
+
 ## Acceptance status
 
 Controlled tests cover SQLite and PTY under the packaged Node runtime, local grants, revocation, companion survival, the actual Electron bootstrap and the shared UI. Synthetic native peers establish protocol behavior rather than real provider-account acceptance. A safe probe separately checks the built Swift helper without requesting new macOS permissions.
