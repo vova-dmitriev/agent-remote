@@ -268,7 +268,7 @@ export async function startHookServer(options: Options) {
                   });
 
                   if (response.status !== CommandStatus.Dispatched) {
-                    throw new CodedError(response.code ?? 'WRAPPER_FAILED');
+                    throw new CodedError(response.code ?? ErrorCode.WRAPPER_FAILED);
                   }
 
                   return response;
@@ -280,7 +280,7 @@ export async function startHookServer(options: Options) {
                   });
 
                   if (response.status !== CommandStatus.Dispatched) {
-                    throw new CodedError(response.code ?? 'WRAPPER_FAILED');
+                    throw new CodedError(response.code ?? ErrorCode.WRAPPER_FAILED);
                   }
 
                   return response;

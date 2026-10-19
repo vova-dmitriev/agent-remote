@@ -1,4 +1,3 @@
-/* eslint-disable no-restricted-syntax -- installer diagnostics are human-readable text, not wire error codes */
 import { constants, type Stats } from 'node:fs';
 import { access, lstat, mkdir, open } from 'node:fs/promises';
 import { dirname, isAbsolute, resolve } from 'node:path';
@@ -9,6 +8,7 @@ export function isMissing(error: unknown): boolean {
 
 export function assertSafeEntry(stat: Stats, path: string, ownerOnly = false): void {
   if (stat.isSymbolicLink()) {
+    // eslint-disable-next-line no-restricted-syntax -- installer diagnostic text
     throw new Error(`Symlink native host path: ${path}`);
   }
 
@@ -21,12 +21,14 @@ export function assertSafeEntry(stat: Stats, path: string, ownerOnly = false): v
     (writableShared && !trustedSticky) ||
     (ownerOnly && (stat.uid !== owner || (stat.mode & 0o077) !== 0))
   ) {
+    // eslint-disable-next-line no-restricted-syntax -- installer diagnostic text
     throw new Error(`Unsafe native host ownership or permissions: ${path}`);
   }
 }
 
 export async function checkDirectory(path: string, create = false): Promise<void> {
   if (!isAbsolute(path) || path.includes('\0')) {
+    // eslint-disable-next-line no-restricted-syntax -- installer diagnostic text
     throw new Error('Native host directory must be absolute');
   }
 
@@ -65,6 +67,7 @@ export async function checkDirectory(path: string, create = false): Promise<void
   assertSafeEntry(stat, absolute);
 
   if (!stat.isDirectory()) {
+    // eslint-disable-next-line no-restricted-syntax -- installer diagnostic text
     throw new Error(`Native host parent is not a directory: ${absolute}`);
   }
 }
@@ -78,12 +81,14 @@ export async function checkExecutable(path: string): Promise<void> {
   const ownerCannotExecute = stat.uid === process.getuid?.() && (stat.mode & 0o100) === 0;
 
   if (!stat.isFile() || stat.nlink !== 1 || (stat.mode & 0o111) === 0 || ownerCannotExecute) {
+    // eslint-disable-next-line no-restricted-syntax -- installer diagnostic text
     throw new Error('Native host path must be a trusted executable file');
   }
 
   try {
     await access(path, constants.X_OK);
   } catch {
+    // eslint-disable-next-line no-restricted-syntax -- installer diagnostic text
     throw new Error('Native host file is not executable by its owner');
   }
 }
@@ -104,6 +109,7 @@ export async function readOwnedManifest(path: string): Promise<string | undefine
   assertSafeEntry(stat, path, true);
 
   if (!stat.isFile() || stat.nlink !== 1 || stat.size > 16 * 1024) {
+    // eslint-disable-next-line no-restricted-syntax -- installer diagnostic text
     throw new Error('Unsafe existing native host manifest');
   }
 
@@ -113,6 +119,7 @@ export async function readOwnedManifest(path: string): Promise<string | undefine
     const opened = await handle.stat();
 
     if (opened.ino !== stat.ino || opened.dev !== stat.dev) {
+      // eslint-disable-next-line no-restricted-syntax -- installer diagnostic text
       throw new Error('Native host manifest changed while reading');
     }
 

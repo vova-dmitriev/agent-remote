@@ -290,3 +290,52 @@ it('rejects raw error codes in comparisons, throw branches and error properties'
     expect(errorCodeViolations(source, 'apps/daemon/src/example.ts'), source).toEqual([]);
   }
 }, 30000);
+
+it('rejects raw error codes in logical fallbacks', () => {
+  expect(
+    errorCodeViolations(
+      "throw new CodedError(response.code ?? 'WRAPPER_FAILED');",
+      'apps/daemon/src/example.ts',
+    ),
+  ).not.toHaveLength(0);
+
+  expect(
+    errorCodeViolations(
+      'throw new CodedError(response.code ?? ErrorCode.WRAPPER_FAILED);',
+      'apps/daemon/src/example.ts',
+    ),
+  ).toEqual([]);
+}, 30000);
+
+it('restricts the message selector to comparison operators', () => {
+  const file = 'apps/daemon/src/example.ts';
+
+  expect(ruleViolations('const text = prefix + error.message;', file, 'no-restricted-syntax')).toEqual([]);
+  expect(ruleViolations('if (error.message == code) {}', file, 'no-restricted-syntax')).not.toHaveLength(0);
+}, 30000);
+
+it.each([
+  'reject(new Error(ErrorCode.NOT_FOUND));',
+  'const make = () => { return new Error(ErrorCode.NOT_FOUND); };',
+  'const make = () => new Error(ErrorCode.NOT_FOUND);',
+  'finish(new Error(ErrorCode.NOT_FOUND));',
+])(
+  'requires CodedError for non-throw error construction: %s',
+  (source) => {
+    expect(
+      ruleViolations(source, 'apps/daemon/src/example.ts', 'no-restricted-syntax'),
+      source,
+    ).not.toHaveLength(0);
+  },
+  30000,
+);
+
+it('keeps numeric selectors active alongside human-text disables', () => {
+  expect(
+    ruleViolations(
+      '// eslint-disable-next-line no-restricted-syntax -- text\nthrow new Error("text");\nres.status(404);',
+      'apps/daemon/src/example.ts',
+      'no-restricted-syntax',
+    ),
+  ).not.toHaveLength(0);
+}, 30000);

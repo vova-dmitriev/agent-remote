@@ -54,14 +54,14 @@ export class BridgeClient {
 
       child.on('error', () => {
         if (this.process === child) {
-          this.fail('HELPER_UNAVAILABLE');
+          this.fail(ErrorCode.HELPER_UNAVAILABLE);
           this.close();
         }
       });
 
       child.stdin!.on('error', () => {
         if (this.process === child) {
-          this.fail('HELPER_EXITED');
+          this.fail(ErrorCode.HELPER_EXITED);
         }
       });
 
@@ -71,7 +71,7 @@ export class BridgeClient {
         }
 
         this.process = undefined;
-        this.fail('HELPER_EXITED');
+        this.fail(ErrorCode.HELPER_EXITED);
       });
 
       child.stdout!.on('data', (chunk: Buffer) => {
@@ -82,7 +82,7 @@ export class BridgeClient {
         this.buffer = Buffer.concat([this.buffer, chunk]);
 
         if (this.buffer.length > 131072) {
-          this.fail('HELPER_FRAME_TOO_LARGE');
+          this.fail(DaemonErrorCode.HELPER_FRAME_TOO_LARGE);
           this.close();
 
           return;
@@ -117,14 +117,14 @@ export class BridgeClient {
             );
           }
         } catch {
-          this.fail('INVALID_HELPER_FRAME');
+          this.fail(DaemonErrorCode.INVALID_HELPER_FRAME);
         }
       });
     }
 
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
-        this.fail('HELPER_TIMEOUT');
+        this.fail(ErrorCode.HELPER_TIMEOUT);
         this.close();
       }, 3000);
 
@@ -132,7 +132,7 @@ export class BridgeClient {
       this.process!.stdin!.write(JSON.stringify(value) + '\n');
     });
   }
-  private fail(code: string) {
+  private fail(code: ErrorCode | DaemonErrorCode) {
     if (this.pending) {
       const pending = this.pending;
 
@@ -142,7 +142,7 @@ export class BridgeClient {
     }
   }
   close() {
-    this.fail('HELPER_CLOSED');
+    this.fail(ErrorCode.HELPER_CLOSED);
     this.process?.kill('SIGKILL');
     this.process = undefined;
     this.buffer = Buffer.alloc(0);

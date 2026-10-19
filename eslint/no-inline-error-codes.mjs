@@ -130,6 +130,10 @@ function staticBranches(node, depth = 0) {
     ];
   }
 
+  if (expression.type === 'LogicalExpression') {
+    return [...staticBranches(expression.left, depth + 1), ...staticBranches(expression.right, depth + 1)];
+  }
+
   const value = staticString(expression, depth);
 
   return value === undefined ? [] : [{ node: expression, value }];

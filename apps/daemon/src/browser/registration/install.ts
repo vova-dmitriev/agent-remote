@@ -1,4 +1,3 @@
-/* eslint-disable no-restricted-syntax -- installer diagnostics are human-readable text, not wire error codes */
 import { constants } from 'node:fs';
 import { link, open, unlink } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
@@ -20,10 +19,12 @@ function requireMatchingManifest(contents: string, manifest: NativeHostManifest)
   try {
     existing = JSON.parse(contents);
   } catch {
+    // eslint-disable-next-line no-restricted-syntax -- installer diagnostic text
     throw new Error('Existing manifest is not an owned native host registration');
   }
 
   if (!isMatchingManifest(existing, manifest)) {
+    // eslint-disable-next-line no-restricted-syntax -- installer diagnostic text
     throw new Error('Existing manifest is not a matching owned native host registration');
   }
 }
@@ -97,6 +98,7 @@ export async function unregisterNativeHost(options: NativeHostRegistration): Pro
     await checkDirectory(dirname(manifestPath));
 
     if ((await readOwnedManifest(manifestPath)) !== contents) {
+      // eslint-disable-next-line no-restricted-syntax -- installer diagnostic text
       throw new Error('Existing native manifest changed before uninstall');
     }
 

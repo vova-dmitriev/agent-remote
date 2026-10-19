@@ -11,11 +11,17 @@ const globals = require('globals');
 
 export const codedErrorRules = [
   {
-    selector: "ThrowStatement > NewExpression[callee.name='Error'][arguments.length>0]",
-    message: 'Throw CodedError(code) so callers can use errorCode(error).',
+    selector: [
+      "ThrowStatement > NewExpression[callee.name='Error'][arguments.length>0]",
+      "CallExpression > NewExpression[callee.name='Error'][arguments.length>0]",
+      "ReturnStatement > NewExpression[callee.name='Error'][arguments.length>0]",
+      "ArrowFunctionExpression > NewExpression[callee.name='Error'][arguments.length>0]",
+    ].join(', '),
+    message: 'Construct CodedError(code) so callers can use errorCode(error).',
   },
   {
-    selector: 'BinaryExpression:matches([left.property.name="message"], [right.property.name="message"])',
+    selector:
+      'BinaryExpression[operator=/^[!=]==?$/]:matches([left.property.name="message"], [right.property.name="message"])',
     message: 'Compare errorCode(error) / hasErrorCode(error, code) instead of error.message.',
   },
 ];

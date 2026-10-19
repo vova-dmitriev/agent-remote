@@ -16,6 +16,7 @@ function validate(profile: ExecutionProfileSummary, selection: ExecutionLaunchSe
 
   if (!parsed.success) {
     throw new CodedError(
+      // eslint-disable-next-line no-restricted-syntax -- wraps validator text for knownErrorCode, not a wire code
       knownErrorCode(new Error(parsed.error.issues[0]?.message), ErrorCode.INVALID_REQUEST),
     );
   }
