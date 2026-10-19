@@ -3,6 +3,7 @@ import { shellQuote as quote } from '../shell/index.js';
 import { ASCII_CONTROL_CHARACTERS } from '../validation/control-characters.js';
 import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, isAbsolute, join } from 'node:path';
+import { CodedError } from '@protocol';
 
 export async function installClaudeShell(options: {
   directory: string;
@@ -13,7 +14,7 @@ export async function installClaudeShell(options: {
 }) {
   for (const path of [options.directory, options.rcPath, options.executable, options.node, options.entry]) {
     if (!isAbsolute(path) || ASCII_CONTROL_CHARACTERS.test(path)) {
-      throw new Error(DaemonErrorCode.INVALID_SHELL_PATH);
+      throw new CodedError(DaemonErrorCode.INVALID_SHELL_PATH);
     }
   }
 

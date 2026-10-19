@@ -1,10 +1,11 @@
 import { createHash } from 'node:crypto';
 import {
+  CodedError,
   ErrorCode,
   ProfileLimits,
-  ProfileRequestKind,
   type ProfileList,
   type ProfileRequest,
+  ProfileRequestKind,
   type ProfileResponse,
 } from '@protocol';
 
@@ -26,14 +27,14 @@ export function profileListPage(
     (request.offset > 0 && request.revision !== revision) ||
     (request.revision && request.revision !== revision)
   ) {
-    throw new Error(ErrorCode.LOCAL_REVISION_CONFLICT);
+    throw new CodedError(ErrorCode.LOCAL_REVISION_CONFLICT);
   }
 
   const data: ProfileList = { ...list, profiles: [], operations: [] };
   const total = list.profiles.length + list.operations.length;
 
   if (request.offset > total) {
-    throw new Error(ErrorCode.INVALID_REQUEST);
+    throw new CodedError(ErrorCode.INVALID_REQUEST);
   }
 
   let bytes = Buffer.byteLength(JSON.stringify(data));
@@ -59,7 +60,7 @@ export function profileListPage(
   }
 
   if (index === request.offset && index < total) {
-    throw new Error(ErrorCode.LOCAL_PAYLOAD_TOO_LARGE);
+    throw new CodedError(ErrorCode.LOCAL_PAYLOAD_TOO_LARGE);
   }
 
   return { kind: ProfileRequestKind.ListPage, data, revision, nextOffset: index < total ? index : null };

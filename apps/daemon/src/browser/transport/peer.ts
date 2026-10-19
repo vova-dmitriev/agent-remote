@@ -1,7 +1,7 @@
 import { once } from 'node:events';
 import type { Readable, Writable } from 'node:stream';
 import { randomUUID } from 'node:crypto';
-import { ErrorCode, LOCAL_LIMITS } from '@protocol';
+import { CodedError, ErrorCode, LOCAL_LIMITS } from '@protocol';
 import { fragmentValue, FragmentReader } from '@transport/native/fragments.js';
 import { NativeFrameCodec } from './framing.js';
 
@@ -34,7 +34,7 @@ export class FramedPeer {
           }
 
           if (++this.pendingReads > LOCAL_LIMITS.maxPendingRequests) {
-            throw new Error(ErrorCode.LOCAL_CLIENT_LIMIT);
+            throw new CodedError(ErrorCode.LOCAL_CLIENT_LIMIT);
           }
 
           observe?.(value);
@@ -63,7 +63,7 @@ export class FramedPeer {
 
   send(value: unknown): Promise<void> {
     if (this.stopped) {
-      return Promise.reject(new Error(ErrorCode.LOCAL_HOST_UNAVAILABLE));
+      return Promise.reject(new CodedError(ErrorCode.LOCAL_HOST_UNAVAILABLE));
     }
 
     const frames = fragmentValue(value, randomUUID()).map((fragment) => this.codec.encode(fragment));
@@ -72,7 +72,7 @@ export class FramedPeer {
     if (size + this.queuedBytes > LOCAL_LIMITS.pendingBytes) {
       this.close();
 
-      return Promise.reject(new Error(ErrorCode.LOCAL_PAYLOAD_TOO_LARGE));
+      return Promise.reject(new CodedError(ErrorCode.LOCAL_PAYLOAD_TOO_LARGE));
     }
 
     this.queuedBytes += size;
@@ -81,14 +81,14 @@ export class FramedPeer {
       .then(async () => {
         for (const frame of frames) {
           if (this.stopped) {
-            throw new Error(ErrorCode.LOCAL_HOST_UNAVAILABLE);
+            throw new CodedError(ErrorCode.LOCAL_HOST_UNAVAILABLE);
           }
 
           if (!this.output.write(frame)) {
             await Promise.race([
               once(this.output, 'drain'),
               this.closed.then(() => {
-                throw new Error(ErrorCode.LOCAL_HOST_UNAVAILABLE);
+                throw new CodedError(ErrorCode.LOCAL_HOST_UNAVAILABLE);
               }),
             ]);
           }

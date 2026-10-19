@@ -1,15 +1,16 @@
 import { randomBytes } from 'node:crypto';
 import {
+  type BeginEnrollmentRequest,
+  beginEnrollmentSchema,
+  CodedError,
   CredentialEnrollmentAlgorithm,
   CredentialEnrollmentLimits,
+  type EncryptedEnrollment,
+  enrollmentChallengeSchema,
   ErrorCode,
   ProfileAction,
   ProfileOperationPhase,
   ProfileStatus,
-  beginEnrollmentSchema,
-  enrollmentChallengeSchema,
-  type BeginEnrollmentRequest,
-  type EncryptedEnrollment,
 } from '@protocol';
 import type { EnrollmentRecipient } from '@transport/credentials/types.js';
 import { immutableProfileScope } from '../storage/scope.js';
@@ -45,13 +46,13 @@ export class CredentialEnrollmentService {
 
   async recipient(current = () => true) {
     if (!current()) {
-      throw new Error(ErrorCode.UNAUTHORIZED);
+      throw new CodedError(ErrorCode.UNAUTHORIZED);
     }
 
     const identity = await this.identity();
 
     if (!current()) {
-      throw new Error(ErrorCode.UNAUTHORIZED);
+      throw new CodedError(ErrorCode.UNAUTHORIZED);
     }
 
     return {
@@ -65,7 +66,7 @@ export class CredentialEnrollmentService {
 
   async begin(input: BeginEnrollmentRequest, current = () => true) {
     if (!current()) {
-      throw new Error(ErrorCode.UNAUTHORIZED);
+      throw new CodedError(ErrorCode.UNAUTHORIZED);
     }
 
     const request = beginEnrollmentSchema.parse(input);
@@ -74,7 +75,7 @@ export class CredentialEnrollmentService {
     const recipient = await this.recipient(current);
 
     if (request.pinnedKeyId !== recipient.recipientKeyId) {
-      throw new Error(ErrorCode.ENROLLMENT_KEY_UNTRUSTED);
+      throw new CodedError(ErrorCode.ENROLLMENT_KEY_UNTRUSTED);
     }
 
     this.context.journal.run(request, () => {
@@ -109,7 +110,7 @@ export class CredentialEnrollmentService {
     const saved = this.context.repository.get(request.operationId).challenge;
 
     if (saved.expiresAt <= this.context.now()) {
-      throw new Error(ErrorCode.ENROLLMENT_EXPIRED);
+      throw new CodedError(ErrorCode.ENROLLMENT_EXPIRED);
     }
 
     return saved;
@@ -131,13 +132,13 @@ export class CredentialEnrollmentService {
     const operation = this.context.journal.get(id);
 
     if (operation.action !== ProfileAction.EnrollApiKey) {
-      throw new Error(ErrorCode.INVALID_REQUEST);
+      throw new CodedError(ErrorCode.INVALID_REQUEST);
     }
 
     const profile = this.context.options.registry.get(operation.profileId);
 
     if (profile.status !== ProfileStatus.Removing && profile.status !== ProfileStatus.Removed) {
-      throw new Error(ErrorCode.PROFILE_NOT_READY);
+      throw new CodedError(ErrorCode.PROFILE_NOT_READY);
     }
 
     if (
@@ -150,7 +151,7 @@ export class CredentialEnrollmentService {
     const proof = this.context.options.hasNativeCloseProof?.(id, profile.id, operation.profileVersion);
 
     if (!proof && !(await this.context.options.closeProfile?.(profile.id))) {
-      throw new Error(ErrorCode.PROFILE_EXECUTION_ACTIVE);
+      throw new CodedError(ErrorCode.PROFILE_EXECUTION_ACTIVE);
     }
 
     const failed = cancelEnrollmentForRemoval(this.context, id);

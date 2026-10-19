@@ -1,3 +1,4 @@
+import { CodedError } from '@protocol';
 import { randomUUID } from 'node:crypto';
 import { vi } from 'vitest';
 import { ProfileAuthentication } from '../../apps/daemon/src/profiles/authentication/service.js';
@@ -18,7 +19,7 @@ export function authenticationFixture() {
 
   const probe = vi.fn(async () => {
     if (!authorized) {
-      throw new Error('PROFILE_NOT_READY');
+      throw new CodedError('PROFILE_NOT_READY');
     }
 
     return verifiedAccount();

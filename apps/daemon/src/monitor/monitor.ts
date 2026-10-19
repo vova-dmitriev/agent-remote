@@ -1,23 +1,24 @@
 import {
-  ErrorCode,
-  ConnectorId,
-  SubagentStatus,
-  EventType,
-  ConnectorTransport,
-  TargetKind,
-  BindingState,
-  SessionStatus,
-  IntegrationState,
-  StatusConfidence,
-  NativeRestartState,
-  DeviceStatus,
-  type Session,
-  type EventEnvelope,
   type AppSnapshot,
-  type Target,
-  noCapabilities,
-  sessionSchema,
+  BindingState,
+  CodedError,
+  ConnectorId,
+  ConnectorTransport,
+  DeviceStatus,
+  ErrorCode,
+  type EventEnvelope,
+  EventType,
   historySchema,
+  IntegrationState,
+  NativeRestartState,
+  noCapabilities,
+  type Session,
+  sessionSchema,
+  SessionStatus,
+  StatusConfidence,
+  SubagentStatus,
+  type Target,
+  TargetKind,
 } from '@protocol';
 import { ClaudeHookEvent } from '../domain/claude.js';
 import { RuntimeEvent, ModelOrigin } from '../domain/runtime.js';
@@ -106,7 +107,7 @@ export class Monitor extends EventEmitter {
       adapter = this.options.adapters.get(connectorId);
 
     if (!adapter) {
-      throw new Error(ErrorCode.NOT_FOUND);
+      throw new CodedError(ErrorCode.NOT_FOUND);
     }
 
     const descriptor = adapter.descriptor();
@@ -378,7 +379,7 @@ export class Monitor extends EventEmitter {
       ) ||
       saved.status === SessionStatus.Ended
     ) {
-      throw new Error(ErrorCode.STALE_SESSION);
+      throw new CodedError(ErrorCode.STALE_SESSION);
     }
 
     if (!this.sessions.has(saved.id)) {
@@ -407,7 +408,7 @@ export class Monitor extends EventEmitter {
     const session = this.sessions.get(id);
 
     if (!session || session.generation !== generation || session.target.connectorId !== ConnectorId.Native) {
-      throw new Error(ErrorCode.STALE_SESSION);
+      throw new CodedError(ErrorCode.STALE_SESSION);
     }
 
     session.status = SessionStatus.Ended;
@@ -474,7 +475,7 @@ export class Monitor extends EventEmitter {
       );
 
     if (!retired) {
-      throw new Error(ErrorCode.SESSION_QUOTA);
+      throw new CodedError(ErrorCode.SESSION_QUOTA);
     }
 
     this.options.permissions.cancelSession(retired.id, retired.generation);
@@ -519,6 +520,23 @@ export class Monitor extends EventEmitter {
   }
   session(id: string) {
     return this.sessions.get(id);
+  }
+  applyDesktopRead(
+    id: string,
+    read: { status: Session['status']; canPrompt: boolean; canInterrupt: boolean },
+  ) {
+    const session = this.sessions.get(id);
+
+    if (!session) {
+      return false;
+    }
+
+    session.status = read.status;
+    session.lastEventAt = Date.now();
+    session.capabilities.prompt = read.canPrompt;
+    session.capabilities.interrupt = read.canInterrupt;
+
+    return true;
   }
   setSessionActivity(id: string, generation: string, time: number) {
     const session = this.sessions.get(id);
@@ -655,7 +673,7 @@ export class Monitor extends EventEmitter {
   }
   select(id: string | null) {
     if (id && !this.sessions.has(id)) {
-      throw new Error(ErrorCode.NOT_FOUND);
+      throw new CodedError(ErrorCode.NOT_FOUND);
     }
 
     this.selectedId = id;

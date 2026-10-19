@@ -2,6 +2,7 @@ import { DaemonErrorCode } from '../../error-codes.js';
 import { constants } from 'node:fs';
 import { open, realpath, stat } from 'node:fs/promises';
 import { isAbsolute, relative } from 'node:path';
+import { CodedError } from '@protocol';
 
 export async function openTranscript(path: string, allowedRoot: string) {
   let root: string, resolved: string;
@@ -19,7 +20,7 @@ export async function openTranscript(path: string, allowedRoot: string) {
   const within = relative(root, resolved);
 
   if (within === '' || within === '..' || within.startsWith('../') || isAbsolute(within)) {
-    throw new Error(DaemonErrorCode.TRANSCRIPT_OUTSIDE_ROOT);
+    throw new CodedError(DaemonErrorCode.TRANSCRIPT_OUTSIDE_ROOT);
   }
 
   const file = await open(resolved, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
@@ -28,14 +29,14 @@ export async function openTranscript(path: string, allowedRoot: string) {
     const info = await file.stat();
 
     if (!info.isFile()) {
-      throw new Error(DaemonErrorCode.INVALID_TRANSCRIPT_FILE);
+      throw new CodedError(DaemonErrorCode.INVALID_TRANSCRIPT_FILE);
     }
 
     const current = await realpath(path),
       currentInfo = await stat(current);
 
     if (current !== resolved || currentInfo.dev !== info.dev || currentInfo.ino !== info.ino) {
-      throw new Error(DaemonErrorCode.TRANSCRIPT_CHANGED_DURING_OPEN);
+      throw new CodedError(DaemonErrorCode.TRANSCRIPT_CHANGED_DURING_OPEN);
     }
 
     return { file, info };

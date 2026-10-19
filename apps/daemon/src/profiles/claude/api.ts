@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { isAbsolute, relative, resolve, sep } from 'node:path';
-import { AgentProvider, ErrorCode, ProfileAuthMode } from '@protocol';
+import { AgentProvider, CodedError, ErrorCode, ProfileAuthMode } from '@protocol';
 import { credentialReference } from '../credentials.js';
 import { readClaudeApiKey } from './api-key-helper.js';
 import { ClaudeProfileApi } from './values.js';
@@ -12,13 +12,13 @@ const modelsSchema = z.object({
 async function responseBody(response: Response) {
   if (!response.ok || response.redirected) {
     await response.body?.cancel().catch(() => {});
-    throw new Error(ErrorCode.PROFILE_NOT_READY);
+    throw new CodedError(ErrorCode.PROFILE_NOT_READY);
   }
 
   const reader = response.body?.getReader();
 
   if (!reader) {
-    throw new Error(ErrorCode.PROFILE_NOT_READY);
+    throw new CodedError(ErrorCode.PROFILE_NOT_READY);
   }
 
   const chunks: Uint8Array[] = [];
@@ -36,7 +36,7 @@ async function responseBody(response: Response) {
 
       if (size > ClaudeProfileApi.MaxResponseBytes) {
         await reader.cancel();
-        throw new Error(ErrorCode.UNAUTHORIZED);
+        throw new CodedError(ErrorCode.UNAUTHORIZED);
       }
 
       chunks.push(value);
@@ -53,7 +53,7 @@ async function responseBody(response: Response) {
   try {
     return JSON.parse(bytes.toString('utf8')) as unknown;
   } catch {
-    throw new Error(ErrorCode.PROFILE_NOT_READY);
+    throw new CodedError(ErrorCode.PROFILE_NOT_READY);
   } finally {
     bytes.fill(0);
   }
@@ -65,13 +65,13 @@ export async function verifyClaudeApiKey(
   apiFetch: typeof fetch = fetch,
 ) {
   if (!isAbsolute(configDirectory) || !isAbsolute(credentialFile)) {
-    throw new Error(ErrorCode.INVALID_REQUEST);
+    throw new CodedError(ErrorCode.INVALID_REQUEST);
   }
 
   const fromRoot = relative(resolve(configDirectory), resolve(credentialFile));
 
   if (fromRoot === '..' || fromRoot.startsWith(`..${sep}`) || isAbsolute(fromRoot)) {
-    throw new Error(ErrorCode.UNAUTHORIZED);
+    throw new CodedError(ErrorCode.UNAUTHORIZED);
   }
 
   const key = await readClaudeApiKey(credentialFile);
@@ -86,13 +86,13 @@ export async function verifyClaudeApiKey(
     cache: 'no-store',
     signal: AbortSignal.timeout(ClaudeProfileApi.TimeoutMs),
   }).catch(() => {
-    throw new Error(ErrorCode.PROFILE_NOT_READY);
+    throw new CodedError(ErrorCode.PROFILE_NOT_READY);
   });
 
   const parsed = modelsSchema.safeParse(await responseBody(response));
 
   if (!parsed.success) {
-    throw new Error(ErrorCode.PROFILE_NOT_READY);
+    throw new CodedError(ErrorCode.PROFILE_NOT_READY);
   }
 
   return {

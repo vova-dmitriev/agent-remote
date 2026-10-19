@@ -1,4 +1,4 @@
-import { BindingState, IntegrationState, SessionStatus, type Session } from "@protocol"
+import { BindingState, ErrorCode, IntegrationState, SessionStatus, type Session } from "@protocol"
 import type { MessageKey } from "@/shared/lib/i18n"
 import { statuses } from "./labels"
 
@@ -12,6 +12,7 @@ export function sourceAvailable(session: Session) {
 
 export function sessionStatusLabel(session: Session, online = true): MessageKey {
   if (session.status === SessionStatus.Ended) return statuses[SessionStatus.Ended]
+  if (session.errorCode === ErrorCode.CODEX_FRAME_TOO_LARGE) return "sessionTooLarge"
   if (!online || !sourceAvailable(session)) return "sessionOffline"
   if (session.status === SessionStatus.Idle && !session.capabilities.prompt) return "observeOnly"
 

@@ -1,4 +1,4 @@
-import { ErrorCode } from '@protocol';
+import { CodedError, ErrorCode } from '@protocol';
 import { connect, type Socket } from 'node:net';
 
 export function lineReader(socket: Socket, onFrame: (frame: unknown) => void, maxBytes = 131072) {
@@ -36,7 +36,7 @@ export function writeFrame(socket: Socket, frame: unknown) {
 
   if (Buffer.byteLength(data) > 131072 || socket.writableLength > 1048576) {
     socket.destroy();
-    throw new Error(ErrorCode.IPC_QUEUE_FULL);
+    throw new CodedError(ErrorCode.IPC_QUEUE_FULL);
   }
 
   socket.write(data);
@@ -55,7 +55,7 @@ export function requestLocal(path: string, frame: unknown, timeoutMs = 5000): Pr
 
     const timer = setTimeout(() => {
       socket.destroy();
-      reject(new Error(ErrorCode.IPC_TIMEOUT));
+      reject(new CodedError(ErrorCode.IPC_TIMEOUT));
     }, timeoutMs);
 
     let settled = false;
@@ -78,7 +78,7 @@ export function requestLocal(path: string, frame: unknown, timeoutMs = 5000): Pr
 
     socket.on('connect', () => writeFrame(socket, frame));
     socket.on('error', (error) => done(error));
-    socket.on('close', () => done(new Error(ErrorCode.IPC_CLOSED)));
+    socket.on('close', () => done(new CodedError(ErrorCode.IPC_CLOSED)));
     lineReader(socket, (value) => done(null, value));
   });
 }

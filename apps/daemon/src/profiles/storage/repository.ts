@@ -1,11 +1,12 @@
 import { immutableProfileScope } from './scope.js';
 import {
-  ErrorCode,
-  ProfileStatus,
-  ProfileLimits,
-  executionProfileSummarySchema,
-  type ExecutionProfileSummary,
   type AgentProvider,
+  CodedError,
+  ErrorCode,
+  type ExecutionProfileSummary,
+  executionProfileSummarySchema,
+  ProfileLimits,
+  ProfileStatus,
 } from '@protocol';
 import type { LocalDatabase } from '../../local/state/database.js';
 import type { ProfileScope } from '../types.js';
@@ -29,7 +30,7 @@ export class ProfileRepository {
     const profile = executionProfileSummarySchema.parse(JSON.parse(value));
 
     if (profile.ownerId !== this.scope.ownerId || profile.deviceId !== this.scope.deviceId) {
-      throw new Error(ErrorCode.NOT_FOUND);
+      throw new CodedError(ErrorCode.NOT_FOUND);
     }
 
     return profile;
@@ -41,7 +42,7 @@ export class ProfileRepository {
       .get(this.scope.ownerId, this.scope.deviceId, id);
 
     if (!row) {
-      throw new Error(ErrorCode.NOT_FOUND);
+      throw new CodedError(ErrorCode.NOT_FOUND);
     }
 
     return this.decode(row);
@@ -66,7 +67,7 @@ export class ProfileRepository {
       };
 
       if (count.active >= ProfileLimits.ActiveProfiles || count.total >= ProfileLimits.RetainedProfiles) {
-        throw new Error(ErrorCode.PROFILE_LIMIT_REACHED);
+        throw new CodedError(ErrorCode.PROFILE_LIMIT_REACHED);
       }
 
       this.database.connection
@@ -104,7 +105,7 @@ export class ProfileRepository {
         );
 
       if (result.changes !== 1) {
-        throw new Error(ErrorCode.LOCAL_REVISION_CONFLICT);
+        throw new CodedError(ErrorCode.LOCAL_REVISION_CONFLICT);
       }
 
       if (profile.status !== ProfileStatus.Ready) {
@@ -126,7 +127,7 @@ export class ProfileRepository {
   setDefault(profile: ExecutionProfileSummary) {
     this.database.connection.transaction(() => {
       if (this.get(profile.id).version !== profile.version) {
-        throw new Error(ErrorCode.LOCAL_REVISION_CONFLICT);
+        throw new CodedError(ErrorCode.LOCAL_REVISION_CONFLICT);
       }
 
       this.database.connection

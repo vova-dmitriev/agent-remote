@@ -6,10 +6,12 @@ import { tmpdir } from 'node:os';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { compileCompanionFixture, packagedCompanionFixture } from './helpers/packaged-companion.js';
+import { guardRuntimeProcesses } from './helpers/runtime-processes.js';
 
 const run = promisify(execFile);
 
 beforeAll(compileCompanionFixture, 30_000);
+guardRuntimeProcesses();
 
 it('starts and probes the relocated bundled daemon without development Node/PATH or a helper override', async () => {
   const fixture = await packagedCompanionFixture();

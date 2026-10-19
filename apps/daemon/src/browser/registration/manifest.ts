@@ -5,10 +5,12 @@ import { NATIVE_HOST_DESCRIPTION, NativeHostInterface } from './values.js';
 
 export function createNativeHostManifest(options: NativeHostRegistration): NativeHostManifest {
   if (!isAbsolute(options.executablePath) || options.executablePath.includes('\0')) {
+    // eslint-disable-next-line no-restricted-syntax -- installer diagnostic text
     throw new Error('Native host executable path must be absolute');
   }
 
   if (options.executablePath !== resolve(options.executablePath)) {
+    // eslint-disable-next-line no-restricted-syntax -- installer diagnostic text
     throw new Error('Native host executable path must be canonical');
   }
 
@@ -21,6 +23,7 @@ export function createNativeHostManifest(options: NativeHostRegistration): Nativ
     new Set(origins).size !== origins.length ||
     origins.some((origin) => typeof origin !== 'string' || !/^chrome-extension:\/\/[a-p]{32}\/$/.test(origin))
   ) {
+    // eslint-disable-next-line no-restricted-syntax -- installer diagnostic text
     throw new Error('Native host requires exact unique extension origins');
   }
 

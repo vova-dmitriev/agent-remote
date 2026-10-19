@@ -1,5 +1,11 @@
 import { DaemonErrorCode } from '../error-codes.js';
-import { ErrorCode, PermissionDecision, type RemotePermissionDecision, positiveInteger } from '@protocol';
+import {
+  CodedError,
+  ErrorCode,
+  PermissionDecision,
+  positiveInteger,
+  type RemotePermissionDecision,
+} from '@protocol';
 
 import { ClaudeHookEvent } from '../domain/claude.js';
 
@@ -32,7 +38,7 @@ export class PermissionBroker {
 
   async open(source: PendingPermission): Promise<PermissionDecision> {
     if (this.closed) {
-      throw new Error(DaemonErrorCode.BROKER_CLOSED);
+      throw new CodedError(DaemonErrorCode.BROKER_CLOSED);
     }
 
     if (
@@ -44,15 +50,15 @@ export class PermissionBroker {
       }) ||
       !Number.isFinite(source.expiresAt)
     ) {
-      throw new Error(ErrorCode.INVALID_PERMISSION_REQUEST);
+      throw new CodedError(ErrorCode.INVALID_PERMISSION_REQUEST);
     }
 
     if (this.entries.has(source.requestId)) {
-      throw new Error(DaemonErrorCode.DUPLICATE_REQUEST);
+      throw new CodedError(DaemonErrorCode.DUPLICATE_REQUEST);
     }
 
     if (this.entries.size >= this.maxPending) {
-      throw new Error(ErrorCode.PERMISSION_QUEUE_FULL);
+      throw new CodedError(ErrorCode.PERMISSION_QUEUE_FULL);
     }
 
     const now = Date.now();
@@ -151,7 +157,7 @@ export function permissionHookOutput(decision: PermissionDecision) {
   }
 
   if (decision !== PermissionDecision.Allow && decision !== PermissionDecision.Deny) {
-    throw new Error(ErrorCode.INVALID_PERMISSION_DECISION);
+    throw new CodedError(ErrorCode.INVALID_PERMISSION_DECISION);
   }
 
   return {

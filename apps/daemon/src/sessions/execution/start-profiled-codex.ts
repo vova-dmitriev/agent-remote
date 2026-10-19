@@ -1,4 +1,4 @@
-import { ErrorCode } from '@protocol';
+import { CodedError, ErrorCode } from '@protocol';
 import { ensureManagedCodexSocket } from '../../codex/launcher.js';
 import { profileNativeArguments } from '../../profiles/native/config/arguments.js';
 import { profileExecutionNamespace } from './namespace.js';
@@ -67,11 +67,11 @@ export async function startProfiledCodexRuntime(
     });
 
     if (path !== namespace.socketPath) {
-      throw new Error(ErrorCode.CODEX_INVALID_SOCKET);
+      throw new CodedError(ErrorCode.CODEX_INVALID_SOCKET);
     }
 
     if (!launch.executionLease.processId()) {
-      throw new Error(ErrorCode.CODEX_DAEMON_START_FAILED);
+      throw new CodedError(ErrorCode.CODEX_DAEMON_START_FAILED);
     }
 
     launch.executionLease.markReady();

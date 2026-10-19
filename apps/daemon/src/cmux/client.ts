@@ -1,5 +1,12 @@
 import { DaemonErrorCode } from '../error-codes.js';
-import { TargetKind, positiveInteger, truncateUtf8, validatePrompt, type CmuxTarget } from '@protocol';
+import {
+  type CmuxTarget,
+  CodedError,
+  positiveInteger,
+  TargetKind,
+  truncateUtf8,
+  validatePrompt,
+} from '@protocol';
 import { execFile } from 'node:child_process';
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -40,7 +47,7 @@ export class CmuxClient {
         (value) => typeof value === 'string' && uuid.test(value),
       )
     ) {
-      throw new Error(DaemonErrorCode.INVALID_CMUX_TARGET);
+      throw new CodedError(DaemonErrorCode.INVALID_CMUX_TARGET);
     }
 
     return ['--window', target.windowId, '--workspace', target.workspaceId, '--surface', target.surfaceId];
@@ -62,7 +69,7 @@ export class CmuxClient {
           // CLI stderr may contain terminal/chat content; do not include it in errors.
           if (error) {
             reject(
-              new Error(DaemonErrorCode.CMUX_COMMAND_FAILED, {
+              new CodedError(DaemonErrorCode.CMUX_COMMAND_FAILED, {
                 cause: { code: error.code, killed: error.killed },
               }),
             );

@@ -1,5 +1,5 @@
 import type { ChildProcess } from 'node:child_process';
-import { ErrorCode } from '@protocol';
+import { CodedError, ErrorCode } from '@protocol';
 import { ProfileNativeLimits, ProfileProcessSignal } from '../values.js';
 
 function waitForExit(child: ChildProcess, duration: number) {
@@ -35,7 +35,7 @@ export function closeProfileProcess(child: ChildProcess) {
     child.kill(ProfileProcessSignal.Kill);
 
     if (!(await waitForExit(child, ProfileNativeLimits.CloseKillWaitMs))) {
-      throw new Error(ErrorCode.REQUEST_TIMEOUT);
+      throw new CodedError(ErrorCode.REQUEST_TIMEOUT);
     }
   }
 

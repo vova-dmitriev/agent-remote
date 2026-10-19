@@ -1,11 +1,12 @@
 import { lstat } from 'node:fs/promises';
 import { join } from 'node:path';
-import { ErrorCode, LOCAL_LIMITS } from '@protocol';
+import { CodedError, ErrorCode, LOCAL_LIMITS } from '@protocol';
 import { runtimeConfiguration } from '../../local/bootstrap/configuration.js';
 import { localClientSecret } from '../../local/bootstrap/identity.js';
 import { probeCompanion } from '../../local/bootstrap/probe.js';
 import { ensureCompanion } from '../../local/supervisor/index.js';
 import { missing, secureDirectory } from '../../local/supervisor/runtime.js';
+import { CompanionEnvironment, CompanionFlag } from '../../local/supervisor/values.js';
 import { runNativeHost } from '../host/bridge.js';
 import { requireSettings } from './settings.js';
 import type { BrowserCliContext } from './types.js';
@@ -31,7 +32,7 @@ async function companionAccess(context: BrowserCliContext) {
 
   const probe = async () => {
     if ((await exists(join(context.directory, 'hooks.sock'))) && !(await exists(path))) {
-      throw new Error(ErrorCode.LOCAL_COMPANION_MISMATCH);
+      throw new CodedError(ErrorCode.LOCAL_COMPANION_MISMATCH);
     }
 
     const health = await (context.dependencies?.probe ?? probeCompanion)(path, capability);
@@ -40,7 +41,7 @@ async function companionAccess(context: BrowserCliContext) {
       health &&
       (health.instanceId !== identity.instanceId || health.protocolVersion !== LOCAL_LIMITS.protocolVersion)
     ) {
-      throw new Error(ErrorCode.LOCAL_COMPANION_MISMATCH);
+      throw new CodedError(ErrorCode.LOCAL_COMPANION_MISMATCH);
     }
 
     return health;
@@ -53,7 +54,7 @@ export async function browserHost(context: BrowserCliContext, origin: string) {
   const settings = await requireSettings(context.directory);
 
   if (!settings.origins.includes(origin)) {
-    throw new Error(ErrorCode.UNAUTHORIZED);
+    throw new CodedError(ErrorCode.UNAUTHORIZED);
   }
 
   const access = await companionAccess(context);
@@ -78,6 +79,10 @@ export async function browserHost(context: BrowserCliContext, origin: string) {
 }
 
 export async function startLocal(context: BrowserCliContext) {
+  // Set only by the desktop launcher; consumed here so children never inherit it.
+  const legacyClaudeHooks = process.env[CompanionEnvironment.LegacyClaudeHooks] === CompanionFlag.Enabled;
+
+  delete process.env[CompanionEnvironment.LegacyClaudeHooks];
   await secureDirectory(context.directory, true, true);
   const access = await companionAccess(context);
 
@@ -87,7 +92,7 @@ export async function startLocal(context: BrowserCliContext) {
 
   process.env.REMOTE_INPUT_ENABLED = '1';
   const start = context.dependencies?.startDaemon ?? (await import('../../main.js')).startDaemon;
-  const daemon = await start();
+  const daemon = await start({ legacyClaudeHooks });
 
   const stop = () => {
     void daemon.close().then(() => {

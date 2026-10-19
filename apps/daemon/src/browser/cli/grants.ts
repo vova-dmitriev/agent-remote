@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import { ErrorCode, LocalOrigin } from '@protocol';
+import { CodedError, ErrorCode, LocalOrigin } from '@protocol';
 import { runtimeConfiguration } from '../../local/bootstrap/configuration.js';
 import { LocalDatabase } from '../../local/state/database.js';
 import { LocalGrants } from '../../local/grants/service.js';
@@ -15,11 +15,11 @@ export async function browserGrants(
   extensionId?: string,
 ) {
   if (action === BrowserAction.AuthorizeDesktop && !clientId) {
-    throw new Error(ErrorCode.INVALID_REQUEST);
+    throw new CodedError(ErrorCode.INVALID_REQUEST);
   }
 
   if (clientId && !/^[a-f0-9-]{36}$/.test(clientId)) {
-    throw new Error(ErrorCode.INVALID_REQUEST);
+    throw new CodedError(ErrorCode.INVALID_REQUEST);
   }
 
   const settings =
@@ -49,7 +49,7 @@ export async function browserGrants(
       const origin = extensionOrigin(extensionId);
 
       if (!settings?.origins.includes(origin)) {
-        throw new Error(ErrorCode.UNAUTHORIZED);
+        throw new CodedError(ErrorCode.UNAUTHORIZED);
       }
 
       grants.approve(clientId, origin);

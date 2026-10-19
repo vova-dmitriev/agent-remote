@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { mkdir, lstat } from 'node:fs/promises';
 import { join, isAbsolute } from 'node:path';
-import { ErrorCode, ProfileStatus, type ExecutionProfileSummary } from '@protocol';
+import { CodedError, ErrorCode, type ExecutionProfileSummary, ProfileStatus } from '@protocol';
 import { managedCodexSocketPath } from '../../codex/launch/paths.js';
 import { ProfileExecutionSocket } from './values.js';
 
@@ -12,11 +12,11 @@ export async function profileExecutionNamespace(
   const uid = process.getuid?.();
 
   if (uid === undefined) {
-    throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
+    throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
   }
 
   if (profile.status !== ProfileStatus.Ready || !profile.identity) {
-    throw new Error(ErrorCode.PROFILE_NOT_READY);
+    throw new CodedError(ErrorCode.PROFILE_NOT_READY);
   }
 
   const key = createHash('sha256')
@@ -38,7 +38,7 @@ export async function profileExecutionNamespace(
   const socketPath = managedCodexSocketPath(directory);
 
   if (!isAbsolute(root) || Buffer.byteLength(socketPath) > ProfileExecutionSocket.MaxPathBytes) {
-    throw new Error(ErrorCode.CODEX_INVALID_SOCKET);
+    throw new CodedError(ErrorCode.CODEX_INVALID_SOCKET);
   }
 
   try {
@@ -52,7 +52,7 @@ export async function profileExecutionNamespace(
   const info = await lstat(directory);
 
   if (!info.isDirectory() || info.isSymbolicLink() || info.uid !== uid || (info.mode & 0o077) !== 0) {
-    throw new Error(ErrorCode.CODEX_INVALID_SOCKET);
+    throw new CodedError(ErrorCode.CODEX_INVALID_SOCKET);
   }
 
   return { directory, socketPath };

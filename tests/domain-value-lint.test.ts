@@ -250,3 +250,97 @@ it.each(['const matches = response.status === 404;', 'socket.close(4001, "UNAUTH
   },
   30000,
 );
+
+it.each([
+  'throw new Error(ErrorCode.NOT_FOUND);',
+  'if (error.message === ErrorCode.NOT_FOUND) {}',
+  'if (ErrorCode.NOT_FOUND !== error.message) {}',
+])(
+  'requires CodedError and errorCode comparisons in daemon source: %s',
+  (source) => {
+    expect(
+      ruleViolations(source, 'apps/daemon/src/example.ts', 'no-restricted-syntax'),
+      source,
+    ).not.toHaveLength(0);
+  },
+  30000,
+);
+
+it('allows CodedError, hasErrorCode and argument-less control-flow throws in daemon source', () => {
+  for (const source of [
+    'throw new CodedError(ErrorCode.NOT_FOUND);',
+    'if (hasErrorCode(error, ErrorCode.NOT_FOUND)) {}',
+    'throw new Error();',
+  ]) {
+    expect(ruleViolations(source, 'apps/daemon/src/example.ts', 'no-restricted-syntax'), source).toEqual([]);
+  }
+}, 30000);
+
+it('rejects raw error codes in comparisons, throw branches and error properties', () => {
+  for (const source of [
+    "if (code === 'STALE_EPOCH') {}",
+    "if (error.code !== 'STALE_EPOCH') {}",
+    "const body = { error: 'HISTORY_RELOAD_FAILED' };",
+    "throw new Error(ready ? 'A_B' : 'C_D');",
+    "throw new CodedError(ready ? 'A_B' : 'C_D');",
+  ]) {
+    expect(errorCodeViolations(source, 'apps/daemon/src/example.ts'), source).not.toHaveLength(0);
+  }
+
+  for (const source of [
+    'if (code === ErrorCode.STALE_EPOCH) {}',
+    "const body = { error: 'Could not load' };",
+    "if (code === 'idle') {}",
+  ]) {
+    expect(errorCodeViolations(source, 'apps/daemon/src/example.ts'), source).toEqual([]);
+  }
+}, 30000);
+
+it('rejects raw error codes in logical fallbacks', () => {
+  expect(
+    errorCodeViolations(
+      "throw new CodedError(response.code ?? 'WRAPPER_FAILED');",
+      'apps/daemon/src/example.ts',
+    ),
+  ).not.toHaveLength(0);
+
+  expect(
+    errorCodeViolations(
+      'throw new CodedError(response.code ?? ErrorCode.WRAPPER_FAILED);',
+      'apps/daemon/src/example.ts',
+    ),
+  ).toEqual([]);
+}, 30000);
+
+it('restricts the message selector to comparison operators', () => {
+  const file = 'apps/daemon/src/example.ts';
+
+  expect(ruleViolations('const text = prefix + error.message;', file, 'no-restricted-syntax')).toEqual([]);
+  expect(ruleViolations('if (error.message == code) {}', file, 'no-restricted-syntax')).not.toHaveLength(0);
+}, 30000);
+
+it.each([
+  'reject(new Error(ErrorCode.NOT_FOUND));',
+  'const make = () => { return new Error(ErrorCode.NOT_FOUND); };',
+  'const make = () => new Error(ErrorCode.NOT_FOUND);',
+  'finish(new Error(ErrorCode.NOT_FOUND));',
+])(
+  'requires CodedError for non-throw error construction: %s',
+  (source) => {
+    expect(
+      ruleViolations(source, 'apps/daemon/src/example.ts', 'no-restricted-syntax'),
+      source,
+    ).not.toHaveLength(0);
+  },
+  30000,
+);
+
+it('keeps numeric selectors active alongside human-text disables', () => {
+  expect(
+    ruleViolations(
+      '// eslint-disable-next-line no-restricted-syntax -- text\nthrow new Error("text");\nres.status(404);',
+      'apps/daemon/src/example.ts',
+      'no-restricted-syntax',
+    ),
+  ).not.toHaveLength(0);
+}, 30000);

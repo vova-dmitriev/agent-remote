@@ -1,9 +1,10 @@
 import { immutableProfileScope } from '../storage/scope.js';
 import {
-  ErrorCode,
+  CodedError,
   CredentialEnrollmentLimits,
-  enrollmentChallengeSchema,
   type EnrollmentChallenge,
+  enrollmentChallengeSchema,
+  ErrorCode,
 } from '@protocol';
 import type { LocalDatabase } from '../../local/state/database.js';
 import type { ProfileScope } from '../types.js';
@@ -37,13 +38,13 @@ export class EnrollmentRepository {
       .get(this.scope.ownerId, this.scope.deviceId, id) as StoredEnrollment | undefined;
 
     if (!row) {
-      throw new Error(ErrorCode.NOT_FOUND);
+      throw new CodedError(ErrorCode.NOT_FOUND);
     }
 
     const challenge = enrollmentChallengeSchema.parse(JSON.parse(row.challenge));
 
     if (challenge.ownerId !== this.scope.ownerId || challenge.deviceId !== this.scope.deviceId) {
-      throw new Error(ErrorCode.NOT_FOUND);
+      throw new CodedError(ErrorCode.NOT_FOUND);
     }
 
     return { challenge, consumed: row.consumed === 1, cipherHash: row.cipher_hash, keyRef: row.key_ref };
@@ -57,7 +58,7 @@ export class EnrollmentRepository {
       .get(this.scope.ownerId, this.scope.deviceId, now) as { count: number };
 
     if (count.count >= CredentialEnrollmentLimits.ActiveChallenges) {
-      throw new Error(ErrorCode.PROFILE_LIMIT_REACHED);
+      throw new CodedError(ErrorCode.PROFILE_LIMIT_REACHED);
     }
 
     this.database.connection
@@ -76,7 +77,7 @@ export class EnrollmentRepository {
 
     if (record.consumed) {
       if (record.cipherHash !== cipherHash) {
-        throw new Error(ErrorCode.ENROLLMENT_REPLAYED);
+        throw new CodedError(ErrorCode.ENROLLMENT_REPLAYED);
       }
 
       return false;

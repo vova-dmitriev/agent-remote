@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { ErrorCode, ProfileStatus } from '@protocol';
+import { CodedError, ErrorCode, ProfileStatus } from '@protocol';
 import type { LocalDatabase } from '../../../local/state/database.js';
 import { immutableProfileScope } from '../../storage/scope.js';
 import type { ProfileRegistry } from '../../registry.js';
@@ -38,7 +38,7 @@ export class ProfileExecutionMutationGuard {
 
       if (existing) {
         if (this.hasKind(profileId, ExecutionOwnershipKind.Execution)) {
-          throw new Error(ErrorCode.PROFILE_EXECUTION_ACTIVE);
+          throw new CodedError(ErrorCode.PROFILE_EXECUTION_ACTIVE);
         }
 
         return existing.ref;
@@ -48,7 +48,7 @@ export class ProfileExecutionMutationGuard {
         this.hasKind(profileId, ExecutionOwnershipKind.Execution) ||
         this.hasKind(profileId, ExecutionOwnershipKind.Mutation)
       ) {
-        throw new Error(ErrorCode.PROFILE_EXECUTION_ACTIVE);
+        throw new CodedError(ErrorCode.PROFILE_EXECUTION_ACTIVE);
       }
 
       const recorded = this.database.connection
@@ -58,17 +58,17 @@ export class ProfileExecutionMutationGuard {
         .get(this.scope.ownerId, this.scope.deviceId, operationId) as { profile: string | null } | undefined;
 
       if (recorded?.profile && recorded.profile !== profileId) {
-        throw new Error(ErrorCode.PROFILE_OPERATION_REUSED);
+        throw new CodedError(ErrorCode.PROFILE_OPERATION_REUSED);
       }
 
       const profile = this.registry.get(profileId);
 
       if (profile.status === ProfileStatus.Removing || profile.status === ProfileStatus.Removed) {
-        throw new Error(ErrorCode.PROFILE_NOT_READY);
+        throw new CodedError(ErrorCode.PROFILE_NOT_READY);
       }
 
       if (profile.version !== expectedVersion) {
-        throw new Error(ErrorCode.LOCAL_REVISION_CONFLICT);
+        throw new CodedError(ErrorCode.LOCAL_REVISION_CONFLICT);
       }
 
       const reference = randomUUID();

@@ -7,7 +7,7 @@ import type { runNativeHost } from '../host/bridge.js';
 
 export type BrowserSettings = z.infer<typeof browserSettingsSchema>;
 export interface BrowserCliDependencies {
-  startDaemon?: () => Promise<{ close: () => Promise<void> }>;
+  startDaemon?: (options: { legacyClaudeHooks: boolean }) => Promise<{ close: () => Promise<void> }>;
   onShutdown?: (callback: () => void) => void;
   bridge?: typeof runNativeHost;
   ensure?: typeof ensureCompanion;

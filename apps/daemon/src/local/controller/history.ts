@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import {
+  CodedError,
   ErrorCode,
   EventType,
   FrameType,
   HistoryCursorPrefix,
-  LocalOperation,
   type LocalAction,
+  LocalOperation,
 } from '@protocol';
 import { TRANSCRIPT_POSITION_PREFIX } from '../../code/transcript/transcript-limits.js';
 import { bytePage } from '../history/index.js';
@@ -13,7 +14,7 @@ import type { LocalControllerOptions } from './types.js';
 
 function nativeCursor(position: string | undefined) {
   if (!position?.startsWith(TRANSCRIPT_POSITION_PREFIX)) {
-    throw new Error(ErrorCode.INVALID_CURSOR);
+    throw new CodedError(ErrorCode.INVALID_CURSOR);
   }
 
   return position.slice(TRANSCRIPT_POSITION_PREFIX.length);

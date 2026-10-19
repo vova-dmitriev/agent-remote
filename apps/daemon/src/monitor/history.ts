@@ -1,4 +1,4 @@
-import { ErrorCode, type HistoryMessage, type HistoryRead } from '@protocol';
+import { CodedError, ErrorCode, type HistoryMessage, type HistoryRead } from '@protocol';
 import { type NativeMedia } from '../attachments/types.js';
 import { TranscriptActivity } from '../code/transcript-activity.js';
 import { TranscriptPages } from '../code/transcript/transcript-pages.js';
@@ -105,13 +105,13 @@ export class TranscriptSources {
     const source = this.sources.get(request.sessionId);
 
     if (!source || source.generation !== request.generation) {
-      throw new Error(ErrorCode.SESSION_UNAVAILABLE);
+      throw new CodedError(ErrorCode.SESSION_UNAVAILABLE);
     }
 
     const page = await source.pages.page(request);
 
     if (this.sources.get(request.sessionId) !== source) {
-      throw new Error(ErrorCode.STALE_SESSION);
+      throw new CodedError(ErrorCode.STALE_SESSION);
     }
 
     return page;

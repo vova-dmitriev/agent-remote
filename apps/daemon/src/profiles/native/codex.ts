@@ -3,9 +3,10 @@ import { verifyCodexApiCredential } from '../api/codex.js';
 import {
   AgentProvider,
   CapabilitySupport,
+  CodedError,
   ErrorCode,
-  ProfileAuthMode,
   type ExecutionProfileSummary,
+  ProfileAuthMode,
   profileAuthUrlSchema,
 } from '@protocol';
 import { CodexMethod } from '../../domain/codex/codex.js';
@@ -37,7 +38,7 @@ export class CodexProfileNative {
     options: ProfileNativeOptions,
   ) {
     if (profile.provider !== AgentProvider.Codex || !environment.CODEX_HOME) {
-      throw new Error(ErrorCode.PROFILE_MISMATCH);
+      throw new CodedError(ErrorCode.PROFILE_MISMATCH);
     }
 
     const client = await openCodexProfileProcess(environment, profile.authMode, options);
@@ -47,7 +48,7 @@ export class CodexProfileNative {
 
   async loginSubscription() {
     if (this.profile.authMode !== ProfileAuthMode.Subscription) {
-      throw new Error(ErrorCode.PROFILE_MISMATCH);
+      throw new CodedError(ErrorCode.PROFILE_MISMATCH);
     }
 
     const parsed = subscriptionSchema.safeParse(
@@ -55,7 +56,7 @@ export class CodexProfileNative {
     );
 
     if (!parsed.success) {
-      throw new Error(ErrorCode.CODEX_PROTOCOL_ERROR);
+      throw new CodedError(ErrorCode.CODEX_PROTOCOL_ERROR);
     }
 
     return { loginId: parsed.data.loginId, authUrl: parsed.data.authUrl };
@@ -63,7 +64,7 @@ export class CodexProfileNative {
 
   async loginApiKey(apiKey: string) {
     if (this.profile.authMode !== ProfileAuthMode.ApiKey) {
-      throw new Error(ErrorCode.PROFILE_MISMATCH);
+      throw new CodedError(ErrorCode.PROFILE_MISMATCH);
     }
 
     const control = Array.from(apiKey).some(
@@ -76,7 +77,7 @@ export class CodexProfileNative {
       /\s/u.test(apiKey) ||
       control
     ) {
-      throw new Error(ErrorCode.INVALID_REQUEST);
+      throw new CodedError(ErrorCode.INVALID_REQUEST);
     }
 
     const response = await this.client.request(CodexMethod.AccountLoginStart, {
@@ -87,7 +88,7 @@ export class CodexProfileNative {
     const parsed = z.object({ type: z.literal(CodexProfileAuthType.ApiKey) }).safeParse(response);
 
     if (!parsed.success) {
-      throw new Error(ErrorCode.CODEX_PROTOCOL_ERROR);
+      throw new CodedError(ErrorCode.CODEX_PROTOCOL_ERROR);
     }
   }
 
@@ -99,7 +100,7 @@ export class CodexProfileNative {
       const verified = await verifyCodexApiCredential(this.directory, this.options.apiFetch);
 
       if (verified.accountRef !== identity.accountRef) {
-        throw new Error(ErrorCode.PROFILE_MISMATCH);
+        throw new CodedError(ErrorCode.PROFILE_MISMATCH);
       }
 
       const available = new Set(verified.models);
@@ -110,7 +111,7 @@ export class CodexProfileNative {
     const current = await nativeProfileIdentity(this.client, this.directory, this.profile.authMode, false);
 
     if (JSON.stringify(identity) !== JSON.stringify(current)) {
-      throw new Error(ErrorCode.PROFILE_MISMATCH);
+      throw new CodedError(ErrorCode.PROFILE_MISMATCH);
     }
 
     return {

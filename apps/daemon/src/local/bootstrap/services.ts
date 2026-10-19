@@ -38,3 +38,5 @@ export async function openLocalServices(
 
   return { database, grants, documents, media, profiles };
 }
+
+export type LocalServices = Awaited<ReturnType<typeof openLocalServices>>;

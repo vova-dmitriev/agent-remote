@@ -1,4 +1,4 @@
-import { ErrorCode, IntegrationState, TargetKind, SessionStatus } from '@protocol';
+import { CodedError, ErrorCode, IntegrationState, SessionStatus, TargetKind } from '@protocol';
 import { RuntimeEvent } from '../domain/runtime.js';
 import { CodexMethod } from '../domain/codex/codex.js';
 import { type AttachmentService } from '../attachments/service.js';
@@ -14,6 +14,7 @@ import { DesktopIpcClient } from './desktop/desktop-ipc.js';
 import { DesktopCodexClient } from './desktop/desktop-client.js';
 import { object } from './events.js';
 import { retainConnectedBinding, type CodexBinding } from './lifecycle/bindings.js';
+import { markCodexThreadTooLarge } from './lifecycle/too-large.js';
 import { type Monitor } from '../monitor/monitor.js';
 import { type AdapterRegistry } from '../adapters/registry.js';
 import { type UserInputBroker } from '../commands/user-input-broker.js';
@@ -95,13 +96,13 @@ export class CodexManager {
 
     return this.enqueue(async () => {
       if (this.closed) {
-        throw new Error(ErrorCode.CODEX_DISCONNECTED);
+        throw new CodedError(ErrorCode.CODEX_DISCONNECTED);
       }
 
       const savedKey = JSON.stringify(selection);
 
       if (!this.saved.has(savedKey) && this.saved.size >= 10) {
-        throw new Error(ErrorCode.CODEX_QUEUE_FULL);
+        throw new CodedError(ErrorCode.CODEX_QUEUE_FULL);
       }
 
       const entry = this.add(selection);
@@ -110,7 +111,7 @@ export class CodexManager {
       const count = entry.bindings.size;
 
       if (selection.threadId && !entry.bindings.has(selection.threadId)) {
-        throw new Error(ErrorCode.CODEX_THREAD_NOT_LOADED);
+        throw new CodedError(ErrorCode.CODEX_THREAD_NOT_LOADED);
       }
 
       await mkdir(this.deps.stateDirectory, { recursive: true, mode: 0o700 });
@@ -129,7 +130,7 @@ export class CodexManager {
     return this.enqueue(async () => {
       if (this.closed || !this.deps.inputEnabled) {
         launch?.executionLease.releaseBeforeLaunch();
-        throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
+        throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
       }
 
       const socketPath = launch
@@ -167,18 +168,18 @@ export class CodexManager {
           identity.accountRef !== launch.profile.identity?.accountRef ||
           identity.workspaceRef !== launch.profile.identity?.workspaceRef
         ) {
-          throw new Error(ErrorCode.PROFILE_MISMATCH);
+          throw new CodedError(ErrorCode.PROFILE_MISMATCH);
         }
 
         const models = await nativeProfileModels(entry.rpc! as CodexRpcClient);
         const model = models.find((candidate) => candidate.id === launch.selection.model);
 
         if (!model) {
-          throw new Error(ErrorCode.PROFILE_MODEL_UNAVAILABLE);
+          throw new CodedError(ErrorCode.PROFILE_MODEL_UNAVAILABLE);
         }
 
         if (launch.selection.effort && !model.efforts.includes(launch.selection.effort)) {
-          throw new Error(ErrorCode.PROFILE_EFFORT_UNAVAILABLE);
+          throw new CodedError(ErrorCode.PROFILE_EFFORT_UNAVAILABLE);
         }
 
         launch.assertCurrent();
@@ -193,7 +194,7 @@ export class CodexManager {
               session.integrationState !== IntegrationState.Disconnected,
           ).length >= 10
       ) {
-        throw new Error(ErrorCode.SESSION_QUOTA);
+        throw new CodedError(ErrorCode.SESSION_QUOTA);
       }
 
       let threadId: string;
@@ -223,19 +224,19 @@ export class CodexManager {
           const actualModel = response.model ?? thread.model;
 
           if (actualModel !== launch.selection.model) {
-            throw new Error(ErrorCode.PROFILE_MISMATCH);
+            throw new CodedError(ErrorCode.PROFILE_MISMATCH);
           }
 
           const actualEffort = response.reasoningEffort ?? thread.reasoningEffort;
 
           if (launch.selection.effort && actualEffort !== launch.selection.effort) {
-            throw new Error(ErrorCode.PROFILE_EFFORT_UNAVAILABLE);
+            throw new CodedError(ErrorCode.PROFILE_EFFORT_UNAVAILABLE);
           }
         }
 
         threadId = thread.id;
       } catch {
-        throw new Error(ErrorCode.UNKNOWN_AFTER_WRITE);
+        throw new CodedError(ErrorCode.UNKNOWN_AFTER_WRITE);
       }
 
       entry.requested.add(threadId);
@@ -257,11 +258,11 @@ export class CodexManager {
             try {
               launch.assertCurrent();
             } catch {
-              throw new Error(ErrorCode.UNKNOWN_AFTER_WRITE);
+              throw new CodedError(ErrorCode.UNKNOWN_AFTER_WRITE);
             }
 
             if (session.model !== launch.selection.model) {
-              throw new Error(ErrorCode.UNKNOWN_AFTER_WRITE);
+              throw new CodedError(ErrorCode.UNKNOWN_AFTER_WRITE);
             }
           }
 
@@ -271,7 +272,7 @@ export class CodexManager {
         /* A created thread must never be automatically created again. */
       }
 
-      throw new Error(ErrorCode.UNKNOWN_AFTER_WRITE);
+      throw new CodedError(ErrorCode.UNKNOWN_AFTER_WRITE);
     });
   }
   async close() {
@@ -309,7 +310,7 @@ export class CodexManager {
     }
 
     if (this.connections.size >= 10) {
-      throw new Error(ErrorCode.CODEX_QUEUE_FULL);
+      throw new CodedError(ErrorCode.CODEX_QUEUE_FULL);
     }
 
     const connection: Connection = {
@@ -453,10 +454,20 @@ export class CodexManager {
       }
 
       let client = entry.rpc;
+      let owner: string | null = null;
+      const thread = { kind: selection.kind, endpoint: selection.socketPath, threadId: id };
 
       try {
         if (entry.ipc) {
-          if (!(await entry.ipc.owner(id))) {
+          owner = await entry.ipc.owner(id);
+
+          if (!owner) {
+            continue;
+          }
+
+          // Each attach makes Codex resend the whole snapshot; wait for the mark's retry time.
+          if (entry.ipc.frameTooLarge(id, owner)) {
+            markCodexThreadTooLarge(thread, this.deps);
             continue;
           }
 
@@ -468,16 +479,17 @@ export class CodexManager {
           continue;
         }
 
-        const bound = await bindCodex(
-          { kind: selection.kind, endpoint: selection.socketPath, threadId: id },
-          { ...this.deps, rpc: client },
-        );
+        const bound = await bindCodex(thread, { ...this.deps, rpc: client });
 
         entry.bindings.set(id, bound);
       } catch {
         if (entry.ipc) {
           await client?.close();
           entry.clients.delete(id);
+
+          if (owner && entry.ipc?.frameTooLarge(id, owner)) {
+            markCodexThreadTooLarge(thread, this.deps);
+          }
         }
       }
     }

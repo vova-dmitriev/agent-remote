@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { AgentProvider, ErrorCode, HttpRequestMethod, HttpStatus } from '@protocol';
+import { AgentProvider, CodedError, ErrorCode, HttpRequestMethod, HttpStatus } from '@protocol';
 import { withCodexApiKey, readCodexCredentialIdentity, credentialReference } from '../credentials.js';
 import { profileApiBody } from './body.js';
 import { ProfileApiEndpoint, ProfileApiLimit, ProfileApiRequest } from './values.js';
@@ -24,17 +24,17 @@ export async function verifyCodexApiCredential(directory: string, fetcher: Profi
         signal: AbortSignal.timeout(ProfileApiLimit.TimeoutMs),
       });
     } catch {
-      throw new Error(ErrorCode.NETWORK_UNAVAILABLE);
+      throw new CodedError(ErrorCode.NETWORK_UNAVAILABLE);
     }
 
     if (!response.ok) {
       await response.body?.cancel().catch(() => {});
 
       if (response.status === HttpStatus.Unauthorized || response.status === HttpStatus.Forbidden) {
-        throw new Error(ErrorCode.PROFILE_NOT_READY);
+        throw new CodedError(ErrorCode.PROFILE_NOT_READY);
       }
 
-      throw new Error(
+      throw new CodedError(
         response.status === HttpStatus.TooManyRequests ? ErrorCode.RATE_LIMITED : ErrorCode.REQUEST_FAILED,
       );
     }
@@ -44,19 +44,19 @@ export async function verifyCodexApiCredential(directory: string, fetcher: Profi
     try {
       body = await profileApiBody(response);
     } catch {
-      throw new Error(ErrorCode.CODEX_PROTOCOL_ERROR);
+      throw new CodedError(ErrorCode.CODEX_PROTOCOL_ERROR);
     }
 
     const catalog = catalogSchema.safeParse(body);
 
     if (!catalog.success) {
-      throw new Error(ErrorCode.CODEX_PROTOCOL_ERROR);
+      throw new CodedError(ErrorCode.CODEX_PROTOCOL_ERROR);
     }
 
     const current = await readCodexCredentialIdentity(directory);
 
     if (current.accountRef !== accountRef) {
-      throw new Error(ErrorCode.PROFILE_MISMATCH);
+      throw new CodedError(ErrorCode.PROFILE_MISMATCH);
     }
 
     return { accountRef, models: [...new Set(catalog.data.data.map(({ id }) => id))] };

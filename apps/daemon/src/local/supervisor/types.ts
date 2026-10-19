@@ -13,4 +13,6 @@ export interface EnsureCompanionOptions {
   runtime: CompanionRuntime;
   probe: () => Promise<CompanionHealth | null>;
   timeoutMs?: number;
+  /** Desktop companion only: also accept Claude hooks on the CLI default socket. */
+  legacyClaudeHooks?: boolean;
 }

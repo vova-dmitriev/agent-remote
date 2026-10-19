@@ -1,9 +1,10 @@
 import {
-  ErrorCode,
-  LocalOperation,
-  localActionSchema,
   type ClientCommand,
+  CodedError,
+  ErrorCode,
   type LocalAction,
+  localActionSchema,
+  LocalOperation,
 } from '@protocol';
 import { LocalQueueEngine } from '../queue/index.js';
 import { assertQueuePrincipal, queueBudget, queueSession } from '../queue/validation.js';
@@ -65,7 +66,7 @@ export class LocalPersistence {
       }
 
       default:
-        throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
+        throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
     }
   }
 

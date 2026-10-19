@@ -1,7 +1,7 @@
 import Sqlite from 'better-sqlite3';
 import { chmodSync, lstatSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { ErrorCode } from '@protocol';
+import { CodedError, ErrorCode } from '@protocol';
 
 export class LocalDatabase {
   readonly connection: Sqlite.Database;
@@ -16,7 +16,7 @@ export class LocalDatabase {
         !parent.isDirectory() ||
         (process.getuid && parent.uid !== process.getuid())
       ) {
-        throw new Error(ErrorCode.UNAUTHORIZED);
+        throw new CodedError(ErrorCode.UNAUTHORIZED);
       }
 
       chmodSync(dirname(path), 0o700);
@@ -25,7 +25,7 @@ export class LocalDatabase {
         const info = lstatSync(path);
 
         if (!info.isFile() || info.isSymbolicLink() || (process.getuid && info.uid !== process.getuid())) {
-          throw new Error(ErrorCode.UNAUTHORIZED);
+          throw new CodedError(ErrorCode.UNAUTHORIZED);
         }
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {

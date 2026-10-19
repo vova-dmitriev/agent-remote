@@ -1,18 +1,19 @@
 import {
-  ErrorCode,
-  canDeliverPrompt,
-  CommandActionType,
-  CommandStatus,
-  BindingState,
-  IntegrationState,
-  CapabilityKey,
-  TargetKind,
-  attachmentSchema,
-  commandSchema,
-  type Command,
-  type CommandResult,
   type AttachmentDescriptor,
+  attachmentSchema,
+  BindingState,
+  canDeliverPrompt,
+  CapabilityKey,
+  CodedError,
+  type Command,
+  CommandActionType,
+  type CommandResult,
+  commandSchema,
+  CommandStatus,
+  ErrorCode,
+  IntegrationState,
   type Session,
+  TargetKind,
 } from '@protocol';
 import { DispatchScheduler } from './scheduling/index.js';
 import { CommandStoreOutcome, RuntimeEvent } from '../domain/runtime.js';
@@ -129,15 +130,15 @@ export class Dispatcher {
 
     try {
       if (!authorize()) {
-        throw new Error(ErrorCode.LOCAL_GRANT_REVOKED);
+        throw new CodedError(ErrorCode.LOCAL_GRANT_REVOKED);
       }
 
       if (!this.connected || epoch !== this.epoch) {
-        throw new Error(ErrorCode.DEVICE_OFFLINE);
+        throw new CodedError(ErrorCode.DEVICE_OFFLINE);
       }
 
       if (command.expiresAt <= Date.now() || command.expiresAt > Date.now() + 30000) {
-        throw new Error(ErrorCode.COMMAND_EXPIRED);
+        throw new CodedError(ErrorCode.COMMAND_EXPIRED);
       }
 
       const session = this.options.monitor.session(command.sessionId),
@@ -149,7 +150,7 @@ export class Dispatcher {
         (!binding && command.action.type !== CommandActionType.RestartSession) ||
         JSON.stringify(command.target) !== JSON.stringify(session.target)
       ) {
-        throw new Error(ErrorCode.NOT_FOUND);
+        throw new CodedError(ErrorCode.NOT_FOUND);
       }
 
       if (
@@ -157,7 +158,7 @@ export class Dispatcher {
         (command.action.type !== CommandActionType.RestartSession &&
           (session.binding !== BindingState.Verified || session.integrationState !== IntegrationState.Ready))
       ) {
-        throw new Error(ErrorCode.STALE_SESSION);
+        throw new CodedError(ErrorCode.STALE_SESSION);
       }
 
       let capability: keyof typeof session.capabilities;
@@ -185,36 +186,36 @@ export class Dispatcher {
           ? !this.options.permissionsEnabled
           : !this.options.inputEnabled)
       ) {
-        throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
+        throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
       }
 
       if (
         command.action.type === CommandActionType.Prompt &&
         !canDeliverPrompt(session.status, command.action.delivery)
       ) {
-        throw new Error(ErrorCode.SESSION_NOT_IDLE);
+        throw new CodedError(ErrorCode.SESSION_NOT_IDLE);
       }
 
       let prepared: PreparedAttachment[] | undefined;
 
       if (command.action.type === CommandActionType.Prompt && command.action.attachments?.length) {
         if (!session.capabilities.attachments || !this.options.prepareAttachments) {
-          throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
+          throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
         }
 
         prepared = await this.options.prepareAttachments(session, command.action.attachments);
 
         // Downloads cross await boundaries. Recheck every effect fence against live source state.
         if (!authorize()) {
-          throw new Error(ErrorCode.LOCAL_GRANT_REVOKED);
+          throw new CodedError(ErrorCode.LOCAL_GRANT_REVOKED);
         }
 
         if (!this.connected || epoch !== this.epoch) {
-          throw new Error(ErrorCode.DEVICE_OFFLINE);
+          throw new CodedError(ErrorCode.DEVICE_OFFLINE);
         }
 
         if (command.expiresAt <= Date.now()) {
-          throw new Error(ErrorCode.COMMAND_EXPIRED);
+          throw new CodedError(ErrorCode.COMMAND_EXPIRED);
         }
 
         const current = this.options.monitor.session(command.sessionId),
@@ -229,36 +230,36 @@ export class Dispatcher {
           currentBinding.generation !== binding?.generation ||
           currentBinding.localProof !== binding?.localProof
         ) {
-          throw new Error(ErrorCode.STALE_SESSION);
+          throw new CodedError(ErrorCode.STALE_SESSION);
         }
 
         if (!current.capabilities.prompt || !current.capabilities.attachments || !this.options.inputEnabled) {
-          throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
+          throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
         }
 
         if (!canDeliverPrompt(current.status, command.action.delivery)) {
-          throw new Error(ErrorCode.SESSION_NOT_IDLE);
+          throw new CodedError(ErrorCode.SESSION_NOT_IDLE);
         }
 
         if (
           JSON.stringify(prepared.map((item) => attachmentSchema.parse(item.descriptor))) !==
           JSON.stringify(command.action.attachments)
         ) {
-          throw new Error(ErrorCode.ATTACHMENT_INTEGRITY_FAILED);
+          throw new CodedError(ErrorCode.ATTACHMENT_INTEGRITY_FAILED);
         }
 
         await this.options.recordAttachments?.(current, command.action.text, prepared);
 
         if (!authorize()) {
-          throw new Error(ErrorCode.LOCAL_GRANT_REVOKED);
+          throw new CodedError(ErrorCode.LOCAL_GRANT_REVOKED);
         }
 
         if (!this.connected || epoch !== this.epoch) {
-          throw new Error(ErrorCode.DEVICE_OFFLINE);
+          throw new CodedError(ErrorCode.DEVICE_OFFLINE);
         }
 
         if (command.expiresAt <= Date.now()) {
-          throw new Error(ErrorCode.COMMAND_EXPIRED);
+          throw new CodedError(ErrorCode.COMMAND_EXPIRED);
         }
 
         if (
@@ -267,25 +268,25 @@ export class Dispatcher {
           current.binding !== BindingState.Verified ||
           current.integrationState !== IntegrationState.Ready
         ) {
-          throw new Error(ErrorCode.STALE_SESSION);
+          throw new CodedError(ErrorCode.STALE_SESSION);
         }
 
         if (!current.capabilities.prompt || !current.capabilities.attachments || !this.options.inputEnabled) {
-          throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
+          throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
         }
 
         if (this.options.monitor.binding(command.sessionId)?.localProof !== currentBinding.localProof) {
-          throw new Error(ErrorCode.STALE_SESSION);
+          throw new CodedError(ErrorCode.STALE_SESSION);
         }
 
         if (!canDeliverPrompt(current.status, command.action.delivery)) {
-          throw new Error(ErrorCode.SESSION_NOT_IDLE);
+          throw new CodedError(ErrorCode.SESSION_NOT_IDLE);
         }
       }
 
       if (command.action.type === CommandActionType.RestartSession) {
         if (!this.options.restartSession) {
-          throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
+          throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
         }
 
         const sessionId = await this.options.restartSession(session);
@@ -293,11 +294,11 @@ export class Dispatcher {
         result = { commandId: command.commandId, status: CommandStatus.Dispatched, sessionId };
       } else if (command.action.type === CommandActionType.CreateSession) {
         if (command.action.cwd !== session.cwd) {
-          throw new Error(ErrorCode.INVALID_PROJECT);
+          throw new CodedError(ErrorCode.INVALID_PROJECT);
         }
 
         if (!this.options.createSession) {
-          throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
+          throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
         }
 
         const sessionId = await this.options.createSession(command.action, authorize);
@@ -316,7 +317,7 @@ export class Dispatcher {
           );
 
         if (!pending || !this.options.userInputs) {
-          throw new Error(ErrorCode.USER_INPUT_EXPIRED);
+          throw new CodedError(ErrorCode.USER_INPUT_EXPIRED);
         }
 
         await this.options.userInputs.submit(pending.requestId, command.generation, command.action.answers);
@@ -339,7 +340,7 @@ export class Dispatcher {
             command.action.decision,
           )
         ) {
-          throw new Error(ErrorCode.PERMISSION_EXPIRED);
+          throw new CodedError(ErrorCode.PERMISSION_EXPIRED);
         }
 
         result = { commandId: command.commandId, status: CommandStatus.Dispatched };
@@ -350,11 +351,11 @@ export class Dispatcher {
             (candidateValue) => candidateValue === command.target.kind,
           )
         ) {
-          throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
+          throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
         }
 
         if (!binding) {
-          throw new Error(ErrorCode.STALE_SESSION);
+          throw new CodedError(ErrorCode.STALE_SESSION);
         }
 
         const adapter = this.options.adapters.resolve(command.target);

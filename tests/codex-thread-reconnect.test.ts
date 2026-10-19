@@ -75,6 +75,7 @@ it('reattaches a disconnected desktop thread even when its shared IPC connection
 
   const ipc = Object.assign(new EventEmitter(), {
     owner: async () => 'synthetic-owner',
+    frameTooLarge: () => false,
     close: vi.fn(async () => {}),
   });
 

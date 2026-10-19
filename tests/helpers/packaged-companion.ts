@@ -6,6 +6,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
 import { buildNode } from '../../scripts/build/node.mjs';
+import { terminateRuntimeProcesses, trackRuntimeRoot } from './runtime-processes.js';
 
 const run = promisify(execFile);
 
@@ -22,6 +23,8 @@ export async function packagedCompanionFixture(
   options: { temporaryDirectory?: string } = {},
 ) {
   const root = await realpath(await mkdtemp(join(options.temporaryDirectory ?? tmpdir(), 'pkg-')));
+
+  trackRuntimeRoot(root);
 
   try {
     const source = join(root, 'source');
@@ -96,7 +99,10 @@ export async function packagedCompanionFixture(
         REMOTE_INPUT_ENABLED: '0',
         REMOTE_PERMISSIONS_ENABLED: '0',
       },
-      close: () => rm(root, { recursive: true, force: true }),
+      close: async () => {
+        await terminateRuntimeProcesses([root]);
+        await rm(root, { recursive: true, force: true });
+      },
     };
   } catch (error) {
     await rm(root, { recursive: true, force: true });

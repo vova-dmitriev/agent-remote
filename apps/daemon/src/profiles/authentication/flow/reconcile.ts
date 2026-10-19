@@ -1,10 +1,11 @@
 import {
+  CodedError,
   ErrorCode,
+  knownErrorCode,
   ProfileAction,
+  type ProfileOperation,
   ProfileOperationPhase,
   ProfileStatus,
-  knownErrorCode,
-  type ProfileOperation,
 } from '@protocol';
 import type { ProfileVerification } from '../../types.js';
 import { assertProfileCaller, authenticationProfile, saveAuthentication } from '../state.js';
@@ -86,7 +87,7 @@ export async function reconcileProfileAuthentication(
     }
 
     if (!closed) {
-      throw new Error(ErrorCode.PROFILE_EXECUTION_ACTIVE);
+      throw new CodedError(ErrorCode.PROFILE_EXECUTION_ACTIVE);
     }
 
     return saveAuthentication(
@@ -106,7 +107,7 @@ export async function reconcileProfileAuthentication(
       return latest;
     }
 
-    throw new Error(ErrorCode.PROFILE_EXECUTION_ACTIVE);
+    throw new CodedError(ErrorCode.PROFILE_EXECUTION_ACTIVE);
   }
 
   if (latest.phase === ProfileOperationPhase.Complete || latest.phase === ProfileOperationPhase.Failed) {
@@ -132,7 +133,7 @@ export async function reconcileProfileAuthentication(
       ErrorCode.UNAUTHORIZED,
     );
 
-    throw new Error(ErrorCode.UNAUTHORIZED, { cause: saved });
+    throw new CodedError(ErrorCode.UNAUTHORIZED, { cause: saved });
   }
 
   if (failure !== undefined) {
@@ -174,7 +175,7 @@ export async function reconcileProfileAuthentication(
     );
 
     if (!current()) {
-      throw new Error(ErrorCode.UNAUTHORIZED, { cause: saved });
+      throw new CodedError(ErrorCode.UNAUTHORIZED, { cause: saved });
     }
 
     return saved;

@@ -1,14 +1,15 @@
 import { immutableProfileScope } from '../storage/scope.js';
 import { createHash } from 'node:crypto';
 import {
+  type BeginEnrollmentRequest,
+  CodedError,
   ErrorCode,
+  type ProfileAuthenticationRequest,
   ProfileLimits,
+  type ProfileMutation,
+  type ProfileOperation,
   ProfileOperationPhase,
   profileOperationSchema,
-  type ProfileMutation,
-  type BeginEnrollmentRequest,
-  type ProfileAuthenticationRequest,
-  type ProfileOperation,
 } from '@protocol';
 import type { LocalDatabase } from '../../local/state/database.js';
 import type { ProfileScope } from '../types.js';
@@ -40,13 +41,13 @@ export class ProfileJournal {
     const row = this.row(id);
 
     if (!row) {
-      throw new Error(ErrorCode.NOT_FOUND);
+      throw new CodedError(ErrorCode.NOT_FOUND);
     }
 
     const operation = profileOperationSchema.parse(JSON.parse(row.value));
 
     if (operation.ownerId !== this.scope.ownerId || operation.deviceId !== this.scope.deviceId) {
-      throw new Error(ErrorCode.NOT_FOUND);
+      throw new CodedError(ErrorCode.NOT_FOUND);
     }
 
     return operation;
@@ -79,7 +80,7 @@ export class ProfileJournal {
 
       if (row) {
         if (row.fingerprint !== fingerprint) {
-          throw new Error(ErrorCode.PROFILE_OPERATION_REUSED);
+          throw new CodedError(ErrorCode.PROFILE_OPERATION_REUSED);
         }
 
         return this.get(request.operationId);
@@ -90,7 +91,7 @@ export class ProfileJournal {
         .get(this.scope.ownerId, this.scope.deviceId) as { count: number };
 
       if (count.count >= ProfileLimits.Operations) {
-        throw new Error(ErrorCode.PROFILE_LIMIT_REACHED);
+        throw new CodedError(ErrorCode.PROFILE_LIMIT_REACHED);
       }
 
       const result = profileOperationSchema.parse(work());

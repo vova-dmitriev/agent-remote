@@ -1,6 +1,6 @@
 import { connect } from 'node:net';
 import { z } from 'zod';
-import { ErrorCode, LocalFeature, LOCAL_LIMITS, LocalControl } from '@protocol';
+import { CodedError, ErrorCode, LOCAL_LIMITS, LocalControl, LocalFeature } from '@protocol';
 import { FramedPeer } from '../../browser/transport/peer.js';
 
 const healthSchema = z.strictObject({
@@ -20,7 +20,7 @@ export function probeCompanion(
     let settled = false;
 
     const timer = setTimeout(
-      () => finish(new Error(ErrorCode.LOCAL_COMPANION_TIMEOUT)),
+      () => finish(new CodedError(ErrorCode.LOCAL_COMPANION_TIMEOUT)),
       Math.min(2000, LOCAL_LIMITS.requestTimeoutMs),
     );
 
@@ -45,7 +45,7 @@ export function probeCompanion(
       if (error.code === 'ENOENT' || error.code === 'ECONNREFUSED') {
         finish();
       } else {
-        finish(new Error(ErrorCode.LOCAL_COMPANION_MISMATCH));
+        finish(new CodedError(ErrorCode.LOCAL_COMPANION_MISMATCH));
       }
     });
 
@@ -57,7 +57,7 @@ export function probeCompanion(
           !result.success ||
           (featureRequest !== undefined && !result.data.features?.includes(featureRequest))
         ) {
-          finish(new Error(ErrorCode.LOCAL_COMPANION_MISMATCH));
+          finish(new CodedError(ErrorCode.LOCAL_COMPANION_MISMATCH));
         } else {
           finish(undefined, result.data);
         }
@@ -69,9 +69,9 @@ export function probeCompanion(
           control: LocalControl.Health,
           ...(featureRequest ? { featureRequest } : {}),
         })
-        .catch(() => finish(new Error(ErrorCode.LOCAL_COMPANION_MISMATCH)));
+        .catch(() => finish(new CodedError(ErrorCode.LOCAL_COMPANION_MISMATCH)));
 
-      void peer.closed.then(() => finish(new Error(ErrorCode.LOCAL_COMPANION_MISMATCH)));
+      void peer.closed.then(() => finish(new CodedError(ErrorCode.LOCAL_COMPANION_MISMATCH)));
     });
   });
 }

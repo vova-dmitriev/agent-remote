@@ -1,3 +1,5 @@
+import { CodedError } from '@protocol';
+
 export const CheckpointSourceError = {
   BindingInvalid: 'CHECKPOINT_SOURCE_BINDING_INVALID',
   Busy: 'CHECKPOINT_SOURCE_BUSY',
@@ -30,5 +32,5 @@ export const RepositoryFenceScope = {
 export type RepositoryFenceScope = (typeof RepositoryFenceScope)[keyof typeof RepositoryFenceScope];
 
 export function sourceFailure(code: CheckpointSourceError) {
-  return new Error(code);
+  return new CodedError(code);
 }

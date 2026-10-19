@@ -1,4 +1,12 @@
-import { ATTACHMENT_TTL_MS, attachmentSchema, type AttachmentDescriptor, type Session } from '@protocol';
+import {
+  ATTACHMENT_TTL_MS,
+  type AttachmentDescriptor,
+  attachmentSchema,
+  CodedError,
+  errorCode,
+  hasErrorCode,
+  type Session,
+} from '@protocol';
 import { AttachmentErrorCode, RETRYABLE_ATTACHMENT_ERRORS } from '../errors.js';
 import { ATTACHMENT_EXPORT_RESPONSE_MAX_BYTES, ATTACHMENT_MAX_EXPORTED_DESCRIPTORS } from '../limits.js';
 import { boundedBody } from './io.js';
@@ -46,7 +54,7 @@ export class RelayAttachmentMirror {
         value.mimeType !== descriptor.mimeType ||
         value.kind !== descriptor.kind
       ) {
-        throw new Error(AttachmentErrorCode.IntegrityFailed);
+        throw new CodedError(AttachmentErrorCode.IntegrityFailed);
       }
 
       // Publish a canonical history ID only after both readers can resolve it.
@@ -61,8 +69,8 @@ export class RelayAttachmentMirror {
       }
     } catch (error) {
       if (
-        error instanceof Error &&
-        (RETRYABLE_ATTACHMENT_ERRORS.has(error.message) || error.message === AttachmentErrorCode.Quota)
+        RETRYABLE_ATTACHMENT_ERRORS.has(errorCode(error) ?? '') ||
+        hasErrorCode(error, AttachmentErrorCode.Quota)
       ) {
         return;
       }

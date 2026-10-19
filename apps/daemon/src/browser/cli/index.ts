@@ -1,4 +1,4 @@
-import { ErrorCode } from '@protocol';
+import { CodedError, ErrorCode } from '@protocol';
 import { stateDirectory } from '../../config.js';
 import { BrowserAction } from '../../domain/browser.js';
 import { browserKind, extensionOrigin, installBrowser, uninstallBrowser } from './install.js';
@@ -50,7 +50,7 @@ export async function runBrowserCli(args: readonly string[], options: BrowserCli
     return;
   }
 
-  throw new Error(ErrorCode.INVALID_REQUEST);
+  throw new CodedError(ErrorCode.INVALID_REQUEST);
 }
 
 export type { BrowserCliOptions, BrowserCliDependencies } from './types.js';

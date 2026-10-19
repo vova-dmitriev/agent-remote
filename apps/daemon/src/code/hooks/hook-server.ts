@@ -1,35 +1,43 @@
 import { DaemonErrorCode } from '../../error-codes.js';
 import {
-  ErrorCode,
-  ConnectorId,
-  TargetKind,
-  ConnectorTransport,
   AttachmentMode,
-  IntegrationState,
+  CodedError,
   CommandStatus,
+  ConnectorId,
+  ConnectorTransport,
+  ErrorCode,
+  IntegrationState,
+  TargetKind,
 } from '@protocol';
 
 import { DesktopMode } from '../../domain/desktop.js';
-import { IpcMessageType, WrapperActionType } from '../../domain/ipc.js';
+import { IpcMessageType, PrimaryHookMessageTypes, WrapperActionType } from '../../domain/ipc.js';
 import { RuntimeEvent, SourceVersion } from '../../domain/runtime.js';
 import { ClaudeHookEvent } from '../../domain/claude.js';
 import { attachmentPrompt } from '../../attachments/content/input.js';
 import { codexConnectionSchema, type CodexConnection } from '../../codex/manager.js';
 import { cmuxContextSchema, type CmuxContext } from '../../cmux/context.js';
 import { createServer, type Socket } from 'node:net';
-import { chmod, lstat, unlink } from 'node:fs/promises';
 import { randomUUID, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
 import { type Monitor, hookSchema } from '../../monitor/monitor.js';
 import { SourceAdapter, type AdapterRegistry, type DispatchReceipt } from '../../adapters/registry.js';
 import { PermissionBroker, permissionHookOutput } from '../../commands/permission-broker.js';
+import { bindHookSocket } from './hook-socket.js';
 import { lineReader, writeFrame } from './ipc.js';
 
 type WrapperReply = DispatchReceipt & { text?: string };
 
-interface Options {
+export interface HookSocketOptions {
   path: string;
   token: string;
+  /** Message types this socket accepts; others get the rejection reply with no side effects. */
+  allowedTypes?: readonly IpcMessageType[];
+  /** Enables ReleaseHookSocket: the socket unbinds, replies, then this runs once the requester disconnects. */
+  onRelease?: () => void;
+}
+
+interface Options extends HookSocketOptions {
   monitor: Monitor;
   adapters: AdapterRegistry;
   permissions: PermissionBroker;
@@ -41,12 +49,13 @@ interface Options {
 }
 
 const authenticated = z.object({
-  token: z.string().max(512),
+  token: z.string().min(1).max(512),
   type: z.enum([
     IpcMessageType.Hook,
     IpcMessageType.Wrapper,
     IpcMessageType.DesktopBind,
     IpcMessageType.CodexConnect,
+    IpcMessageType.ReleaseHookSocket,
   ]),
   wrapperId: z.string().uuid().optional(),
   cmux: cmuxContextSchema.optional(),
@@ -56,38 +65,14 @@ const authenticated = z.object({
   codex: codexConnectionSchema.optional(),
 });
 
+const RejectionReply: Partial<Record<string, IpcMessageType>> = {
+  [IpcMessageType.DesktopBind]: IpcMessageType.DesktopResult,
+  [IpcMessageType.CodexConnect]: IpcMessageType.CodexResult,
+  [IpcMessageType.ReleaseHookSocket]: IpcMessageType.ReleaseResult,
+};
+
 export async function startHookServer(options: Options) {
-  try {
-    const info = await lstat(options.path);
-
-    if (!info.isSocket()) {
-      throw new Error(DaemonErrorCode.SOCKET_PATH_IN_USE);
-    }
-
-    const probe = await import('node:net');
-
-    const alive = await new Promise<boolean>((resolve) => {
-      const socket = probe.connect(options.path);
-
-      socket.once('connect', () => {
-        socket.destroy();
-        resolve(true);
-      });
-
-      socket.once('error', () => resolve(false));
-    });
-
-    if (alive) {
-      throw new Error(DaemonErrorCode.DAEMON_ALREADY_RUNNING);
-    }
-
-    await unlink(options.path);
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-      throw error;
-    }
-  }
-
+  const allowedTypes: readonly IpcMessageType[] = options.allowedTypes ?? PrimaryHookMessageTypes;
   let closing = false;
   const sockets = new Set<Socket>();
 
@@ -113,7 +98,7 @@ export async function startHookServer(options: Options) {
       const wrapper = wrappers.get(wrapperId);
 
       if (!wrapper) {
-        reject(new Error(ErrorCode.STALE_SESSION));
+        reject(new CodedError(ErrorCode.STALE_SESSION));
 
         return;
       }
@@ -122,7 +107,7 @@ export async function startHookServer(options: Options) {
 
       const timer = setTimeout(() => {
         wrapper.pending.delete(id);
-        reject(new Error(ErrorCode.UNKNOWN_AFTER_WRITE));
+        reject(new CodedError(ErrorCode.UNKNOWN_AFTER_WRITE));
       }, 5000);
 
       wrapper.pending.set(id, { resolve, reject, timer });
@@ -149,7 +134,7 @@ export async function startHookServer(options: Options) {
 
           for (const pending of wrapper.pending.values()) {
             clearTimeout(pending.timer);
-            pending.reject(new Error(ErrorCode.UNKNOWN_AFTER_WRITE));
+            pending.reject(new CodedError(ErrorCode.UNKNOWN_AFTER_WRITE));
           }
 
           void options.adapters.disconnect(wrapperId);
@@ -181,24 +166,43 @@ export async function startHookServer(options: Options) {
         }
 
         if (busy) {
-          throw new Error(ErrorCode.IPC_BUSY);
+          throw new CodedError(ErrorCode.IPC_BUSY);
         }
 
         busy = true;
         const message = authenticated.parse(raw);
 
+        if (!allowedTypes.includes(message.type)) {
+          throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
+        }
+
         const token = Buffer.from(message.token),
           expected = Buffer.from(options.token);
 
         if (token.length !== expected.length || !timingSafeEqual(token, expected)) {
-          throw new Error(ErrorCode.UNAUTHORIZED);
+          throw new CodedError(ErrorCode.UNAUTHORIZED);
         }
 
         clearTimeout(authTimer);
 
+        if (message.type === IpcMessageType.ReleaseHookSocket) {
+          const onRelease = options.onRelease;
+
+          if (!onRelease) {
+            throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
+          }
+
+          await binding.unbind();
+          writeFrame(socket, { type: IpcMessageType.ReleaseResult });
+          socket.once('close', () => onRelease());
+          socket.end();
+
+          return;
+        }
+
         if (message.type === IpcMessageType.CodexConnect) {
           if (!message.codex || !options.onCodexConnect) {
-            throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
+            throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
           }
 
           const result = await options.onCodexConnect(message.codex);
@@ -211,7 +215,7 @@ export async function startHookServer(options: Options) {
 
         if (message.type === IpcMessageType.DesktopBind) {
           if (!message.mode || !options.onDesktopBind) {
-            throw new Error(ErrorCode.DESKTOP_UNAVAILABLE);
+            throw new CodedError(ErrorCode.DESKTOP_UNAVAILABLE);
           }
 
           const result = await options.onDesktopBind(message.mode);
@@ -224,7 +228,7 @@ export async function startHookServer(options: Options) {
 
         if (message.type === IpcMessageType.Wrapper) {
           if (!message.wrapperId || wrappers.has(message.wrapperId)) {
-            throw new Error(DaemonErrorCode.INVALID_WRAPPER);
+            throw new CodedError(DaemonErrorCode.INVALID_WRAPPER);
           }
 
           wrapperId = message.wrapperId;
@@ -267,7 +271,7 @@ export async function startHookServer(options: Options) {
                   });
 
                   if (response.status !== CommandStatus.Dispatched) {
-                    throw new Error(response.code ?? 'WRAPPER_FAILED');
+                    throw new CodedError(response.code ?? ErrorCode.WRAPPER_FAILED);
                   }
 
                   return response;
@@ -279,7 +283,7 @@ export async function startHookServer(options: Options) {
                   });
 
                   if (response.status !== CommandStatus.Dispatched) {
-                    throw new Error(response.code ?? 'WRAPPER_FAILED');
+                    throw new CodedError(response.code ?? ErrorCode.WRAPPER_FAILED);
                   }
 
                   return response;
@@ -288,7 +292,7 @@ export async function startHookServer(options: Options) {
                   const response = await call(id, { type: WrapperActionType.Snapshot });
 
                   if (typeof response.text !== 'string') {
-                    throw new Error(ErrorCode.SNAPSHOT_UNAVAILABLE);
+                    throw new CodedError(ErrorCode.SNAPSHOT_UNAVAILABLE);
                   }
 
                   return response.text;
@@ -307,7 +311,7 @@ export async function startHookServer(options: Options) {
             });
 
             if (bound.status !== CommandStatus.Dispatched) {
-              throw new Error(DaemonErrorCode.BINDING_FAILED);
+              throw new CodedError(DaemonErrorCode.BINDING_FAILED);
             }
 
             wrappers.get(id)!.claudeSessionId = saved.session.claudeSessionId!;
@@ -333,7 +337,7 @@ export async function startHookServer(options: Options) {
           const bound = await call(connector, { type: WrapperActionType.Bind, sessionId: hook.session_id });
 
           if (bound.status !== CommandStatus.Dispatched) {
-            throw new Error(DaemonErrorCode.BINDING_FAILED);
+            throw new CodedError(DaemonErrorCode.BINDING_FAILED);
           }
         }
 
@@ -387,19 +391,11 @@ export async function startHookServer(options: Options) {
                 ? error.message
                 : 'DESKTOP_UNAVAILABLE';
 
+            const reply = RejectionReply[String((raw as { type?: string })?.type)];
+
             writeFrame(
               socket,
-              [IpcMessageType.DesktopBind, IpcMessageType.CodexConnect].some(
-                (candidateValue) => candidateValue === String((raw as { type?: string })?.type),
-              )
-                ? {
-                    type:
-                      (raw as { type?: string })?.type === IpcMessageType.CodexConnect
-                        ? IpcMessageType.CodexResult
-                        : IpcMessageType.DesktopResult,
-                    code,
-                  }
-                : { type: IpcMessageType.HookResult, output: {} },
+              reply ? { type: reply, code } : { type: IpcMessageType.HookResult, output: {} },
             );
 
             socket.end();
@@ -411,16 +407,7 @@ export async function startHookServer(options: Options) {
     });
   });
 
-  await new Promise<void>((resolve, reject) => {
-    server.once('error', reject);
-
-    server.listen(options.path, () => {
-      server.removeListener('error', reject);
-      resolve();
-    });
-  });
-
-  await chmod(options.path, 0o600);
+  const binding = await bindHookSocket(server, options.path);
 
   return {
     async close() {
@@ -430,11 +417,7 @@ export async function startHookServer(options: Options) {
         socket.destroy();
       }
 
-      await new Promise<void>((resolve) => server.close(() => resolve()));
-
-      try {
-        await unlink(options.path);
-      } catch {}
+      await binding.close();
     },
   };
 }

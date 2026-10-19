@@ -1,9 +1,11 @@
 import {
+  CodedError,
   ErrorCode,
+  hasErrorCode,
   ProfileAuthMode,
-  ProfileStatus,
-  ProfileOperationPhase,
   type ProfileOperation,
+  ProfileOperationPhase,
+  ProfileStatus,
 } from '@protocol';
 import type { ProfileVerification } from '../../types.js';
 import type { EnrollmentContext } from './types.js';
@@ -13,18 +15,18 @@ export function enrollmentProfile(context: EnrollmentContext, id: string, versio
   const scope = context.options.scope;
 
   if (profile.ownerId !== scope.ownerId || profile.deviceId !== scope.deviceId) {
-    throw new Error(ErrorCode.NOT_FOUND);
+    throw new CodedError(ErrorCode.NOT_FOUND);
   }
 
   if (profile.version !== version) {
-    throw new Error(ErrorCode.LOCAL_REVISION_CONFLICT);
+    throw new CodedError(ErrorCode.LOCAL_REVISION_CONFLICT);
   }
 
   if (
     profile.authMode !== ProfileAuthMode.ApiKey ||
     (profile.status !== ProfileStatus.Ready && profile.status !== ProfileStatus.NeedsAuthentication)
   ) {
-    throw new Error(ErrorCode.PROFILE_NOT_READY);
+    throw new CodedError(ErrorCode.PROFILE_NOT_READY);
   }
 
   return profile;
@@ -45,7 +47,7 @@ export function finishEnrollment(
     const record = context.repository.get(id);
 
     if (evidence.identity?.accountRef !== record.keyRef) {
-      throw new Error(ErrorCode.PROFILE_MISMATCH);
+      throw new CodedError(ErrorCode.PROFILE_MISMATCH);
     }
 
     const profile = context.options.registry.verify(operation.profileId, operation.profileVersion, evidence);
@@ -70,8 +72,7 @@ export function uncertainEnrollment(context: EnrollmentContext, id: string, fail
     }
 
     const code =
-      Object.values(ErrorCode).find((value) => failure instanceof Error && value === failure.message) ??
-      ErrorCode.REQUEST_FAILED;
+      Object.values(ErrorCode).find((value) => hasErrorCode(failure, value)) ?? ErrorCode.REQUEST_FAILED;
 
     return context.journal.save({
       ...operation,
@@ -97,7 +98,7 @@ export function cancelEnrollmentForRemoval(context: EnrollmentContext, id: strin
     const profile = context.options.registry.get(operation.profileId);
 
     if (profile.status !== ProfileStatus.Removing && profile.status !== ProfileStatus.Removed) {
-      throw new Error(ErrorCode.PROFILE_NOT_READY);
+      throw new CodedError(ErrorCode.PROFILE_NOT_READY);
     }
 
     return context.journal.save({

@@ -339,3 +339,39 @@ it('reports an unknown steering outcome for a native receipt from a different tu
     await client.close();
   }
 });
+
+it('fails attach at once when the thread snapshot is too large instead of waiting for the timeout', async () => {
+  const ipc = new Ipc();
+
+  ipc.broadcast = (_method: string, params: Data) => {
+    if (params.following) {
+      ipc.emit('frame_too_large', { conversationId: 'thread', sourceClientId: 'owner' });
+    }
+  };
+
+  const started = Date.now();
+
+  await expect(DesktopCodexClient.attach(ipc as unknown as DesktopIpcClient, 'thread')).rejects.toMatchObject(
+    {
+      code: 'CODEX_FRAME_TOO_LARGE',
+    },
+  );
+
+  expect(Date.now() - started).toBeLessThan(1000);
+  expect(ipc.listenerCount('broadcast')).toBe(0);
+  expect(ipc.listenerCount('frame_too_large')).toBe(0);
+});
+
+it('loses only its own thread when an oversize frame names that thread and owner', async () => {
+  const { ipc, client } = await fixture();
+  const lost: unknown[] = [];
+
+  client.on('disconnected', (error) => lost.push(error));
+  ipc.emit('frame_too_large', { conversationId: 'other-thread', sourceClientId: 'owner' });
+  ipc.emit('frame_too_large', { conversationId: 'thread', sourceClientId: 'other-owner' });
+  expect(lost).toEqual([]);
+
+  ipc.emit('frame_too_large', { conversationId: 'thread', sourceClientId: 'owner' });
+  expect(lost).toMatchObject([{ code: 'CODEX_FRAME_TOO_LARGE' }]);
+  await client.close();
+});

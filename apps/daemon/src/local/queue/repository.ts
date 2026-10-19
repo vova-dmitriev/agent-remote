@@ -1,14 +1,15 @@
 import { z } from 'zod';
 import {
-  ErrorCode,
-  CommandStatus,
   advancePromptBarrier,
-  type Session,
-  LOCAL_LIMITS,
-  clientCommandSchema,
   type ClientCommand,
+  clientCommandSchema,
+  CodedError,
+  CommandStatus,
+  ErrorCode,
+  LOCAL_LIMITS,
   type LocalAction,
   LocalOperation,
+  type Session,
 } from '@protocol';
 import { LocalDocumentKind } from '../state/values.js';
 import type { LocalControllerOptions } from '../controller/types.js';
@@ -71,7 +72,7 @@ export class QueueRepository {
       const previous = this.load(action.sessionId);
 
       if (previous.revision !== action.revision) {
-        throw new Error(ErrorCode.LOCAL_REVISION_CONFLICT);
+        throw new CodedError(ErrorCode.LOCAL_REVISION_CONFLICT);
       }
 
       const ids = new Set<string>();
@@ -80,14 +81,14 @@ export class QueueRepository {
         const command = validateQueueCommand(this.options, action.sessionId, action.generation, raw);
 
         if (ids.has(command.commandId)) {
-          throw new Error(ErrorCode.COMMAND_ID_REUSED);
+          throw new CodedError(ErrorCode.COMMAND_ID_REUSED);
         }
 
         ids.add(command.commandId);
         const existing = previous.entries.find((entry) => entry.command.commandId === command.commandId);
 
         if (!existing && immutableIntent(this.options, command.commandId)) {
-          throw new Error(ErrorCode.COMMAND_ID_REUSED);
+          throw new CodedError(ErrorCode.COMMAND_ID_REUSED);
         }
 
         return existing
@@ -102,7 +103,7 @@ export class QueueRepository {
           immutableIntent(this.options, existing.command.commandId) &&
           (!next || !sameQueuedCommand(existing.command, next.command))
         ) {
-          throw new Error(ErrorCode.LOCAL_REVISION_CONFLICT);
+          throw new CodedError(ErrorCode.LOCAL_REVISION_CONFLICT);
         }
       }
 

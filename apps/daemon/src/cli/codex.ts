@@ -1,6 +1,6 @@
 import { DaemonErrorCode } from '../error-codes.js';
 import { CliAction } from '../domain/cli.js';
-import { TargetKind } from '@protocol';
+import { CodedError, TargetKind } from '@protocol';
 import { IpcMessageType } from '../domain/ipc.js';
 import { spawn } from 'node:child_process';
 import { homedir } from 'node:os';
@@ -19,7 +19,7 @@ export async function runCodex(args: string[]) {
     const kind = kinds[args[1] as keyof typeof kinds] ?? null;
 
     if (!kind) {
-      throw new Error(DaemonErrorCode.INVALID_CODEX_ARGS);
+      throw new CodedError(DaemonErrorCode.INVALID_CODEX_ARGS);
     }
 
     let threadId: string | undefined,
@@ -31,7 +31,7 @@ export async function runCodex(args: string[]) {
       } else if (!threadId && !args[index]!.startsWith('-')) {
         threadId = args[index];
       } else {
-        throw new Error(DaemonErrorCode.INVALID_CODEX_ARGS);
+        throw new CodedError(DaemonErrorCode.INVALID_CODEX_ARGS);
       }
     }
 
@@ -48,7 +48,7 @@ export async function runCodex(args: string[]) {
     );
 
     if (result.code) {
-      throw new Error(result.code);
+      throw new CodedError(result.code);
     }
 
     process.stdout.write(`Codex: ${result.result?.connected ?? 0}\n`);
@@ -57,7 +57,7 @@ export async function runCodex(args: string[]) {
   }
 
   if (args.some((arg) => arg === '--remote' || arg.startsWith('--remote='))) {
-    throw new Error(DaemonErrorCode.INVALID_CODEX_ARGS);
+    throw new CodedError(DaemonErrorCode.INVALID_CODEX_ARGS);
   }
 
   const managedSocket = await ensureManagedCodexSocket(stateDirectory());
@@ -73,7 +73,7 @@ export async function runCodex(args: string[]) {
   );
 
   if (result.code) {
-    throw new Error(result.code);
+    throw new CodedError(result.code);
   }
 
   const selectedDirectory = args.some(
@@ -89,7 +89,7 @@ export async function runCodex(args: string[]) {
   });
 
   return new Promise<number>((resolve, reject) => {
-    child.once('error', () => reject(new Error(DaemonErrorCode.CODEX_START_FAILED)));
+    child.once('error', () => reject(new CodedError(DaemonErrorCode.CODEX_START_FAILED)));
     child.once('exit', (code) => resolve(code ?? 1));
   });
 }

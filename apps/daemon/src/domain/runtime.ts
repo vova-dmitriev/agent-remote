@@ -9,6 +9,7 @@ export const RuntimeEvent = {
   Request: 'request',
   Disconnected: 'disconnected',
   Broadcast: 'broadcast',
+  FrameTooLarge: 'frame_too_large',
   CommandResult: 'command_result',
 } as const;
 

@@ -116,6 +116,45 @@ function constructorName(node) {
   return expression.property.type === 'Identifier' ? expression.property.name : '';
 }
 
+function staticBranches(node, depth = 0) {
+  if (!node || depth > maximumStaticDepth) {
+    return [];
+  }
+
+  const expression = unwrapStaticExpression(node, depth) ?? node;
+
+  if (expression.type === 'ConditionalExpression') {
+    return [
+      ...staticBranches(expression.consequent, depth + 1),
+      ...staticBranches(expression.alternate, depth + 1),
+    ];
+  }
+
+  if (expression.type === 'LogicalExpression') {
+    return [...staticBranches(expression.left, depth + 1), ...staticBranches(expression.right, depth + 1)];
+  }
+
+  const value = staticString(expression, depth);
+
+  return value === undefined ? [] : [{ node: expression, value }];
+}
+
+function codeName(node) {
+  const expression = unwrapStaticExpression(node, 0);
+
+  if (expression?.type === 'Identifier') {
+    return expression.name === 'code';
+  }
+
+  return (
+    expression?.type === 'MemberExpression' && !expression.computed && expression.property.name === 'code'
+  );
+}
+
+const systemErrno = /^(?:E[A-Z0-9]+|ERR_[A-Z0-9_]+)$/;
+
+const codePropertyNames = new Set(['error', 'code']);
+
 export default {
   meta: {
     type: 'suggestion',
@@ -131,17 +170,50 @@ export default {
       return {};
     }
 
+    // Comparison and property checks start in the daemon; widen once other apps are migrated.
+    const daemon = /apps\/daemon\/src\//.test(filename);
+
     return {
       NewExpression(node) {
         const constructor = constructorName(node.callee);
-        const argument = node.arguments[0];
-        const value = staticString(argument);
 
-        if (!['Error', 'Fault'].includes(constructor) || typeof value !== 'string' || !code.test(value)) {
+        if (!['Error', 'Fault', 'CodedError'].includes(constructor)) {
           return;
         }
 
-        context.report({ node: argument, messageId: 'inline', data: { value } });
+        for (const { node: branch, value } of staticBranches(node.arguments[0])) {
+          if (code.test(value)) {
+            context.report({ node: branch, messageId: 'inline', data: { value } });
+          }
+        }
+      },
+      BinaryExpression(node) {
+        if (!daemon) {
+          return;
+        }
+
+        if (!['===', '!==', '==', '!='].includes(node.operator)) {
+          return;
+        }
+
+        const [subject, literal] = codeName(node.left) ? [node.left, node.right] : [node.right, node.left];
+        const value = codeName(subject) ? staticString(literal) : undefined;
+
+        if (value !== undefined && code.test(value) && !systemErrno.test(value)) {
+          context.report({ node: literal, messageId: 'inline', data: { value } });
+        }
+      },
+      Property(node) {
+        if (!daemon) {
+          return;
+        }
+
+        const key = node.computed ? undefined : (node.key.name ?? node.key.value);
+        const value = codePropertyNames.has(key) ? staticString(node.value) : undefined;
+
+        if (value !== undefined && code.test(value)) {
+          context.report({ node: node.value, messageId: 'inline', data: { value } });
+        }
       },
     };
   },

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { CompanionEnvironment } from '../../apps/daemon/src/local/supervisor/values.js';
 
 export const hash = (value: Buffer | string) => createHash('sha256').update(value).digest('hex');
 
@@ -8,6 +9,7 @@ export const fixture = `import {appendFileSync,existsSync,writeFileSync} from 'n
 import {join} from 'node:path';
 const home=process.env.CLAUDE_REMOTE_HOME;
 appendFileSync(join(home,'starts'),JSON.stringify(process.argv.slice(2))+'\\n');
+writeFileSync(join(home,'legacy-claude-hooks'),process.env.${CompanionEnvironment.LegacyClaudeHooks}??'');
 writeFileSync(join(home,'ready'),'synthetic');
 const timer=setInterval(()=>{
 writeFileSync(join(home,'pulse'),String(Date.now()));

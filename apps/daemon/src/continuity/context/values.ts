@@ -1,4 +1,5 @@
 import type { CheckpointMessage, ContextCheckpointDraft, SourceFence } from './types.js';
+import { CodedError } from '@protocol';
 
 export const CheckpointMessageRole = {
   User: 'user',
@@ -64,7 +65,7 @@ export const CheckpointError = {
 export type CheckpointError = (typeof CheckpointError)[keyof typeof CheckpointError];
 
 export function checkpointFailure(code: CheckpointError) {
-  return new Error(code);
+  return new CodedError(code);
 }
 
 export function checkpointCoverage(input: {

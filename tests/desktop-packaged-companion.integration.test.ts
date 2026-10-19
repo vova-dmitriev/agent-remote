@@ -7,10 +7,13 @@ import { afterEach, expect, it } from 'vitest';
 import { ErrorCode, LocalOperation } from '@protocol';
 import { createDesktopCompanionConnector } from '../apps/desktop/src/runtime/connector.js';
 import { desktopRuntimeFixture } from './helpers/desktop-runtime-fixture.js';
+import { guardRuntimeProcesses, trackRuntimeChild } from './helpers/runtime-processes.js';
 
 const runFile = promisify(execFile);
 const cleanups: Array<() => Promise<unknown>> = [];
 const itOnDarwin = it.skipIf(process.platform !== 'darwin');
+
+guardRuntimeProcesses();
 
 afterEach(async () => {
   for (const cleanup of cleanups.splice(0).reverse()) {
@@ -78,6 +81,7 @@ process.once('SIGTERM', async () => {
       stdio: ['ignore', 'pipe', 'pipe'],
     });
 
+    trackRuntimeChild(child);
     let output = '';
     let errors = '';
 

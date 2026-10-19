@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import { ErrorCode, ProfileStatus } from '@protocol';
+import { CodedError, ErrorCode, ProfileStatus } from '@protocol';
 import { privateFile } from '../local/bootstrap/private-file.js';
 import type { ProfileRegistry } from './registry.js';
 import { profileHomes } from './environment/paths.js';
@@ -25,7 +25,7 @@ export async function buildProfileEnvironment(
       profile.status === ProfileStatus.NeedsAuthentication);
 
   if (!eligible) {
-    throw new Error(ErrorCode.PROFILE_NOT_READY);
+    throw new CodedError(ErrorCode.PROFILE_NOT_READY);
   }
 
   const homes = await profileHomes(options.directory, profile, profile.id);
@@ -36,11 +36,11 @@ export async function buildProfileEnvironment(
   );
 
   if (configuration !== CodexProfileConfiguration) {
-    throw new Error(ErrorCode.PROFILE_MISMATCH);
+    throw new CodedError(ErrorCode.PROFILE_MISMATCH);
   }
 
   if (registry.get(profileId).version !== profile.version) {
-    throw new Error(ErrorCode.LOCAL_REVISION_CONFLICT);
+    throw new CodedError(ErrorCode.LOCAL_REVISION_CONFLICT);
   }
 
   const environment: NodeJS.ProcessEnv = {};

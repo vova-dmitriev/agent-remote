@@ -1,11 +1,11 @@
-import { ErrorCode } from '@protocol';
+import { CodedError, ErrorCode } from '@protocol';
 import { ProfileApiLimit } from './values.js';
 
 export async function profileApiBody(response: Response): Promise<unknown> {
   const reader = response.body?.getReader();
 
   if (!reader) {
-    throw new Error(ErrorCode.CODEX_PROTOCOL_ERROR);
+    throw new CodedError(ErrorCode.CODEX_PROTOCOL_ERROR);
   }
 
   const chunks: Uint8Array[] = [];
@@ -22,7 +22,7 @@ export async function profileApiBody(response: Response): Promise<unknown> {
       size += value.byteLength;
 
       if (size > ProfileApiLimit.BodyBytes) {
-        throw new Error(ErrorCode.CODEX_PROTOCOL_ERROR);
+        throw new CodedError(ErrorCode.CODEX_PROTOCOL_ERROR);
       }
 
       chunks.push(value);
@@ -31,7 +31,7 @@ export async function profileApiBody(response: Response): Promise<unknown> {
     try {
       return JSON.parse(Buffer.concat(chunks).toString('utf8'));
     } catch {
-      throw new Error(ErrorCode.CODEX_PROTOCOL_ERROR);
+      throw new CodedError(ErrorCode.CODEX_PROTOCOL_ERROR);
     }
   } finally {
     await reader.cancel().catch(() => {});

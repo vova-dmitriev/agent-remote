@@ -13,6 +13,7 @@ import { requestLocal } from './code/hooks/ipc.js';
 import { installHooks, uninstallHooks } from './code/hooks/install-hooks.js';
 import { startDaemon } from './main.js';
 import { startClaude } from './cli/wrapper.js';
+import { CodedError, hasErrorCode } from '@protocol';
 
 export async function runCli(argv = process.argv.slice(2)) {
   const [command, ...args] = argv;
@@ -70,7 +71,15 @@ export async function runCli(argv = process.argv.slice(2)) {
   }
 
   if (command === CliCommand.Start) {
-    const daemon = await startDaemon();
+    const daemon = await startDaemon().catch((error: unknown) => {
+      if (hasErrorCode(error, DaemonErrorCode.HOOK_SOCKET_HELD_BY_COMPANION)) {
+        process.stderr.write(
+          `${DaemonErrorCode.HOOK_SOCKET_HELD_BY_COMPANION}: ${socketPath()} занят Desktop companion (Agent Remote Desktop), и он не освободил сокет. Закрой Agent Remote Desktop и повтори remote start.\n`,
+        );
+      }
+
+      throw error;
+    });
 
     process.stdout.write('Companion запущен.\n');
 
@@ -131,7 +140,7 @@ export async function runCli(argv = process.argv.slice(2)) {
       ASCII_CONTROL_CHARACTERS.test(executable) ||
       args.some((arg) => arg.includes('\0'))
     ) {
-      throw new Error(DaemonErrorCode.INVALID_CLAUDE_ARGS);
+      throw new CodedError(DaemonErrorCode.INVALID_CLAUDE_ARGS);
     }
 
     process.exitCode = await startClaude([], { stdin: process.stdin, stdout: process.stdout }, undefined, {
@@ -219,7 +228,7 @@ export async function runCli(argv = process.argv.slice(2)) {
         input += chunk.toString();
 
         if (Buffer.byteLength(input) > 120000) {
-          throw new Error(DaemonErrorCode.HOOK_TOO_LARGE);
+          throw new CodedError(DaemonErrorCode.HOOK_TOO_LARGE);
         }
       }
 
@@ -259,7 +268,7 @@ export async function runCli(argv = process.argv.slice(2)) {
     );
 
     if (result.code) {
-      throw new Error(result.code);
+      throw new CodedError(result.code);
     }
 
     process.stdout.write(JSON.stringify(result) + '\n');

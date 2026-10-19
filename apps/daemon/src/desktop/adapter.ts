@@ -1,15 +1,17 @@
 import { DesktopMode, DesktopOperation } from '../domain/desktop.js';
 import {
-  ErrorCode,
-  TargetKind,
-  SessionStatus,
+  BindingState,
+  CodedError,
   CommandStatus,
   ConnectorTransport,
+  ErrorCode,
+  hasErrorCode,
   IntegrationState,
-  BindingState,
-  StatusConfidence,
   type Session,
+  SessionStatus,
+  StatusConfidence,
   type Target,
+  TargetKind,
   validatePrompt,
 } from '@protocol';
 import { randomUUID } from 'node:crypto';
@@ -33,7 +35,7 @@ export function createDesktopSource(
   flags: { inputEnabled: boolean; permissionsEnabled: boolean },
 ) {
   if (mode === DesktopMode.Code && !desktop.claudeSessionId) {
-    throw new Error(ErrorCode.DESKTOP_CODE_ID_UNVERIFIED);
+    throw new CodedError(ErrorCode.DESKTOP_CODE_ID_UNVERIFIED);
   }
 
   const connectorId = randomUUID();
@@ -76,7 +78,7 @@ export function createDesktopSource(
       if (
         error instanceof Error &&
         [ErrorCode.UNKNOWN_AFTER_WRITE, ErrorCode.HELPER_TIMEOUT, ErrorCode.HELPER_EXITED].some(
-          (candidateValue) => candidateValue === error.message,
+          (candidateValue) => hasErrorCode(error, candidateValue),
         )
       ) {
         return { status: CommandStatus.Unknown, code: error.message };

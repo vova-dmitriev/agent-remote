@@ -1,4 +1,4 @@
-import { ErrorCode, HistoryDirection, LOCAL_LIMITS } from '@protocol';
+import { CodedError, ErrorCode, HistoryDirection, LOCAL_LIMITS } from '@protocol';
 
 export const LOCAL_HISTORY_LIMITS = {
   // Leave room for result metadata and both cursors within the logical-message ceiling.
@@ -23,7 +23,7 @@ export function bytePage<T>(items: readonly T[], direction: HistoryDirection, an
   let bytes = sizes[start]!;
 
   if (bytes > LOCAL_HISTORY_LIMITS.pageBytes) {
-    throw new Error(ErrorCode.LOCAL_PAYLOAD_TOO_LARGE);
+    throw new CodedError(ErrorCode.LOCAL_PAYLOAD_TOO_LARGE);
   }
 
   let before = !forward;

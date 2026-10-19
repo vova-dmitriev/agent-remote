@@ -1,3 +1,4 @@
+import { hasErrorCode } from '@protocol';
 import { createHash } from 'node:crypto';
 import {
   CheckpointAttachmentStatus,
@@ -39,7 +40,7 @@ export async function persistAttachment(
 
     return { id: reference.id, hash, status: CheckpointAttachmentStatus.Available } as const;
   } catch (error) {
-    if (error instanceof Error && error.message === CheckpointError.StorageUnsafe) {
+    if (hasErrorCode(error, CheckpointError.StorageUnsafe)) {
       throw error;
     }
 
@@ -71,9 +72,8 @@ export async function verifyAttachmentBlobs(
       bytes = await readPrivateFile(directory, `${ref.hash}.blob`, maxBytes);
     } catch (error) {
       if (
-        error instanceof Error &&
-        (error.message === CheckpointError.StorageSizeLimit ||
-          error.message === CheckpointError.StorageUnsafe)
+        hasErrorCode(error, CheckpointError.StorageSizeLimit) ||
+        hasErrorCode(error, CheckpointError.StorageUnsafe)
       ) {
         throw error;
       }

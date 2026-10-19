@@ -1,5 +1,5 @@
 import { DaemonErrorCode } from '../../error-codes.js';
-import { ErrorCode } from '@protocol';
+import { CodedError, ErrorCode } from '@protocol';
 
 import { shellQuote as quote } from '../../shell/index.js';
 import { ASCII_CONTROL_CHARACTERS } from '../../validation/control-characters.js';
@@ -28,7 +28,7 @@ export async function validateProject(cwd: string): Promise<string> {
 
     return path;
   } catch {
-    throw new Error(ErrorCode.INVALID_PROJECT);
+    throw new CodedError(ErrorCode.INVALID_PROJECT);
   }
 }
 
@@ -44,7 +44,7 @@ export async function launchClaudeSession(options: {
   open?: (file: string, args: string[]) => Promise<unknown>;
 }): Promise<string> {
   if (options.resumeId && !/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,511}$/.test(options.resumeId)) {
-    throw new Error(DaemonErrorCode.INVALID_CLAUDE_ARGS);
+    throw new CodedError(DaemonErrorCode.INVALID_CLAUDE_ARGS);
   }
 
   const id = randomUUID(),
@@ -94,7 +94,7 @@ export async function launchClaudeSession(options: {
   } catch {
     await rm(payload, { force: true }).catch(() => {});
     await rm(script, { force: true }).catch(() => {});
-    throw new Error(ErrorCode.UNKNOWN_AFTER_WRITE);
+    throw new CodedError(ErrorCode.UNKNOWN_AFTER_WRITE);
   }
 
   return id;

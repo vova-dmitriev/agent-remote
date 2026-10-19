@@ -1,4 +1,4 @@
-import { ErrorCode } from '@protocol';
+import { CodedError, ErrorCode } from '@protocol';
 import type { LocalDatabase } from './database.js';
 import type { LocalDocumentKind } from './values.js';
 
@@ -43,7 +43,7 @@ export class LocalDocuments {
       const previous = this.get(owner, session, kind);
 
       if (previous.revision !== revision || !Number.isSafeInteger(revision) || revision < 0) {
-        throw new Error(ErrorCode.LOCAL_REVISION_CONFLICT);
+        throw new CodedError(ErrorCode.LOCAL_REVISION_CONFLICT);
       }
 
       const next = revision + 1;

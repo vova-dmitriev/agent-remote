@@ -2,10 +2,10 @@ import { constants, type Stats } from 'node:fs';
 import { lstat, mkdir, open } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { dirname, isAbsolute, resolve } from 'node:path';
-import { ErrorCode } from '@protocol';
+import { CodedError, ErrorCode } from '@protocol';
 import type { CompanionRuntime } from './types.js';
 
-const untrusted = () => new Error(ErrorCode.LOCAL_RUNTIME_UNTRUSTED);
+const untrusted = () => new CodedError(ErrorCode.LOCAL_RUNTIME_UNTRUSTED);
 
 export function canonicalPath(path: string): void {
   if (!isAbsolute(path) || path !== resolve(path) || path.includes('\0')) {

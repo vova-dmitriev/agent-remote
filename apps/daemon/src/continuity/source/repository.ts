@@ -1,3 +1,4 @@
+import { hasErrorCode } from '@protocol';
 import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { lstat, realpath } from 'node:fs/promises';
@@ -39,7 +40,7 @@ async function git(cwd: string, args: string[]) {
 
     return result.stdout;
   } catch (error) {
-    if (error instanceof Error && error.message === CheckpointSourceError.RepositoryBudgetExceeded) {
+    if (hasErrorCode(error, CheckpointSourceError.RepositoryBudgetExceeded)) {
       throw error;
     }
 
@@ -110,7 +111,7 @@ export async function probeRepository(cwd: string): Promise<RepositoryIdentity> 
         }
       }
     } catch (error) {
-      if (error instanceof Error && error.message === CheckpointSourceError.RepositoryUnavailable) {
+      if (hasErrorCode(error, CheckpointSourceError.RepositoryUnavailable)) {
         throw error;
       }
 

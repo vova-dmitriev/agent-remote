@@ -4,6 +4,7 @@ import { ClaudeHookEvent, ClaudeHookType } from '../../domain/claude.js';
 import { readFile, writeFile, copyFile, rename, mkdir } from 'node:fs/promises';
 import { dirname, isAbsolute } from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { CodedError } from '@protocol';
 
 const marker = '--managed-by=claude-remote-v1';
 
@@ -63,7 +64,7 @@ async function atomic(path: string, data: Settings) {
 
 export async function installHooks(path: string, entry: string) {
   if (!isAbsolute(entry)) {
-    throw new Error(DaemonErrorCode.ABSOLUTE_ENTRY_REQUIRED);
+    throw new CodedError(DaemonErrorCode.ABSOLUTE_ENTRY_REQUIRED);
   }
 
   await mkdir(dirname(path), { recursive: true, mode: 0o700 });

@@ -3,7 +3,7 @@ import { open } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { z } from 'zod';
-import { ErrorCode, ProfileAuthMode, AgentProvider } from '@protocol';
+import { AgentProvider, CodedError, ErrorCode, ProfileAuthMode } from '@protocol';
 import { ProfileCredentialLimits, ProfileRuntimeFile } from './environment/values.js';
 import { ProfileIdentityPrefix, ProfileNativeLimits } from './native/values.js';
 
@@ -20,7 +20,7 @@ async function withCodexCredentials<T>(
     join(directory, ProfileRuntimeFile.CodexCredentials),
     constants.O_RDONLY | constants.O_NOFOLLOW,
   ).catch(() => {
-    throw new Error(ErrorCode.PROFILE_NOT_READY);
+    throw new CodedError(ErrorCode.PROFILE_NOT_READY);
   });
 
   const bytes = Buffer.alloc(ProfileCredentialLimits.MaxFileBytes + 1);
@@ -34,13 +34,13 @@ async function withCodexCredentials<T>(
       info.size > ProfileCredentialLimits.MaxFileBytes ||
       (process.getuid && info.uid !== process.getuid())
     ) {
-      throw new Error(ErrorCode.UNAUTHORIZED);
+      throw new CodedError(ErrorCode.UNAUTHORIZED);
     }
 
     const { bytesRead } = await file.read(bytes, 0, bytes.length, 0);
 
     if (bytesRead > ProfileCredentialLimits.MaxFileBytes) {
-      throw new Error(ErrorCode.UNAUTHORIZED);
+      throw new CodedError(ErrorCode.UNAUTHORIZED);
     }
 
     let raw: unknown;
@@ -48,23 +48,23 @@ async function withCodexCredentials<T>(
     try {
       raw = JSON.parse(bytes.subarray(0, bytesRead).toString('utf8'));
     } catch {
-      throw new Error(ErrorCode.PROFILE_NOT_READY);
+      throw new CodedError(ErrorCode.PROFILE_NOT_READY);
     }
 
     const parsed = credentialSchema.safeParse(raw);
 
     if (!parsed.success) {
-      throw new Error(ErrorCode.PROFILE_NOT_READY);
+      throw new CodedError(ErrorCode.PROFILE_NOT_READY);
     }
 
     const { OPENAI_API_KEY: key, tokens } = parsed.data;
 
     if (key && tokens) {
-      throw new Error(ErrorCode.PROFILE_MISMATCH);
+      throw new CodedError(ErrorCode.PROFILE_MISMATCH);
     }
 
     if (!key && !tokens) {
-      throw new Error(ErrorCode.PROFILE_NOT_READY);
+      throw new CodedError(ErrorCode.PROFILE_NOT_READY);
     }
 
     return await use(parsed.data);
@@ -87,7 +87,7 @@ export function readCodexCredentialIdentity(directory: string) {
 export function withCodexApiKey<T>(directory: string, use: (secret: string) => Promise<T>): Promise<T> {
   return withCodexCredentials(directory, ({ OPENAI_API_KEY: key }) => {
     if (!key) {
-      throw new Error(ErrorCode.PROFILE_MISMATCH);
+      throw new CodedError(ErrorCode.PROFILE_MISMATCH);
     }
 
     return use(key);

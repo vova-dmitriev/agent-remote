@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { ErrorCode, MAX_ATTACHMENT_BYTES, type Session } from '@protocol';
+import { CodedError, ErrorCode, MAX_ATTACHMENT_BYTES, type Session } from '@protocol';
 import { attachmentSourceCurrent } from '../../attachments/content/source-current.js';
 import { MediaCatalog } from './catalog.js';
 import { MediaTransfers } from './transfers.js';
@@ -16,11 +16,11 @@ export class TrustedMedia {
 
   assert(source: Session) {
     if (this.closed) {
-      throw new Error(ErrorCode.ATTACHMENT_UNAVAILABLE);
+      throw new CodedError(ErrorCode.ATTACHMENT_UNAVAILABLE);
     }
 
     if (!attachmentSourceCurrent(this.options.session(source.id), source)) {
-      throw new Error(ErrorCode.STALE_SESSION);
+      throw new CodedError(ErrorCode.STALE_SESSION);
     }
   }
 
@@ -35,7 +35,7 @@ export class TrustedMedia {
       }
 
       if (init.method && init.method !== 'GET' && init.method !== 'HEAD') {
-        throw new Error(ErrorCode.INVALID_REQUEST);
+        throw new CodedError(ErrorCode.INVALID_REQUEST);
       }
 
       const bytes = this.catalog.bytes(descriptor);
@@ -54,7 +54,7 @@ export class TrustedMedia {
     const headers = new Headers(init.headers);
 
     if (headers.get('x-session-generation') !== source.generation) {
-      throw new Error(ErrorCode.STALE_SESSION);
+      throw new CodedError(ErrorCode.STALE_SESSION);
     }
 
     const bytes = await this.body(init, () => this.assert(source));
@@ -118,7 +118,7 @@ export class TrustedMedia {
         length += result.value.length;
 
         if (length > MAX_ATTACHMENT_BYTES) {
-          throw new Error(ErrorCode.ATTACHMENT_TOO_LARGE);
+          throw new CodedError(ErrorCode.ATTACHMENT_TOO_LARGE);
         }
 
         parts.push(result.value);

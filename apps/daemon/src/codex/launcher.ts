@@ -10,7 +10,7 @@ import {
   type ManagedCodexLaunchOptions,
 } from './launch/types.js';
 import { CodexLaunchArgument } from '../domain/codex/codex.js';
-import { ErrorCode } from '@protocol';
+import { CodedError, ErrorCode } from '@protocol';
 import { ManagedCodexPath } from './launch/values.js';
 import { managedCodexSocketPath } from './launch/paths.js';
 import { forgetOwnedProfileChild, ownedProfileChild, trackOwnedProfileChild } from './launch/owned-child.js';
@@ -121,7 +121,7 @@ export async function ensureManagedCodexSocket(
       info.uid !== process.getuid?.() ||
       (info.mode & 0o077) !== 0
     ) {
-      throw new Error(ErrorCode.CODEX_INVALID_SOCKET);
+      throw new CodedError(ErrorCode.CODEX_INVALID_SOCKET);
     }
 
     if (await listening(path)) {
@@ -164,7 +164,7 @@ export async function ensureManagedCodexSocket(
     }
 
     if (!handle) {
-      throw new Error(ErrorCode.CODEX_DAEMON_START_FAILED);
+      throw new CodedError(ErrorCode.CODEX_DAEMON_START_FAILED);
     }
 
     try {
@@ -184,12 +184,12 @@ export async function ensureManagedCodexSocket(
         const stale = await lstat(path);
 
         if (!stale.isSocket() || stale.uid !== process.getuid?.()) {
-          throw new Error(ErrorCode.CODEX_INVALID_SOCKET);
+          throw new CodedError(ErrorCode.CODEX_INVALID_SOCKET);
         }
 
         if (options?.onEvidence) {
           evidence({ type: ManagedCodexLaunchEvidenceType.ExistingOrUnknown });
-          throw new Error(ErrorCode.CODEX_DAEMON_START_FAILED);
+          throw new CodedError(ErrorCode.CODEX_DAEMON_START_FAILED);
         }
 
         await unlink(path);
@@ -248,7 +248,7 @@ export async function ensureManagedCodexSocket(
 
       for (let attempt = 0; attempt < 100; attempt++) {
         if (failed) {
-          throw new Error(ErrorCode.CODEX_DAEMON_START_FAILED);
+          throw new CodedError(ErrorCode.CODEX_DAEMON_START_FAILED);
         }
 
         if (await listening(path)) {
@@ -261,7 +261,7 @@ export async function ensureManagedCodexSocket(
       }
 
       child.kill('SIGTERM');
-      throw new Error(ErrorCode.CODEX_DAEMON_START_FAILED);
+      throw new CodedError(ErrorCode.CODEX_DAEMON_START_FAILED);
     } finally {
       await handle.close();
       await unlink(lock).catch(() => {});

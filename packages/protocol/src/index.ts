@@ -9,6 +9,7 @@ export * from './history/reading-position.js';
 export * from './session/activity.js';
 export * from './session/file-changes.js';
 export * from './errors/error-codes.js';
+export * from './errors/coded-error.js';
 export * from './session/values.js';
 export * from './session/command-values.js';
 export * from './connection/values.js';

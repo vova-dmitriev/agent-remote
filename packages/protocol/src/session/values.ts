@@ -35,6 +35,12 @@ export const IntegrationState = {
 
 export type IntegrationState = (typeof IntegrationState)[keyof typeof IntegrationState];
 
+export const IntegrationReason = {
+  CliWrapperRequired: 'CLI_WRAPPER_REQUIRED',
+} as const;
+
+export type IntegrationReason = (typeof IntegrationReason)[keyof typeof IntegrationReason];
+
 export const BindingState = {
   Verified: 'verified',
   Unverified: 'unverified',

@@ -1,14 +1,15 @@
 import {
   AgentProvider,
+  CodedError,
   ErrorCode,
   ProfileAction,
-  ProfileAuthMode,
-  ProfileOperationPhase,
-  ProfileStatus,
-  profileAuthenticationSchema,
   type ProfileAuthenticationRequest,
+  profileAuthenticationSchema,
+  ProfileAuthMode,
   type ProfileLogin,
   type ProfileOperation,
+  ProfileOperationPhase,
+  ProfileStatus,
 } from '@protocol';
 import { startProfileAuthentication } from './flow/start.js';
 import { reconcileProfileAuthentication } from './flow/reconcile.js';
@@ -53,7 +54,7 @@ export class ProfileAuthentication {
         profile.provider !== AgentProvider.Codex ||
         (request.action === ProfileAction.SignIn && profile.authMode !== ProfileAuthMode.Subscription)
       ) {
-        throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
+        throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
       }
 
       if (request.action === ProfileAction.SignIn) {
@@ -112,7 +113,7 @@ export class ProfileAuthentication {
     }
 
     if (operation.action !== ProfileAction.SignIn && operation.action !== ProfileAction.Check) {
-      throw new Error(ErrorCode.INVALID_REQUEST);
+      throw new CodedError(ErrorCode.INVALID_REQUEST);
     }
 
     this.active.add(id);
@@ -137,13 +138,13 @@ export class ProfileAuthentication {
     const operation = this.journal.get(id);
 
     if (operation.action !== ProfileAction.SignIn && operation.action !== ProfileAction.Check) {
-      throw new Error(ErrorCode.INVALID_REQUEST);
+      throw new CodedError(ErrorCode.INVALID_REQUEST);
     }
 
     const profile = this.options.registry.get(operation.profileId);
 
     if (profile.status !== ProfileStatus.Removing && profile.status !== ProfileStatus.Removed) {
-      throw new Error(ErrorCode.PROFILE_NOT_READY);
+      throw new CodedError(ErrorCode.PROFILE_NOT_READY);
     }
 
     if (
@@ -157,7 +158,7 @@ export class ProfileAuthentication {
       const startup = this.starting.get(id);
 
       if (!startup || !(await startup)) {
-        throw new Error(ErrorCode.PROFILE_EXECUTION_ACTIVE);
+        throw new CodedError(ErrorCode.PROFILE_EXECUTION_ACTIVE);
       }
 
       await this.pool.close(profile.id, operation.profileVersion);
@@ -178,7 +179,7 @@ export class ProfileAuthentication {
         currentProfile.status !== ProfileStatus.Removing &&
         currentProfile.status !== ProfileStatus.Removed
       ) {
-        throw new Error(ErrorCode.PROFILE_NOT_READY);
+        throw new CodedError(ErrorCode.PROFILE_NOT_READY);
       }
 
       return saveAuthentication(

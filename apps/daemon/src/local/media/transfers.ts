@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { ErrorCode, LOCAL_LIMITS, type AttachmentDescriptor, type Session } from '@protocol';
+import { type AttachmentDescriptor, CodedError, ErrorCode, LOCAL_LIMITS, type Session } from '@protocol';
 import { decodeBase64, encodeBase64 } from '@transport/native/base64.js';
 import type { LocalPrincipal } from '../grants/types.js';
 import { MediaCatalog } from './catalog.js';
@@ -34,7 +34,7 @@ export class MediaTransfers {
     );
 
     if (this.entries.size >= LOCAL_LIMITS.maxTransfers) {
-      throw new Error(ErrorCode.ATTACHMENT_QUOTA);
+      throw new CodedError(ErrorCode.ATTACHMENT_QUOTA);
     }
 
     this.catalog.quota(session, bytes, staged);
@@ -64,13 +64,13 @@ export class MediaTransfers {
     const padding = data.endsWith('==') ? 2 : Number(data.endsWith('='));
 
     if ((data.length / 4) * 3 - padding > LOCAL_LIMITS.chunkBytes) {
-      throw new Error(ErrorCode.LOCAL_PAYLOAD_TOO_LARGE);
+      throw new CodedError(ErrorCode.LOCAL_PAYLOAD_TOO_LARGE);
     }
 
     const bytes = decodeBase64(data);
 
     if (!bytes.length || offset !== entry.offset || offset + bytes.length > entry.upload!.byteLength) {
-      throw new Error(ErrorCode.INVALID_FRAME);
+      throw new CodedError(ErrorCode.INVALID_FRAME);
     }
 
     this.catalog.files.append(id, offset, bytes);
@@ -83,7 +83,7 @@ export class MediaTransfers {
     const entry = this.get(principal, id, TransferMode.Upload);
 
     if (entry.offset !== entry.upload!.byteLength) {
-      throw new Error(ErrorCode.ATTACHMENT_INTEGRITY_FAILED);
+      throw new CodedError(ErrorCode.ATTACHMENT_INTEGRITY_FAILED);
     }
 
     const descriptor = this.catalog.finish(id, entry.session, entry.upload!);
@@ -104,7 +104,7 @@ export class MediaTransfers {
     this.prune();
 
     if (this.entries.size >= LOCAL_LIMITS.maxTransfers) {
-      throw new Error(ErrorCode.ATTACHMENT_QUOTA);
+      throw new CodedError(ErrorCode.ATTACHMENT_QUOTA);
     }
 
     this.catalog.bytes(descriptor);
@@ -126,7 +126,7 @@ export class MediaTransfers {
     const entry = this.get(principal, id, TransferMode.Read);
 
     if (offset !== entry.offset) {
-      throw new Error(ErrorCode.INVALID_FRAME);
+      throw new CodedError(ErrorCode.INVALID_FRAME);
     }
 
     const bytes = this.catalog.bytes(entry.descriptor!);
@@ -160,22 +160,22 @@ export class MediaTransfers {
     const entry = this.entries.get(id);
 
     if (!entry) {
-      throw new Error(ErrorCode.ATTACHMENT_UNAVAILABLE);
+      throw new CodedError(ErrorCode.ATTACHMENT_UNAVAILABLE);
     }
 
     if (!samePrincipal(entry.principal, principal)) {
-      throw new Error(ErrorCode.LOCAL_GRANT_REVOKED);
+      throw new CodedError(ErrorCode.LOCAL_GRANT_REVOKED);
     }
 
     try {
       this.authorization.authorize(principal, entry.session);
 
       if (entry.expiresAt <= Date.now()) {
-        throw new Error(ErrorCode.LOCAL_TRANSFER_EXPIRED);
+        throw new CodedError(ErrorCode.LOCAL_TRANSFER_EXPIRED);
       }
 
       if (mode && entry.mode !== mode) {
-        throw new Error(ErrorCode.INVALID_FRAME);
+        throw new CodedError(ErrorCode.INVALID_FRAME);
       }
     } catch (error) {
       this.remove(id);

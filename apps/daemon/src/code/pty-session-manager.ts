@@ -1,5 +1,5 @@
 import { DaemonErrorCode } from '../error-codes.js';
-import { ErrorCode, positiveInteger, validatePrompt } from '@protocol';
+import { CodedError, ErrorCode, positiveInteger, validatePrompt } from '@protocol';
 
 import { randomUUID } from 'node:crypto';
 import { isAbsolute } from 'node:path';
@@ -64,7 +64,7 @@ export class PtySessionManager {
 
   start(options: { id: string; cwd: string; cols?: number; rows?: number }): PtyBinding {
     if (this.closed) {
-      throw new Error(DaemonErrorCode.PTY_MANAGER_CLOSED);
+      throw new CodedError(DaemonErrorCode.PTY_MANAGER_CLOSED);
     }
 
     if (
@@ -73,15 +73,15 @@ export class PtySessionManager {
       options.id.length > 512 ||
       !isAbsolute(options.cwd)
     ) {
-      throw new Error(DaemonErrorCode.INVALID_PTY_START);
+      throw new CodedError(DaemonErrorCode.INVALID_PTY_START);
     }
 
     if (this.sessions.has(options.id)) {
-      throw new Error(DaemonErrorCode.PTY_ALREADY_EXISTS);
+      throw new CodedError(DaemonErrorCode.PTY_ALREADY_EXISTS);
     }
 
     if (this.sessions.size >= this.maxSessions) {
-      throw new Error(ErrorCode.PTY_LIMIT_REACHED);
+      throw new CodedError(ErrorCode.PTY_LIMIT_REACHED);
     }
 
     const cols = options.cols ?? 80;
@@ -129,7 +129,7 @@ export class PtySessionManager {
     const session = this.local(binding);
 
     if (typeof claudeSessionId !== 'string' || !claudeSessionId || claudeSessionId.length > 512) {
-      throw new Error(DaemonErrorCode.INVALID_CLAUDE_SESSION);
+      throw new CodedError(DaemonErrorCode.INVALID_CLAUDE_SESSION);
     }
 
     const remote = { ...session.binding, claudeSessionId, lease: randomUUID() };
@@ -214,7 +214,7 @@ export class PtySessionManager {
     const session = binding && this.sessions.get(binding.id);
 
     if (!session || session.stopping || session.binding.generation !== binding.generation) {
-      throw new Error(ErrorCode.STALE_PTY_BINDING);
+      throw new CodedError(ErrorCode.STALE_PTY_BINDING);
     }
 
     return session;
@@ -228,7 +228,7 @@ export class PtySessionManager {
       session.remote.claudeSessionId !== binding.claudeSessionId ||
       session.remote.lease !== binding.lease
     ) {
-      throw new Error(ErrorCode.STALE_PTY_BINDING);
+      throw new CodedError(ErrorCode.STALE_PTY_BINDING);
     }
 
     return session;
@@ -236,7 +236,7 @@ export class PtySessionManager {
 
   private validateSize(cols: number, rows: number): void {
     if (![cols, rows].every((value) => Number.isSafeInteger(value) && value > 0 && value <= 500)) {
-      throw new Error(DaemonErrorCode.INVALID_PTY_SIZE);
+      throw new CodedError(DaemonErrorCode.INVALID_PTY_SIZE);
     }
   }
 

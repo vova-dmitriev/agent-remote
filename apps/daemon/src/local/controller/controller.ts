@@ -2,12 +2,13 @@ import { documentOperation } from './documents.js';
 import { localHistory } from './history.js';
 import { LocalPersistence } from './persistence.js';
 import {
+  CodedError,
+  type CommandResult,
   ErrorCode,
   FrameType,
-  LocalOperation,
-  localActionSchema,
-  type CommandResult,
   type LocalAction,
+  localActionSchema,
+  LocalOperation,
   type ServerFrame,
 } from '@protocol';
 import { RuntimeEvent } from '../../domain/runtime.js';
@@ -25,7 +26,7 @@ export class LocalController {
 
   assertCurrent(principal: LocalPrincipal) {
     if (!this.options.grants.current(principal)) {
-      throw new Error(ErrorCode.LOCAL_GRANT_REVOKED);
+      throw new CodedError(ErrorCode.LOCAL_GRANT_REVOKED);
     }
   }
 
@@ -33,11 +34,11 @@ export class LocalController {
     const session = this.options.monitor.session(id);
 
     if (!session || session.target.deviceId !== this.options.deviceId) {
-      throw new Error(ErrorCode.NOT_FOUND);
+      throw new CodedError(ErrorCode.NOT_FOUND);
     }
 
     if (generation && session.generation !== generation) {
-      throw new Error(ErrorCode.STALE_SESSION);
+      throw new CodedError(ErrorCode.STALE_SESSION);
     }
 
     return session;
@@ -142,7 +143,7 @@ export class LocalController {
           this.options.profiles.scope.ownerId !== principal.ownerId ||
           this.options.profiles.scope.deviceId !== this.options.deviceId
         ) {
-          throw new Error(ErrorCode.ACCESS_DENIED);
+          throw new CodedError(ErrorCode.ACCESS_DENIED);
         }
 
         return this.options.profiles.request(
@@ -186,7 +187,7 @@ export class LocalController {
           return this.options.media.execute(principal, action);
         }
 
-        throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
+        throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
     }
   }
 

@@ -1,20 +1,21 @@
 import { DaemonErrorCode } from '../error-codes.js';
 import {
-  ConnectorId,
-  FrameType,
-  TargetKind,
-  SessionStatus,
-  CommandStatus,
-  commandSchema,
-  sessionSchema,
-  type Session,
+  type ClientCommand,
+  CodedError,
   type Command,
   type CommandResult,
+  commandSchema,
+  CommandStatus,
+  ConnectorId,
   type Cursor,
-  type EventEnvelope,
   ErrorCode,
+  type EventEnvelope,
+  FrameType,
   type HistoryRead,
-  type ClientCommand,
+  type Session,
+  sessionSchema,
+  SessionStatus,
+  TargetKind,
 } from '@protocol';
 import { CommandStoreOutcome } from '../domain/runtime.js';
 import { cachedLocalHistory } from './local/local-history.js';
@@ -129,14 +130,14 @@ export class LocalStore {
       ) ||
       !session.claudeSessionId
     ) {
-      throw new Error(ErrorCode.NOT_FOUND);
+      throw new CodedError(ErrorCode.NOT_FOUND);
     }
 
     if (
       transcriptPath !== undefined &&
       (typeof transcriptPath !== 'string' || transcriptPath.length > 4096)
     ) {
-      throw new Error(DaemonErrorCode.INVALID_TRANSCRIPT_PATH);
+      throw new CodedError(DaemonErrorCode.INVALID_TRANSCRIPT_PATH);
     }
 
     this.db
@@ -191,14 +192,14 @@ export class LocalStore {
       !session.claudeSessionId ||
       session.target.claudeSessionId !== session.claudeSessionId
     ) {
-      throw new Error(ErrorCode.NOT_FOUND);
+      throw new CodedError(ErrorCode.NOT_FOUND);
     }
 
     if (
       transcriptPath !== undefined &&
       (typeof transcriptPath !== 'string' || transcriptPath.length > 4096)
     ) {
-      throw new Error(DaemonErrorCode.INVALID_TRANSCRIPT_PATH);
+      throw new CodedError(DaemonErrorCode.INVALID_TRANSCRIPT_PATH);
     }
 
     this.db
@@ -339,7 +340,11 @@ export class LocalStore {
 
     if (row) {
       if (row.fingerprint !== fingerprint) {
-        return { commandId: command.commandId, status: CommandStatus.Rejected, code: 'COMMAND_ID_REUSED' };
+        return {
+          commandId: command.commandId,
+          status: CommandStatus.Rejected,
+          code: ErrorCode.COMMAND_ID_REUSED,
+        };
       }
 
       return JSON.parse(row.result) as CommandResult;
@@ -368,7 +373,7 @@ export class LocalStore {
         return { commandId, status: CommandStatus.Unknown, code: ErrorCode.UNFINISHED_DISPATCH };
       }
 
-      throw new Error(ErrorCode.NOT_FOUND);
+      throw new CodedError(ErrorCode.NOT_FOUND);
     }
 
     return JSON.parse(row.result) as CommandResult;
@@ -387,7 +392,11 @@ export class LocalStore {
 
     for (const row of rows) {
       if ((JSON.parse(row.result) as CommandResult).status === CommandStatus.Accepted) {
-        this.finish({ commandId: row.id, status: CommandStatus.Unknown, code: 'UNFINISHED_DISPATCH' });
+        this.finish({
+          commandId: row.id,
+          status: CommandStatus.Unknown,
+          code: ErrorCode.UNFINISHED_DISPATCH,
+        });
       }
     }
   }

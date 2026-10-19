@@ -16,11 +16,11 @@ import {
   CodexDesktopChangeType,
 } from '../../domain/codex/codex-desktop.js';
 import { randomUUID } from 'node:crypto';
-import { ErrorCode, validateUserInputAnswers } from '@protocol';
+import { CodedError, ErrorCode, validateUserInputAnswers } from '@protocol';
 import { asyncReplyKeys, asyncReplyWrapper, desktopAsyncRequests } from './desktop-user-input.js';
 import { EventEmitter } from 'node:events';
 import { type RpcFrame } from '../rpc/rpc-client.js';
-import { DesktopIpcClient } from './desktop-ipc.js';
+import { DesktopIpcClient, type OversizedConversation } from './desktop-ipc.js';
 import { desktopTurns, desktopModel, applyDesktopPatches } from './desktop-state.js';
 import { desktopItemTime } from '../history/history-times.js';
 import { object, type Data } from '../events.js';
@@ -42,30 +42,43 @@ export class DesktopCodexClient extends EventEmitter {
     super();
     this.ownerId = owner;
     ipc.on(RuntimeEvent.Broadcast, this.broadcast);
+    ipc.on(RuntimeEvent.FrameTooLarge, this.frameTooLarge);
     ipc.on(RuntimeEvent.Disconnected, this.disconnected);
   }
   static async attach(ipc: DesktopIpcClient, threadId: string) {
     const owner = await ipc.owner(threadId);
 
     if (!owner) {
-      throw new Error(ErrorCode.CODEX_THREAD_NOT_LOADED);
+      throw new CodedError(ErrorCode.CODEX_THREAD_NOT_LOADED);
     }
 
     const client = new DesktopCodexClient(ipc, threadId, owner);
 
     try {
       await new Promise<void>((resolve, reject) => {
-        const timer = setTimeout(() => {
+        const settle = () => {
+          clearTimeout(timer);
           client.off(RuntimeEvent.Snapshot, ready);
-          reject(new Error(ErrorCode.CODEX_TIMEOUT));
+          client.off(RuntimeEvent.Disconnected, lost);
+        };
+
+        const timer = setTimeout(() => {
+          settle();
+          reject(new CodedError(ErrorCode.CODEX_TIMEOUT));
         }, 10_000);
 
         const ready = () => {
-          clearTimeout(timer);
+          settle();
           resolve();
         };
 
+        const lost = (error?: CodedError) => {
+          settle();
+          reject(error ?? new CodedError(ErrorCode.CODEX_DISCONNECTED));
+        };
+
         client.once(RuntimeEvent.Snapshot, ready);
+        client.once(RuntimeEvent.Disconnected, lost);
 
         ipc.broadcast(
           CodexDesktopMethod.ThreadStreamFollowingChanged,
@@ -88,7 +101,7 @@ export class DesktopCodexClient extends EventEmitter {
     }
 
     if (input.threadId !== this.threadId) {
-      throw new Error(DaemonErrorCode.CODEX_THREAD_MISMATCH);
+      throw new CodedError(DaemonErrorCode.CODEX_THREAD_MISMATCH);
     }
 
     const turns = desktopTurns(this.state);
@@ -155,12 +168,12 @@ export class DesktopCodexClient extends EventEmitter {
         return { turn: last };
       }
 
-      throw new Error(ErrorCode.UNKNOWN_AFTER_WRITE);
+      throw new CodedError(ErrorCode.UNKNOWN_AFTER_WRITE);
     }
 
     if (method === CodexMethod.TurnSteer) {
       if (!this.activeTurn || input.expectedTurnId !== this.activeTurn) {
-        throw new Error(ErrorCode.STALE_SESSION);
+        throw new CodedError(ErrorCode.STALE_SESSION);
       }
 
       const expectedTurnId = this.activeTurn;
@@ -201,7 +214,7 @@ export class DesktopCodexClient extends EventEmitter {
       );
 
       if (object(response.result).turnId !== expectedTurnId) {
-        throw new Error(ErrorCode.UNKNOWN_AFTER_WRITE);
+        throw new CodedError(ErrorCode.UNKNOWN_AFTER_WRITE);
       }
 
       return { turnId: expectedTurnId };
@@ -209,7 +222,7 @@ export class DesktopCodexClient extends EventEmitter {
 
     if (method === CodexMethod.TurnInterrupt) {
       if (input.turnId !== this.activeTurn) {
-        throw new Error(ErrorCode.STALE_SESSION);
+        throw new CodedError(ErrorCode.STALE_SESSION);
       }
 
       return this.ipc.request(
@@ -219,13 +232,15 @@ export class DesktopCodexClient extends EventEmitter {
       );
     }
 
-    throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
+    throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
   }
   respond(id: string | number, result: unknown) {
     const request = this.pending.get(id);
 
     if (!request) {
-      throw new Error(this.answered.has(id) ? 'USER_INPUT_EXPIRED' : 'PERMISSION_EXPIRED');
+      throw new CodedError(
+        this.answered.has(id) ? ErrorCode.USER_INPUT_EXPIRED : ErrorCode.PERMISSION_EXPIRED,
+      );
     }
 
     if (request.method === CodexMethod.ItemToolRequestUserInput) {
@@ -241,7 +256,7 @@ export class DesktopCodexClient extends EventEmitter {
     const method = approvalMethods[request.method as keyof typeof approvalMethods] ?? null;
 
     if (!method) {
-      throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
+      throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
     }
 
     void this.ipc
@@ -271,6 +286,7 @@ export class DesktopCodexClient extends EventEmitter {
     } catch {}
 
     this.ipc.off(RuntimeEvent.Broadcast, this.broadcast);
+    this.ipc.off(RuntimeEvent.FrameTooLarge, this.frameTooLarge);
     this.ipc.off(RuntimeEvent.Disconnected, this.disconnected);
     this.pending.clear();
 
@@ -280,18 +296,28 @@ export class DesktopCodexClient extends EventEmitter {
 
     this.answered.clear();
   }
-  private disconnected = () => {
+  private disconnected = (error?: CodedError) => {
     for (const receipt of this.questionReceipts) {
       receipt.fail();
     }
 
-    this.emit(RuntimeEvent.Disconnected);
+    this.emit(RuntimeEvent.Disconnected, error);
+  };
+  /** A state frame for this thread exceeded the IPC cap: only this thread loses its mirror. */
+  private frameTooLarge = (conversation: OversizedConversation) => {
+    if (conversation.conversationId !== this.threadId || conversation.sourceClientId !== this.ownerId) {
+      return;
+    }
+
+    this.ipc.off(RuntimeEvent.Broadcast, this.broadcast);
+    this.ipc.off(RuntimeEvent.FrameTooLarge, this.frameTooLarge);
+    this.disconnected(new CodedError(ErrorCode.CODEX_FRAME_TOO_LARGE));
   };
   private async respondUserInput(id: string | number, request: Data, result: unknown): Promise<void> {
     const params = object(request.params);
 
     if (this.answered.has(id) || params.turnId !== this.activeTurn) {
-      throw new Error(ErrorCode.USER_INPUT_EXPIRED);
+      throw new CodedError(ErrorCode.USER_INPUT_EXPIRED);
     }
 
     const questions = params.questions as import('@protocol').UserInputQuestion[];
@@ -320,7 +346,7 @@ export class DesktopCodexClient extends EventEmitter {
 
     const receipt = new Promise<void>((resolve, reject) => {
       settle = resolve;
-      fail = () => reject(new Error(ErrorCode.UNKNOWN_AFTER_WRITE));
+      fail = () => reject(new CodedError(ErrorCode.UNKNOWN_AFTER_WRITE));
     });
 
     const watcher = {
@@ -409,7 +435,7 @@ export class DesktopCodexClient extends EventEmitter {
         );
 
         if (object(response.result).turnId !== turnId) {
-          throw new Error(ErrorCode.UNKNOWN_AFTER_WRITE);
+          throw new CodedError(ErrorCode.UNKNOWN_AFTER_WRITE);
         }
       } else {
         const response = object(
@@ -421,7 +447,7 @@ export class DesktopCodexClient extends EventEmitter {
         );
 
         if (response.ok !== true) {
-          throw new Error(ErrorCode.UNKNOWN_AFTER_WRITE);
+          throw new CodedError(ErrorCode.UNKNOWN_AFTER_WRITE);
         }
       }
 

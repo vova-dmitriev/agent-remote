@@ -1,9 +1,10 @@
 import {
+  type AttachmentDescriptor,
+  CodedError,
   ErrorCode,
   LOCAL_LIMITS,
-  LocalOperation,
-  type AttachmentDescriptor,
   type LocalAction,
+  LocalOperation,
   type Session,
 } from '@protocol';
 import type { LocalPrincipal } from '../grants/types.js';
@@ -59,7 +60,7 @@ export class LocalMediaRepository {
         const descriptor = this.catalog.get(source.id, action.attachmentId);
 
         if (!descriptor) {
-          throw new Error(ErrorCode.ATTACHMENT_UNAVAILABLE);
+          throw new CodedError(ErrorCode.ATTACHMENT_UNAVAILABLE);
         }
 
         return this.transfers.read(principal, source, descriptor);
@@ -68,13 +69,13 @@ export class LocalMediaRepository {
       case LocalOperation.MediaReadChunk:
         return this.transfers.readChunk(principal, action.transferId, action.offset);
       default:
-        throw new Error(ErrorCode.INVALID_REQUEST);
+        throw new CodedError(ErrorCode.INVALID_REQUEST);
     }
   }
 
   request(session: Session, id?: string, init?: RequestInit): Promise<Response | null> {
     if (this.requests.size >= LOCAL_LIMITS.maxTransfers) {
-      return Promise.reject(new Error(ErrorCode.ATTACHMENT_QUOTA));
+      return Promise.reject(new CodedError(ErrorCode.ATTACHMENT_QUOTA));
     }
 
     const source = structuredClone(session);
@@ -122,7 +123,7 @@ export class LocalMediaRepository {
 
   private assertOpen() {
     if (this.closed) {
-      throw new Error(ErrorCode.ATTACHMENT_UNAVAILABLE);
+      throw new CodedError(ErrorCode.ATTACHMENT_UNAVAILABLE);
     }
   }
 }

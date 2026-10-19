@@ -1,5 +1,8 @@
-import { DesktopBridgeError, ErrorCode } from "@protocol"
+import { DesktopBridgeError, ErrorCode, IntegrationReason } from "@protocol"
 import type { MessageKey, Translate } from "./types"
+
+// legacy daemon < reason codes
+const LEGACY_NATIVE_PROMPT_REASON = "Для отправки промптов запусти remote claude"
 
 const keys: Record<string, MessageKey> = {
   [ErrorCode.PROFILE_NOT_READY]: "accountsNotReady",
@@ -47,6 +50,7 @@ const keys: Record<string, MessageKey> = {
   [ErrorCode.CODEX_AUTH_REQUIRED]: "codexAuthRequired",
   [ErrorCode.CODEX_NETWORK_ERROR]: "networkUnavailable",
   [ErrorCode.CODEX_TURN_FAILED]: "codexTurnFailed",
+  [ErrorCode.CODEX_FRAME_TOO_LARGE]: "codexThreadTooLarge",
   [ErrorCode.CODEX_DISCONNECTED]: "sourceUnavailable",
   [ErrorCode.CODEX_TIMEOUT]: "requestTimedOut",
   [ErrorCode.CODEX_PROTOCOL_ERROR]: "sourceUnavailable",
@@ -143,7 +147,8 @@ const keys: Record<string, MessageKey> = {
   [ErrorCode.HELPER_TIMEOUT]: "commandUncertain",
   [ErrorCode.IPC_TIMEOUT]: "commandUncertain",
   [ErrorCode.AX_CHAT_OR_COMPOSER_UNVERIFIED]: "setupRequired",
-  "Для отправки промптов запусти remote claude": "nativePromptHint",
+  [IntegrationReason.CliWrapperRequired]: "nativePromptHint",
+  [LEGACY_NATIVE_PROMPT_REASON]: "nativePromptHint",
 }
 
 export function feedbackText(code: string, t: Translate) {

@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process';
 import { readFileSync, existsSync } from 'node:fs';
 import { dirname, join, parse } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { CodedError, ErrorCode } from '@protocol';
 
 export function installationRoot() {
   let directory = dirname(fileURLToPath(import.meta.url));
@@ -21,7 +22,7 @@ export function installationRoot() {
     directory = dirname(directory);
   }
 
-  throw new Error(DaemonErrorCode.INSTALLATION_ROOT_NOT_FOUND);
+  throw new CodedError(DaemonErrorCode.INSTALLATION_ROOT_NOT_FOUND);
 }
 
 export class BridgeClient {
@@ -53,14 +54,14 @@ export class BridgeClient {
 
       child.on('error', () => {
         if (this.process === child) {
-          this.fail('HELPER_UNAVAILABLE');
+          this.fail(ErrorCode.HELPER_UNAVAILABLE);
           this.close();
         }
       });
 
       child.stdin!.on('error', () => {
         if (this.process === child) {
-          this.fail('HELPER_EXITED');
+          this.fail(ErrorCode.HELPER_EXITED);
         }
       });
 
@@ -70,7 +71,7 @@ export class BridgeClient {
         }
 
         this.process = undefined;
-        this.fail('HELPER_EXITED');
+        this.fail(ErrorCode.HELPER_EXITED);
       });
 
       child.stdout!.on('data', (chunk: Buffer) => {
@@ -81,7 +82,7 @@ export class BridgeClient {
         this.buffer = Buffer.concat([this.buffer, chunk]);
 
         if (this.buffer.length > 131072) {
-          this.fail('HELPER_FRAME_TOO_LARGE');
+          this.fail(DaemonErrorCode.HELPER_FRAME_TOO_LARGE);
           this.close();
 
           return;
@@ -111,17 +112,19 @@ export class BridgeClient {
           if (response.ok) {
             pending.resolve(response.result);
           } else {
-            pending.reject(new Error(typeof response.code === 'string' ? response.code : 'HELPER_FAILED'));
+            pending.reject(
+              new CodedError(typeof response.code === 'string' ? response.code : ErrorCode.HELPER_FAILED),
+            );
           }
         } catch {
-          this.fail('INVALID_HELPER_FRAME');
+          this.fail(DaemonErrorCode.INVALID_HELPER_FRAME);
         }
       });
     }
 
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
-        this.fail('HELPER_TIMEOUT');
+        this.fail(ErrorCode.HELPER_TIMEOUT);
         this.close();
       }, 3000);
 
@@ -129,17 +132,17 @@ export class BridgeClient {
       this.process!.stdin!.write(JSON.stringify(value) + '\n');
     });
   }
-  private fail(code: string) {
+  private fail(code: ErrorCode | DaemonErrorCode) {
     if (this.pending) {
       const pending = this.pending;
 
       this.pending = undefined;
       clearTimeout(pending.timer);
-      pending.reject(new Error(code));
+      pending.reject(new CodedError(code));
     }
   }
   close() {
-    this.fail('HELPER_CLOSED');
+    this.fail(ErrorCode.HELPER_CLOSED);
     this.process?.kill('SIGKILL');
     this.process = undefined;
     this.buffer = Buffer.alloc(0);

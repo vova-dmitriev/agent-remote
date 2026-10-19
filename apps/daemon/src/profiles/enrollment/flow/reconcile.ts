@@ -1,4 +1,4 @@
-import { ErrorCode, ProfileOperationPhase } from '@protocol';
+import { CodedError, ErrorCode, ProfileOperationPhase } from '@protocol';
 import { finishEnrollment, uncertainEnrollment } from './state.js';
 import type { EnrollmentContext } from './types.js';
 
@@ -8,7 +8,7 @@ export async function reconcileCredentialEnrollment(
   current: () => boolean,
 ) {
   if (!current()) {
-    throw new Error(ErrorCode.UNAUTHORIZED);
+    throw new CodedError(ErrorCode.UNAUTHORIZED);
   }
 
   const operation = context.journal.get(id);
@@ -45,13 +45,13 @@ export async function reconcileCredentialEnrollment(
     const evidence = await context.options.check(profile, current, id);
 
     if (!current()) {
-      throw new Error(ErrorCode.UNAUTHORIZED);
+      throw new CodedError(ErrorCode.UNAUTHORIZED);
     }
 
     return finishEnrollment(context, id, evidence);
   } catch (error) {
     if (!current()) {
-      throw new Error(ErrorCode.UNAUTHORIZED);
+      throw new CodedError(ErrorCode.UNAUTHORIZED);
     }
 
     return uncertainEnrollment(context, id, error);

@@ -2,7 +2,7 @@ import { constants } from 'node:fs';
 import { lstat, open, unlink } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
-import { ErrorCode } from '@protocol';
+import { CodedError, ErrorCode } from '@protocol';
 import { safeEntry, secureDirectory } from './runtime.js';
 import { CompanionStartup } from './values.js';
 
@@ -25,14 +25,14 @@ export async function acquireStartLock(directory: string): Promise<(() => Promis
       safeEntry(stat, true);
 
       if (!stat.isFile() || stat.nlink !== 1) {
-        throw new Error(ErrorCode.LOCAL_RUNTIME_UNTRUSTED);
+        throw new CodedError(ErrorCode.LOCAL_RUNTIME_UNTRUSTED);
       }
 
       // Age/PID guesses cannot prove that a detached child was never started.
       return null;
     }
 
-    throw new Error(ErrorCode.LOCAL_COMPANION_START_FAILED);
+    throw new CodedError(ErrorCode.LOCAL_COMPANION_START_FAILED);
   }
 
   const identity = await handle.stat();
@@ -51,7 +51,7 @@ export async function acquireStartLock(directory: string): Promise<(() => Promis
     safeEntry(stat, true);
 
     if (stat.dev !== identity.dev || stat.ino !== identity.ino) {
-      throw new Error(ErrorCode.LOCAL_RUNTIME_UNTRUSTED);
+      throw new CodedError(ErrorCode.LOCAL_RUNTIME_UNTRUSTED);
     }
 
     await unlink(path);

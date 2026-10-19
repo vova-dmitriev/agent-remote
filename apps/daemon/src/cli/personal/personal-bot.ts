@@ -1,11 +1,11 @@
 import { DaemonErrorCode } from '../../error-codes.js';
 import { SharedPrivateErrorCode } from '@protocol/private';
 import { TelegramButtonType } from '../../domain/cli.js';
-import { Language } from '@protocol';
+import { CodedError, Language } from '@protocol';
 
 export function personalBot(token: string, fetcher: typeof fetch = fetch) {
   if (!/^\d+:[A-Za-z0-9_-]+$/.test(token)) {
-    throw new Error(DaemonErrorCode.INVALID_BOT_TOKEN);
+    throw new CodedError(DaemonErrorCode.INVALID_BOT_TOKEN);
   }
 
   async function api<T>(method: string, body: unknown): Promise<T> {
@@ -20,12 +20,12 @@ export function personalBot(token: string, fetcher: typeof fetch = fetch) {
       const value = (await response.json()) as { ok: boolean; result?: T };
 
       if (!response.ok || !value.ok) {
-        throw new Error(DaemonErrorCode.API_REJECTED);
+        throw new CodedError(DaemonErrorCode.API_REJECTED);
       }
 
       return value.result!;
     } catch {
-      throw new Error(DaemonErrorCode.TELEGRAM_UNAVAILABLE);
+      throw new CodedError(DaemonErrorCode.TELEGRAM_UNAVAILABLE);
     }
   }
 
@@ -35,11 +35,11 @@ export function personalBot(token: string, fetcher: typeof fetch = fetch) {
       const webhook = await api<{ url: string }>('getWebhookInfo', {});
 
       if (webhook.url) {
-        throw new Error(DaemonErrorCode.BOT_HAS_WEBHOOK);
+        throw new CodedError(DaemonErrorCode.BOT_HAS_WEBHOOK);
       }
 
       if (!/^[A-Za-z0-9_]+$/.test(me.username)) {
-        throw new Error(DaemonErrorCode.INVALID_BOT_IDENTITY);
+        throw new CodedError(DaemonErrorCode.INVALID_BOT_IDENTITY);
       }
 
       return me.username;
@@ -48,7 +48,7 @@ export function personalBot(token: string, fetcher: typeof fetch = fetch) {
       const url = new URL(origin);
 
       if (url.protocol !== 'https:' || url.username || url.password) {
-        throw new Error(SharedPrivateErrorCode.HTTPS_REQUIRED);
+        throw new CodedError(SharedPrivateErrorCode.HTTPS_REQUIRED);
       }
 
       await api('setChatMenuButton', {

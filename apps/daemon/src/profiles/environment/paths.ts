@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { chmod, lstat, mkdir, realpath } from 'node:fs/promises';
 import { join, isAbsolute } from 'node:path';
 import { z } from 'zod';
-import { ErrorCode } from '@protocol';
+import { CodedError, ErrorCode } from '@protocol';
 import type { ProfileScope } from '../types.js';
 import { ProfileDirectoryName, ProfileCredentialLimits, ProfileRuntimeFile } from './values.js';
 import type { ProfileHomes } from './types.js';
@@ -17,7 +17,7 @@ async function privateDirectory(path: string) {
   const info = await lstat(path);
 
   if (!info.isDirectory() || info.isSymbolicLink() || (process.getuid && info.uid !== process.getuid())) {
-    throw new Error(ErrorCode.UNAUTHORIZED);
+    throw new CodedError(ErrorCode.UNAUTHORIZED);
   }
 
   await chmod(path, 0o700);
@@ -31,7 +31,7 @@ export async function profileHomes(
   z.uuid().parse(profileId);
 
   if (!isAbsolute(directory)) {
-    throw new Error(ErrorCode.INVALID_REQUEST);
+    throw new CodedError(ErrorCode.INVALID_REQUEST);
   }
 
   await privateDirectory(directory);
@@ -77,7 +77,7 @@ async function validateCredentialFile(path: string) {
       info.mode & 0o077 ||
       (process.getuid && info.uid !== process.getuid())
     ) {
-      throw new Error(ErrorCode.UNAUTHORIZED);
+      throw new CodedError(ErrorCode.UNAUTHORIZED);
     }
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {

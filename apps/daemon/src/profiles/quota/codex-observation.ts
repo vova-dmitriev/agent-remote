@@ -1,16 +1,17 @@
 import { z } from 'zod';
 import {
-  ErrorCode,
-  profileQuotaObservationSchema,
-  type ProfileQuotaObservation,
-  type ExecutionProfileSummary,
   AgentProvider,
+  CodedError,
+  CodexRateLimitReachedType,
+  ErrorCode,
+  type ExecutionProfileSummary,
   ProfileAuthMode,
+  type ProfileQuotaObservation,
+  profileQuotaObservationSchema,
   QuotaEvidenceKind,
   QuotaObservationStatus,
   QuotaScopeKind,
   QuotaSource,
-  CodexRateLimitReachedType,
 } from '@protocol';
 import { CodexQuotaMeter, CodexQuotaTime } from './values.js';
 
@@ -81,7 +82,7 @@ export function readCodexQuota(
   const response = responseSchema.parse(raw);
 
   if (!profile.identity) {
-    throw new Error(ErrorCode.PROFILE_NOT_READY);
+    throw new CodedError(ErrorCode.PROFILE_NOT_READY);
   }
 
   if (
@@ -89,7 +90,7 @@ export function readCodexQuota(
     profile.identity.workspaceRef &&
     response.accountId !== profile.identity.workspaceRef
   ) {
-    throw new Error(ErrorCode.PROFILE_MISMATCH);
+    throw new CodedError(ErrorCode.PROFILE_MISMATCH);
   }
 
   const keyed = response.rateLimitsByLimitId?.[CodexQuotaMeter.Codex];

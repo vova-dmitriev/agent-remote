@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { z } from 'zod';
-import { ErrorCode } from '@protocol';
+import { CodedError, ErrorCode } from '@protocol';
 import { privateFile } from './private-file.js';
 
 const schema = z.strictObject({
@@ -24,7 +24,7 @@ export async function loadLocalIdentity(directory: string, deviceId?: string) {
   );
 
   if (deviceId && identity.deviceId !== deviceId) {
-    throw new Error(ErrorCode.LOCAL_COMPANION_MISMATCH);
+    throw new CodedError(ErrorCode.LOCAL_COMPANION_MISMATCH);
   }
 
   return identity;
@@ -36,7 +36,7 @@ export async function localClientSecret(directory: string) {
   );
 
   if (!/^[a-f0-9]{64}$/.test(secret)) {
-    throw new Error(ErrorCode.UNAUTHORIZED);
+    throw new CodedError(ErrorCode.UNAUTHORIZED);
   }
 
   return secret;

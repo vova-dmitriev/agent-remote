@@ -1,5 +1,5 @@
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
-import { ErrorCode, LocalGrantStatus, LocalOrigin, LOCAL_LIMITS } from '@protocol';
+import { CodedError, ErrorCode, LOCAL_LIMITS, LocalGrantStatus, LocalOrigin } from '@protocol';
 import type { LocalDatabase } from '../state/database.js';
 import type { GrantRow, LocalPrincipal } from './types.js';
 
@@ -22,7 +22,7 @@ export class LocalGrants {
       origins.length > LOCAL_LIMITS.maxClients ||
       origins.some((origin) => !/^chrome-extension:\/\/[a-p]{32}\/$/.test(origin))
     ) {
-      throw new Error(ErrorCode.UNAUTHORIZED);
+      throw new CodedError(ErrorCode.UNAUTHORIZED);
     }
 
     this.origins = [...origins, LocalOrigin.Desktop];
@@ -42,7 +42,7 @@ export class LocalGrants {
       !(origin === LocalOrigin.Desktop || /^chrome-extension:\/\/[a-p]{32}\/$/.test(origin)) ||
       !/^[a-f0-9-]{36}$/.test(clientId)
     ) {
-      throw new Error(ErrorCode.UNAUTHORIZED);
+      throw new CodedError(ErrorCode.UNAUTHORIZED);
     }
 
     const row = this.row(clientId, origin);
@@ -62,7 +62,7 @@ export class LocalGrants {
         .get(this.ownerId) as { count: number };
 
       if (!row && count.count >= LOCAL_LIMITS.maxGrantRecords) {
-        throw new Error(ErrorCode.LOCAL_CLIENT_LIMIT);
+        throw new CodedError(ErrorCode.LOCAL_CLIENT_LIMIT);
       }
 
       this.database.connection
@@ -78,15 +78,15 @@ export class LocalGrants {
           Date.now() + LOCAL_LIMITS.pendingGrantExpiryMs,
         );
 
-      throw new Error(ErrorCode.LOCAL_APPROVAL_REQUIRED);
+      throw new CodedError(ErrorCode.LOCAL_APPROVAL_REQUIRED);
     }
 
     if (row.status === LocalGrantStatus.Revoked) {
-      throw new Error(ErrorCode.LOCAL_GRANT_REVOKED);
+      throw new CodedError(ErrorCode.LOCAL_GRANT_REVOKED);
     }
 
     if (row.status !== LocalGrantStatus.Approved || (!row.token_hash && row.expires_at < Date.now())) {
-      throw new Error(ErrorCode.LOCAL_APPROVAL_REQUIRED);
+      throw new CodedError(ErrorCode.LOCAL_APPROVAL_REQUIRED);
     }
 
     let token = handle;
@@ -100,7 +100,7 @@ export class LocalGrants {
         )
         .run(digest(token).toString('hex'), this.ownerId, clientId, origin);
     } else if (!token || !timingSafeEqual(digest(token), Buffer.from(row.token_hash, 'hex'))) {
-      throw new Error(ErrorCode.UNAUTHORIZED);
+      throw new CodedError(ErrorCode.UNAUTHORIZED);
     }
 
     return {
@@ -127,7 +127,7 @@ export class LocalGrants {
 
   approve(clientId: string, origin: string) {
     if (!this.origins.includes(origin)) {
-      throw new Error(ErrorCode.UNAUTHORIZED);
+      throw new CodedError(ErrorCode.UNAUTHORIZED);
     }
 
     const result = this.database.connection
@@ -146,7 +146,7 @@ export class LocalGrants {
       );
 
     if (!result.changes) {
-      throw new Error(ErrorCode.NOT_FOUND);
+      throw new CodedError(ErrorCode.NOT_FOUND);
     }
   }
 

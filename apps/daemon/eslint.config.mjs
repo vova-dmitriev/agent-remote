@@ -9,7 +9,24 @@ const js = require('@eslint/js');
 const ts = require('typescript-eslint');
 const globals = require('globals');
 
-export function nodeSourceConfig(files, ignores = []) {
+export const codedErrorRules = [
+  {
+    selector: [
+      "ThrowStatement > NewExpression[callee.name='Error'][arguments.length>0]",
+      "CallExpression > NewExpression[callee.name='Error'][arguments.length>0]",
+      "ReturnStatement > NewExpression[callee.name='Error'][arguments.length>0]",
+      "ArrowFunctionExpression > NewExpression[callee.name='Error'][arguments.length>0]",
+    ].join(', '),
+    message: 'Construct CodedError(code) so callers can use errorCode(error).',
+  },
+  {
+    selector:
+      'BinaryExpression[operator=/^[!=]==?$/]:matches([left.property.name="message"], [right.property.name="message"])',
+    message: 'Compare errorCode(error) / hasErrorCode(error, code) instead of error.message.',
+  },
+];
+
+export function nodeSourceConfig(files, ignores = [], restrictedSyntax = []) {
   return ts.config({
     files,
     ignores,
@@ -37,7 +54,7 @@ export function nodeSourceConfig(files, ignores = []) {
           ],
         },
       ],
-      'no-restricted-syntax': ['error', ...numericValueRules],
+      'no-restricted-syntax': ['error', ...numericValueRules, ...restrictedSyntax],
       'no-nested-ternary': 'error',
       'max-statements-per-line': ['error', { max: 1 }],
       curly: ['error', 'all'],
@@ -45,4 +62,4 @@ export function nodeSourceConfig(files, ignores = []) {
   });
 }
 
-export default nodeSourceConfig(['apps/daemon/src/**/*.ts']);
+export default nodeSourceConfig(['apps/daemon/src/**/*.ts'], [], codedErrorRules);

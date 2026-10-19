@@ -1,9 +1,10 @@
 import {
+  AgentProvider,
+  CodedError,
   ErrorCode,
   type ExecutionProfileSummary,
-  type ProfileQuotaObservation,
-  AgentProvider,
   ProfileAuthMode,
+  type ProfileQuotaObservation,
   ProfileStatus,
   QuotaObservationStatus,
   QuotaScopeKind,
@@ -16,7 +17,7 @@ import { readCodexQuota } from './codex-observation.js';
 
 function unsupported(profile: ExecutionProfileSummary): ProfileQuotaObservation {
   if (!profile.identity) {
-    throw new Error(ErrorCode.PROFILE_NOT_READY);
+    throw new CodedError(ErrorCode.PROFILE_NOT_READY);
   }
 
   return {
@@ -50,15 +51,15 @@ export class RuntimeProfileQuotaService {
     const profile = this.registry.get(profileId);
 
     if (profile.version !== expectedVersion) {
-      throw new Error(ErrorCode.LOCAL_REVISION_CONFLICT);
+      throw new CodedError(ErrorCode.LOCAL_REVISION_CONFLICT);
     }
 
     if (profile.status !== ProfileStatus.Ready) {
-      throw new Error(ErrorCode.PROFILE_NOT_READY);
+      throw new CodedError(ErrorCode.PROFILE_NOT_READY);
     }
 
     if (!profile.identity) {
-      throw new Error(ErrorCode.PROFILE_NOT_READY);
+      throw new CodedError(ErrorCode.PROFILE_NOT_READY);
     }
 
     if (profile.provider !== AgentProvider.Codex || profile.authMode !== ProfileAuthMode.Subscription) {
@@ -75,13 +76,13 @@ export class RuntimeProfileQuotaService {
         verification.identity.accountRef !== profile.identity.accountRef ||
         verification.identity.workspaceRef !== profile.identity.workspaceRef
       ) {
-        throw new Error(ErrorCode.PROFILE_MISMATCH);
+        throw new CodedError(ErrorCode.PROFILE_MISMATCH);
       }
 
       const latest = this.registry.get(profile.id);
 
       if (latest.status !== ProfileStatus.Ready || latest.version !== expectedVersion || !current()) {
-        throw new Error(ErrorCode.LOCAL_REVISION_CONFLICT);
+        throw new CodedError(ErrorCode.LOCAL_REVISION_CONFLICT);
       }
 
       const observation = readCodexQuota(latest, response, Date.now());

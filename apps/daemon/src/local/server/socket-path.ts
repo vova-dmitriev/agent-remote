@@ -2,7 +2,7 @@ import { connect } from 'node:net';
 import type { Stats } from 'node:fs';
 import { lstat, unlink } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { ErrorCode, LOCAL_LIMITS } from '@protocol';
+import { CodedError, ErrorCode, LOCAL_LIMITS } from '@protocol';
 
 export const LOCAL_SOCKET_LIMITS = {
   probeTimeoutMs: Math.min(2_000, LOCAL_LIMITS.requestTimeoutMs),
@@ -17,7 +17,7 @@ async function inspectSocket(path: string): Promise<Stats | undefined> {
     parent.mode & 0o077 ||
     (process.getuid && parent.uid !== process.getuid())
   ) {
-    throw new Error(ErrorCode.UNAUTHORIZED);
+    throw new CodedError(ErrorCode.UNAUTHORIZED);
   }
 
   try {
@@ -29,7 +29,7 @@ async function inspectSocket(path: string): Promise<Stats | undefined> {
       (socket.mode & 0o777) !== 0o600 ||
       (process.getuid && socket.uid !== process.getuid())
     ) {
-      throw new Error(ErrorCode.UNAUTHORIZED);
+      throw new CodedError(ErrorCode.UNAUTHORIZED);
     }
 
     return socket;
@@ -62,7 +62,7 @@ function requireRefusedConnection(path: string): Promise<void> {
       socket.destroy();
 
       if (code) {
-        reject(new Error(code));
+        reject(new CodedError(code));
       } else {
         resolve();
       }
@@ -84,7 +84,7 @@ export async function removeOwnedSocket(path: string, previous: Pick<Stats, 'ino
   }
 
   if (current.ino !== previous.ino || current.dev !== previous.dev) {
-    throw new Error(ErrorCode.UNAUTHORIZED);
+    throw new CodedError(ErrorCode.UNAUTHORIZED);
   }
 
   await unlink(path);
