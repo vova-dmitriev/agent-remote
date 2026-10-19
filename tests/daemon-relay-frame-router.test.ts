@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest';
-import { ErrorCode, FrameType, type ServerFrame } from '@protocol';
+import { CodedError, ErrorCode, FrameType, type ServerFrame } from '@protocol';
 import { RelayFrameRouter } from '../apps/daemon/src/runtime/relay-frame-router.js';
 
 function harness(page: () => Promise<unknown> = async () => ({ messages: [], before: null, after: null })) {
@@ -51,6 +51,32 @@ it('reports a failed history read', async () => {
   await router.route(frame({ type: FrameType.HistoryRead, requestId: 'r', sessionId: 's', generation: 'g' }));
 
   expect(deps.relay.send).toHaveBeenCalledWith(
+    expect.objectContaining({ type: FrameType.HistoryDone, error: ErrorCode.HISTORY_RELOAD_FAILED }),
+  );
+});
+
+it('tells a subagent view its transcript is missing and keeps the generic failure for the session', async () => {
+  const missing = async () => {
+    throw new CodedError(ErrorCode.TRANSCRIPT_UNAVAILABLE);
+  };
+
+  const subagent = harness(missing);
+
+  await subagent.router.route(
+    frame({ type: FrameType.HistoryRead, requestId: 'r', sessionId: 's', generation: 'g', agentId: 'a1' }),
+  );
+
+  expect(subagent.deps.relay.send).toHaveBeenCalledWith(
+    expect.objectContaining({ type: FrameType.HistoryDone, error: ErrorCode.TRANSCRIPT_UNAVAILABLE }),
+  );
+
+  const session = harness(missing);
+
+  await session.router.route(
+    frame({ type: FrameType.HistoryRead, requestId: 'r', sessionId: 's', generation: 'g' }),
+  );
+
+  expect(session.deps.relay.send).toHaveBeenCalledWith(
     expect.objectContaining({ type: FrameType.HistoryDone, error: ErrorCode.HISTORY_RELOAD_FAILED }),
   );
 });

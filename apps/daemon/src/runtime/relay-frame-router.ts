@@ -1,4 +1,4 @@
-import { type DeviceFrame, ErrorCode, FrameType, type ServerFrame } from '@protocol';
+import { type DeviceFrame, ErrorCode, FrameType, hasErrorCode, type ServerFrame } from '@protocol';
 import type { Monitor } from '../monitor/monitor.js';
 import type { EventReplay } from '../monitor/replay.js';
 import type { TranscriptSources } from '../monitor/history.js';
@@ -73,7 +73,7 @@ export class RelayFrameRouter {
         before: page.before,
         after: page.after,
       });
-    } catch {
+    } catch (error) {
       relay.send({
         type: FrameType.HistoryDone,
         requestId: frame.requestId,
@@ -81,7 +81,11 @@ export class RelayFrameRouter {
         generation: frame.generation,
         before: null,
         after: null,
-        error: ErrorCode.HISTORY_RELOAD_FAILED,
+        error:
+          // A subagent view tells a missing transcript apart from a failed read.
+          frame.agentId && hasErrorCode(error, ErrorCode.TRANSCRIPT_UNAVAILABLE)
+            ? ErrorCode.TRANSCRIPT_UNAVAILABLE
+            : ErrorCode.HISTORY_RELOAD_FAILED,
       });
     }
   }

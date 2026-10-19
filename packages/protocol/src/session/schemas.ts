@@ -18,7 +18,7 @@ import { AttachmentMode } from '../history/values.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import { z } from 'zod';
 import { sessionChangesSchema } from './file-changes.js';
-import { sessionActivitySchema } from './activity.js';
+import { sessionActivitySchema, toolActivitySchema } from './activity.js';
 import { historyReadSchema, historyDoneSchema } from '../history/history-window.js';
 import { subagentSchema } from './subagents.js';
 import { validatePrompt } from '../errors/validation.js';
@@ -50,10 +50,12 @@ export const targetSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal(TargetKind.CodexCli), ...base, threadId: id }),
   z.strictObject({ kind: z.literal(TargetKind.CodexDesktop), ...base, threadId: id }),
 ]);
-export const capabilitySchema = z.strictObject({
+/** Readers strip capabilities added by a newer writer instead of rejecting the snapshot. */
+export const capabilitySchema = z.object({
   observe: z.boolean(),
   history: z.boolean(),
   historyWindow: z.boolean().optional(),
+  subagentHistory: z.boolean().optional(),
   prompt: z.boolean(),
   interrupt: z.boolean(),
   permission: z.boolean(),
@@ -218,13 +220,15 @@ export const permissionSchema = z.strictObject({
   input: z.unknown(),
   expiresAt: time,
 });
-export const historySchema = z.strictObject({
+/** Readers strip fields added by a newer writer instead of rejecting the history frame. */
+export const historySchema = z.object({
   id,
   historyCursor: z.string().max(2048).optional(),
   role: z.enum(MessageRole),
   text: z.string().max(65_536),
   occurredAt: time,
   attachments: attachmentsSchema.optional(),
+  tool: toolActivitySchema.optional(),
 });
 export const terminalSchema = z.strictObject({
   sessionId: id,

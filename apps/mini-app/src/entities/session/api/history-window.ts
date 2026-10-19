@@ -1,4 +1,4 @@
-import { HistoryPageDirection, HistoryDirection, type EventEnvelope } from "@protocol"
+import { HistoryPageDirection, HistoryDirection, HistoryQueryKey, type EventEnvelope } from "@protocol"
 import type { HistoryCursors } from "./history"
 
 export class HistoryWindow {
@@ -20,6 +20,7 @@ export class HistoryWindow {
     request: (query: string, observe: (response: Response) => void) => Promise<EventEnvelope[]>,
     current: () => boolean,
     edge?: string,
+    agentId?: string,
   ) {
     const cursor = edge?.startsWith("position:")
       ? "source:" + edge.slice(9)
@@ -33,7 +34,9 @@ export class HistoryWindow {
     this.busy = true
 
     try {
-      const events = await request("?" + direction + "=" + encodeURIComponent(cursor), (response) => {
+      const subagent = agentId ? "&" + HistoryQueryKey.AgentId + "=" + encodeURIComponent(agentId) : ""
+
+      const events = await request("?" + direction + "=" + encodeURIComponent(cursor) + subagent, (response) => {
         if (current())
           this.cursors[direction] = response.headers.get(direction === HistoryDirection.Before ? "x-next-cursor" : "x-after-cursor") ?? ""
       })

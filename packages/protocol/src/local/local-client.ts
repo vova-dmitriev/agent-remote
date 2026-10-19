@@ -7,6 +7,7 @@ import { LocalKind, LocalOperation } from './client-values.js';
 import { LOCAL_LIMITS } from './local-limits.js';
 import { MAX_ATTACHMENT_BYTES, attachmentsSchema } from '../history/attachments.js';
 import { profileRequestSchema } from '../profile/profile-access.js';
+import { subagentIdSchema } from '../session/subagents.js';
 
 const id = z.string().min(1).max(512);
 const attachmentId = z.uuid();
@@ -27,6 +28,7 @@ export const localActionSchema = z.discriminatedUnion('operation', [
     direction: z.enum(HistoryDirection),
     anchor: z.string().min(1).max(2048).optional(),
     position: z.string().min(1).max(2048).startsWith(HistoryCursorPrefix.Position).optional(),
+    agentId: subagentIdSchema.optional(),
   }),
   z.strictObject({ ...operation(LocalOperation.Send), command: clientCommandSchema }),
   z.strictObject({ ...operation(LocalOperation.Receipt), commandId: id }),

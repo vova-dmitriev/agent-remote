@@ -74,6 +74,15 @@ export const ActivityKind = {
 
 export type ActivityKind = (typeof ActivityKind)[keyof typeof ActivityKind];
 
+/** Lifecycle of one tool call surfaced as a history item (subagent transcripts). */
+export const ToolActivityPhase = {
+  Started: 'started',
+  Completed: 'completed',
+  Failed: 'failed',
+} as const;
+
+export type ToolActivityPhase = (typeof ToolActivityPhase)[keyof typeof ToolActivityPhase];
+
 export const SubagentStatus = {
   Queued: 'queued',
   Running: 'running',

@@ -19,8 +19,8 @@ import {
   JSONL_NEWLINE_BYTE,
 } from '../../domain/transcript/limits.js';
 import { z } from 'zod';
-import { openTranscript } from './transcript-file.js';
-import { transcriptWindow, visibleTranscriptRow } from './transcript-window.js';
+import { openTranscript, type TranscriptOpenOptions } from './transcript-file.js';
+import { transcriptRowItems, transcriptWindow } from './transcript-window.js';
 import { TranscriptReader } from './transcript-reader.js';
 
 const cursorSchema = z.strictObject({
@@ -33,6 +33,9 @@ interface Options {
   path: string;
   allowedRoot: string;
   sessionId?: string;
+  /** Tool calls and results become history items (subagent transcripts). */
+  includeTools?: boolean;
+  open?: TranscriptOpenOptions;
   transform?: (
     message: HistoryMessage,
     media: import('../../attachments/types.js').NativeMedia[],
@@ -42,7 +45,7 @@ export class TranscriptPages {
   private positions = new Map<string, number>();
   constructor(private options: Options) {}
   async page(request: Pick<HistoryRead, 'direction' | 'anchor'>) {
-    const opened = await openTranscript(this.options.path, this.options.allowedRoot);
+    const opened = await openTranscript(this.options.path, this.options.allowedRoot, this.options.open);
 
     if (!opened) {
       throw new CodedError(ErrorCode.TRANSCRIPT_UNAVAILABLE);
@@ -114,18 +117,31 @@ export class TranscriptPages {
                   position,
                   TRANSCRIPT_AROUND_BEFORE_MESSAGES,
                   this.options.sessionId,
+                  this.options.includeTools,
                 );
         } else {
           if (request.direction === HistoryDirection.Message) {
             throw new CodedError(DaemonErrorCode.TRANSCRIPT_CHANGED);
           }
 
-          start = await transcriptWindow(file, end, TRANSCRIPT_PAGE_MESSAGES, this.options.sessionId);
+          start = await transcriptWindow(
+            file,
+            end,
+            TRANSCRIPT_PAGE_MESSAGES,
+            this.options.sessionId,
+            this.options.includeTools,
+          );
         }
       } else if (request.direction === HistoryDirection.After) {
         end = await this.forward(file, start, info.size, TRANSCRIPT_PAGE_MESSAGES);
       } else {
-        start = await transcriptWindow(file, end, TRANSCRIPT_PAGE_MESSAGES, this.options.sessionId);
+        start = await transcriptWindow(
+          file,
+          end,
+          TRANSCRIPT_PAGE_MESSAGES,
+          this.options.sessionId,
+          this.options.includeTools,
+        );
       }
     } finally {
       await file.close();
@@ -162,6 +178,7 @@ export class TranscriptPages {
 
     const messages = await reader.readNext();
 
+    // Known limit: one record with more items than a page (over 100 tool blocks) keeps only its last ones.
     return {
       messages: messages.slice(-TRANSCRIPT_PAGE_MESSAGES).map((message) => ({
         ...message,
@@ -196,7 +213,14 @@ export class TranscriptPages {
     const floor = Math.max(0, size - TRANSCRIPT_WINDOW_BYTES);
 
     while (end > floor) {
-      const start = await transcriptWindow(file, end, TRANSCRIPT_PAGE_MESSAGES, this.options.sessionId);
+      const start = await transcriptWindow(
+        file,
+        end,
+        TRANSCRIPT_PAGE_MESSAGES,
+        this.options.sessionId,
+        this.options.includeTools,
+      );
+
       const buffer = Buffer.alloc(end - start);
 
       await file.read(buffer, 0, buffer.length, start);
@@ -261,8 +285,16 @@ export class TranscriptPages {
       ) {
         try {
           const row = JSON.parse(combined.toString('utf8', at, next));
+          const items = transcriptRowItems(row, this.options.sessionId, this.options.includeTools);
 
-          if (visibleTranscriptRow(row, this.options.sessionId) && ++found >= count) {
+          // A record whose items would overflow a non-empty page starts the next page instead.
+          if (items && found && found + items > count) {
+            return base + at;
+          }
+
+          found += items;
+
+          if (items && found >= count) {
             return base + next + 1;
           }
         } catch {}

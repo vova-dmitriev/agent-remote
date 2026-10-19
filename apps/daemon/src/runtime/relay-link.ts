@@ -79,6 +79,11 @@ export class RelayLink {
         for (const session of current.sessions) {
           if (readers.has(session.id)) {
             session.capabilities.historyWindow = true;
+
+            // Only this daemon reads subagent transcripts; an older one would reject the request frame.
+            if (session.claudeSessionId) {
+              session.capabilities.subagentHistory = true;
+            }
           }
         }
 

@@ -2,6 +2,7 @@ import { ServerErrorCode } from './error-codes.js';
 import {
   ConnectorId,
   ErrorCode,
+  HistoryQueryKey,
   FrameType,
   canDeliverPrompt,
   DeviceStatus,
@@ -867,15 +868,25 @@ export async function createRelay(config: RelayConfig) {
     const p = await principal(req),
       id = String(req.params.id);
 
-    const page =
-      (await sourceHistory.page(
-        p,
-        id,
-        req.query.before,
-        req.query.around,
-        req.query.after,
-        req.query.position,
-      )) ?? (await history.page(p, id, req.query.before, req.query.around, req.query.after));
+    const agentId = req.query[HistoryQueryKey.AgentId];
+
+    const source = await sourceHistory.page(
+      p,
+      id,
+      req.query.before,
+      req.query.around,
+      req.query.after,
+      req.query.position,
+      false,
+      agentId,
+    );
+
+    // Cached events belong to the session itself and never stand in for a subagent's transcript.
+    if (!source && agentId !== undefined) {
+      throw new Fault(ErrorCode.NOT_FOUND);
+    }
+
+    const page = source ?? (await history.page(p, id, req.query.before, req.query.around, req.query.after));
 
     if (page.nextCursor) {
       res.setHeader('X-Next-Cursor', page.nextCursor);

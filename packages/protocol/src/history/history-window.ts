@@ -1,5 +1,6 @@
 import { FrameType } from '../connection/values.js';
 import { HistoryDirection } from './values.js';
+import { subagentIdSchema } from '../session/subagents.js';
 import { z } from 'zod';
 
 export const HISTORY_PAGE_MESSAGES = 100;
@@ -20,6 +21,8 @@ export const historyReadSchema = z.strictObject({
   generation: id,
   direction: z.enum(HistoryDirection),
   anchor: z.string().min(1).max(HISTORY_CURSOR_MAX_LENGTH).optional(),
+  /** Reads that subagent's own transcript instead of the session's; only sent to `subagentHistory` sessions. */
+  agentId: subagentIdSchema.optional(),
 });
 export const historyDoneSchema = z.strictObject({
   type: z.literal(FrameType.HistoryDone),
