@@ -5,6 +5,7 @@ export default [
     ignores: [
       '**/node_modules/**',
       'dist/**',
+      '.dist-stage-*/**',
       'apps/desktop/dist/**',
       'apps/desktop/out/**',
       'artifacts/**',

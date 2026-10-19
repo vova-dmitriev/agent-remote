@@ -47,6 +47,9 @@ test('private/generated paths are denied, curated screenshots and environment te
     'apps/desktop/out/agent-remote-desktop-darwin-arm64/Agent Remote.app/Contents/Info.plist',
     'copied/Agent Remote.app/Contents/Resources/app.asar',
     'build/output.js',
+    'scripts/build/.env.mjs',
+    'scripts/build/.env.production.ts',
+    'scripts/build/dump.db-x.js',
     'scripts/build/nested/build/output.js',
   ]) {
     assert.equal(isPrivatePath(file), true, file);
