@@ -1,4 +1,4 @@
-import { SessionTab, type SessionState } from "@/entities/session"
+import { SessionTab, type HistoryPageOutcome, type SessionState } from "@/entities/session"
 import type { HistoryMessage, Session } from "@protocol"
 import type { HistoryStatus, HistoryDirection } from "@/shared/api"
 import type { RenameSessionController } from "@/features/rename-session"
@@ -9,7 +9,7 @@ export interface SessionPageProps {
   state: SessionState
   messages: HistoryMessage[]
   historyStatus?: HistoryStatus
-  onHistoryPage?: ((direction: HistoryDirection) => void | Promise<void>) | undefined
+  onHistoryPage?: ((direction: HistoryDirection) => void | Promise<HistoryPageOutcome | void>) | undefined
   readingScope?: string | undefined
   tab: SessionTab
   setTab: (value: SessionTab) => void

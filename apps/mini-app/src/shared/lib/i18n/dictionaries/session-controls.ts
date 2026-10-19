@@ -1,4 +1,7 @@
 export const sessionControlsEN = {
+  jumpToMessages: "Messages {{first}}–{{last}}",
+  loadEarlierMessages: "Load earlier messages",
+  loadLaterMessages: "Load later messages",
   editQueuedPrompt: "Edit",
   sendQueuedNow: "Send now",
   queuedPromptEditor: "Edit queued message",
@@ -58,6 +61,9 @@ export const sessionControlsEN = {
 }
 
 export const sessionControlsRU = {
+  jumpToMessages: "Сообщения {{first}}–{{last}}",
+  loadEarlierMessages: "Загрузить более ранние сообщения",
+  loadLaterMessages: "Загрузить более поздние сообщения",
   editQueuedPrompt: "Изменить",
   sendQueuedNow: "Отправить сейчас",
   queuedPromptEditor: "Изменить сообщение в очереди",

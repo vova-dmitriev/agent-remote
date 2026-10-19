@@ -122,6 +122,7 @@ export function SessionPage({
         sessionId={session.id}
         readingScope={readingScope}
         onHistoryPage={onHistoryPage}
+        newestAt={session.lastMessageAt}
         agent={agentName(session)}
         messages={messages}
         historyStatus={historyStatus}

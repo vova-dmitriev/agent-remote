@@ -3,6 +3,7 @@ import { test, publishMessages } from './support/relay-fixture.js';
 import { conversation } from './support/conversation-fixtures.js';
 import { identity } from './support/identity.js';
 import { byTestId } from './support/testid.js';
+import { expectLoadedMessages, railMarker } from './support/rail.js';
 import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
 import { SESSION_PAGE_IDS, SESSION_FEED_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
 import { MARKDOWN_IDS } from '../../apps/mini-app/src/shared/ui/markdown/test-ids.js';
@@ -21,14 +22,16 @@ test('message rail jumps within the feed, preserves reading position and resumes
   await byTestId(page, SESSION_CARD_IDS.root, { 'session-id': 'terminal-session' }).click();
   const feed = page.getByTestId(SESSION_FEED_IDS.root);
 
-  await expect(page.getByTestId(SESSION_FEED_IDS.marker)).toHaveCount(35);
+  await expectLoadedMessages(page, 35);
 
   await expect
     .poll(() => feed.evaluate((node) => node.scrollHeight - node.clientHeight - node.scrollTop))
     .toBeLessThan(5);
 
   await page.getByTestId(COMMAND_IDS.prompt).fill('Keep this draft');
-  const top = byTestId(page, SESSION_FEED_IDS.marker, { 'message-id': 'navigation-0' });
+  const top = page.getByTestId(SESSION_FEED_IDS.marker).first();
+
+  await expect(top).toHaveAttribute('data-message-id', 'navigation-0');
 
   await top.click();
   await expect.poll(() => feed.evaluate((node) => node.scrollTop)).toBeLessThan(5);
@@ -39,10 +42,10 @@ test('message rail jumps within the feed, preserves reading position and resumes
     { id: 'new-arrival', role: 'assistant', text: 'New synthetic arrival', occurredAt: Date.now() },
   ]);
 
-  await expect(page.getByTestId(SESSION_FEED_IDS.marker)).toHaveCount(36);
+  await expectLoadedMessages(page, 36);
   await expect.poll(() => feed.evaluate((node) => node.scrollTop)).toBeLessThan(5);
   await top.press('ArrowDown');
-  await expect(byTestId(page, SESSION_FEED_IDS.marker, { 'message-id': 'navigation-1' })).toBeFocused();
+  await expect(page.getByTestId(SESSION_FEED_IDS.marker).nth(1)).toBeFocused();
   await page.getByTestId(SESSION_FEED_IDS.bottom).click();
 
   await expect
@@ -61,7 +64,7 @@ test('message rail jumps within the feed, preserves reading position and resumes
     },
   ]);
 
-  await expect(page.getByTestId(SESSION_FEED_IDS.marker)).toHaveCount(37);
+  await expectLoadedMessages(page, 37);
 
   await expect
     .poll(() => feed.evaluate((node) => node.scrollHeight - node.clientHeight - node.scrollTop))
@@ -103,7 +106,7 @@ test('Markdown is safe, code copies exactly and localized controls follow langua
   await identity(page, '801');
   await page.goto('/');
   await byTestId(page, SESSION_CARD_IDS.root, { 'session-id': 'terminal-session' }).click();
-  await byTestId(page, SESSION_FEED_IDS.marker, { 'message-id': 'navigation-1' }).click();
+  await railMarker(page, 'navigation-1').click();
   const message = byTestId(page, SESSION_FEED_IDS.message, { 'message-id': 'navigation-1' });
 
   await expect(message.getByTestId(MARKDOWN_IDS.codeBlock)).toHaveAttribute('data-language', 'typescript');
@@ -118,7 +121,7 @@ test('Markdown is safe, code copies exactly and localized controls follow langua
 
   await expect(message.getByTestId(MARKDOWN_IDS.copyStatus)).toHaveText('Скопировано');
   await setSessionLanguage(page, 'en', 'terminal-session');
-  await byTestId(page, SESSION_FEED_IDS.marker, { 'message-id': 'navigation-1' }).click();
+  await railMarker(page, 'navigation-1').click();
   await message.getByTestId(MARKDOWN_IDS.copyCode).click();
   await expect(message.getByTestId(MARKDOWN_IDS.copyStatus)).toHaveText('Copied');
   expect(await page.evaluate(() => Reflect.get(window, 'markdownExecuted'))).toBeUndefined();

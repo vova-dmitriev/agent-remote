@@ -2,6 +2,7 @@ import { expect } from '@playwright/test';
 import { test, publishMessages } from './support/relay-fixture.js';
 import { identity } from './support/identity.js';
 import { byTestId } from './support/testid.js';
+import { expectLoadedMessages, railMarker } from './support/rail.js';
 import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
 import { SESSION_FEED_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
 
@@ -21,10 +22,13 @@ test('one readable preview follows hovered and focused markers without changing 
   await identity(page, '801');
   await page.goto('/');
   await byTestId(page, SESSION_CARD_IDS.root, { 'session-id': 'terminal-session' }).click();
-  await expect(page.getByTestId(SESSION_FEED_IDS.marker)).toHaveCount(100);
+  await expectLoadedMessages(page, 100);
 
   await expect(page.getByTestId(SESSION_FEED_IDS.preview)).toHaveCount(0);
-  const marker = byTestId(page, SESSION_FEED_IDS.marker, { 'message-id': 'preview-498' });
+  // A merged marker previews and jumps to its first message.
+  const marker = railMarker(page, 'preview-498');
+  const target = (await marker.getAttribute('data-message-id'))!;
+  const author = (id: string) => (Number(id.split('-').at(-1)) % 2 ? 'Ты' : 'Claude');
   const feed = page.getByTestId(SESSION_FEED_IDS.root);
   const position = await feed.evaluate((node) => node.scrollTop);
 
@@ -33,9 +37,9 @@ test('one readable preview follows hovered and focused markers without changing 
 
   await expect(preview).toBeVisible();
   await expect(preview).toHaveCount(1);
-  await expect(preview).toHaveAttribute('data-message-id', 'preview-498');
-  await expect(page.getByTestId(SESSION_FEED_IDS.previewAuthor)).toHaveText('Claude');
-  await expect(page.getByTestId(SESSION_FEED_IDS.previewText)).toContainText('Synthetic preview 498');
+  await expect(preview).toHaveAttribute('data-message-id', target);
+  await expect(page.getByTestId(SESSION_FEED_IDS.previewAuthor)).toHaveText(author(target));
+  await expect(page.getByTestId(SESSION_FEED_IDS.previewText)).toContainText('Synthetic preview ' + target.split('-').at(-1));
   await expect(marker).toHaveAttribute('aria-describedby', (await preview.getAttribute('id'))!);
 
   expect(
@@ -62,12 +66,19 @@ test('one readable preview follows hovered and focused markers without changing 
   await page.keyboard.press('Tab');
   await marker.focus();
   await expect(preview).toBeVisible();
+  const markers = page.getByTestId(SESSION_FEED_IDS.marker);
+  const index = await markers.evaluateAll((nodes, id) => nodes.findIndex((node) => node.getAttribute('data-message-id') === id), target);
+  const previous = (await markers.nth(index - 1).getAttribute('data-message-id'))!;
+
   await marker.press('ArrowUp');
-  await expect(preview).toHaveAttribute('data-message-id', 'preview-497');
-  await expect(page.getByTestId(SESSION_FEED_IDS.previewAuthor)).toHaveText('Ты');
+  await expect(preview).toHaveAttribute('data-message-id', previous);
+  await expect(page.getByTestId(SESSION_FEED_IDS.previewAuthor)).toHaveText(author(previous));
   await expect(page.getByTestId(SESSION_FEED_IDS.preview)).toHaveCount(1);
   await page.screenshot({ path: 'artifacts/chat-marker-preview-mobile.png', fullPage: true });
-  await page.getByTestId(SESSION_FEED_IDS.root).click({ position: { x: 10, y: 10 } });
+  // The rail covers the feed's left edge, so click the feed itself on the right.
+  const feedBox = (await feed.boundingBox())!;
+
+  await feed.click({ position: { x: feedBox.width - 10, y: 10 } });
   await marker.tap();
-  await expect(byTestId(page, SESSION_FEED_IDS.message, { 'message-id': 'preview-498' })).toBeVisible();
+  await expect(byTestId(page, SESSION_FEED_IDS.message, { 'message-id': target })).toBeVisible();
 });

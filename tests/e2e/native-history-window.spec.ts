@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { test, deviceFixture } from './support/relay-fixture.js';
 import { identity } from './support/identity.js';
 import { byTestId } from './support/testid.js';
+import { expectLoadedMessages, railMarker } from './support/rail.js';
 import { sessionSnapshot } from './support/session-fixtures.js';
 import { TranscriptSources } from '../../apps/daemon/src/monitor/history.js';
 import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
@@ -97,13 +98,14 @@ test('native chat opens at the last page, prepends on demand, and reopens at its
     const open = () => byTestId(page, SESSION_CARD_IDS.root, { 'session-id': session.id }).click();
 
     await open();
-    await expect(page.getByTestId(SESSION_FEED_IDS.marker)).toHaveCount(100);
+    await expectLoadedMessages(page, 100);
     await expect(byTestId(page, SESSION_FEED_IDS.message, { 'message-id': 'native-419' })).toBeVisible();
     expect(requests.map((request) => request.direction)).toEqual(['latest']);
-    const marker = byTestId(page, SESSION_FEED_IDS.marker, { 'message-id': 'native-320' });
+    const marker = page.getByTestId(SESSION_FEED_IDS.marker).first();
 
+    await expect(marker).toHaveAttribute('data-message-id', 'native-320');
     await marker.click();
-    await expect(page.getByTestId(SESSION_FEED_IDS.marker)).toHaveCount(200);
+    await expectLoadedMessages(page, 200);
     const message = byTestId(page, SESSION_FEED_IDS.message, { 'message-id': 'native-320' });
 
     await expect(message).toBeVisible();
@@ -126,7 +128,7 @@ test('native chat opens at the last page, prepends on demand, and reopens at its
       )
       .toBeLessThan(3);
 
-    await expect(byTestId(page, SESSION_FEED_IDS.marker, { 'message-id': 'native-320' })).toHaveAttribute(
+    await expect(railMarker(page, 'native-320')).toHaveAttribute(
       'aria-current',
       'true',
     );
@@ -134,11 +136,14 @@ test('native chat opens at the last page, prepends on demand, and reopens at its
     expect(requests.at(-1)?.direction).toBe('around');
     expect(requests.at(-1)?.anchor).toMatch(/^position:/);
     expect(requests).toHaveLength(3);
-    const boundaryId = await page.getByTestId(SESSION_FEED_IDS.marker).last().getAttribute('data-message-id');
+
+    const boundaryId = (await page.getByTestId(SESSION_FEED_IDS.marker).last().getAttribute('data-message-ids'))!
+      .split(' ')
+      .at(-1);
 
     await page.getByTestId(SESSION_FEED_IDS.root).hover();
     await page.mouse.wheel(0, 50000);
-    await expect(page.getByTestId(SESSION_FEED_IDS.marker)).toHaveCount(200);
+    await expectLoadedMessages(page, 200);
     await expect(byTestId(page, SESSION_FEED_IDS.message, { 'message-id': boundaryId! })).toBeVisible();
     expect(requests.at(-1)?.direction).toBe('after');
     await page.getByTestId(SESSION_FEED_IDS.bottom).click();

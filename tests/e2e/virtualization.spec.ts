@@ -3,6 +3,7 @@ import { expect } from '@playwright/test';
 import { test, publishMessages } from './support/relay-fixture.js';
 import { identity } from './support/identity.js';
 import { byTestId } from './support/testid.js';
+import { expectLoadedMessages, jumpNear, railMarker } from './support/rail.js';
 import { scrollSettled } from './support/scroll-settled.js';
 import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
 import { MARKDOWN_IDS } from '../../apps/mini-app/src/shared/ui/markdown/test-ids.js';
@@ -26,14 +27,13 @@ test('reading stays anchored through the 500-message cap and earlier message gro
   await identity(page, '801');
   await page.goto('/');
   await byTestId(page, SESSION_CARD_IDS.root, { 'session-id': 'terminal-session' }).click();
-  await expect(page.getByTestId(SESSION_FEED_IDS.marker)).toHaveCount(100);
+  await expectLoadedMessages(page, 100);
   await loadEarlierMessages(page, 500);
-  await expect(page.getByTestId(SESSION_FEED_IDS.marker)).toHaveCount(500);
+  await expectLoadedMessages(page, 500);
   await expect.poll(() => page.getByTestId(SESSION_FEED_IDS.message).count()).toBeLessThan(30);
-  const marker = byTestId(page, SESSION_FEED_IDS.marker, { 'message-id': 'capped-250' });
-  const message = byTestId(page, SESSION_FEED_IDS.message, { 'message-id': 'capped-250' });
+  const anchor = await jumpNear(page, 'capped-250');
+  const message = byTestId(page, SESSION_FEED_IDS.message, { 'message-id': anchor });
 
-  await marker.click();
   await expect(message).toBeVisible();
   const targetTop = await page.getByTestId(SESSION_FEED_IDS.root).evaluate(node => node.getBoundingClientRect().top + 22);
 
@@ -45,7 +45,7 @@ test('reading stays anchored through the 500-message cap and earlier message gro
     { id: 'capped-500', role: 'assistant', text: 'Newest capped message', occurredAt: now + 500 },
   ]);
 
-  await expect(byTestId(page, SESSION_FEED_IDS.marker, { 'message-id': 'capped-0' })).toHaveCount(0);
+  await expect(railMarker(page, 'capped-0')).toHaveCount(0);
 
   await expect
     .poll(async () =>
@@ -53,8 +53,11 @@ test('reading stays anchored through the 500-message cap and earlier message gro
     )
     .toBeLessThan(2);
 
-  await publishMessages([{ ...messages[10]!, text: 'Earlier message grew. '.repeat(100) }]);
-  await byTestId(page, SESSION_FEED_IDS.marker, { 'message-id': 'capped-10' }).hover();
+  // Grow the message a rail marker starts with, so hovering that marker previews it.
+  const grown = (await railMarker(page, 'capped-10').getAttribute('data-message-id'))!;
+
+  await publishMessages([{ ...messages[Number(grown.split('-')[1])]!, text: 'Earlier message grew. '.repeat(100) }]);
+  await byTestId(page, SESSION_FEED_IDS.marker, { 'message-id': grown }).hover();
   await expect(page.getByTestId(SESSION_FEED_IDS.previewText)).toContainText('Earlier message grew.');
 
   await expect
@@ -63,12 +66,13 @@ test('reading stays anchored through the 500-message cap and earlier message gro
     )
     .toBeLessThan(2);
 
-  await publishMessages([
-    { ...messages[249]!, text: '```typescript\n' + 'const measured = true;\n'.repeat(50) + '```' },
-  ]);
+  // The message right above the reading anchor grows when its code block renders and is measured.
+  const above = messages[Number(anchor.split('-')[1]) - 1]!;
+
+  await publishMessages([{ ...above, text: '```typescript\n' + 'const measured = true;\n'.repeat(50) + '```' }]);
 
   await expect(
-    byTestId(page, SESSION_FEED_IDS.message, { 'message-id': 'capped-249' }).getByTestId(
+    byTestId(page, SESSION_FEED_IDS.message, { 'message-id': above.id }).getByTestId(
       MARKDOWN_IDS.codeBlock,
     ),
   ).toBeAttached();
@@ -79,7 +83,7 @@ test('reading stays anchored through the 500-message cap and earlier message gro
     )
     .toBeLessThan(2);
 
-  await byTestId(page, SESSION_FEED_IDS.message, { 'message-id': 'capped-249' })
+  await byTestId(page, SESSION_FEED_IDS.message, { 'message-id': above.id })
     .getByTestId(MARKDOWN_IDS.code)
     .evaluate((node) => {
       node.style.fontSize = '20px';
@@ -94,10 +98,9 @@ test('reading stays anchored through the 500-message cap and earlier message gro
 
   // Reaching the top loads capped-0 and trims capped-500 off the 500-message window, so 500 is visited before 1.
   for (const index of [500, 1, 10, 400, 250]) {
-    const target = byTestId(page, SESSION_FEED_IDS.marker, { 'message-id': 'capped-' + index });
+    const target = await jumpNear(page, 'capped-' + index);
 
-    await target.click();
-    await expect(byTestId(page, SESSION_FEED_IDS.message, { 'message-id': 'capped-' + index })).toBeVisible();
+    await expect(byTestId(page, SESSION_FEED_IDS.message, { 'message-id': target })).toBeVisible();
 
     const viewportTop = await page
       .getByTestId(SESSION_FEED_IDS.root)
@@ -119,17 +122,23 @@ test('reading stays anchored through the 500-message cap and earlier message gro
           (node) => node.scrollHeight - node.scrollTop - node.clientHeight <= 1,
         );
 
-        return byTestId(page, SESSION_FEED_IDS.marker, { 'message-id': atBottom ? 'capped-500' : firstVisible! }).getAttribute(
-          'aria-current',
-        );
+        const active = await page.getByTestId(SESSION_FEED_IDS.rail).getAttribute('data-active-message-id');
+
+        return active === (atBottom ? 'capped-500' : firstVisible);
       })
-      .toBe('true');
+      .toBe(true);
 
     await expect.poll(() => page.getByTestId(SESSION_FEED_IDS.message).count()).toBeLessThan(30);
   }
 
-  await marker.press('End');
-  await expect(byTestId(page, SESSION_FEED_IDS.message, { 'message-id': 'capped-500' })).toBeVisible();
-  await byTestId(page, SESSION_FEED_IDS.marker, { 'message-id': 'capped-500' }).press('Home');
-  await expect(byTestId(page, SESSION_FEED_IDS.message, { 'message-id': 'capped-1' })).toBeVisible();
+  const markers = page.getByTestId(SESSION_FEED_IDS.marker);
+  const last = (await markers.last().getAttribute('data-message-id'))!;
+  const first = (await markers.first().getAttribute('data-message-id'))!;
+
+  await railMarker(page, anchor).press('End');
+  await expect(markers.last()).toBeFocused();
+  await expect(byTestId(page, SESSION_FEED_IDS.message, { 'message-id': last })).toBeVisible();
+  await markers.last().press('Home');
+  await expect(markers.first()).toBeFocused();
+  await expect(byTestId(page, SESSION_FEED_IDS.message, { 'message-id': first })).toBeVisible();
 });

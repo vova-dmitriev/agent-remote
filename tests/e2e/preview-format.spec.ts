@@ -2,6 +2,7 @@ import { expect } from '@playwright/test';
 import { test, publishMessages } from './support/relay-fixture.js';
 import { identity } from './support/identity.js';
 import { byTestId } from './support/testid.js';
+import { expectLoadedMessages, railMarker } from './support/rail.js';
 import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
 import { SESSION_FEED_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
 import { MARKDOWN_IDS } from '../../apps/mini-app/src/shared/ui/markdown/test-ids.js';
@@ -18,11 +19,12 @@ test('marker previews render Markdown and native envelopes without leaking metad
   await byTestId(page, SESSION_CARD_IDS.root, { 'session-id': 'terminal-session' }).click();
   const feed = page.getByTestId(SESSION_FEED_IDS.root);
 
+  await expectLoadedMessages(page, 3);
   await expect(page.getByTestId(SESSION_FEED_IDS.marker)).toHaveCount(3);
   await expect(byTestId(page, SESSION_FEED_IDS.message, { 'message-id': 'task' })).toBeVisible();
   const before = await feed.evaluate(node => node.scrollTop);
 
-  await byTestId(page, SESSION_FEED_IDS.marker, { 'message-id': 'rich' }).hover();
+  await railMarker(page, 'rich').hover();
   const preview = page.getByTestId(SESSION_FEED_IDS.preview);
   const text = page.getByTestId(SESSION_FEED_IDS.previewText);
 
@@ -36,13 +38,13 @@ test('marker previews render Markdown and native envelopes without leaking metad
   await expect(preview).toHaveCount(1);
   await page.screenshot({ path: 'artifacts/chat-marker-rich-preview-mobile.png', fullPage: true });
 
-  await byTestId(page, SESSION_FEED_IDS.marker, { 'message-id': 'paste' }).hover();
+  await railMarker(page, 'paste').hover();
   await expect(text).toContainText('PR ready');
   await expect(text).not.toContainText('pasted_content');
   expect(await text.evaluate(node => node.innerHTML)).toContain('<strong>PR ready</strong>');
 
   await page.keyboard.press('Tab');
-  await byTestId(page, SESSION_FEED_IDS.marker, { 'message-id': 'task' }).focus();
+  await railMarker(page, 'task').focus();
   await expect(text).toContainText('Review complete');
   await expect(text).toContainText('No blockers');
   await expect(text).not.toContainText('private-id');
@@ -53,14 +55,15 @@ test('marker previews render Markdown and native envelopes without leaking metad
   expect(await feed.evaluate(node => node.scrollTop)).toBe(before);
   await page.screenshot({ path: 'artifacts/chat-marker-task-preview-mobile.png', fullPage: true });
   await page.setViewportSize({ width: 320, height: 780 });
-  const narrowMarker = byTestId(page, SESSION_FEED_IDS.marker, { 'message-id': 'rich' });
+  const narrowMarker = railMarker(page, 'rich');
 
   await narrowMarker.hover();
   await expect(text).toContainText('Ready');
   const markerBounds = await narrowMarker.boundingBox();
   const previewBounds = await preview.boundingBox();
 
-  expect(previewBounds!.x + previewBounds!.width).toBeLessThan(markerBounds!.x);
+  expect(previewBounds!.x).toBeGreaterThan(markerBounds!.x + markerBounds!.width);
+  expect(previewBounds!.x + previewBounds!.width).toBeLessThanOrEqual(320);
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.screenshot({ path: 'artifacts/chat-marker-rich-preview-dark-320.png', fullPage: true });
   await page.keyboard.press('Escape');
