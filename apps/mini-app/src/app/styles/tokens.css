@@ -102,4 +102,13 @@
   --font-display: "Manrope", sans-serif;
   --font-mono: ui-monospace, monospace;
 }
+@theme {
+  --animate-activity-spin: activity-spin 1.4s linear infinite;
+
+  @keyframes activity-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+}
 @custom-variant dark (&:where(.dark, .dark *));

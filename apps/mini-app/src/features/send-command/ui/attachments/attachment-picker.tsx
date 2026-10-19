@@ -12,7 +12,7 @@ export function AttachmentPicker({ model, disabled }: AttachmentPickerProps) {
   const { t } = useTranslation()
 
   return (
-    <div className="attachment-picker" data-testid={UPLOAD_IDS.root}>
+    <div className="contents" data-testid={UPLOAD_IDS.root}>
       <input
         ref={input}
         type="file"
@@ -29,7 +29,7 @@ export function AttachmentPicker({ model, disabled }: AttachmentPickerProps) {
         type="button"
         variant="ghost"
         size="icon"
-        className="composer-attach"
+        className="absolute bottom-[7px] left-[7px] size-[32px] rounded-full p-0 transition-[color,background-color,opacity] short:bottom-[4px] short:size-[26px]"
         data-testid={UPLOAD_IDS.select}
         disabled={disabled}
         aria-label={t("attachmentSelect")}
@@ -38,7 +38,7 @@ export function AttachmentPicker({ model, disabled }: AttachmentPickerProps) {
         <Paperclip aria-hidden="true" size={18} />
       </Button>
       {model.items.length ? (
-        <div className="pending-attachments">
+        <div className="mb-[6px] flex max-h-[104px] min-w-0 gap-[6px] overflow-x-auto">
           {model.items.map((item) => (
             <PendingAttachmentChip
               key={item.id}
@@ -51,7 +51,7 @@ export function AttachmentPicker({ model, disabled }: AttachmentPickerProps) {
         </div>
       ) : null}
       {model.error ? (
-        <p role="alert" data-testid={UPLOAD_IDS.error}>
+        <p className="mb-[6px] basis-full text-[12px]" role="alert" data-testid={UPLOAD_IDS.error}>
           {feedbackText(model.error, t)}
         </p>
       ) : null}

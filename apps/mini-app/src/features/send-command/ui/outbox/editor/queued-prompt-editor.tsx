@@ -24,7 +24,7 @@ export function QueuedPromptEditor({ item, queue }: QueuedPromptEditorProps) {
         rows={2}
       />
       {editor.error ? (
-        <span className="muted" role="alert" data-testid={COMMAND_IDS.queuedEditError}>
+        <span className="text-[11px] text-muted-foreground" role="alert" data-testid={COMMAND_IDS.queuedEditError}>
           {feedbackText(editor.error, t)}
         </span>
       ) : null}

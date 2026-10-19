@@ -53,3 +53,45 @@ it('rejects shared directories with more than six files', () => {
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+it('rejects stylesheets outside the Tailwind allowlist', () => {
+  const root = mkdtempSync(join(tmpdir(), 'agents remote css-'));
+  const app = join(root, 'apps/mini-app/src');
+
+  try {
+    mkdirSync(join(root, 'scripts'));
+    mkdirSync(join(app, 'app/styles'), { recursive: true });
+    mkdirSync(join(app, 'features/x/ui'), { recursive: true });
+
+    copyFileSync(
+      fileURLToPath(new URL('../scripts/check-frontend-structure.mjs', import.meta.url)),
+      join(root, 'scripts/check-frontend-structure.mjs'),
+    );
+
+    for (const file of ['globals.css', 'tokens.css', 'markdown.css']) {
+      writeFileSync(join(app, 'app/styles', file), '@layer components {}\n');
+    }
+
+    writeFileSync(join(app, 'features/x/ui/x.css'), '.x {}\n');
+    writeFileSync(join(app, 'features/x/ui/y.scss'), '.y {}\n');
+
+    let stderr = '';
+
+    try {
+      execFileSync(process.execPath, [join(root, 'scripts/check-frontend-structure.mjs')], {
+        encoding: 'utf8',
+        stdio: 'pipe',
+      });
+    } catch (error) {
+      stderr = String((error as { stderr?: string }).stderr);
+    }
+
+    expect(stderr).toContain('features/x/ui/x.css: stylesheet outside the allowlist');
+    expect(stderr).toContain('features/x/ui/y.scss: stylesheet outside the allowlist');
+    expect(stderr).not.toContain('globals.css');
+    expect(stderr).not.toContain('tokens.css');
+    expect(stderr).not.toContain('markdown.css');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

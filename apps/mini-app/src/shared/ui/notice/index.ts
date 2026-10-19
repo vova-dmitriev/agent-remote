@@ -1,1 +1,1 @@
-export { noticeVariants } from "./notice-variants"
+export { noticeVariants, NoticeTone } from "./notice-variants"

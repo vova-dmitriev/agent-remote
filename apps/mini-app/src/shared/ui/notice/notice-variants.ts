@@ -1,6 +1,8 @@
 import { cva } from "class-variance-authority"
 
-const NoticeTone = { Info: "info", Error: "error" } as const
+export const NoticeTone = { Info: "info", Error: "error" } as const
+
+export type NoticeTone = (typeof NoticeTone)[keyof typeof NoticeTone]
 
 /** Inline notice block; inside the compact session shell it shrinks into a scrollable strip. */
 export const noticeVariants = cva(

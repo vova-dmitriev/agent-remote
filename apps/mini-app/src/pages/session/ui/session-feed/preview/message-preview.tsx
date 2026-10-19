@@ -21,7 +21,7 @@ export function MessagePreview({ id, message, anchor, agent, keep, leave }: Mess
       ref={root}
       id={id}
       role="tooltip"
-      className="message-preview"
+      className="fixed z-50 max-h-[calc(100dvh_-_16px)] w-[min(360px,calc(100vw_-_16px))] overflow-hidden rounded-[12px] border border-border bg-surface px-[15px] py-[13px] text-foreground shadow-[0_6px_24px_color-mix(in_srgb,var(--foreground)_18%,transparent)]"
       data-testid={SESSION_FEED_IDS.preview}
       data-message-id={message.id}
       style={position}
@@ -29,15 +29,17 @@ export function MessagePreview({ id, message, anchor, agent, keep, leave }: Mess
       onPointerLeave={leave}
       onPointerDown={(event) => event.preventDefault()}
     >
-      <div className="message-preview-heading">
-        <strong data-testid={SESSION_FEED_IDS.previewAuthor}>{message.role === MessageRole.User ? t("you") : agent}</strong>
+      <div className="mb-[7px] flex items-baseline justify-between gap-[12px] text-[12px]">
+        <strong className="text-primary" data-testid={SESSION_FEED_IDS.previewAuthor}>
+          {message.role === MessageRole.User ? t("you") : agent}
+        </strong>
         {!Number.isNaN(date.getTime()) ? (
-          <time dateTime={date.toISOString()} data-testid={SESSION_FEED_IDS.previewTime}>
+          <time className="text-[11px] text-muted-foreground" dateTime={date.toISOString()} data-testid={SESSION_FEED_IDS.previewTime}>
             {timeFormat.format(date)}
           </time>
         ) : null}
       </div>
-      <div className="message-preview-content" data-testid={SESSION_FEED_IDS.previewText}>
+      <div className={previewContentClass} data-testid={SESSION_FEED_IDS.previewText}>
         <Markdown
           text={previewText(
             content.text || [...content.missingFiles, ...(message.attachments?.map((attachment) => attachment.name) ?? [])].join("\n"),
@@ -49,3 +51,12 @@ export function MessagePreview({ id, message, anchor, agent, keep, leave }: Mess
     document.body,
   )
 }
+
+/** Denser rendered Markdown inside the hover preview. */
+const previewContentClass = [
+  "max-h-[min(260px,calc(100dvh_-_100px))] overflow-hidden text-[13px] leading-[1.5] wrap-anywhere",
+  "[&_.message-markdown_:is(p,ul,ol,blockquote,table,pre)]:my-[0.45rem]",
+  "[&_.message-markdown_:is(h1,h2,h3,h4,h5,h6)]:mt-[0.6rem] [&_.message-markdown_:is(h1,h2,h3,h4,h5,h6)]:mb-[0.3rem] [&_.message-markdown_:is(h1,h2,h3,h4,h5,h6)]:text-[14px]",
+  "[&_.message-markdown_:is(p,li)]:whitespace-pre-line",
+  "[&_.message-markdown>:first-child]:mt-0 [&_.message-markdown>:last-child]:mb-0",
+].join(" ")

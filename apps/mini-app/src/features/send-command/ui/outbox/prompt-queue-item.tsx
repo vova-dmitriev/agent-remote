@@ -25,7 +25,7 @@ export function PromptQueueItem({ item, queue }: PromptQueueItemProps) {
 
   return (
     <div
-      className="prompt-queue-item"
+      className="flex flex-wrap items-center gap-x-[0.5rem] gap-y-[0.25rem] rounded-[0.75rem] border border-border px-[0.65rem] py-[0.4rem] text-[0.8rem]"
       data-testid={COMMAND_IDS.queuedItem}
       data-command-id={id}
       data-attachment-ids={
@@ -37,16 +37,16 @@ export function PromptQueueItem({ item, queue }: PromptQueueItemProps) {
       {item.status === PromptStatus.Editing ? (
         <QueuedPromptEditor item={item} queue={queue} />
       ) : (
-        <span className="prompt-queue-text" data-testid={COMMAND_IDS.queuedText}>
+        <span className="max-h-[3lh] flex-[1_1_100%] overflow-auto whitespace-pre-wrap wrap-anywhere" data-testid={COMMAND_IDS.queuedText}>
           {item.command.action.type === CommandActionType.Prompt ? item.command.action.text || t("promptAttachments") : ""}
         </span>
       )}
       {item.status === PromptStatus.Failed && item.code ? (
-        <span className="muted" data-testid={COMMAND_IDS.queuedError}>
+        <span className="text-[11px] text-muted-foreground" data-testid={COMMAND_IDS.queuedError}>
           {feedbackText(item.code, t)}
         </span>
       ) : null}
-      <span className="muted" data-testid={COMMAND_IDS.queuedStatus}>
+      <span className="text-[11px] text-muted-foreground" data-testid={COMMAND_IDS.queuedStatus}>
         {t(statusKeys[item.status])}
       </span>
       {item.status === PromptStatus.Queued ? (

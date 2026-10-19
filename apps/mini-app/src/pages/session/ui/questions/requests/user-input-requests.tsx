@@ -14,7 +14,7 @@ export function UserInputRequests({ session, state, controller }: UserInputReque
   if (!requests.length) return null
 
   return (
-    <div className="session-questions" data-testid={SESSION_PAGE_IDS.questions}>
+    <div className="max-h-[min(50dvh,420px)] flex-none overflow-y-auto overscroll-contain" data-testid={SESSION_PAGE_IDS.questions}>
       {requests.map((request) => (
         <AnswerQuestion
           key={JSON.stringify(request)}

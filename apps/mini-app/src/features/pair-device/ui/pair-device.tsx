@@ -12,11 +12,16 @@ export function PairDevice({ controller, online }: PairDeviceProps) {
   const copyLabel = t(status === CopyStatus.Copied ? "commandCopied" : status === CopyStatus.Failed ? "commandCopyFailed" : "copyCommand")
 
   return (
-    <section className="pair-card" data-testid={PAIR_DEVICE_IDS.root}>
+    <section
+      className="mt-[16px] rounded-[16px] border border-border bg-surface p-[26px] phone:p-[20px]"
+      data-testid={PAIR_DEVICE_IDS.root}
+    >
       <h2 data-testid={PAIR_DEVICE_IDS.title}>{t("pairTitle")}</h2>
-      <p>{t("pairSimpleIntro")}</p>
-      <div className="pair-command">
-        <code data-testid={PAIR_DEVICE_IDS.command}>npm run personal</code>
+      <p className={paragraphClass}>{t("pairSimpleIntro")}</p>
+      <div className="my-[16px] flex items-center justify-between gap-[12px] rounded-[9px] border border-border px-[12px] py-[8px]">
+        <code className="text-[13px] wrap-anywhere" data-testid={PAIR_DEVICE_IDS.command}>
+          npm run personal
+        </code>
         <Button
           variant="ghost"
           size="icon"
@@ -28,12 +33,19 @@ export function PairDevice({ controller, online }: PairDeviceProps) {
           {status === CopyStatus.Copied ? <Check size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}
         </Button>
       </div>
-      <p>{t("pairSimpleFinish")}</p>
-      <details className="pair-manual">
-        <summary data-testid={PAIR_DEVICE_IDS.manual}>{t("pairManual")}</summary>
-        <p>{t("pairExpiry")}</p>
+      <p className={paragraphClass}>{t("pairSimpleFinish")}</p>
+      <details className="mt-[20px] border-t border-border pt-[16px]">
+        <summary
+          className="cursor-pointer text-[13px] text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+          data-testid={PAIR_DEVICE_IDS.manual}
+        >
+          {t("pairManual")}
+        </summary>
+        <p className={paragraphClass}>{t("pairExpiry")}</p>
         <form onSubmit={(event) => void controller.submit(event)}>
-          <Label htmlFor="pair-code">{t("pairCode")}</Label>
+          <Label className="mt-[20px] mb-[9px] block text-[12px] leading-[calc(1.25/0.875)]" htmlFor="pair-code">
+            {t("pairCode")}
+          </Label>
           <Input
             id="pair-code"
             data-testid={PAIR_DEVICE_IDS.code}
@@ -44,7 +56,7 @@ export function PairDevice({ controller, online }: PairDeviceProps) {
           />
           <Button
             type="submit"
-            className="primary"
+            className="mt-[14px] w-full rounded-[8px] border border-transparent px-[18px] py-[12px] text-[13px] font-semibold hover:bg-primary focus-visible:border-transparent"
             data-testid={PAIR_DEVICE_IDS.submit}
             disabled={controller.busy || !online || !controller.code.trim()}
           >
@@ -52,7 +64,9 @@ export function PairDevice({ controller, online }: PairDeviceProps) {
           </Button>
         </form>
       </details>
-      <p className="disclosure">{t("disclosure")}</p>
+      <p className="mt-[20px] border-t border-border pt-[14px] text-[12px] leading-[1.65] text-muted-foreground">{t("disclosure")}</p>
     </section>
   )
 }
+
+const paragraphClass = "mt-[13px] leading-[1.65] text-muted-foreground"

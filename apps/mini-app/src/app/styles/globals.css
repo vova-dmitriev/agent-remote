@@ -1,16 +1,6 @@
 @import "tailwindcss";
 @import "./tokens.css";
 @import "./markdown.css";
-@import "./chat/feed.css";
-@import "./chat/outbox/outbox.css";
-@import "./chat/activity/activity.css";
-@import "./chat/subagents/subagents.css";
-@import "./chat/session-layout.css";
-@import "./chat/short-viewport.css";
-@import "./chat/pairing.css";
-@import "./chat/questions/questions.css";
-@import "./chat/message-preview.css";
-@import "./chat/attachments/attachments.css";
 
 /* Registration order is cascade order: session overrides phone/tiny, short overrides session. */
 @custom-variant phone (@media (max-width: 560px));

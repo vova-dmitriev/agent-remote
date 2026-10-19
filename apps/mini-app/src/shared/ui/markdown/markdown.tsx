@@ -1,6 +1,7 @@
 import ReactMarkdown, { type Components, type Options } from "react-markdown"
 import rehypeHighlight from "rehype-highlight"
 import remarkGfm from "remark-gfm"
+import { cn } from "@/shared/lib/utils"
 import { MarkdownVariant } from "./constants/values"
 import { CodeBlock } from "./code-block"
 import { TaskInput } from "./helpers/task-input"
@@ -17,9 +18,9 @@ const rehypePlugins: Options["rehypePlugins"] = [[rehypeHighlight, { detect: fal
 const components: Components = { pre: CodeBlock, a: MarkdownLink, img: MarkdownImageLink, input: TaskInput }
 const previewComponents: Components = { pre: CodePreview, a: LinkPreview, img: ImagePreview, input: TaskInput }
 
-export function Markdown({ text, variant = MarkdownVariant.Message }: MarkdownProps) {
+export function Markdown({ text, variant = MarkdownVariant.Message, className }: MarkdownProps) {
   return (
-    <div data-testid={MARKDOWN_IDS.root} className="message-markdown">
+    <div data-testid={MARKDOWN_IDS.root} className={cn("message-markdown", className)}>
       <ReactMarkdown
         skipHtml
         remarkPlugins={remarkPlugins}

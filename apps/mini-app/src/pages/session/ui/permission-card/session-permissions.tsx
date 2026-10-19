@@ -13,7 +13,10 @@ export function SessionPermissions({ session, state, controller }: SessionPermis
   if (!permissions.length) return null
 
   return (
-    <div className="session-permissions" data-testid={SESSION_PAGE_IDS.permissions}>
+    <div
+      className="session:max-h-[min(28dvh,210px)] session:flex-none session:overflow-y-auto session:overscroll-contain session:short:max-h-[88px]"
+      data-testid={SESSION_PAGE_IDS.permissions}
+    >
       {permissions.map((permission) => (
         <PermissionCard
           key={permission.requestId}
