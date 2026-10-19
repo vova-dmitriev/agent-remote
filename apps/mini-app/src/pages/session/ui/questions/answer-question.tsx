@@ -2,6 +2,8 @@ import { useTranslation } from "@/shared/lib/hooks"
 import { Button } from "@/shared/ui/button"
 import { USER_INPUT_IDS } from "@/pages/session/config/test-ids"
 import { useAnswerQuestion } from "@/pages/session/model/questions/use-answer-question"
+import { cn } from "@/shared/lib/utils"
+import { requestActionClass, requestActionsClass, requestHeadingClass } from "../permission-card/permission-class"
 import { QuestionField } from "./question-field"
 import type { AnswerQuestionProps } from "./types"
 
@@ -10,12 +12,22 @@ export function AnswerQuestion({ request, disabled, answer }: AnswerQuestionProp
   const model = useAnswerQuestion(request, disabled, answer)
 
   return (
-    <section className="question-card" data-testid={USER_INPUT_IDS.root} data-request-id={request.requestId}>
-      <div className="permission-heading">
-        <h2 data-testid={USER_INPUT_IDS.title}>{t("userInputTitle")}</h2>
-        {request.isBlocking ? <span data-testid={USER_INPUT_IDS.remaining}>{t("seconds", { count: model.remaining })}</span> : null}
+    <section
+      className="my-[6px] flex max-h-[min(calc(50dvh_-_12px),408px)] flex-col rounded-[12px] border border-border bg-surface p-[10px]"
+      data-testid={USER_INPUT_IDS.root}
+      data-request-id={request.requestId}
+    >
+      <div className={cn(requestHeadingClass, "flex-none")}>
+        <h2 className="text-[14px]" data-testid={USER_INPUT_IDS.title}>
+          {t("userInputTitle")}
+        </h2>
+        {request.isBlocking ? (
+          <span className="text-[12px] text-primary" data-testid={USER_INPUT_IDS.remaining}>
+            {t("seconds", { count: model.remaining })}
+          </span>
+        ) : null}
       </div>
-      <div className="question-fields" data-testid={USER_INPUT_IDS.body}>
+      <div className="min-h-0 overflow-y-auto overscroll-contain [scrollbar-width:thin]" data-testid={USER_INPUT_IDS.body}>
         {request.questions.map((question) => (
           <QuestionField
             key={question.id}
@@ -26,10 +38,11 @@ export function AnswerQuestion({ request, disabled, answer }: AnswerQuestionProp
           />
         ))}
       </div>
-      <div className="permission-actions">
+      <div className={cn(requestActionsClass, "flex-none bg-surface pt-[8px]")}>
         <Button
           type="button"
           variant="outline"
+          className={requestActionClass}
           data-testid={USER_INPUT_IDS.skip}
           disabled={model.blocked}
           onClick={() => void model.send(true)}
@@ -38,6 +51,7 @@ export function AnswerQuestion({ request, disabled, answer }: AnswerQuestionProp
         </Button>
         <Button
           type="button"
+          className={requestActionClass}
           data-testid={USER_INPUT_IDS.submit}
           disabled={model.blocked || !model.ready}
           onClick={() => void model.send()}

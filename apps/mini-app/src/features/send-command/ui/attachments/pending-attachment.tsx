@@ -4,6 +4,8 @@ import { ErrorCode } from "@protocol"
 import { feedbackText } from "@/shared/lib/i18n"
 import { useTranslation } from "@/shared/lib/hooks"
 import { Button } from "@/shared/ui/button"
+import { cn } from "@/shared/lib/utils"
+import { attachmentChipClass, attachmentDescriptionClass } from "@/entities/attachment"
 import { useAttachmentPreview } from "@/features/send-command/model/use-attachment-preview"
 import { UPLOAD_IDS } from "./test-ids"
 import type { PendingAttachmentChipProps } from "./types"
@@ -13,9 +15,15 @@ export function PendingAttachmentChip({ item, disabled, remove, retry }: Pending
   const preview = useAttachmentPreview(item.file, item.preview)
 
   return (
-    <div className="pending-attachment" data-testid={UPLOAD_IDS.pending} data-upload-id={item.id}>
-      {preview ? <img src={preview} alt={item.file.name} data-testid={UPLOAD_IDS.image} /> : null}
-      <span className="attachment-description">
+    <div
+      className={cn(attachmentChipClass, "max-w-[min(300px,75vw)] flex-[0_0_auto]")}
+      data-testid={UPLOAD_IDS.pending}
+      data-upload-id={item.id}
+    >
+      {preview ? (
+        <img className="size-[38px] rounded-[6px] object-cover" src={preview} alt={item.file.name} data-testid={UPLOAD_IDS.image} />
+      ) : null}
+      <span className={attachmentDescriptionClass}>
         <strong>{item.file.name}</strong>
         <small data-testid={UPLOAD_IDS.status}>
           {item.status === PendingAttachmentStatus.Uploading

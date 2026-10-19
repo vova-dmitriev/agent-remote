@@ -8,6 +8,7 @@ export { sourceNames, connectorStates, sessionTitle, agentName } from "./lib/lab
 export { sourceAvailable, sessionStatusLabel } from "./lib/availability"
 export { selectedSession, sessionPermissions, sessionUserInputs } from "./lib/selectors"
 export { SessionCard } from "./ui/session-card"
+export { sourceTextClass } from "./ui/session-class"
 export { SessionCardSkeleton } from "./ui/session-card-skeleton"
 export { SessionAvailability } from "./ui/session-availability/session-availability"
 

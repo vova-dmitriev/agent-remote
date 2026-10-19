@@ -84,5 +84,32 @@
   --color-card-foreground: var(--foreground);
   --color-input: var(--line);
   --color-ring: var(--primary);
+  --color-surface: var(--surface);
+  --color-highlight: color-mix(in srgb, var(--primary) 9%, var(--surface));
+  --color-highlight-subtle: color-mix(in srgb, var(--accent) 7%, var(--surface));
+  --color-status-muted: var(--status-muted);
+  --color-status-ready: var(--status-ready);
+  --color-status-busy: var(--status-busy);
+  --color-danger: var(--danger-text);
+  --color-error: var(--error-background);
+  --color-error-foreground: var(--error-foreground);
+  --color-warning: var(--warning);
+  --color-link: var(--markdown-link);
+  --color-code: var(--markdown-code-background);
+  --color-code-foreground: var(--markdown-code-foreground);
+  --color-code-toolbar: var(--markdown-code-toolbar);
+  --color-inline-code: var(--markdown-inline-code);
+  --color-syntax-string: var(--markdown-syntax-string);
+  --font-display: "Manrope", sans-serif;
+  --font-mono: ui-monospace, monospace;
+}
+@theme {
+  --animate-activity-spin: activity-spin 1.4s linear infinite;
+
+  @keyframes activity-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
 }
 @custom-variant dark (&:where(.dark, .dark *));

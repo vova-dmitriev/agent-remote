@@ -11,13 +11,19 @@ export function QuestionField({ question, choice, disabled, choose }: QuestionFi
   const custom = !question.options || choice?.kind === QuestionChoiceKind.Custom
 
   return (
-    <fieldset className="question-field" data-testid={USER_INPUT_IDS.question} data-question-id={question.id} disabled={disabled}>
-      <legend>{question.header || t("userInputTitle")}</legend>
-      <Markdown text={question.question} />
+    <fieldset
+      className="my-[12px] min-w-0 border-0 p-0 disabled:opacity-60"
+      data-testid={USER_INPUT_IDS.question}
+      data-question-id={question.id}
+      disabled={disabled}
+    >
+      <legend className="text-[12px] text-muted-foreground">{question.header || t("userInputTitle")}</legend>
+      <Markdown className="mt-[5px] mb-[8px] text-[14px]" text={question.question} />
       {question.options?.map((option, index) => (
-        <label className="question-option" key={option.label}>
+        <label className={optionClass} key={option.label}>
           <input
             type="radio"
+            className={radioClass}
             name={id}
             data-testid={USER_INPUT_IDS.option}
             data-question-id={question.id}
@@ -29,7 +35,7 @@ export function QuestionField({ question, choice, disabled, choose }: QuestionFi
           <span>
             <strong>{option.label}</strong>
             {option.description ? (
-              <span id={id + "-description-" + index} className="question-description">
+              <span id={id + "-description-" + index} className="block text-[12px] text-muted-foreground">
                 {option.description}
               </span>
             ) : null}
@@ -37,9 +43,10 @@ export function QuestionField({ question, choice, disabled, choose }: QuestionFi
         </label>
       ))}
       {question.options && question.isOther ? (
-        <label className="question-option">
+        <label className={optionClass}>
           <input
             type="radio"
+            className={radioClass}
             name={id}
             data-testid={USER_INPUT_IDS.other}
             data-question-id={question.id}
@@ -50,10 +57,10 @@ export function QuestionField({ question, choice, disabled, choose }: QuestionFi
         </label>
       ) : null}
       {custom ? (
-        <label className="question-custom">
+        <label className="grid gap-[5px] text-[12px]">
           <span>{t("userInputCustom")}</span>
           <input
-            className="question-answer"
+            className="w-full rounded-[8px] border border-border bg-background px-[10px] py-[8px] text-[16px] text-foreground"
             type={question.isSecret ? "password" : "text"}
             data-testid={USER_INPUT_IDS.custom}
             data-question-id={question.id}
@@ -69,3 +76,7 @@ export function QuestionField({ question, choice, disabled, choose }: QuestionFi
     </fieldset>
   )
 }
+
+const optionClass = "flex cursor-pointer items-start gap-[9px] py-[7px] text-[14px]"
+
+const radioClass = "mt-[2px] size-[17px] flex-none p-0 accent-primary"

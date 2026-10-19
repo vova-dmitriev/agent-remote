@@ -18,7 +18,7 @@ export function SessionCreation({ sessions, disabled, online, create, profileDat
   if (!model.selected) return null
 
   return (
-    <div className="session-create" data-testid={SESSION_CREATE_IDS.root}>
+    <div className="has-[form]:basis-full" data-testid={SESSION_CREATE_IDS.root}>
       <Button variant="ghost" data-testid={SESSION_CREATE_IDS.toggle} aria-expanded={model.open} onClick={() => model.setOpen(!model.open)}>
         <Plus size={16} aria-hidden="true" /> {t("newSession")}
       </Button>

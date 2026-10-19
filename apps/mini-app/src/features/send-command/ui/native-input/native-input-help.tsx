@@ -8,16 +8,18 @@ export function NativeInputHelp({ session, onRestart, disabled = true }: NativeI
   const { t } = useTranslation()
 
   return (
-    <div className="native-input-help" data-testid={IDS.connectionHint}>
+    <div className="text-[12px] text-muted-foreground" data-testid={IDS.connectionHint}>
       {session.capabilities.restartSession ? (
         <>
           <Button type="button" variant="outline" size="sm" data-testid={IDS.restartSession} onClick={onRestart} disabled={disabled}>
             {t("restartWithInput")}
           </Button>
-          <p>{t("restartWithInputHint")}</p>
+          <p className="mb-[8px]">{t("restartWithInputHint")}</p>
         </>
       ) : (
-        <p>{t(session.nativeRestartState === NativeRestartState.Ambiguous ? "nativeRestartAmbiguous" : "nativeRestartUnavailable")}</p>
+        <p className="mb-[8px]">
+          {t(session.nativeRestartState === NativeRestartState.Ambiguous ? "nativeRestartAmbiguous" : "nativeRestartUnavailable")}
+        </p>
       )}
     </div>
   )

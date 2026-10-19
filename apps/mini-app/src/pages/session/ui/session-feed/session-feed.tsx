@@ -3,6 +3,7 @@ import { SessionTab } from "@/entities/session"
 import { HistoryStatus } from "@protocol"
 import { useTranslation } from "@/shared/lib/hooks"
 import { Button } from "@/shared/ui/button"
+import { cn } from "@/shared/lib/utils"
 import { SESSION_FEED_IDS } from "@/pages/session/config/test-ids"
 import { useFollowMessages } from "@/pages/session/model/use-follow-messages"
 import { navigationScrollBehavior } from "@/pages/session/lib/message-navigation"
@@ -35,9 +36,9 @@ export function SessionFeed({
   const loading = tab === SessionTab.History && !messages.length && historyStatus === HistoryStatus.Loading
 
   return (
-    <div className="feed-frame" data-testid={SESSION_FEED_IDS.frame} aria-busy={loading}>
+    <div className="relative isolate session:min-h-0 session:flex-1" data-testid={SESSION_FEED_IDS.frame} aria-busy={loading}>
       <div
-        className={"feed" + (showMessages ? " with-rail" : "")}
+        className={cn(feedClass, showMessages && "py-0 pr-[35px] session:py-0")}
         data-testid={SESSION_FEED_IDS.root}
         ref={scroll}
         style={showMessages && !settled ? { visibility: "hidden" } : undefined}
@@ -59,7 +60,7 @@ export function SessionFeed({
         </div>
       </div>
       {showMessages && !settled ? (
-        <div className="feed-restoring">
+        <div className="pointer-events-none absolute inset-0 p-[22px]">
           <HistorySkeleton />
         </div>
       ) : null}
@@ -68,7 +69,7 @@ export function SessionFeed({
         <Button
           variant="outline"
           size="icon"
-          className="feed-bottom"
+          className="absolute bottom-[16px] left-1/2 size-[40px] -translate-x-1/2 rounded-full bg-surface text-foreground shadow-[0_3px_12px_color-mix(in_srgb,var(--foreground)_15%,transparent)] hover:bg-surface hover:text-foreground dark:bg-surface dark:hover:bg-surface"
           data-testid={SESSION_FEED_IDS.bottom}
           aria-label={t("scrollToBottom")}
           title={t("scrollToBottom")}
@@ -80,3 +81,6 @@ export function SessionFeed({
     </div>
   )
 }
+
+const feedClass =
+  "h-[44dvh] min-h-[240px] overflow-y-auto overscroll-y-contain px-0 py-[22px] [overflow-anchor:none] [scrollbar-width:thin] phone:h-[40dvh] session:h-full session:min-h-0 session:py-[12px]"

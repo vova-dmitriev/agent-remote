@@ -11,8 +11,18 @@ export function SessionActivity({ session, available }: SessionActivityProps) {
   if (!label) return null
 
   return (
-    <div className="session-activity" role="status" aria-live="polite" data-testid={ACTIVITY_IDS.root}>
-      <LoaderCircle className="session-activity-spinner" size={14} aria-hidden="true" data-testid={ACTIVITY_IDS.spinner} />
+    <div
+      className="flex min-h-[22px] flex-none items-center gap-[7px] px-[9px] py-[2px] text-[12px] leading-[18px] text-muted-foreground"
+      role="status"
+      aria-live="polite"
+      data-testid={ACTIVITY_IDS.root}
+    >
+      <LoaderCircle
+        className="flex-none animate-activity-spin motion-reduce:animate-none"
+        size={14}
+        aria-hidden="true"
+        data-testid={ACTIVITY_IDS.spinner}
+      />
       <span data-testid={ACTIVITY_IDS.label}>{t(label)}</span>
     </div>
   )

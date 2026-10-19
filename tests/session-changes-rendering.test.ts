@@ -35,8 +35,8 @@ it('preserves nested syntax tokens across diff lines without generating raw HTML
   highlightDiffLines()(tree);
   const code = tree.children[0]!;
 
-  expect(JSON.stringify(code)).toContain('diff-line-add');
-  expect(JSON.stringify(code)).toContain('diff-line-delete');
+  expect(JSON.stringify(code)).toContain('"data-diff-line":"add"');
+  expect(JSON.stringify(code)).toContain('"data-diff-line":"delete"');
   expect(JSON.stringify(code)).toContain('hljs-keyword');
   expect(JSON.stringify(code)).not.toContain('"type":"raw"');
   expect(JSON.stringify(code)).not.toContain('"data-line":"2"');

@@ -16,13 +16,18 @@ export const MessageRail = memo(function MessageRail({ messages, activeId, jump,
 
   return (
     <>
-      <nav ref={rail} className="message-rail" data-testid={SESSION_FEED_IDS.rail} aria-label={t("messageNavigation")}>
+      <nav
+        ref={rail}
+        className="absolute top-[18px] right-0 bottom-[18px] w-[28px] overflow-y-auto overscroll-y-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        data-testid={SESSION_FEED_IDS.rail}
+        aria-label={t("messageNavigation")}
+      >
         {messages.map((message, index) => (
           <Button
             key={message.id}
             ref={(node) => register(message.id, node)}
             variant="ghost"
-            className="message-marker"
+            className="group/marker flex h-[24px] w-[28px] rounded-[4px] p-0 text-muted-foreground hover:text-muted-foreground aria-[current=true]:text-primary"
             data-testid={SESSION_FEED_IDS.marker}
             data-message-id={message.id}
             aria-label={t("jumpToMessage", { number: index + 1, author: message.role === MessageRole.User ? t("you") : agent })}
@@ -51,7 +56,10 @@ export const MessageRail = memo(function MessageRail({ messages, activeId, jump,
               else onKeyDown(event, index)
             }}
           >
-            <span aria-hidden="true" />
+            <span
+              className="block h-[3px] w-[12px] bg-current opacity-45 group-hover/marker:w-[18px] group-hover/marker:opacity-100 group-focus-visible/marker:w-[18px] group-focus-visible/marker:opacity-100 group-aria-[current=true]/marker:w-[18px] group-aria-[current=true]/marker:opacity-100"
+              aria-hidden="true"
+            />
           </Button>
         ))}
       </nav>

@@ -42,8 +42,8 @@ for (const language of ['en', 'ru'] as const) {
     const markup = await patch.evaluate((element) => element.innerHTML);
 
     expect(markup).toContain('hljs-keyword');
-    expect(markup).toContain('diff-line-add');
-    expect(markup).toContain('diff-line-delete');
+    expect(markup).toContain('data-diff-line="add"');
+    expect(markup).toContain('data-diff-line="delete"');
     expect(markup).not.toContain('<script>');
 
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(

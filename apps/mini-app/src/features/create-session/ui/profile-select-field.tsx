@@ -1,5 +1,6 @@
 import { ProfileAuthMode, type ExecutionProfileSummary } from "@protocol"
 import { useTranslation } from "@/shared/lib/hooks"
+import { formLabelClass } from "@/shared/ui/label"
 import { SESSION_CREATE_IDS } from "../config/test-ids"
 
 interface ProfileSelectFieldProps {
@@ -15,7 +16,7 @@ export function ProfileSelectField({ nativeProvider, profiles, profileId, profil
   const { t } = useTranslation()
 
   return (
-    <label className="block text-sm">
+    <label className={formLabelClass}>
       {t("sessionLaunchProfile")}
       <select
         className="mt-1 w-full rounded-md border border-border bg-background p-2"

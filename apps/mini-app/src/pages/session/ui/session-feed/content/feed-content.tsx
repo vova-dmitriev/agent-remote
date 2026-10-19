@@ -14,12 +14,12 @@ export function FeedContent({ sessionId, messages, tab, terminal, agent, history
 
   if (messages.length)
     return (
-      <div className="virtual-messages" data-testid={SESSION_FEED_IDS.virtualList} style={{ height: virtualizer.getTotalSize() }}>
+      <div className="relative w-full" data-testid={SESSION_FEED_IDS.virtualList} style={{ height: virtualizer.getTotalSize() }}>
         {virtualizer.getVirtualItems().map((item) => (
           <div
             key={item.key}
             ref={virtualizer.measureElement}
-            className="virtual-message"
+            className="absolute top-0 left-0 w-full *:mb-0"
             data-testid={SESSION_FEED_IDS.virtualRow}
             data-index={item.index}
             data-message-id={messages[item.index]!.id}
@@ -35,7 +35,7 @@ export function FeedContent({ sessionId, messages, tab, terminal, agent, history
   if (historyStatus !== HistoryStatus.Ready) return null
 
   return (
-    <p className="placeholder" data-testid={SESSION_FEED_IDS.empty}>
+    <p className="py-[20px] text-[13px] text-muted-foreground" data-testid={SESSION_FEED_IDS.empty}>
       {t(available ? "emptyHistory" : "disconnectedHistory")}
     </p>
   )

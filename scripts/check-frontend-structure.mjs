@@ -1,11 +1,13 @@
 import { readFileSync, readdirSync } from 'node:fs';
-import { resolve, join, relative } from 'node:path';
+import { resolve, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(process.argv[2] ?? fileURLToPath(new URL('../apps/mini-app', import.meta.url)));
 const issues = [];
 const source = join(root, 'src');
 const layers = new Set(['app', 'pages', 'widgets', 'features', 'entities', 'shared']);
+// Components style with Tailwind utilities; only the entry, the tokens and rendered-Markdown scope stay as CSS.
+const stylesheets = new Set(['app/styles/globals.css', 'app/styles/tokens.css', 'app/styles/markdown.css']);
 
 function visit(directory) {
   const entries = readdirSync(directory, { withFileTypes: true });
@@ -29,6 +31,12 @@ function visit(directory) {
 
       visit(target);
       continue;
+    }
+
+    if (/\.s?css$/.test(entry.name) && !stylesheets.has(relative(source, target).split(sep).join('/'))) {
+      issues.push(
+        `${relative(source, target)}: stylesheet outside the allowlist; use Tailwind utilities and theme tokens.`,
+      );
     }
 
     if (!/\.(ts|tsx|css|mjs)$/.test(entry.name)) {
@@ -69,5 +77,7 @@ if (issues.length) {
   process.stderr.write(issues.join('\n') + '\n');
   process.exitCode = 1;
 } else {
-  process.stdout.write('Frontend structure clean: layers, file sizes, directory sizes, theme tokens.\n');
+  process.stdout.write(
+    'Frontend structure clean: layers, file sizes, directory sizes, theme tokens, stylesheet allowlist.\n',
+  );
 }
