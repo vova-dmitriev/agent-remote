@@ -3,7 +3,6 @@ import type { ProfileVerification } from '../types.js';
 import type { ProfileRegistry } from '../registry.js';
 import type { ProfileServiceOptions } from '../lifecycle/types.js';
 import type { ProfileNativeOptions } from '../native/types.js';
-import type { ProfileAuthenticationPool } from './pool.js';
 import type { ProfileJournal } from '../lifecycle/journal.js';
 
 export interface ProfileAuthenticationNative {
@@ -29,9 +28,16 @@ export interface ProfileAuthenticationOptions extends ProfileServiceOptions {
   ) => Promise<ProfileAuthenticationNative>;
 }
 
+/** Native authentication processes opened per profile version. */
+export interface ProfileAuthenticationNatives {
+  open(id: string, version: number, current: () => boolean): Promise<ProfileAuthenticationNative>;
+  close(id: string, version?: number): Promise<boolean>;
+  closeAll(): Promise<void>;
+}
+
 export interface ProfileAuthenticationContext {
   options: ProfileAuthenticationOptions;
-  pool: ProfileAuthenticationPool;
+  pool: ProfileAuthenticationNatives;
   journal: ProfileJournal;
   logins: Map<string, ProfileLogin>;
   active: Set<string>;
@@ -41,7 +47,7 @@ export interface ProfileAuthenticationContext {
 
 export interface ProfileAuthenticationReconcileContext {
   options: ProfileAuthenticationOptions;
-  pool: ProfileAuthenticationPool;
+  pool: ProfileAuthenticationNatives;
   journal: ProfileJournal;
   logins: Map<string, ProfileLogin>;
 }

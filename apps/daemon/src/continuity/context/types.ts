@@ -4,7 +4,7 @@ import type {
   CheckpointCoverage,
   CheckpointMessageRole,
   CheckpointVisibleRole,
-} from './values.js';
+} from '../../domain/continuity/checkpoint.js';
 
 export interface SourceFence {
   ownerId: string;

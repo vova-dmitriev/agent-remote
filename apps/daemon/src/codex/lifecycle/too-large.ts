@@ -11,7 +11,7 @@ import {
 import { RuntimeEvent } from '../../domain/runtime.js';
 import { type AdapterRegistry } from '../../adapters/registry.js';
 import { type Monitor } from '../../monitor/monitor.js';
-import { type CodexBindingOptions } from '../binding/binding.js';
+import type { CodexBindingOptions } from '../../domain/codex/client.js';
 import { codexSessionIdentity } from '../binding/identity.js';
 
 /**

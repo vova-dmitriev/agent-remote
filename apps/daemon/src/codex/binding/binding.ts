@@ -35,12 +35,11 @@ import { clearCurrentStep } from '../../monitor/activity/current-step.js';
 import { codexMediaCandidate, nativeCodexMedia } from '../../attachments/content/native.js';
 import { codexAttachmentInput } from '../../attachments/content/input.js';
 import { type AttachmentService } from '../../attachments/service.js';
-import { EventEmitter } from 'node:events';
 import { createHash, randomUUID } from 'node:crypto';
 import { SourceAdapter, type AdapterRegistry } from '../../adapters/registry.js';
 import { type PermissionBroker } from '../../commands/permission-broker.js';
 import { type Monitor } from '../../monitor/monitor.js';
-import { type RpcFrame } from '../rpc/rpc-client.js';
+import type { CodexBindingOptions, CodexClient, RpcFrame } from '../../domain/codex/client.js';
 import { codexTurnError } from '../errors.js';
 import { CodexModelReader } from '../history/model-reader.js';
 import { type UserInputBroker } from '../../commands/user-input-broker.js';
@@ -51,18 +50,6 @@ import { historyTurnTimes, messageTime, turnTime } from '../history/history-time
 import { object, itemMessage } from '../events.js';
 import { codexSessionIdentity } from './identity.js';
 
-export interface CodexClient extends EventEmitter {
-  request(method: string, params: unknown): Promise<unknown>;
-  respond(id: string | number, result: unknown): void | Promise<void>;
-  reject?(id: string | number): void;
-  pendingRequests?(): RpcFrame[];
-  close(): Promise<void>;
-}
-export interface CodexBindingOptions {
-  kind: typeof TargetKind.CodexCli | typeof TargetKind.CodexDesktop;
-  threadId: string;
-  endpoint: string;
-}
 interface Dependencies {
   rpc: CodexClient;
   monitor: Monitor;

@@ -10,8 +10,7 @@ import {
 import { CodexMethod } from '../../domain/codex/codex.js';
 import { randomUUID } from 'node:crypto';
 import { type UserInputBroker } from '../../commands/user-input-broker.js';
-import { type CodexClient } from './binding.js';
-import { type RpcFrame } from '../rpc/rpc-client.js';
+import type { CodexClient, RpcFrame } from '../../domain/codex/client.js';
 import { object } from '../events.js';
 
 export class CodexUserInputs {

@@ -19,7 +19,7 @@ import { randomUUID } from 'node:crypto';
 import { CodedError, ErrorCode, validateUserInputAnswers } from '@protocol';
 import { asyncReplyKeys, asyncReplyWrapper, desktopAsyncRequests } from './desktop-user-input.js';
 import { EventEmitter } from 'node:events';
-import { type RpcFrame } from '../rpc/rpc-client.js';
+import type { RpcFrame } from '../../domain/codex/client.js';
 import { DesktopIpcClient, type OversizedConversation } from './desktop-ipc.js';
 import { desktopTurns, desktopModel, applyDesktopPatches } from './desktop-state.js';
 import { desktopItemTime } from '../history/history-times.js';
