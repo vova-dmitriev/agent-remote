@@ -13,6 +13,8 @@ export const ru = {
   ...sessionControlsRU,
   sessionOnline: "Сессия онлайн",
   sessionOffline: "Сессия недоступна",
+  sessionTooLarge: "Сессия слишком большая для показа",
+  codexThreadTooLarge: "Этот тред Codex слишком большой, чтобы показать его здесь. Открой его в Codex на Mac.",
   modelUnknown: "Модель неизвестна",
   modelLabel: "Модель",
   brandName: "Agent",

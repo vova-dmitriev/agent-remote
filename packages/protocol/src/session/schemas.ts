@@ -95,6 +95,7 @@ export const sessionSchema = z
         ErrorCode.CODEX_AUTH_REQUIRED,
         ErrorCode.CODEX_NETWORK_ERROR,
         ErrorCode.CODEX_TURN_FAILED,
+        ErrorCode.CODEX_FRAME_TOO_LARGE,
       ])
       .optional(),
     target: targetSchema,

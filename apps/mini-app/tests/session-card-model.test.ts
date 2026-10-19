@@ -2,7 +2,7 @@ import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { I18nextProvider } from "react-i18next"
 import { expect, it } from "vitest"
-import { BindingState, IntegrationState, Language, SessionStatus, type Session } from "@protocol"
+import { BindingState, ErrorCode, IntegrationState, Language, SessionStatus, type Session } from "@protocol"
 import { createLanguageInstance } from "../src/shared/lib/i18n/index.js"
 import { SessionCard } from "../src/entities/session/ui/session-card.js"
 import { SESSION_CARD_IDS } from "../src/entities/session/config/test-ids.js"
@@ -56,4 +56,21 @@ it.each([
     expect(html).toContain(`data-testid="${SESSION_CARD_IDS.model}"`)
     expect(html).toContain(unknown)
   }
+})
+
+it.each([
+  [Language.En, "Session too large to mirror", "Session unavailable"],
+  [Language.Ru, "Сессия слишком большая для показа", "Сессия недоступна"],
+] as const)("names an oversize Codex thread instead of the generic unavailable label in %s", (language, label, generic) => {
+  const session = {
+    ...sessionSnapshot("device").sessions[0]!,
+    binding: BindingState.Unverified,
+    integrationState: IntegrationState.Disconnected,
+    errorCode: ErrorCode.CODEX_FRAME_TOO_LARGE,
+  }
+
+  const html = render(session, language)
+
+  expect(html).toContain(label)
+  expect(html).not.toContain(generic)
 })

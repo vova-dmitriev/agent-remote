@@ -50,6 +50,7 @@ const keys: Record<string, MessageKey> = {
   [ErrorCode.CODEX_AUTH_REQUIRED]: "codexAuthRequired",
   [ErrorCode.CODEX_NETWORK_ERROR]: "networkUnavailable",
   [ErrorCode.CODEX_TURN_FAILED]: "codexTurnFailed",
+  [ErrorCode.CODEX_FRAME_TOO_LARGE]: "codexThreadTooLarge",
   [ErrorCode.CODEX_DISCONNECTED]: "sourceUnavailable",
   [ErrorCode.CODEX_TIMEOUT]: "requestTimedOut",
   [ErrorCode.CODEX_PROTOCOL_ERROR]: "sourceUnavailable",

@@ -13,6 +13,18 @@ import { connect, type Socket } from 'node:net';
 import { randomUUID } from 'node:crypto';
 import { verifyLocalSocket } from '../rpc/transport.js';
 import { object, type Data } from '../events.js';
+import { OversizeFrame, type OversizeFrameRoute } from './oversize-frame.js';
+
+/** Largest IPC frame buffered in memory; larger frames are drained and fail only their own route. */
+const MAX_FRAME_BYTES = 32 * 1024 * 1024;
+/** Conversations remembered as too large to mirror over this connection. */
+const MAX_OVERSIZED_CONVERSATIONS = 64;
+
+/** Emitted with `RuntimeEvent.FrameTooLarge` when a broadcast for one conversation exceeded the cap. */
+export interface OversizedConversation {
+  conversationId: string;
+  sourceClientId?: string;
+}
 
 const versions: Record<string, number> = {
   [CodexDesktopMethod.ThreadOwnerDiscovery]: 1,
@@ -26,7 +38,9 @@ interface Pending {
   timer: ReturnType<typeof setTimeout>;
 }
 export class DesktopIpcClient extends EventEmitter {
-  private buffer = Buffer.alloc(0);
+  private buffer: Buffer = Buffer.alloc(0);
+  private draining: OversizeFrame | null = null;
+  private oversized = new Set<string>();
   private pending = new Map<string, Pending>();
   private clientId = 'initializing-client';
   private closed = false;
@@ -104,6 +118,10 @@ export class DesktopIpcClient extends EventEmitter {
   async close() {
     this.disconnect();
   }
+  /** True once a broadcast for this conversation exceeded the frame cap on this connection. */
+  frameTooLarge(conversationId: string) {
+    return this.oversized.has(conversationId);
+  }
   private call(
     method: string,
     params: unknown,
@@ -169,15 +187,46 @@ export class DesktopIpcClient extends EventEmitter {
     this.socket.write(Buffer.concat([header, data]));
   }
   private receive = (chunk: Buffer) => {
-    this.buffer = Buffer.concat([this.buffer, chunk]);
+    let input = chunk;
 
-    while (this.buffer.length >= 4) {
+    if (this.draining) {
+      input = input.subarray(this.draining.consume(input));
+
+      if (!this.draining.done) {
+        return;
+      }
+
+      const route = this.draining.route();
+
+      this.draining = null;
+      this.dropOversize(route);
+    }
+
+    this.buffer = this.buffer.length ? Buffer.concat([this.buffer, input]) : input;
+
+    while (!this.closed && this.buffer.length >= 4) {
       const length = this.buffer.readUInt32LE(0);
 
-      if (length > 32 * 1024 * 1024 || length === 0) {
+      if (length === 0) {
         this.disconnect();
 
         return;
+      }
+
+      if (length > MAX_FRAME_BYTES) {
+        const frame = new OversizeFrame(length);
+        const rest = this.buffer.subarray(4);
+
+        this.buffer = rest.subarray(frame.consume(rest));
+
+        if (!frame.done) {
+          this.draining = frame;
+
+          return;
+        }
+
+        this.dropOversize(frame.route());
+        continue;
       }
 
       if (this.buffer.length < length + 4) {
@@ -222,6 +271,37 @@ export class DesktopIpcClient extends EventEmitter {
       }
     }
   };
+  /** Fails only the request or followed conversation that produced a drained oversize frame. */
+  private dropOversize(route: OversizeFrameRoute) {
+    if (route.type === CodexDesktopMessageType.Response && route.requestId) {
+      const pending = this.pending.get(route.requestId);
+
+      if (pending) {
+        this.pending.delete(route.requestId);
+        clearTimeout(pending.timer);
+        pending.reject(new CodedError(ErrorCode.CODEX_FRAME_TOO_LARGE));
+      }
+
+      return;
+    }
+
+    if (route.type !== CodexDesktopMessageType.Broadcast || !route.conversationId) {
+      return;
+    }
+
+    if (!this.oversized.has(route.conversationId) && this.oversized.size >= MAX_OVERSIZED_CONVERSATIONS) {
+      this.oversized.delete(this.oversized.values().next().value!);
+    }
+
+    this.oversized.add(route.conversationId);
+
+    const conversation: OversizedConversation = {
+      conversationId: route.conversationId,
+      ...(route.sourceClientId ? { sourceClientId: route.sourceClientId } : {}),
+    };
+
+    this.emit(RuntimeEvent.FrameTooLarge, conversation);
+  }
   private disconnect() {
     if (this.closed) {
       return;
@@ -237,6 +317,7 @@ export class DesktopIpcClient extends EventEmitter {
     this.pending.clear();
     this.socket.destroy();
     this.buffer = Buffer.alloc(0);
+    this.draining = null;
     this.emit(RuntimeEvent.Disconnected);
   }
 }

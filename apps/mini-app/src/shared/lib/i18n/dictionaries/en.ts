@@ -12,6 +12,8 @@ export const en = {
   ...sessionControlsEN,
   sessionOnline: "Session online",
   sessionOffline: "Session unavailable",
+  sessionTooLarge: "Session too large to mirror",
+  codexThreadTooLarge: "This Codex thread is too large to mirror here. Open it in Codex on your Mac.",
   modelUnknown: "Model unknown",
   modelLabel: "Model",
   brandName: "Agent",

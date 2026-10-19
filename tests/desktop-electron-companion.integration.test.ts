@@ -8,11 +8,14 @@ import { build as buildVite } from 'vite';
 import { afterEach, expect, it } from 'vitest';
 import type { ElectronApplication } from 'playwright';
 import { desktopRuntimeFixture } from './helpers/desktop-runtime-fixture.js';
+import { guardRuntimeProcesses, trackRuntimeChild, trackRuntimeRoot } from './helpers/runtime-processes.js';
 import { verifyDesktopAuthLinkPolicy } from './desktop-e2e/auth-link-policy.js';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const requireDesktop = createRequire(resolve(root, 'apps/desktop/package.json'));
 const itOnDarwin = it.skipIf(process.platform !== 'darwin');
+
+guardRuntimeProcesses();
 
 type DesktopEsbuild = {
   build: (options: {
@@ -32,17 +35,29 @@ let companion: Awaited<ReturnType<typeof desktopRuntimeFixture>> | undefined;
 let peer: ReturnType<typeof spawn> | undefined;
 
 afterEach(async () => {
-  await app?.close();
+  try {
+    await app?.close();
+  } finally {
+    // The packaged peer and companion must stop even when the Electron app fails to close.
+    const running = peer;
 
-  if (peer && peer.exitCode === null) {
-    peer.kill('SIGTERM');
-    await new Promise<void>((resolve) => peer?.once('exit', () => resolve()));
-  }
+    app = undefined;
+    peer = undefined;
 
-  await companion?.close();
+    if (running && running.exitCode === null && running.signalCode === null) {
+      const exited = new Promise<void>((resolve) => running.once('exit', () => resolve()));
 
-  if (fixture) {
-    await rm(fixture, { recursive: true, force: true });
+      running.kill('SIGTERM');
+      await exited;
+    }
+
+    await companion?.close();
+    companion = undefined;
+
+    if (fixture) {
+      await rm(fixture, { recursive: true, force: true });
+      fixture = undefined;
+    }
   }
 });
 
@@ -54,6 +69,7 @@ itOnDarwin(
     const { build: buildEsbuild } = requireDesktop('esbuild') as DesktopEsbuild;
 
     fixture = await mkdtemp(join(tmpdir(), 'desktop-electron-companion-'));
+    trackRuntimeRoot(fixture);
     companion = await desktopRuntimeFixture();
     const renderer = join(fixture, 'renderer');
     const main = join(fixture, 'main.cjs');
@@ -99,6 +115,7 @@ process.once('SIGTERM', async () => { await daemon.close(); process.exit(0); });
     });
 
     peer = runningPeer;
+    trackRuntimeChild(runningPeer);
     let peerOutput = '';
     let peerErrors = '';
 

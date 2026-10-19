@@ -7,12 +7,15 @@ import { installDesktopRuntime } from '../apps/desktop/src/runtime/install-runti
 import { verifyDesktopRuntime } from '../scripts/desktop/verify-runtime-lib.mjs';
 import { desktopRuntimeFixture } from './helpers/desktop-runtime-fixture.js';
 import { packagedCompanionFixture } from './helpers/packaged-companion.js';
+import { guardRuntimeProcesses } from './helpers/runtime-processes.js';
 import { copyRuntimeTree, packageDesktopRuntime, runtimeFiles } from '../scripts/desktop/package-runtime.mjs';
 import { desktopNodeTarget } from '../scripts/desktop/runtime-pin.mjs';
 import { FINDER_METADATA, listRuntimeFiles } from '../scripts/desktop/runtime-files.mjs';
 
 const cleanups: Array<() => Promise<unknown>> = [];
 const itOnDarwin = it.skipIf(process.platform !== 'darwin');
+
+guardRuntimeProcesses();
 
 afterEach(async () => {
   for (const cleanup of cleanups.splice(0).reverse()) {

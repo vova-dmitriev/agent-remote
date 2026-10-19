@@ -20,7 +20,7 @@ import { CodedError, ErrorCode, validateUserInputAnswers } from '@protocol';
 import { asyncReplyKeys, asyncReplyWrapper, desktopAsyncRequests } from './desktop-user-input.js';
 import { EventEmitter } from 'node:events';
 import { type RpcFrame } from '../rpc/rpc-client.js';
-import { DesktopIpcClient } from './desktop-ipc.js';
+import { DesktopIpcClient, type OversizedConversation } from './desktop-ipc.js';
 import { desktopTurns, desktopModel, applyDesktopPatches } from './desktop-state.js';
 import { desktopItemTime } from '../history/history-times.js';
 import { object, type Data } from '../events.js';
@@ -42,6 +42,7 @@ export class DesktopCodexClient extends EventEmitter {
     super();
     this.ownerId = owner;
     ipc.on(RuntimeEvent.Broadcast, this.broadcast);
+    ipc.on(RuntimeEvent.FrameTooLarge, this.frameTooLarge);
     ipc.on(RuntimeEvent.Disconnected, this.disconnected);
   }
   static async attach(ipc: DesktopIpcClient, threadId: string) {
@@ -55,17 +56,29 @@ export class DesktopCodexClient extends EventEmitter {
 
     try {
       await new Promise<void>((resolve, reject) => {
-        const timer = setTimeout(() => {
+        const settle = () => {
+          clearTimeout(timer);
           client.off(RuntimeEvent.Snapshot, ready);
+          client.off(RuntimeEvent.Disconnected, lost);
+        };
+
+        const timer = setTimeout(() => {
+          settle();
           reject(new CodedError(ErrorCode.CODEX_TIMEOUT));
         }, 10_000);
 
         const ready = () => {
-          clearTimeout(timer);
+          settle();
           resolve();
         };
 
+        const lost = (error?: CodedError) => {
+          settle();
+          reject(error ?? new CodedError(ErrorCode.CODEX_DISCONNECTED));
+        };
+
         client.once(RuntimeEvent.Snapshot, ready);
+        client.once(RuntimeEvent.Disconnected, lost);
 
         ipc.broadcast(
           CodexDesktopMethod.ThreadStreamFollowingChanged,
@@ -273,6 +286,7 @@ export class DesktopCodexClient extends EventEmitter {
     } catch {}
 
     this.ipc.off(RuntimeEvent.Broadcast, this.broadcast);
+    this.ipc.off(RuntimeEvent.FrameTooLarge, this.frameTooLarge);
     this.ipc.off(RuntimeEvent.Disconnected, this.disconnected);
     this.pending.clear();
 
@@ -282,12 +296,22 @@ export class DesktopCodexClient extends EventEmitter {
 
     this.answered.clear();
   }
-  private disconnected = () => {
+  private disconnected = (error?: CodedError) => {
     for (const receipt of this.questionReceipts) {
       receipt.fail();
     }
 
-    this.emit(RuntimeEvent.Disconnected);
+    this.emit(RuntimeEvent.Disconnected, error);
+  };
+  /** A state frame for this thread exceeded the IPC cap: only this thread loses its mirror. */
+  private frameTooLarge = (conversation: OversizedConversation) => {
+    if (conversation.conversationId !== this.threadId || conversation.sourceClientId !== this.ownerId) {
+      return;
+    }
+
+    this.ipc.off(RuntimeEvent.Broadcast, this.broadcast);
+    this.ipc.off(RuntimeEvent.FrameTooLarge, this.frameTooLarge);
+    this.disconnected(new CodedError(ErrorCode.CODEX_FRAME_TOO_LARGE));
   };
   private async respondUserInput(id: string | number, request: Data, result: unknown): Promise<void> {
     const params = object(request.params);

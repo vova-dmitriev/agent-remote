@@ -14,6 +14,7 @@ import { DesktopIpcClient } from './desktop/desktop-ipc.js';
 import { DesktopCodexClient } from './desktop/desktop-client.js';
 import { object } from './events.js';
 import { retainConnectedBinding, type CodexBinding } from './lifecycle/bindings.js';
+import { markCodexThreadTooLarge } from './lifecycle/too-large.js';
 import { type Monitor } from '../monitor/monitor.js';
 import { type AdapterRegistry } from '../adapters/registry.js';
 import { type UserInputBroker } from '../commands/user-input-broker.js';
@@ -453,6 +454,13 @@ export class CodexManager {
       }
 
       let client = entry.rpc;
+      const thread = { kind: selection.kind, endpoint: selection.socketPath, threadId: id };
+
+      // Each attach makes Codex send the whole snapshot again; retry only on a new IPC connection.
+      if (entry.ipc?.frameTooLarge(id)) {
+        markCodexThreadTooLarge(thread, this.deps);
+        continue;
+      }
 
       try {
         if (entry.ipc) {
@@ -468,16 +476,17 @@ export class CodexManager {
           continue;
         }
 
-        const bound = await bindCodex(
-          { kind: selection.kind, endpoint: selection.socketPath, threadId: id },
-          { ...this.deps, rpc: client },
-        );
+        const bound = await bindCodex(thread, { ...this.deps, rpc: client });
 
         entry.bindings.set(id, bound);
       } catch {
         if (entry.ipc) {
           await client?.close();
           entry.clients.delete(id);
+
+          if (entry.ipc?.frameTooLarge(id)) {
+            markCodexThreadTooLarge(thread, this.deps);
+          }
         }
       }
     }

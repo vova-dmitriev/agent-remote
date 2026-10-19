@@ -9,9 +9,12 @@ import { LocalOperation, LocalOrigin } from '@protocol';
 import { createDesktopCompanionConnector } from '../apps/desktop/src/runtime/connector.js';
 import { desktopRuntimeFixture } from './helpers/desktop-runtime-fixture.js';
 import { localFixture } from './helpers/local-runtime.js';
+import { guardRuntimeProcesses } from './helpers/runtime-processes.js';
 
 const cleanups: Array<() => Promise<unknown>> = [];
 const itOnDarwin = it.skipIf(process.platform !== 'darwin');
+
+guardRuntimeProcesses();
 
 afterEach(async () => {
   for (const cleanup of cleanups.splice(0).reverse()) {

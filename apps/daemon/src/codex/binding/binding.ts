@@ -49,6 +49,7 @@ import { CodexUserInputs } from './user-inputs.js';
 import { CodexApprovals } from './approvals.js';
 import { historyTurnTimes, messageTime, turnTime } from '../history/history-times.js';
 import { object, itemMessage } from '../events.js';
+import { codexSessionIdentity } from './identity.js';
 
 export interface CodexClient extends EventEmitter {
   request(method: string, params: unknown): Promise<unknown>;
@@ -92,18 +93,7 @@ export async function bindCodex(options: CodexBindingOptions, deps: Dependencies
     throw new CodedError(DaemonErrorCode.CODEX_THREAD_MISMATCH);
   }
 
-  const identity = createHash('sha256')
-    .update(JSON.stringify([adapters.deviceIdentity(), options.kind, options.endpoint, options.threadId]))
-    .digest('hex');
-
-  const connectorId = 'codex-' + identity.slice(0, 32);
-
-  const target = {
-    kind: options.kind,
-    deviceId: adapters.deviceIdentity(),
-    connectorId,
-    threadId: options.threadId,
-  };
+  const { sessionId, connectorId, target } = codexSessionIdentity(options, adapters.deviceIdentity());
 
   const accepts = metadata.canAcceptDirectInput === true;
   const statusType = object(metadata.status).type;
@@ -116,7 +106,7 @@ export async function bindCodex(options: CodexBindingOptions, deps: Dependencies
   }
 
   const session: Session = sessionSchema.parse({
-    id: 'codex-' + identity,
+    id: sessionId,
     target,
     claudeSessionId: null,
     ...(sessionSchema.shape.cwd.safeParse(metadata.cwd).success ? { cwd: metadata.cwd } : {}),
