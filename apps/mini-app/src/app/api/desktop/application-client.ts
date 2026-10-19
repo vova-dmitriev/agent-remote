@@ -101,13 +101,13 @@ export class DesktopApplicationClient implements ApplicationClient {
         const selection = this.selection
         const response = await this.connection.request({ operation: LocalOperation.Profiles, request })
 
-        if (this.stopped || selection !== this.selection || this.selectedDevice !== deviceId) {
+        if (this.stopped || selection !== this.selection) {
           throw new Error(ErrorCode.STALE_EPOCH)
         }
 
         return response
       },
-      () => !this.stopped && this.selectedDevice === deviceId,
+      () => !this.stopped,
     )
   }
 

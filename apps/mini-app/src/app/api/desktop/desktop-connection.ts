@@ -16,6 +16,8 @@ export class DesktopBridgeConnection {
   private lease: ReturnType<typeof desktopBridgeLeaseSchema.parse> | null = null
   private generation = 0
   private release: (() => void) | null = null
+  private opening = false
+  private early: DesktopBridgeEvent[] = []
   private listeners = new Set<(event: DesktopBridgeEvent) => void>()
 
   constructor(private readonly bridge: DesktopBridge) {}
@@ -93,7 +95,21 @@ export class DesktopBridgeConnection {
 
   private open = async (): Promise<void> => {
     const generation = this.generation
-    const lease = desktopBridgeLeaseSchema.parse(await this.bridge.open())
+
+    this.opening = true
+    this.early = []
+
+    let lease: ReturnType<typeof desktopBridgeLeaseSchema.parse>
+
+    try {
+      lease = desktopBridgeLeaseSchema.parse(await this.bridge.open())
+    } finally {
+      this.opening = false
+    }
+
+    const early = this.early
+
+    this.early = []
 
     if (generation !== this.generation) {
       await this.bridge.close(lease.leaseId, lease.epoch)
@@ -102,11 +118,16 @@ export class DesktopBridgeConnection {
     }
 
     this.lease = lease
+
+    for (const event of early) this.receive(event)
   }
 
   private receive = (raw: DesktopBridgeEvent): void => {
     const parsed = desktopBridgeEventSchema.safeParse(raw)
     const lease = this.lease
+
+    // The host replays its initial snapshot while the lease is opening; keep it until the lease is known.
+    if (parsed.success && !lease && this.opening) this.early.push(parsed.data)
 
     if (!parsed.success || !lease || parsed.data.leaseId !== lease.leaseId || parsed.data.epoch !== lease.epoch) {
       return
