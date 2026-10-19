@@ -1,5 +1,6 @@
 import { afterEach, expect, it } from 'vitest';
-import { rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { LOCAL_LIMITS } from '../packages/protocol/src/index.js';
 import { installDesktopRuntime } from '../apps/desktop/src/runtime/install-runtime.js';
@@ -8,6 +9,7 @@ import { desktopRuntimeFixture } from './helpers/desktop-runtime-fixture.js';
 import { packagedCompanionFixture } from './helpers/packaged-companion.js';
 import { packageDesktopRuntime } from '../scripts/desktop/package-runtime.mjs';
 import { desktopNodeTarget } from '../scripts/desktop/runtime-pin.mjs';
+import { listRuntimeFiles } from '../scripts/desktop/runtime-files.mjs';
 
 const cleanups: Array<() => Promise<unknown>> = [];
 const itOnDarwin = it.skipIf(process.platform !== 'darwin');
@@ -120,4 +122,54 @@ it('uses a canonical module repository path when the package source directory is
       nodePath: '/missing/desktop-node',
     }),
   ).rejects.toMatchObject({ code: 'ENOENT' });
+});
+
+const FINDER_METADATA = '.DS_Store';
+
+async function runtimeTree(): Promise<string> {
+  const root = await mkdtemp(join(tmpdir(), 'runtime-files-'));
+
+  cleanups.push(() => rm(root, { recursive: true, force: true }));
+  await mkdir(join(root, 'sub'), { mode: 0o755 });
+  await writeFile(join(root, 'a.txt'), 'a', { mode: 0o644 });
+  await writeFile(join(root, 'sub', 'b.txt'), 'b', { mode: 0o644 });
+
+  return root;
+}
+
+it('ignores Finder metadata files at any depth when listing runtime files', async () => {
+  const root = await runtimeTree();
+
+  await writeFile(join(root, FINDER_METADATA), 'x', { mode: 0o644 });
+  await writeFile(join(root, 'sub', FINDER_METADATA), 'x', { mode: 0o644 });
+
+  await expect(listRuntimeFiles(root)).resolves.toEqual(['a.txt', 'sub/b.txt']);
+});
+
+it('still rejects Finder metadata that is a symlink, a directory or group-writable', async () => {
+  const symlinked = await runtimeTree();
+
+  await symlink('a.txt', join(symlinked, FINDER_METADATA));
+  await expect(listRuntimeFiles(symlinked)).rejects.toThrow('LOCAL_RUNTIME_UNTRUSTED');
+
+  const directory = await runtimeTree();
+
+  await mkdir(join(directory, 'sub', FINDER_METADATA), { mode: 0o755 });
+  await expect(listRuntimeFiles(directory)).rejects.toThrow('LOCAL_RUNTIME_UNTRUSTED');
+
+  const writable = await runtimeTree();
+  const { chmod } = await import('node:fs/promises');
+
+  await writeFile(join(writable, FINDER_METADATA), 'x');
+  await chmod(join(writable, FINDER_METADATA), 0o666);
+  await expect(listRuntimeFiles(writable)).rejects.toThrow('LOCAL_RUNTIME_UNTRUSTED');
+});
+
+it('keeps listing other files so undeclared ones are still rejected by the verifier', async () => {
+  const root = await runtimeTree();
+
+  await writeFile(join(root, FINDER_METADATA), 'x', { mode: 0o644 });
+  await writeFile(join(root, '._a.txt'), 'x', { mode: 0o644 });
+
+  await expect(listRuntimeFiles(root)).resolves.toContain('._a.txt');
 });

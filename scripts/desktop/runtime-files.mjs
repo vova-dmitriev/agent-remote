@@ -1,6 +1,7 @@
 import { lstat, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
+const FINDER_METADATA = '.DS_Store';
 const untrusted = () => new Error('LOCAL_RUNTIME_UNTRUSTED');
 
 export async function listRuntimeFiles(root, directory = root) {
@@ -14,6 +15,10 @@ export async function listRuntimeFiles(root, directory = root) {
       continue;
     }
 
+    if (entry.name === FINDER_METADATA && !info.isFile()) {
+      throw untrusted();
+    }
+
     if (
       info.isSymbolicLink() ||
       info.mode & 0o022 ||
@@ -24,6 +29,8 @@ export async function listRuntimeFiles(root, directory = root) {
 
     if (info.isDirectory()) {
       files.push(...(await listRuntimeFiles(root, path)));
+    } else if (info.isFile() && entry.name === FINDER_METADATA) {
+      continue;
     } else if (info.isFile() && entry.name !== 'runtime-manifest.json') {
       files.push(
         path
