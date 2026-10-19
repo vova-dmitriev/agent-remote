@@ -20,6 +20,7 @@ export class HistoryWindow {
     request: (query: string, observe: (response: Response) => void) => Promise<EventEnvelope[]>,
     current: () => boolean,
     edge?: string,
+    agentId?: string,
   ) {
     const cursor = edge?.startsWith("position:")
       ? "source:" + edge.slice(9)
@@ -33,7 +34,9 @@ export class HistoryWindow {
     this.busy = true
 
     try {
-      const events = await request("?" + direction + "=" + encodeURIComponent(cursor), (response) => {
+      const subagent = agentId ? "&agentId=" + encodeURIComponent(agentId) : ""
+
+      const events = await request("?" + direction + "=" + encodeURIComponent(cursor) + subagent, (response) => {
         if (current())
           this.cursors[direction] = response.headers.get(direction === HistoryDirection.Before ? "x-next-cursor" : "x-after-cursor") ?? ""
       })

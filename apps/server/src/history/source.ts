@@ -12,6 +12,7 @@ import {
   type ServerFrame,
   HttpStatus,
   knownErrorCode,
+  SUBAGENT_ID_PATTERN,
 } from '@protocol';
 import {
   HISTORY_MAX_PENDING_READS_PER_DEVICE,
@@ -59,11 +60,16 @@ export class SourceHistory {
     after?: unknown,
     position?: unknown,
     single = false,
+    agentId?: unknown,
   ): Promise<HistoryPage | null> {
+    if (agentId !== undefined && (typeof agentId !== 'string' || !SUBAGENT_ID_PATTERN.test(agentId))) {
+      throw new Fault(ErrorCode.INVALID_REQUEST);
+    }
+
     const row = (
       await this.db.pool.query<{
         device_id: string;
-        data: { generation: string; capabilities?: { historyWindow?: boolean } };
+        data: { generation: string; capabilities?: { historyWindow?: boolean; subagentHistory?: boolean } };
       }>(
         'SELECT s.device_id,s.data FROM sessions s JOIN devices d ON d.id=s.device_id AND d.owner_id=s.owner_id WHERE s.owner_id=$1 AND s.id=$2 AND d.revoked_at IS NULL',
         [principal.userId, sessionId],
@@ -75,6 +81,17 @@ export class SourceHistory {
     }
 
     const connection = this.live.get(row.device_id);
+
+    // A subagent has no cached history: only its device's transcript reader can answer.
+    if (agentId !== undefined) {
+      if (!row.data.capabilities?.subagentHistory) {
+        throw new Fault(ErrorCode.TRANSCRIPT_UNAVAILABLE, HttpStatus.ServiceUnavailable);
+      }
+
+      if (!connection) {
+        throw new Fault(ErrorCode.SERVICE_UNAVAILABLE);
+      }
+    }
 
     if (!row.data.capabilities?.historyWindow || !connection) {
       if (
@@ -117,6 +134,10 @@ export class SourceHistory {
 
     // Legacy cached cursors stay on their original data source.
     if ((before || after) && !(raw as string).startsWith(HISTORY_SOURCE_CURSOR_PREFIX)) {
+      if (agentId !== undefined) {
+        throw new Fault(ErrorCode.INVALID_CURSOR);
+      }
+
       return null;
     }
 
@@ -166,6 +187,7 @@ export class SourceHistory {
         sessionId,
         generation: row.data.generation,
         direction,
+        ...(typeof agentId === 'string' ? { agentId } : {}),
         ...(raw
           ? {
               anchor:

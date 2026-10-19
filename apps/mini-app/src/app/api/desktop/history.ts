@@ -16,7 +16,7 @@ const pageSchema = z.strictObject({ events: z.array(eventSchema), before: z.stri
 
 type HistoryPage = z.infer<typeof pageSchema>
 
-/** Per-generation paging state, matching the web HistoryWindow: cursors, in-flight directions and exhausted edges. */
+/** Per-generation paging state, matching the web HistoryWindow: cursors, in-flight directions and exhausted edges. A subagent's transcript has its own state. */
 interface HistoryWindowState extends Pick<HistoryPage, HistoryPageDirection> {
   generation: string
   busy: Set<HistoryPageDirection>
@@ -34,6 +34,11 @@ function historyCursor(event: EventEnvelope) {
   return (event.payload as { historyCursor?: string }).historyCursor
 }
 
+/** Window key: the session itself, or one of its subagents. */
+function windowKey(sessionId: string, agentId?: string) {
+  return agentId ? sessionId + "\u0000" + agentId : sessionId
+}
+
 export class DesktopHistory {
   private generations = new Map<string, string>()
   private windows = new Map<string, HistoryWindowState>()
@@ -49,9 +54,9 @@ export class DesktopHistory {
     for (const session of frame.snapshot.sessions) this.generations.set(session.id, session.generation)
   }
 
-  async load(sessionId: string): Promise<EventEnvelope[] | null> {
-    const window = this.window(sessionId)
-    const page = await this.request(sessionId, HistoryDirection.Latest)
+  async load(sessionId: string, agentId?: string): Promise<EventEnvelope[] | null> {
+    const window = this.window(sessionId, agentId)
+    const page = await this.request(sessionId, HistoryDirection.Latest, undefined, agentId)
 
     if (page && window) {
       window.before = page.before
@@ -62,8 +67,8 @@ export class DesktopHistory {
     return page?.events ?? null
   }
 
-  async page(sessionId: string, direction: HistoryPageDirection, edge?: string): Promise<EventEnvelope[] | null> {
-    const window = this.window(sessionId)
+  async page(sessionId: string, direction: HistoryPageDirection, edge?: string, agentId?: string): Promise<EventEnvelope[] | null> {
+    const window = this.window(sessionId, agentId)
     const cursor = edge ? edgeCursor(edge) : window?.[direction]
     const key = direction + ":" + cursor
 
@@ -71,7 +76,7 @@ export class DesktopHistory {
     window.busy.add(direction)
 
     try {
-      const page = await this.request(sessionId, direction, cursor)
+      const page = await this.request(sessionId, direction, cursor, agentId)
 
       if (!page) return null
       window[direction] = page[direction]
@@ -85,7 +90,7 @@ export class DesktopHistory {
     }
   }
 
-  private async request(sessionId: string, direction: HistoryDirection, anchor?: string) {
+  private async request(sessionId: string, direction: HistoryDirection, anchor?: string, agentId?: string) {
     const generation = this.generations.get(sessionId)
 
     if (!generation) return null
@@ -97,25 +102,28 @@ export class DesktopHistory {
         generation,
         direction,
         ...(anchor ? { anchor } : {}),
+        ...(agentId ? { agentId } : {}),
       }),
     )
 
-    this.handlers.onHistory?.(sessionId, page.events)
+    // A subagent's items belong to its own view, never to the parent session's feed.
+    if (!agentId) this.handlers.onHistory?.(sessionId, page.events)
 
     return page
   }
 
-  /** The paging state of the session's current generation; a new generation starts empty. */
-  private window(sessionId: string) {
+  /** The paging state of the session's (or subagent's) current generation; a new generation starts empty. */
+  private window(sessionId: string, agentId?: string) {
     const generation = this.generations.get(sessionId)
 
     if (!generation) return undefined
-    const current = this.windows.get(sessionId)
+    const key = windowKey(sessionId, agentId)
+    const current = this.windows.get(key)
 
     if (current?.generation === generation) return current
     const created: HistoryWindowState = { generation, before: null, after: null, busy: new Set(), exhausted: new Set() }
 
-    this.windows.set(sessionId, created)
+    this.windows.set(key, created)
 
     return created
   }

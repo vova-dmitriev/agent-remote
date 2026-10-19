@@ -42,6 +42,8 @@ The sandboxed renderer has no Node.js access, generic IPC channel or native cred
 
 Deploy the relay and the mini-app before shipping a desktop build whose daemon reports a new session error code. The first such code is `CODEX_FRAME_TOO_LARGE`, shown when a Codex thread's state exceeds the 32 MiB IPC frame cap. Relays and mini-app bundles that are already deployed validate session error codes strictly. They reject every snapshot from a device that reports an unknown code. Builds from this release onward read an unknown session error code as `SESSION_UNAVAILABLE` instead.
 
+Subagent history follows the same order. A daemon from this release adds `type`, `description` and `transcriptAvailable` to a session's subagents, `subagentHistory` to its capabilities and tool activity to subagent history items. Relays and mini-app bundles that are already deployed parse these objects strictly and reject the whole snapshot. From this release they strip unknown subagent fields, read an unknown subagent status as `unknown` and an unknown tool kind as `tool`. The relay sends a subagent history request (`agentId`) only to a session whose daemon reports `subagentHistory`, because an older daemon closes the connection on that request. An older relay ignores `agentId` and would answer with the parent session's history, so deploy the relay before the mini-app that opens subagent views.
+
 ## Acceptance status
 
 Controlled tests cover SQLite and PTY under the packaged Node runtime, local grants, revocation, companion survival, the actual Electron bootstrap and the shared UI. Synthetic native peers establish protocol behavior rather than real provider-account acceptance. A safe probe separately checks the built Swift helper without requesting new macOS permissions.
