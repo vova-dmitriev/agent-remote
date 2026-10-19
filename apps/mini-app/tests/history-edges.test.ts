@@ -11,9 +11,12 @@ describe("history edges", () => {
     expect(settleHistoryEdge(open, HistoryDirection.After, "last", outcome)).toEqual({ before: null, after: "last" })
   })
 
-  it.each([HistoryPageOutcome.Failed, undefined])("keeps the edge open after a %s request", (outcome) => {
-    expect(settleHistoryEdge(open, HistoryDirection.Before, "first", outcome)).toBe(open)
-  })
+  it.each([HistoryPageOutcome.Busy, HistoryPageOutcome.Stale, HistoryPageOutcome.Failed, undefined])(
+    "keeps the edge open after a %s request",
+    (outcome) => {
+      expect(settleHistoryEdge(open, HistoryDirection.Before, "first", outcome)).toBe(open)
+    },
+  )
 
   it("ignores the latest window and unknown edges", () => {
     expect(settleHistoryEdge(open, HistoryDirection.Latest, "last", HistoryPageOutcome.Loaded)).toBe(open)

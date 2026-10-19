@@ -4,6 +4,7 @@ import { useRuntime } from "@/shared/lib/runtime"
 import { HistoryPageOutcome, SessionTab } from "../config/session-values"
 import { useSessionStoreApi } from "./context/use-session-store"
 import { reduceHistoryWindow } from "./store/history"
+import { historyPageOutcome } from "../lib/history-page"
 
 export function useSessionSelection() {
   const runtime = useRuntime()
@@ -74,8 +75,10 @@ export function useSessionSelection() {
         ? transport.history(sessionId, true)
         : transport.historyPage(sessionId, direction, edge))
 
-      if (!runtime.isCurrent(lease) || selection.current !== request) return HistoryPageOutcome.Failed
-      if (!events) return HistoryPageOutcome.Declined
+      if (!runtime.isCurrent(lease) || selection.current !== request) return HistoryPageOutcome.Stale
+      const outcome = historyPageOutcome(events)
+
+      if (!Array.isArray(events)) return outcome
 
       setState((s) =>
         reduceHistoryWindow(
@@ -88,7 +91,7 @@ export function useSessionSelection() {
         ),
       )
 
-      return HistoryPageOutcome.Loaded
+      return outcome
     } catch (error) {
       if (runtime.isCurrent(lease) && selection.current === request)
         setError(error instanceof Error ? error.message : ErrorCode.HISTORY_RELOAD_FAILED)

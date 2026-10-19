@@ -119,4 +119,21 @@ test('with both caps visible the band still matches the scrollbar thumb', async 
       })
       .toBe(true);
   }
+
+  // An earlier page in flight makes the later request busy; that must not prove the later edge exhausted.
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => (release = resolve));
+
+  await page.route('**/events?before=**', async (route) => {
+    await held;
+    await route.continue();
+  });
+
+  const earlierPage = page.waitForResponse((response) => response.url().includes('/events?before='));
+
+  await earlier(page).click();
+  await later(page).click();
+  release();
+  await earlierPage;
+  await expect(later(page)).toBeVisible();
 });

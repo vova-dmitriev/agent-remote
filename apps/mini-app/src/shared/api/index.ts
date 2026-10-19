@@ -1,4 +1,5 @@
 export type { Connection, Device, HistoryStatus, HistoryDirection, TransportHandlers } from "./types"
+export { HistoryPageSkip } from "./types"
 export type { ApplicationClient, ApplicationOperations, ApplicationPersistence, PersistedDraft, PersistedQueue } from "./application-client"
 export type { AttachmentAccess } from "./attachment-access"
 export { fetchResponse, responseError, requestJson } from "./request-error"

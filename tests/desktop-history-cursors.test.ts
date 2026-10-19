@@ -20,6 +20,7 @@ import { localHistory } from '../apps/daemon/src/local/controller/history.js';
 import type { LocalControllerOptions } from '../apps/daemon/src/local/controller/types.js';
 import { LocalStore } from '../apps/daemon/src/monitor/store.js';
 import { DesktopHistory } from '../apps/mini-app/src/app/api/desktop/history.js';
+import { HistoryPageSkip } from '../apps/mini-app/src/shared/api/types.js';
 import type { DesktopBridgeConnection } from '../apps/mini-app/src/app/api/desktop/desktop-connection.js';
 import { sessionSnapshot } from './e2e/support/session-fixtures.js';
 
@@ -100,8 +101,8 @@ describe('desktop history cursors', () => {
     expect(requests.at(-1)?.anchor).toBe('before-1');
     await history.page(sessionId, HistoryDirection.Before);
     expect(requests.at(-1)?.anchor).toBe('before-2');
-    await expect(history.page(sessionId, HistoryDirection.Before)).resolves.toBeNull();
-    await expect(history.page(sessionId, HistoryDirection.After)).resolves.toBeNull();
+    await expect(history.page(sessionId, HistoryDirection.Before)).resolves.toBe(HistoryPageSkip.Exhausted);
+    await expect(history.page(sessionId, HistoryDirection.After)).resolves.toBe(HistoryPageSkip.Exhausted);
     expect(requests).toHaveLength(3);
   });
 
@@ -116,15 +117,15 @@ describe('desktop history cursors', () => {
     expect(requests.at(-1)?.anchor).toBe('after-1');
     await history.page(sessionId, HistoryDirection.After);
     expect(requests.at(-1)?.anchor).toBe('after-2');
-    await expect(history.page(sessionId, HistoryDirection.Before)).resolves.toBeNull();
+    await expect(history.page(sessionId, HistoryDirection.Before)).resolves.toBe(HistoryPageSkip.Exhausted);
   });
 
   it('sends no request when the edge in that direction is exhausted', async () => {
     const { history, requests } = harness([{ before: null, after: null }]);
 
     await history.load(sessionId);
-    await expect(history.page(sessionId, HistoryDirection.Before)).resolves.toBeNull();
-    await expect(history.page(sessionId, HistoryDirection.After)).resolves.toBeNull();
+    await expect(history.page(sessionId, HistoryDirection.Before)).resolves.toBe(HistoryPageSkip.Exhausted);
+    await expect(history.page(sessionId, HistoryDirection.After)).resolves.toBe(HistoryPageSkip.Exhausted);
     expect(requests).toHaveLength(1);
   });
 
@@ -142,7 +143,11 @@ describe('desktop history cursors', () => {
 
     await history.load(sessionId);
     await expect(history.page(sessionId, HistoryDirection.Before, edge)).resolves.toEqual([]);
-    await expect(history.page(sessionId, HistoryDirection.Before, edge)).resolves.toBeNull();
+
+    await expect(history.page(sessionId, HistoryDirection.Before, edge)).resolves.toBe(
+      HistoryPageSkip.Exhausted,
+    );
+
     expect(requests).toHaveLength(2);
     history.observe(snapshot('generation-two'));
     await history.load(sessionId);
@@ -162,7 +167,7 @@ describe('desktop history cursors', () => {
     await history.load(sessionId);
     const first = history.page(sessionId, HistoryDirection.Before);
 
-    await expect(history.page(sessionId, HistoryDirection.Before)).resolves.toBeNull();
+    await expect(history.page(sessionId, HistoryDirection.Before)).resolves.toBe(HistoryPageSkip.Busy);
     const after = history.page(sessionId, HistoryDirection.After);
 
     expect(requests.map((request) => request.direction)).toEqual([
@@ -181,7 +186,7 @@ describe('desktop history cursors', () => {
 
     await history.load(sessionId);
     history.observe(snapshot('generation-two'));
-    await expect(history.page(sessionId, HistoryDirection.Before)).resolves.toBeNull();
+    await expect(history.page(sessionId, HistoryDirection.Before)).resolves.toBe(HistoryPageSkip.Stale);
     expect(requests).toHaveLength(1);
   });
 });
@@ -221,8 +226,8 @@ describe('desktop history against the daemon native transcript pages', () => {
 
       const history = new DesktopHistory(connection, { onConnection: () => {}, onFrame: () => {} });
 
-      const ids = (events: EventEnvelope[] | null) =>
-        (events ?? []).map((event) => (event.payload as HistoryMessage).id);
+      const ids = (events: EventEnvelope[] | HistoryPageSkip | null) =>
+        (Array.isArray(events) ? events : []).map((event) => (event.payload as HistoryMessage).id);
 
       history.observe(snapshot('generation-one'));
       const latest = await history.load(sessionId);
@@ -234,10 +239,11 @@ describe('desktop history against the daemon native transcript pages', () => {
       const oldest = await history.page(sessionId, HistoryDirection.Before);
 
       expect(ids(oldest)[0]).toBe('m0');
-      await expect(history.page(sessionId, HistoryDirection.Before)).resolves.toBeNull();
-      const edge = (oldest?.[0]?.payload as HistoryMessage).historyCursor;
+      await expect(history.page(sessionId, HistoryDirection.Before)).resolves.toBe(HistoryPageSkip.Exhausted);
+      const edge = (Array.isArray(oldest) ? oldest[0]?.payload : undefined) as HistoryMessage;
+      const edgeCursor = edge.historyCursor;
 
-      expect(ids(await history.page(sessionId, HistoryDirection.Before, edge))).toEqual([]);
+      expect(ids(await history.page(sessionId, HistoryDirection.Before, edgeCursor))).toEqual([]);
       const lastLoaded = (latest?.at(-1)?.payload as HistoryMessage).historyCursor;
 
       expect(ids(await history.page(sessionId, HistoryDirection.After, lastLoaded))).toEqual(['m249']);

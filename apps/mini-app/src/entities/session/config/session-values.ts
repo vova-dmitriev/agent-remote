@@ -14,15 +14,22 @@ export type AgentName = (typeof AgentName)[keyof typeof AgentName]
 
 export const SessionActionType = { Logout: "logout" } as const
 
+export type SessionActionType = (typeof SessionActionType)[keyof typeof SessionActionType]
+
 /**
- * How a history page request ended. Loaded: the transport returned a page and it was applied. Declined: the
- * transport made no request because it holds no cursor for that edge (the end was reached), already found the
- * edge exhausted, or has a request for it in flight. Failed: no transport, a stale selection or an error.
+ * How a history page request ended. Loaded: a page was applied. Declined: the transport holds no cursor for that
+ * edge (the end was reached) or already found it exhausted. Busy: a request for that edge was in flight. Stale:
+ * the selection, socket or session generation changed. Failed: no transport or an error. Only Loaded and
+ * Declined can prove an edge exhausted.
  */
-export const HistoryPageOutcome = { Loaded: "loaded", Declined: "declined", Failed: "failed" } as const
+export const HistoryPageOutcome = {
+  Loaded: "loaded",
+  Declined: "declined",
+  Busy: "busy",
+  Stale: "stale",
+  Failed: "failed",
+} as const
 
 export type HistoryPageOutcome = (typeof HistoryPageOutcome)[keyof typeof HistoryPageOutcome]
-
-export type SessionActionType = (typeof SessionActionType)[keyof typeof SessionActionType]
 
 export { ProviderFilterValue } from "@protocol"

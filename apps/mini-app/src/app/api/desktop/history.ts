@@ -9,7 +9,7 @@ import {
   type HistoryPageDirection,
   type ServerFrame,
 } from "@protocol"
-import type { TransportHandlers } from "@/shared/api"
+import { HistoryPageSkip, type TransportHandlers } from "@/shared/api"
 import type { DesktopBridgeConnection } from "./desktop-connection.js"
 
 const pageSchema = z.strictObject({ events: z.array(eventSchema), before: z.string().nullable(), after: z.string().nullable() })
@@ -21,6 +21,8 @@ interface HistoryWindowState extends Pick<HistoryPage, HistoryPageDirection> {
   generation: string
   busy: Set<HistoryPageDirection>
   exhausted: Set<string>
+  /** Whether a latest load reported this generation's cursors; before that a missing cursor proves nothing. */
+  loaded: boolean
 }
 
 const EXHAUSTED_EDGE_LIMIT = 4
@@ -57,23 +59,26 @@ export class DesktopHistory {
       window.before = page.before
       window.after = page.after
       window.exhausted.clear()
+      window.loaded = true
     }
 
     return page?.events ?? null
   }
 
-  async page(sessionId: string, direction: HistoryPageDirection, edge?: string): Promise<EventEnvelope[] | null> {
+  async page(sessionId: string, direction: HistoryPageDirection, edge?: string): Promise<EventEnvelope[] | HistoryPageSkip> {
     const window = this.window(sessionId)
     const cursor = edge ? edgeCursor(edge) : window?.[direction]
     const key = direction + ":" + cursor
 
-    if (!window || !cursor || window.busy.has(direction) || window.exhausted.has(key)) return null
+    if (!window || (!cursor && !window.loaded)) return HistoryPageSkip.Stale
+    if (!cursor || window.exhausted.has(key)) return HistoryPageSkip.Exhausted
+    if (window.busy.has(direction)) return HistoryPageSkip.Busy
     window.busy.add(direction)
 
     try {
       const page = await this.request(sessionId, direction, cursor)
 
-      if (!page) return null
+      if (!page) return HistoryPageSkip.Stale
       window[direction] = page[direction]
 
       if (!page.events.length || (edge && page.events.every((event) => historyCursor(event) === edge))) window.exhausted.add(key)
@@ -113,7 +118,7 @@ export class DesktopHistory {
     const current = this.windows.get(sessionId)
 
     if (current?.generation === generation) return current
-    const created: HistoryWindowState = { generation, before: null, after: null, busy: new Set(), exhausted: new Set() }
+    const created: HistoryWindowState = { generation, before: null, after: null, busy: new Set(), exhausted: new Set(), loaded: false }
 
     this.windows.set(sessionId, created)
 
