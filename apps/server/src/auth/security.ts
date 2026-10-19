@@ -75,6 +75,16 @@ export function telegramIdentity(raw: string, botToken: string, now = Date.now()
   }
 }
 
+export const RateLimitKey = {
+  Auth: 'auth:',
+  Refresh: 'refresh:',
+  PairStart: 'pair-start:',
+  PairIp: 'pair-ip:',
+  PairOwner: 'pair-owner:',
+} as const;
+
+export type RateLimitKey = (typeof RateLimitKey)[keyof typeof RateLimitKey];
+
 export class Limiter {
   private buckets = new Map<string, { count: number; until: number }>();
   take(key: string, limit: number, now = Date.now()): void {

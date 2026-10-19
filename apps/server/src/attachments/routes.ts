@@ -12,17 +12,8 @@ import { type AuthService } from '../auth/auth-service.js';
 import { type DeviceService } from '../devices/service.js';
 import { Limiter } from '../auth/security.js';
 import { Fault } from '../http/fault.js';
+import { bearer } from '../http/bearer.js';
 import { AttachmentService, type AttachmentContext } from './service.js';
-
-const bearer = (req: Request) => {
-  const value = req.headers.authorization;
-
-  if (!value?.startsWith('Bearer ') || value.length > 520) {
-    throw new Fault(ErrorCode.UNAUTHORIZED);
-  }
-
-  return value.slice(7);
-};
 
 const fail = (res: Response, error: unknown) => {
   let fault: Fault;
@@ -41,7 +32,7 @@ const fail = (res: Response, error: unknown) => {
 };
 
 export function mountAttachmentRoutes(
-  http: express.Express,
+  http: express.Router,
   db: Database,
   auth: AuthService,
   devices: DeviceService,
