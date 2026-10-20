@@ -17,6 +17,14 @@ import { attachmentRelayFixture } from '../../helpers/attachment-relay.js';
 import { databaseFixture } from '../../helpers/database.js';
 import { testBotToken } from '../../helpers/telegram.js';
 
+/** The batched token recheck, whether pg gets a string or the `{ text }` config the query builder passes. */
+const isRecheck = (query: unknown) => {
+  const text =
+    typeof query === 'string' ? query : String((query as { text?: unknown } | undefined)?.text ?? '');
+
+  return text.includes('"auth_sessions"') && text.includes('"token_hash" in (');
+};
+
 const cleanups: Array<() => Promise<unknown>> = [];
 
 afterEach(async () => {
@@ -136,7 +144,7 @@ async function failingRecheck() {
   const state = { failing: true, startedRechecks: 0, settledRechecks: 0 };
 
   vi.spyOn(pool, 'query').mockImplementation(((...args: unknown[]) => {
-    if (!String(args[0]).includes('token_hash=ANY')) {
+    if (!isRecheck(args[0])) {
       return query(...args);
     }
 
@@ -249,7 +257,8 @@ it('rechecks tokens in chunks and finds stored tokens in every chunk', async () 
 
   expect(spy).toHaveBeenCalledTimes(2);
 
-  expect(spy.mock.calls.map(([, values]) => (values as string[][])[0]!.length)).toEqual([
+  // One parameter per hash plus `now`.
+  expect(spy.mock.calls.map(([, values]) => (values as unknown[]).length - 1)).toEqual([
     AUTH_RECHECK_CHUNK,
     500,
   ]);

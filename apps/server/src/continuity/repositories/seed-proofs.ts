@@ -1,5 +1,8 @@
+import { and, eq } from 'drizzle-orm';
 import type { PoolClient } from 'pg';
 import { CommandClaimKind } from '../../commands/command-claims.js';
+import { ormOn } from '../../db/database.js';
+import { commandIdClaims, handoffSeedProofs } from '../../db/schema/index.js';
 
 export interface SeedProofRecord {
   device_generation: string;
@@ -22,6 +25,19 @@ type StoredSeedProof = SeedProofRecord & {
   received_at: number;
 };
 
+const record = {
+  device_generation: handoffSeedProofs.deviceGeneration,
+  seed_command_id: handoffSeedProofs.seedCommandId,
+  checkpoint_id: handoffSeedProofs.checkpointId,
+  checkpoint_digest: handoffSeedProofs.checkpointDigest,
+  target_execution_id: handoffSeedProofs.targetExecutionId,
+  target_generation: handoffSeedProofs.targetGeneration,
+  target_profile_id: handoffSeedProofs.targetProfileId,
+  target_provider: handoffSeedProofs.targetProvider,
+  target_model: handoffSeedProofs.targetModel,
+  target_effort: handoffSeedProofs.targetEffort,
+};
+
 export class SeedProofRepository {
   async claimBelongsToOperation(
     tx: PoolClient,
@@ -30,47 +46,57 @@ export class SeedProofRepository {
     operationId: string,
     commandId: string,
   ) {
-    const row = (
-      await tx.query<{ kind: string; operation_id: string | null }>(
-        'SELECT kind,operation_id FROM command_id_claims WHERE owner_id=$1 AND device_id=$2 AND command_id=$3',
-        [ownerId, deviceId, commandId],
-      )
-    ).rows[0];
+    const [row] = await ormOn(tx)
+      .select({ kind: commandIdClaims.kind, operation_id: commandIdClaims.operationId })
+      .from(commandIdClaims)
+      .where(
+        and(
+          eq(commandIdClaims.ownerId, ownerId),
+          eq(commandIdClaims.deviceId, deviceId),
+          eq(commandIdClaims.commandId, commandId),
+        ),
+      );
 
     return row?.kind === CommandClaimKind.HandoffSeed && row.operation_id === operationId;
   }
 
-  async get(tx: PoolClient, ownerId: string, deviceId: string, operationId: string) {
-    return (
-      (
-        await tx.query<SeedProofRecord>(
-          'SELECT device_generation,seed_command_id,checkpoint_id,checkpoint_digest,target_execution_id,target_generation,target_profile_id,target_provider,target_model,target_effort FROM handoff_seed_proofs WHERE owner_id=$1 AND device_id=$2 AND operation_id=$3',
-          [ownerId, deviceId, operationId],
-        )
-      ).rows[0] ?? null
-    );
+  async get(
+    tx: PoolClient,
+    ownerId: string,
+    deviceId: string,
+    operationId: string,
+  ): Promise<SeedProofRecord | null> {
+    const [row] = await ormOn(tx)
+      .select(record)
+      .from(handoffSeedProofs)
+      .where(
+        and(
+          eq(handoffSeedProofs.ownerId, ownerId),
+          eq(handoffSeedProofs.deviceId, deviceId),
+          eq(handoffSeedProofs.operationId, operationId),
+        ),
+      );
+
+    return row ?? null;
   }
 
   async insert(tx: PoolClient, proof: StoredSeedProof) {
-    await tx.query(
-      'INSERT INTO handoff_seed_proofs(operation_id,owner_id,device_id,conversation_id,device_generation,seed_command_id,checkpoint_id,checkpoint_digest,target_execution_id,target_generation,target_profile_id,target_provider,target_model,target_effort,received_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)',
-      [
-        proof.operation_id,
-        proof.owner_id,
-        proof.device_id,
-        proof.conversation_id,
-        proof.device_generation,
-        proof.seed_command_id,
-        proof.checkpoint_id,
-        proof.checkpoint_digest,
-        proof.target_execution_id,
-        proof.target_generation,
-        proof.target_profile_id,
-        proof.target_provider,
-        proof.target_model,
-        proof.target_effort,
-        proof.received_at,
-      ],
-    );
+    await ormOn(tx).insert(handoffSeedProofs).values({
+      operationId: proof.operation_id,
+      ownerId: proof.owner_id,
+      deviceId: proof.device_id,
+      conversationId: proof.conversation_id,
+      deviceGeneration: proof.device_generation,
+      seedCommandId: proof.seed_command_id,
+      checkpointId: proof.checkpoint_id,
+      checkpointDigest: proof.checkpoint_digest,
+      targetExecutionId: proof.target_execution_id,
+      targetGeneration: proof.target_generation,
+      targetProfileId: proof.target_profile_id,
+      targetProvider: proof.target_provider,
+      targetModel: proof.target_model,
+      targetEffort: proof.target_effort,
+      receivedAt: proof.received_at,
+    });
   }
 }

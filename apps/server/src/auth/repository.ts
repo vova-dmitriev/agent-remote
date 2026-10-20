@@ -1,6 +1,12 @@
+import { and, eq, gt, inArray, lt, or, sql } from 'drizzle-orm';
 import type { PoolClient } from 'pg';
-import type { Database } from '../db/database.js';
+import { ormOn, type Database } from '../db/database.js';
+import { authSessions, browserSessions, users } from '../db/schema/index.js';
 import { AUTH_RECHECK_CHUNK } from '../maintenance/limits.js';
+
+/** The browser session a token was issued from, as a scalar subquery. */
+const browserSessionOf = (tokenHash: string) =>
+  sql`(SELECT ${authSessions.browserSessionHash} FROM ${authSessions} WHERE ${authSessions.tokenHash}=${tokenHash})`;
 
 /** Users and their short-lived access tokens, stored by token hash. */
 export class AuthRepository {
@@ -12,34 +18,32 @@ export class AuthRepository {
 
   /** Creates the user of a Telegram identity once; returns its id. */
   async upsertUser(tx: PoolClient, id: string, telegramId: string, now: number): Promise<string> {
-    const row = await tx.query<{ id: string }>(
-      'INSERT INTO users(id,telegram_id,created_at) VALUES($1,$2,$3) ON CONFLICT(telegram_id) DO UPDATE SET telegram_id=EXCLUDED.telegram_id RETURNING id',
-      [id, telegramId, now],
-    );
+    const [row] = await ormOn(tx)
+      .insert(users)
+      .values({ id, telegramId, createdAt: now })
+      .onConflictDoUpdate({ target: users.telegramId, set: { telegramId: sql`excluded.telegram_id` } })
+      .returning({ id: users.id });
 
-    return row.rows[0]!.id;
+    return row!.id;
   }
 
   async insertToken(tx: PoolClient, tokenHash: string, ownerId: string, expiresAt: number) {
-    await tx.query('INSERT INTO auth_sessions(token_hash,owner_id,expires_at) VALUES($1,$2,$3)', [
-      tokenHash,
-      ownerId,
-      expiresAt,
-    ]);
+    await ormOn(tx).insert(authSessions).values({ tokenHash, ownerId, expiresAt });
   }
 
   async deleteExpiredTokens(tx: PoolClient, now: number) {
-    await tx.query('DELETE FROM auth_sessions WHERE expires_at<$1', [now]);
+    await ormOn(tx).delete(authSessions).where(lt(authSessions.expiresAt, now));
   }
 
   /** The user an unexpired token hash belongs to, and when the token expires. */
   async principal(tokenHash: string, now: number) {
-    return (
-      await this.db.pool.query<{ id: string; telegram_id: string; expires_at: string }>(
-        'SELECT u.id,u.telegram_id,a.expires_at FROM auth_sessions a JOIN users u ON u.id=a.owner_id WHERE a.token_hash=$1 AND a.expires_at>$2',
-        [tokenHash, now],
-      )
-    ).rows[0];
+    const [row] = await this.db.orm
+      .select({ id: users.id, telegram_id: users.telegramId, expires_at: authSessions.expiresAt })
+      .from(authSessions)
+      .innerJoin(users, eq(users.id, authSessions.ownerId))
+      .where(and(eq(authSessions.tokenHash, tokenHash), gt(authSessions.expiresAt, now)));
+
+    return row;
   }
 
   /**
@@ -50,15 +54,18 @@ export class AuthRepository {
     const found = new Map<string, number>();
 
     for (let start = 0; start < tokenHashes.length; start += AUTH_RECHECK_CHUNK) {
-      const rows = (
-        await this.db.pool.query<{ token_hash: string; expires_at: string }>(
-          'SELECT token_hash,expires_at FROM auth_sessions WHERE token_hash=ANY($1::text[]) AND expires_at>$2',
-          [tokenHashes.slice(start, start + AUTH_RECHECK_CHUNK), now],
-        )
-      ).rows;
+      const rows = await this.db.orm
+        .select({ tokenHash: authSessions.tokenHash, expiresAt: authSessions.expiresAt })
+        .from(authSessions)
+        .where(
+          and(
+            inArray(authSessions.tokenHash, tokenHashes.slice(start, start + AUTH_RECHECK_CHUNK)),
+            gt(authSessions.expiresAt, now),
+          ),
+        );
 
       for (const row of rows) {
-        found.set(row.token_hash, Number(row.expires_at));
+        found.set(row.tokenHash, row.expiresAt);
       }
     }
 
@@ -66,27 +73,35 @@ export class AuthRepository {
   }
 
   async lockToken(tx: PoolClient, tokenHash: string) {
-    await tx.query('SELECT token_hash FROM auth_sessions WHERE token_hash=$1 FOR UPDATE', [tokenHash]);
+    await ormOn(tx)
+      .select({ tokenHash: authSessions.tokenHash })
+      .from(authSessions)
+      .where(eq(authSessions.tokenHash, tokenHash))
+      .for('update');
   }
 
   /** A token and every token issued from the same browser session. */
   async siblingTokens(tx: PoolClient, tokenHash: string): Promise<string[]> {
-    return (
-      await tx.query<{ token_hash: string }>(
-        'SELECT token_hash FROM auth_sessions WHERE token_hash=$1 OR browser_session_hash=(SELECT browser_session_hash FROM auth_sessions WHERE token_hash=$1)',
-        [tokenHash],
-      )
-    ).rows.map((row) => row.token_hash);
+    const rows = await ormOn(tx)
+      .select({ tokenHash: authSessions.tokenHash })
+      .from(authSessions)
+      .where(
+        or(
+          eq(authSessions.tokenHash, tokenHash),
+          sql`${authSessions.browserSessionHash}=${browserSessionOf(tokenHash)}`,
+        ),
+      );
+
+    return rows.map((row) => row.tokenHash);
   }
 
   async deleteBrowserSessionOf(tx: PoolClient, tokenHash: string) {
-    await tx.query(
-      'DELETE FROM browser_sessions WHERE token_hash=(SELECT browser_session_hash FROM auth_sessions WHERE token_hash=$1)',
-      [tokenHash],
-    );
+    await ormOn(tx)
+      .delete(browserSessions)
+      .where(sql`${browserSessions.tokenHash}=${browserSessionOf(tokenHash)}`);
   }
 
   async deleteToken(tx: PoolClient, tokenHash: string) {
-    await tx.query('DELETE FROM auth_sessions WHERE token_hash=$1', [tokenHash]);
+    await ormOn(tx).delete(authSessions).where(eq(authSessions.tokenHash, tokenHash));
   }
 }

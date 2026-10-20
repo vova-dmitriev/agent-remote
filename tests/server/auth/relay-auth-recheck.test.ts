@@ -35,8 +35,12 @@ async function app(token = f.token) {
   return { ...connection, closed, isClosed: () => isClosed };
 }
 
+/** SQL text of a pg call: a plain string, or the `{ text }` config the query builder passes. */
+const queryText = (query: unknown) =>
+  typeof query === 'string' ? query : String((query as { text?: unknown } | undefined)?.text ?? '');
+
 const authQueries = (spy: { mock: { calls: unknown[][] } }) =>
-  spy.mock.calls.filter(([sql]) => typeof sql === 'string' && sql.includes('auth_sessions')).length;
+  spy.mock.calls.filter(([query]) => queryText(query).includes('auth_sessions')).length;
 
 /** Lets socket close frames and PostgreSQL replies arrive without moving the fake clock. */
 const settle = () => new Promise((resolve) => setImmediate(resolve));

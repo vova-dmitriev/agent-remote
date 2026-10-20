@@ -1,5 +1,7 @@
+import { and, eq, gt, lte } from 'drizzle-orm';
 import type { PoolClient } from 'pg';
-import type { Database } from '../../db/database.js';
+import { ormOn, type Database } from '../../db/database.js';
+import { authSessions, browserSessions, users } from '../../db/schema/index.js';
 
 /** Long-lived browser sessions and the access tokens they issue, stored by hash. */
 export class BrowserSessionRepository {
@@ -11,65 +13,68 @@ export class BrowserSessionRepository {
 
   /** Locks an unexpired access token; returns its owner. */
   async lockAccess(tx: PoolClient, accessHash: string, now: number): Promise<string | undefined> {
-    return (
-      await tx.query<{ owner_id: string }>(
-        'SELECT owner_id FROM auth_sessions WHERE token_hash=$1 AND expires_at>$2 FOR UPDATE',
-        [accessHash, now],
-      )
-    ).rows[0]?.owner_id;
+    const [row] = await ormOn(tx)
+      .select({ ownerId: authSessions.ownerId })
+      .from(authSessions)
+      .where(and(eq(authSessions.tokenHash, accessHash), gt(authSessions.expiresAt, now)))
+      .for('update');
+
+    return row?.ownerId;
   }
 
   async insert(tx: PoolClient, credentialHash: string, ownerId: string, expiresAt: number) {
-    await tx.query('INSERT INTO browser_sessions(token_hash,owner_id,expires_at) VALUES($1,$2,$3)', [
-      credentialHash,
-      ownerId,
-      expiresAt,
-    ]);
+    await ormOn(tx).insert(browserSessions).values({ tokenHash: credentialHash, ownerId, expiresAt });
   }
 
   async linkAccess(tx: PoolClient, credentialHash: string, accessHash: string) {
-    await tx.query('UPDATE auth_sessions SET browser_session_hash=$1 WHERE token_hash=$2', [
-      credentialHash,
-      accessHash,
-    ]);
+    await ormOn(tx)
+      .update(authSessions)
+      .set({ browserSessionHash: credentialHash })
+      .where(eq(authSessions.tokenHash, accessHash));
   }
 
   async deleteExpired(tx: PoolClient, now: number) {
-    await tx.query('DELETE FROM browser_sessions WHERE expires_at<=$1', [now]);
+    await ormOn(tx).delete(browserSessions).where(lte(browserSessions.expiresAt, now));
   }
 
   /** Locks a browser session; returns whether it exists. */
   async lock(tx: PoolClient, credentialHash: string): Promise<boolean> {
-    return Boolean(
-      (
-        await tx.query('SELECT token_hash FROM browser_sessions WHERE token_hash=$1 FOR UPDATE', [
-          credentialHash,
-        ])
-      ).rowCount,
-    );
+    const rows = await ormOn(tx)
+      .select({ tokenHash: browserSessions.tokenHash })
+      .from(browserSessions)
+      .where(eq(browserSessions.tokenHash, credentialHash))
+      .for('update');
+
+    return rows.length > 0;
   }
 
   async accessTokens(tx: PoolClient, credentialHash: string): Promise<string[]> {
-    return (
-      await tx.query<{ token_hash: string }>(
-        'SELECT token_hash FROM auth_sessions WHERE browser_session_hash=$1',
-        [credentialHash],
-      )
-    ).rows.map((row) => row.token_hash);
+    const rows = await ormOn(tx)
+      .select({ tokenHash: authSessions.tokenHash })
+      .from(authSessions)
+      .where(eq(authSessions.browserSessionHash, credentialHash));
+
+    return rows.map((row) => row.tokenHash);
   }
 
   async delete(tx: PoolClient, credentialHash: string) {
-    await tx.query('DELETE FROM browser_sessions WHERE token_hash=$1', [credentialHash]);
+    await ormOn(tx).delete(browserSessions).where(eq(browserSessions.tokenHash, credentialHash));
   }
 
   /** Locks an unexpired browser session with its owner's Telegram identity. */
   async lockForRefresh(tx: PoolClient, credentialHash: string, now: number) {
-    return (
-      await tx.query<{ owner_id: string; expires_at: string; telegram_id: string }>(
-        'SELECT b.owner_id,b.expires_at,u.telegram_id FROM browser_sessions b JOIN users u ON u.id=b.owner_id WHERE b.token_hash=$1 AND b.expires_at>$2 FOR UPDATE OF b',
-        [credentialHash, now],
-      )
-    ).rows[0];
+    const [row] = await ormOn(tx)
+      .select({
+        owner_id: browserSessions.ownerId,
+        expires_at: browserSessions.expiresAt,
+        telegram_id: users.telegramId,
+      })
+      .from(browserSessions)
+      .innerJoin(users, eq(users.id, browserSessions.ownerId))
+      .where(and(eq(browserSessions.tokenHash, credentialHash), gt(browserSessions.expiresAt, now)))
+      .for('update', { of: browserSessions });
+
+    return row;
   }
 
   async insertAccess(
@@ -79,13 +84,12 @@ export class BrowserSessionRepository {
     expiresAt: number,
     credentialHash: string,
   ) {
-    await tx.query(
-      'INSERT INTO auth_sessions(token_hash,owner_id,expires_at,browser_session_hash) VALUES($1,$2,$3,$4)',
-      [tokenHash, ownerId, expiresAt, credentialHash],
-    );
+    await ormOn(tx)
+      .insert(authSessions)
+      .values({ tokenHash, ownerId, expiresAt, browserSessionHash: credentialHash });
   }
 
   async deleteExpiredAccess(tx: PoolClient, now: number) {
-    await tx.query('DELETE FROM auth_sessions WHERE expires_at<=$1', [now]);
+    await ormOn(tx).delete(authSessions).where(lte(authSessions.expiresAt, now));
   }
 }
