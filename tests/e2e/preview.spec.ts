@@ -2,7 +2,7 @@ import { expect } from '@playwright/test';
 import { test, publishMessages } from './support/relay-fixture.js';
 import { identity } from './support/identity.js';
 import { byTestId } from './support/testid.js';
-import { expectLoadedMessages, railMarker } from './support/rail.js';
+import { expectLoadedMessages, expectSettledRail, railMarker } from './support/rail.js';
 import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
 import { SESSION_FEED_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
 
@@ -26,6 +26,7 @@ test('one readable preview follows hovered and focused markers without changing 
 
   await expect(page.getByTestId(SESSION_FEED_IDS.preview)).toHaveCount(0);
   // A merged marker previews and jumps to its first message.
+  await expectSettledRail(page);
   const marker = railMarker(page, 'preview-498');
   const target = (await marker.getAttribute('data-message-id'))!;
   const author = (id: string) => (Number(id.split('-').at(-1)) % 2 ? 'Ты' : 'Claude');
