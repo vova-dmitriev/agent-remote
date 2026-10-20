@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
-import { userEvent } from "storybook/test"
+import { screen, userEvent } from "storybook/test"
 import {
   AgentProvider,
   CapabilitySupport,
@@ -54,6 +54,14 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+/** Opens a chip dropdown and picks the item whose data-value matches; menus render in a portal outside the canvas. */
+async function choose(trigger: HTMLElement, optionId: string, value: string) {
+  await userEvent.click(trigger)
+  const option = (await screen.findAllByTestId(optionId)).find((item) => item.dataset.value === value)
+
+  if (option) await userEvent.click(option)
+}
+
 export const Collapsed: Story = {}
 export const Inline: Story = { args: { inline: true } }
 export const Open: Story = {
@@ -65,9 +73,9 @@ export const ProfileLaunch: Story = {
   ...Open,
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByTestId(SESSION_CREATE_IDS.toggle))
-    await userEvent.selectOptions(canvas.getByTestId(SESSION_CREATE_IDS.profile), profileData.profiles[0]!.id)
-    await userEvent.selectOptions(canvas.getByTestId(SESSION_CREATE_IDS.model), "gpt-synthetic")
-    await userEvent.selectOptions(canvas.getByTestId(SESSION_CREATE_IDS.effort), ReasoningEffort.High)
+    await choose(canvas.getByTestId(SESSION_CREATE_IDS.profile.trigger), SESSION_CREATE_IDS.profileOption, profileData.profiles[0]!.id)
+    await choose(canvas.getByTestId(SESSION_CREATE_IDS.model.trigger), SESSION_CREATE_IDS.modelOption, "gpt-synthetic")
+    await choose(canvas.getByTestId(SESSION_CREATE_IDS.effort.trigger), SESSION_CREATE_IDS.effortOption, ReasoningEffort.High)
   },
 }
 export const Busy: Story = { ...Open, args: { disabled: true } }

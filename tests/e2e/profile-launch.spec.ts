@@ -1,4 +1,4 @@
-import { expect } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 import {
   AgentProvider,
   CommandActionType,
@@ -10,11 +10,18 @@ import {
 } from '@protocol';
 import { SESSION_CREATE_IDS } from '../../apps/mini-app/src/features/create-session/config/test-ids.js';
 import { identity } from './support/identity.js';
+import { byTestId } from './support/testid.js';
 import { delivered, deviceFixture, setCommandOutcome, test } from './support/relay-fixture.js';
 import { publishSnapshot } from './product/device.js';
 import { profileCompanion } from './accounts/companion.js';
 import { readyLaunchProfile } from './profile-launch/fixture.js';
 import { FixtureCommandOutcome } from './runtime/command-outcome-values.js';
+
+async function choose(page: Page, trigger: string, option: string, value: string) {
+  await page.getByTestId(trigger).click();
+  await byTestId(page, option, { value }).click();
+  await expect(page.getByTestId(trigger)).toHaveAttribute('data-value', value);
+}
 
 test('sends the explicitly selected account, model and effort once without falling back to another profile', async ({ page }) => {
   const companion = await profileCompanion();
@@ -37,12 +44,12 @@ test('sends the explicitly selected account, model and effort once without falli
     await identity(page, '801', 'en');
     await page.goto('/');
     await page.getByTestId(SESSION_CREATE_IDS.toggle).click();
-    await expect(page.getByTestId(SESSION_CREATE_IDS.profile)).toHaveValue('');
-    await page.getByTestId(SESSION_CREATE_IDS.profile).selectOption(second.id);
+    await expect(page.getByTestId(SESSION_CREATE_IDS.profile.trigger)).toHaveAttribute('data-value', '');
+    await choose(page, SESSION_CREATE_IDS.profile.trigger, SESSION_CREATE_IDS.profileOption, second.id);
     await expect(page.getByTestId(SESSION_CREATE_IDS.profileStatus)).toContainText('Synthetic account B');
     await expect(page.getByTestId(SESSION_CREATE_IDS.submit)).toBeDisabled();
-    await page.getByTestId(SESSION_CREATE_IDS.model).selectOption('synthetic-model');
-    await page.getByTestId(SESSION_CREATE_IDS.effort).selectOption(ReasoningEffort.Medium);
+    await choose(page, SESSION_CREATE_IDS.model.trigger, SESSION_CREATE_IDS.modelOption, 'synthetic-model');
+    await choose(page, SESSION_CREATE_IDS.effort.trigger, SESSION_CREATE_IDS.effortOption, ReasoningEffort.Medium);
     deviceFixture().sockets[0]!.close();
     await expect(page.getByTestId(SESSION_CREATE_IDS.submit)).toBeDisabled();
     await companion.reconnect();
@@ -58,9 +65,9 @@ test('sends the explicitly selected account, model and effort once without falli
       snapshot.sessions[0]!.capabilities.createSession = true;
     });
 
-    await expect(page.getByTestId(SESSION_CREATE_IDS.profile)).toHaveValue(second.id);
-    await expect(page.getByTestId(SESSION_CREATE_IDS.model)).toHaveValue('synthetic-model');
-    await expect(page.getByTestId(SESSION_CREATE_IDS.effort)).toHaveValue(ReasoningEffort.Medium);
+    await expect(page.getByTestId(SESSION_CREATE_IDS.profile.trigger)).toHaveAttribute('data-value', second.id);
+    await expect(page.getByTestId(SESSION_CREATE_IDS.model.trigger)).toHaveAttribute('data-value', 'synthetic-model');
+    await expect(page.getByTestId(SESSION_CREATE_IDS.effort.trigger)).toHaveAttribute('data-value', ReasoningEffort.Medium);
     await page.getByTestId(SESSION_CREATE_IDS.submit).click();
     await expect.poll(() => delivered.length).toBe(1);
 

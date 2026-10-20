@@ -1,7 +1,10 @@
-import { ProfileAuthMode, type ExecutionProfileSummary } from "@protocol"
+import { UserRound } from "lucide-react"
+import type { ExecutionProfileSummary } from "@protocol"
 import { useTranslation } from "@/shared/lib/hooks"
-import { formLabelClass } from "@/shared/ui/label"
+import { ChoiceDropdown } from "@/shared/ui/dropdown"
+import { chipFieldClass, chipLabelClass } from "../config/chip-classes"
 import { SESSION_CREATE_IDS } from "../config/test-ids"
+import { profileOptions } from "../model/launch-options"
 
 interface ProfileSelectFieldProps {
   nativeProvider: string
@@ -14,30 +17,20 @@ interface ProfileSelectFieldProps {
 
 export function ProfileSelectField({ nativeProvider, profiles, profileId, profile, disabled, onChange }: ProfileSelectFieldProps) {
   const { t } = useTranslation()
+  const nativeLabel = t("sessionLaunchNative", { provider: nativeProvider })
 
   return (
-    <label className={formLabelClass}>
-      {t("sessionLaunchProfile")}
-      <select
-        className="mt-1 w-full rounded-md border border-border bg-background p-2"
-        data-testid={SESSION_CREATE_IDS.profile}
-        value={profileId}
-        onChange={(event) => onChange(event.target.value)}
-        disabled={disabled}
-      >
-        <option value="">{t("sessionLaunchNative", { provider: nativeProvider })}</option>
-        {profiles.map((entry) => (
-          <option key={entry.id} value={entry.id} data-testid={SESSION_CREATE_IDS.profileOption}>
-            {entry.label} · {entry.identity?.accountLabel ?? entry.identity?.accountRef.slice(-12)} ·{" "}
-            {t(entry.authMode === ProfileAuthMode.ApiKey ? "accountsApiKey" : "accountsSubscription")}
-          </option>
-        ))}
-        {profileId !== "" && !profiles.some((entry) => entry.id === profileId) ? (
-          <option value={profileId} disabled>
-            {t("sessionSelectedProfileUnavailable", { label: profile?.label ?? profileId })}
-          </option>
-        ) : null}
-      </select>
-    </label>
+    <ChoiceDropdown
+      value={profileId}
+      onChange={onChange}
+      label={t("sessionLaunchProfile")}
+      triggerLabel={profileId === "" ? nativeLabel : (profile?.label ?? profileId)}
+      icon={UserRound}
+      ids={SESSION_CREATE_IDS.profile}
+      className={chipFieldClass}
+      labelClassName={chipLabelClass}
+      disabled={disabled}
+      options={profileOptions(profiles, profileId, profile, nativeLabel, t)}
+    />
   )
 }

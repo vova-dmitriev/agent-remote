@@ -1,7 +1,10 @@
+import { Cpu, Gauge } from "lucide-react"
 import type { ExecutionProfileSummary, ReasoningEffort } from "@protocol"
 import { useTranslation } from "@/shared/lib/hooks"
-import { formLabelClass } from "@/shared/ui/label"
+import { ChoiceDropdown } from "@/shared/ui/dropdown"
+import { chipFieldClass, chipLabelClass } from "../config/chip-classes"
 import { SESSION_CREATE_IDS } from "../config/test-ids"
+import { effortOptions, modelOptions } from "../model/launch-options"
 
 interface ModelEffortFieldsProps {
   profileId: string
@@ -32,51 +35,31 @@ export function ModelEffortFields({
 
   return (
     <>
-      <label className={formLabelClass}>
-        {t("sessionModel")}
-        <select
-          className="mt-1 w-full rounded-md border border-border bg-background p-2"
-          data-testid={SESSION_CREATE_IDS.model}
-          value={modelId}
-          onChange={(event) => onModelChange(event.target.value)}
-          disabled={disabled || !profileAvailable || !profile}
-        >
-          <option value="">{t("sessionChooseModel")}</option>
-          {modelId !== "" && (!profile || !profile.models.some((entry) => entry.id === modelId)) ? (
-            <option value={modelId} disabled>
-              {t("sessionSelectedModelUnavailable", { model: modelId })}
-            </option>
-          ) : null}
-          {profile?.models.map((entry) => (
-            <option key={entry.id} value={entry.id}>
-              {entry.id}
-            </option>
-          ))}
-        </select>
-      </label>
+      <ChoiceDropdown
+        value={modelId}
+        onChange={onModelChange}
+        label={t("sessionModel")}
+        triggerLabel={modelId === "" ? t("sessionChooseModel") : modelId}
+        icon={Cpu}
+        ids={SESSION_CREATE_IDS.model}
+        className={chipFieldClass}
+        labelClassName={chipLabelClass}
+        disabled={disabled || !profileAvailable || !profile}
+        options={modelOptions(profile, modelId, t)}
+      />
       {modelId !== "" && (effort !== "" || selectedModel?.efforts.length) ? (
-        <label className={formLabelClass}>
-          {t("sessionEffort")}
-          <select
-            className="mt-1 w-full rounded-md border border-border bg-background p-2"
-            data-testid={SESSION_CREATE_IDS.effort}
-            value={effort}
-            onChange={(event) => onEffortChange(event.target.value as ReasoningEffort | "")}
-            disabled={disabled || !profileAvailable || !selectedModel}
-          >
-            <option value="">{t("sessionDefaultEffort")}</option>
-            {effort !== "" && (!selectedModel || !selectedModel.efforts.includes(effort)) ? (
-              <option value={effort} disabled>
-                {t("sessionSelectedEffortUnavailable", { effort })}
-              </option>
-            ) : null}
-            {selectedModel?.efforts.map((value) => (
-              <option key={value} value={value}>
-                {value}
-              </option>
-            ))}
-          </select>
-        </label>
+        <ChoiceDropdown
+          value={effort}
+          onChange={onEffortChange}
+          label={t("sessionEffort")}
+          triggerLabel={effort === "" ? t("sessionDefaultEffort") : effort}
+          icon={Gauge}
+          ids={SESSION_CREATE_IDS.effort}
+          className={chipFieldClass}
+          labelClassName={chipLabelClass}
+          disabled={disabled || !profileAvailable || !selectedModel}
+          options={effortOptions(selectedModel, effort, t)}
+        />
       ) : null}
     </>
   )
