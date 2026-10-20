@@ -6,6 +6,8 @@ interface FakeBridgeOptions {
   snapshot: AppSnapshot;
   /** History events per subagent id, answered for history requests that name that agent. */
   agents: Record<string, unknown[]>;
+  /** History events answered for the parent session's history requests. */
+  history: unknown[];
   values: {
     event: string;
     result: string;
@@ -21,11 +23,18 @@ export const subagentReads = (page: Page) =>
   page.evaluate(() => (window as unknown as { subagentReads?: string[] }).subagentReads ?? []);
 
 /** Installs a synthetic `window.desktopBridge` so the desktop host runs in a plain browser page. */
-export async function installDesktopBridge(page: Page, deviceId: string, snapshot: AppSnapshot, agents: Record<string, unknown[]> = {}) {
+export async function installDesktopBridge(
+  page: Page,
+  deviceId: string,
+  snapshot: AppSnapshot,
+  agents: Record<string, unknown[]> = {},
+  history: unknown[] = [],
+) {
   const options: FakeBridgeOptions = {
     deviceId,
     snapshot,
     agents,
+    history,
     values: {
       event: DesktopBridgeKind.Event,
       result: DesktopBridgeKind.Result,
@@ -44,7 +53,7 @@ export async function installDesktopBridge(page: Page, deviceId: string, snapsho
     },
   };
 
-  await page.addInitScript(({ deviceId, snapshot, agents, values }: FakeBridgeOptions) => {
+  await page.addInitScript(({ deviceId, snapshot, agents, history, values }: FakeBridgeOptions) => {
     const leaseId = crypto.randomUUID();
     const epoch = 1;
     const listeners = new Set<(event: unknown) => void>();
@@ -53,7 +62,7 @@ export async function installDesktopBridge(page: Page, deviceId: string, snapsho
     const data: Record<string, unknown> = {
       [operations.devices]: [{ id: deviceId, last_seen_at: new Date().toISOString() }],
       [operations.select]: null,
-      [operations.history]: { events: [], before: null, after: null },
+      [operations.history]: { events: history, before: null, after: null },
       [operations.preferences]: { language: null, theme: null },
       [operations.reading]: { revision: 0, position: null },
       [operations.draft]: { revision: 0, text: '', attachments: [] },
