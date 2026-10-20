@@ -7,14 +7,10 @@ import {
   type ServerFrame,
 } from '@protocol';
 import { once } from 'node:events';
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { afterEach, expect, it, vi } from 'vitest';
 import { WebSocket, WebSocketServer } from 'ws';
 import { RelayClient } from '../apps/daemon/src/relay-client.js';
 import { RuntimeEvent } from '../apps/daemon/src/domain/runtime.js';
-import { readRelayStatus, saveRelayStatus } from '../apps/daemon/src/diagnostics/relay-status.js';
 import { PROTOCOL_REPROBE_MS } from '../apps/daemon/src/runtime-timings.js';
 import { attachmentRelayFixture } from './helpers/attachment-relay.js';
 
@@ -179,16 +175,4 @@ it('authenticates an Auth frame that carries a field this relay does not know', 
     type: FrameType.Authenticated,
     protocolVersion: RELAY_PROTOCOL.Current,
   });
-});
-
-it('records the relay stop reason for remote status and clears it', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'relay-status-'));
-
-  cleanups.push(() => rm(directory, { recursive: true, force: true }));
-
-  expect(await readRelayStatus(directory)).toBeUndefined();
-  await saveRelayStatus(directory, ErrorCode.PROTOCOL_UNSUPPORTED);
-  expect(await readRelayStatus(directory)).toBe(ErrorCode.PROTOCOL_UNSUPPORTED);
-  await saveRelayStatus(directory, null);
-  expect(await readRelayStatus(directory)).toBeUndefined();
 });

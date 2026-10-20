@@ -4,6 +4,9 @@ import { redactError } from '@transport/diagnostics/redact-error.js';
 const DEBUG_VARIABLE = 'REMOTE_DEBUG';
 const DEBUG_ENABLED = '1';
 
+/** The level of lines written whatever the debug setting. */
+const LogLevel = { Warn: 'warn' } as const;
+
 const debugEnabled = () => process.env[DEBUG_VARIABLE] === DEBUG_ENABLED;
 
 /**
@@ -14,6 +17,11 @@ export function logDebug(scope: string, error: unknown): void {
   if (debugEnabled()) {
     process.stderr.write(JSON.stringify({ scope, ...redactError(error) }) + '\n');
   }
+}
+
+/** Writes one JSON line for a failure the user may need to know about, to stderr whatever the debug setting. */
+export function logWarning(scope: string, error: unknown): void {
+  process.stderr.write(JSON.stringify({ level: LogLevel.Warn, scope, ...redactError(error) }) + '\n');
 }
 
 /** Writes one JSON line counting what a pass skipped, such as malformed records in one page, in debug mode. */
