@@ -274,7 +274,7 @@ export class TranscriptReader {
       const edit = claudeFileEdit(row, this.options.sessionId);
 
       if (edit) {
-        this.edits.add(edit, true);
+        this.edits.add(edit);
       }
     }
 

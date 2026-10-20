@@ -11,7 +11,10 @@ export interface FileEdit {
   diff: string;
 }
 
-/** A session's latest file edits, bounded to 40 files and the snapshot budget; the oldest go first. */
+/**
+ * A session's latest file edits, bounded to 40 files and the snapshot budget. Over budget, the oldest edits lose
+ * their patch first, so the files stay listed (and openable); only then do the oldest go.
+ */
 export class FileChangeLog {
   private files = new Map<string, SessionFileChange>();
   protected truncated = false;
@@ -47,8 +50,21 @@ export class FileChangeLog {
     this.files.set(file.id, file);
     this.truncated ||= file.truncated;
 
-    while (this.files.size > 40 || changeBytes(this.value()) > SESSION_BUDGET) {
+    while (this.files.size > 40) {
       this.files.delete(this.files.keys().next().value!);
+      this.truncated = true;
+    }
+
+    while (changeBytes(this.value()) > SESSION_BUDGET) {
+      const oldest = [...this.files.values()].find((item) => item.patch);
+
+      if (oldest && oldest !== file) {
+        oldest.patch = '';
+        oldest.truncated = true;
+      } else {
+        this.files.delete(this.files.keys().next().value!);
+      }
+
       this.truncated = true;
     }
   }

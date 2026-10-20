@@ -91,3 +91,41 @@ it('reports no changes for a session that edited nothing', async () => {
   await source.readNext();
   expect(source.changes).toBeUndefined();
 });
+
+it('finds an edit far back in a long transcript and lists each file once, with its latest edit', async () => {
+  const filler =
+    JSON.stringify({
+      type: 'assistant',
+      sessionId: 'session-a',
+      message: { content: 'x'.repeat(1024 * 1024) },
+    }) + '\n';
+
+  await writeFile(
+    path,
+    edited('1', '/work/DESIGN.md', 'create') + filler.repeat(6) + edited('2', '/work/app.ts'),
+  );
+
+  await appendFile(path, edited('3', '/work/app.ts'));
+
+  const source = reader();
+
+  await source.readNext();
+  expect(source.changes!.files.map((file) => file.path)).toEqual(['/work/DESIGN.md', '/work/app.ts']);
+});
+
+it('keeps every changed file listed when patches outgrow the budget, dropping the oldest patches first', async () => {
+  const { FileChangeLog } = await import('@daemon/activity/file-changes.js');
+  const log = new FileChangeLog();
+
+  for (let index = 0; index < 30; index++) {
+    log.add({ id: String(index), path: `/work/${index}.md`, kind: 'update', diff: '+line\n'.repeat(1000) });
+  }
+
+  const { files, truncated } = log.value();
+
+  expect(files).toHaveLength(30);
+  expect(truncated).toBe(true);
+  expect(files[0]!.patch).toBe('');
+  expect(files.at(-1)!.patch).not.toBe('');
+  expect(Buffer.byteLength(JSON.stringify(log.value()))).toBeLessThanOrEqual(16384);
+});

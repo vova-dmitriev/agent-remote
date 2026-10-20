@@ -2,9 +2,9 @@ import { FileChangeKind } from '@protocol';
 import type { FileHandle } from 'node:fs/promises';
 import type { FileChangeLog, FileEdit } from './file-changes.js';
 
-/** How much of a transcript's end is searched for edits made before the daemon attached. */
-const TAIL_BYTES = 4 * 1024 * 1024;
-const TOOL_RESULT = '"toolUseResult"';
+/** Read size for the one pass over a transcript that lists edits made before the daemon attached. */
+const CHUNK_BYTES = 1024 * 1024;
+const PATCH_FIELD = '"structuredPatch"';
 const CREATED = 'create';
 
 const record = (value: unknown) =>
@@ -45,8 +45,9 @@ export function claudeFileEdit(
   const created = result.type === CREATED;
   const content = typeof result.content === 'string' ? result.content : '';
 
+  // One row per file: a later edit of the same file replaces the earlier one.
   return {
-    id: row.uuid,
+    id: result.filePath,
     path: result.filePath,
     kind: created ? FileChangeKind.Add : FileChangeKind.Update,
     // A new file's patch is empty; its content is the change.
@@ -60,32 +61,43 @@ export function claudeFileEdit(
   };
 }
 
-/** Lists the edits in the last few megabytes of a transcript, for a reader that starts at its end. */
+/** Lists a transcript's edits in one pass, for a reader that starts at its end; only edit lines are parsed. */
 export async function readEditsTail(
   file: FileHandle,
   size: number,
   sessionId: string | undefined,
   log: FileChangeLog,
 ) {
-  const start = Math.max(0, size - TAIL_BYTES);
-  const buffer = Buffer.alloc(size - start);
-  const { bytesRead } = await file.read(buffer, 0, buffer.length, start);
-  const text = buffer.toString('utf8', 0, bytesRead);
-  const lines = text.split('\n');
+  const chunk = Buffer.alloc(CHUNK_BYTES);
+  let carry = '';
 
-  // The first line may be cut by the window and the last may still be written.
-  for (const line of lines.slice(start ? 1 : 0, -1)) {
-    if (!line.includes(TOOL_RESULT)) {
-      continue;
+  for (let position = 0; position < size;) {
+    const { bytesRead } = await file.read(chunk, 0, Math.min(CHUNK_BYTES, size - position), position);
+
+    if (!bytesRead) {
+      break;
     }
 
-    try {
-      const row = record(JSON.parse(line));
-      const edit = row && claudeFileEdit(row, sessionId);
+    position += bytesRead;
 
-      if (edit) {
-        log.add(edit, true);
+    const lines = (carry + chunk.toString('utf8', 0, bytesRead)).split('\n');
+
+    // The last piece may be a line cut by the chunk, or one Claude is still writing.
+    carry = lines.pop() ?? '';
+
+    for (const line of lines) {
+      if (!line.includes(PATCH_FIELD)) {
+        continue;
       }
-    } catch {} // ignore: a malformed line is never an edit.
+
+      try {
+        const row = record(JSON.parse(line));
+        const edit = row && claudeFileEdit(row, sessionId);
+
+        if (edit) {
+          log.add(edit);
+        }
+      } catch {} // ignore: a malformed line is never an edit.
+    }
   }
 }

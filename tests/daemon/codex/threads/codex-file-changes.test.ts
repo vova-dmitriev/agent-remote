@@ -46,7 +46,7 @@ it('bounds escaped/multibyte patches and the shared snapshot payload', () => {
 
   const bounded = boundChangeSnapshots(sessions);
 
-  expect(Buffer.byteLength(JSON.stringify(bounded.map((session) => session.changes)))).toBeLessThan(161_000);
+  expect(Buffer.byteLength(JSON.stringify(bounded.map((session) => session.changes)))).toBeLessThan(162_000); // the 160 KB budget plus each session's empty changes envelope
   expect(bounded.some((session) => !session.changes?.files.length && session.changes?.truncated)).toBe(true);
 });
 
