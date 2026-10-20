@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
-import type { ServerFrame } from '@protocol';
+import { MAX_RELAY_FRAME_BYTES, type ServerFrame } from '@protocol';
 import { BoundedSender } from '@transport/bounded-sender.js';
 import type { Server } from 'node:http';
 import { WebSocketServer, type WebSocket } from 'ws';
@@ -38,8 +38,11 @@ export class RelayHub {
   readonly live = new Map<string, DeviceConnection>();
   readonly clients = new Set<AppConnection>();
   readonly sender = new BoundedSender();
-  // A device snapshot carries up to MAX_DEVICE_SESSIONS sessions, with subagents bounded to 32 KiB across them.
-  readonly deviceWss = new WebSocketServer({ noServer: true, maxPayload: 524288, perMessageDeflate: false });
+  readonly deviceWss = new WebSocketServer({
+    noServer: true,
+    maxPayload: MAX_RELAY_FRAME_BYTES,
+    perMessageDeflate: false,
+  });
   readonly appWss = new WebSocketServer({ noServer: true, maxPayload: 131072, perMessageDeflate: false });
   closing = false;
 

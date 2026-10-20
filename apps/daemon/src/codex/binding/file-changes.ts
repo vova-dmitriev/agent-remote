@@ -1,6 +1,7 @@
 import { CodexItemStatus, CodexItemType } from '../../domain/codex/codex.js';
 import {
   FileChangeKind,
+  MAX_RELAY_FRAME_BYTES,
   type AppSnapshot,
   type Session,
   type SessionChanges,
@@ -93,8 +94,11 @@ export function boundSnapshotChanges(snapshot: AppSnapshot): AppSnapshot {
     ),
   };
 
-  // Under the 512 KiB device frame the relay accepts.
-  const budget = Math.max(0, Math.min(SNAPSHOT_CHANGES_BUDGET, 458752 - bytes(baseline)));
+  // 64 KiB stay for the frame envelope and connector descriptors.
+  const budget = Math.max(
+    0,
+    Math.min(SNAPSHOT_CHANGES_BUDGET, MAX_RELAY_FRAME_BYTES - 65536 - bytes(baseline)),
+  );
 
   return { ...snapshot, sessions: boundChangeSnapshots(snapshot.sessions, budget) };
 }

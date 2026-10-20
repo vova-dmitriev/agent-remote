@@ -10,6 +10,7 @@ import {
   deviceFrameSchema,
   eventSchema,
   supportsRelayProtocol,
+  MAX_RELAY_FRAME_BYTES,
 } from '@protocol';
 import { randomUUID } from 'node:crypto';
 import { WebSocket } from 'ws';
@@ -88,7 +89,7 @@ export class DeviceSocket {
     socket.on('message', (raw) => {
       const bytes = Buffer.byteLength(raw as Buffer);
 
-      if (queued >= 256 || queuedBytes + bytes > 1048576) {
+      if (queued >= 256 || queuedBytes + bytes > 4 * MAX_RELAY_FRAME_BYTES) {
         socket.close(SocketCloseCode.TryAgainLater, ErrorCode.QUEUE_FULL);
 
         return;

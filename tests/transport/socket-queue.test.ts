@@ -1,4 +1,5 @@
 import { it, expect } from 'vitest';
+import { MAX_RELAY_FRAME_BYTES } from '@protocol';
 import { BoundedSender } from '@transport/bounded-sender.js';
 
 class Socket {
@@ -41,11 +42,11 @@ it('releases capacity on write completion and caps frames/bytes independently', 
   expect(sender.send(socket, {})).toBe(true);
   const large = new Socket();
 
-  expect(sender.send(large, { text: 'x'.repeat(131072) })).toBe(false);
+  expect(sender.send(large, { text: 'x'.repeat(MAX_RELAY_FRAME_BYTES) })).toBe(false);
   expect(large.writes).toBe(0);
   const backedUp = new Socket();
 
-  backedUp.bufferedAmount = 1048576;
+  backedUp.bufferedAmount = 4 * MAX_RELAY_FRAME_BYTES;
   expect(sender.send(backedUp, {})).toBe(false);
   expect(backedUp.writes).toBe(0);
 });

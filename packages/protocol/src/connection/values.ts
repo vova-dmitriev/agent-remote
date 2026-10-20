@@ -83,6 +83,9 @@ export type MessageRole = (typeof MessageRole)[keyof typeof MessageRole];
 export const ConnectorId = { Native: 'native' } as const;
 export type ConnectorId = (typeof ConnectorId)[keyof typeof ConnectorId];
 
+/** The largest relay frame: a device snapshot of MAX_DEVICE_SESSIONS sessions with their file changes. */
+export const MAX_RELAY_FRAME_BYTES = 512 * 1024;
+
 export const SocketCloseCode = {
   PolicyViolation: 1008,
   TryAgainLater: 1013,

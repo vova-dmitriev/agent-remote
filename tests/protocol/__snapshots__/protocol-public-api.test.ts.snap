@@ -72,6 +72,7 @@ exports[`keeps the public @protocol export set stable 1`] = `
   "MAX_DEVICE_CONNECTORS",
   "MAX_DEVICE_SESSIONS",
   "MAX_MESSAGE_ATTACHMENT_BYTES",
+  "MAX_RELAY_FRAME_BYTES",
   "MessageRole",
   "NATIVE_HOST_NAME",
   "NativeRestartState",

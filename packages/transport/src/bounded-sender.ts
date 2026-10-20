@@ -1,4 +1,4 @@
-import { ErrorCode, SocketCloseCode } from '@protocol';
+import { ErrorCode, MAX_RELAY_FRAME_BYTES, SocketCloseCode } from '@protocol';
 
 interface Socket {
   readonly readyState: number;
@@ -20,9 +20,9 @@ export class BoundedSender {
     const pending = this.pending.get(socket) ?? { frames: 0, bytes: 0 };
 
     if (
-      bytes > 131072 ||
+      bytes > MAX_RELAY_FRAME_BYTES ||
       pending.frames >= 256 ||
-      Math.max(pending.bytes, socket.bufferedAmount) + bytes > 1048576
+      Math.max(pending.bytes, socket.bufferedAmount) + bytes > 4 * MAX_RELAY_FRAME_BYTES
     ) {
       socket.close(SocketCloseCode.TryAgainLater, ErrorCode.QUEUE_FULL);
 
