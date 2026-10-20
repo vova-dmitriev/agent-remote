@@ -1,10 +1,10 @@
 import { memo } from "react"
 import { useTranslation } from "@/shared/lib/hooks"
 import { cn } from "@/shared/lib/utils"
-import { SessionStatusTone, sessionRecency, sessionStatusLabel, sessionStatusTone } from "@/entities/session"
+import { SessionStatusTone, sessionFolder, sessionPath, sessionRecency, sessionStatusLabel, sessionStatusTone } from "@/entities/session"
 import { SESSION_SIDEBAR_IDS } from "@/widgets/session-sidebar/config/test-ids"
 import { relativeTime } from "@/widgets/session-sidebar/lib/sidebar-format"
-import { projectName, rowTitle } from "@/widgets/session-sidebar/lib/sidebar-search"
+import { rowTitle } from "@/widgets/session-sidebar/lib/sidebar-search"
 import { rowDomId } from "@/widgets/session-sidebar/lib/row-dom-id"
 import { ProviderIcon } from "./provider-icon"
 import { HighlightMatch } from "./highlight-match"
@@ -24,7 +24,7 @@ export const SidebarRow = memo(function SidebarRow({
 }: SidebarRowProps) {
   const { t, language } = useTranslation()
   const unavailable = sessionStatusTone(session, awaitingInput) === SessionStatusTone.Unavailable
-  const project = projectName(session)
+  const project = sessionFolder(session)
   const title = rowTitle(session) ?? t("selectedChat")
 
   return (
@@ -64,7 +64,7 @@ export const SidebarRow = memo(function SidebarRow({
             {session.lastMessageAt === undefined ? null : (relativeTime(sessionRecency(session), now, language) ?? t("sidebarNow"))}
           </span>
         </span>
-        <span className="block truncate text-[11.5px] leading-4 text-muted-foreground">
+        <span className="block truncate text-[11.5px] leading-4 text-muted-foreground" title={sessionPath(session) ?? undefined}>
           {project ? (
             <>
               <HighlightMatch text={project} query={query} />

@@ -2,7 +2,7 @@ import { useTranslation } from "@/shared/lib/hooks"
 import { Button } from "@/shared/ui/button"
 import { cn } from "@/shared/lib/utils"
 import { SESSION_CARD_IDS } from "../config/test-ids"
-import { sourceNames, sessionTitle, agentName } from "../lib/labels"
+import { sourceNames, sessionTitle, agentName, sessionFolder, sessionPath } from "../lib/labels"
 import { sessionStatusLabel } from "../lib/availability"
 import { sessionCardBodyClass, sessionCardClass } from "./session-class"
 import { SessionStatusDot } from "./status-dot/status-dot"
@@ -10,6 +10,7 @@ import type { SessionCardProps } from "./session-card.types"
 
 export function SessionCard({ session, onSelect, awaitingInput = false }: SessionCardProps) {
   const { t } = useTranslation()
+  const folder = sessionFolder(session)
 
   return (
     <Button
@@ -24,6 +25,11 @@ export function SessionCard({ session, onSelect, awaitingInput = false }: Sessio
           className="row-start-2 overflow-hidden text-[11px] leading-[16px] tracking-normal text-ellipsis whitespace-nowrap text-muted-foreground"
           data-testid={SESSION_CARD_IDS.source}
         >
+          {folder ? (
+            <span data-testid={SESSION_CARD_IDS.folder} title={sessionPath(session) ?? undefined} className="text-foreground/80">
+              {folder} ·{" "}
+            </span>
+          ) : null}
           {agentName(session)} ·{" "}
           <span data-testid={SESSION_CARD_IDS.model} aria-label={t("modelLabel")} title={session.model ?? t("modelUnknown")}>
             {session.model ?? t("modelUnknown")}

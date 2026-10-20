@@ -1,13 +1,9 @@
 import type { Session } from "@protocol"
-import { agentName, filterByProvider, sessionTitle, type ProviderFilterValue } from "@/entities/session"
+import { agentName, filterByProvider, sessionFolder, sessionTitle, type ProviderFilterValue } from "@/entities/session"
 
 export interface MatchPart {
   text: string
   match: boolean
-}
-
-export function projectName(session: Session): string | null {
-  return session.cwd?.split("/").filter(Boolean).pop() ?? null
 }
 
 /** Untitled rows show the whole source id; the row truncates it with an ellipsis and keeps it in `title`. */
@@ -19,7 +15,7 @@ export function rowTitle(session: Session): string | null {
 
 /** Title, project, model and provider name are searchable; the provider makes "codex" / "claude" useful queries. */
 function containsQuery(session: Session, needle: string): boolean {
-  const haystack = [rowTitle(session), projectName(session), session.model, agentName(session)].filter(Boolean).join("\n")
+  const haystack = [rowTitle(session), sessionFolder(session), session.model, agentName(session)].filter(Boolean).join("\n")
 
   return haystack.toLowerCase().includes(needle)
 }

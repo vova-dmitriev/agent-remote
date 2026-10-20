@@ -1,4 +1,5 @@
 export const SESSION_CARD_IDS = {
+  folder: "session-card-folder",
   root: "session-card",
   source: "session-card-source",
   model: "session-card-model",

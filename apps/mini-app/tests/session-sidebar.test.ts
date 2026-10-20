@@ -7,6 +7,7 @@ import { createLanguageInstance } from "../src/shared/lib/i18n/index.js"
 import { SessionCard } from "../src/entities/session/ui/session-card.js"
 import { SessionStatusTone, ProviderFilterValue } from "../src/entities/session/config/session-values.js"
 import { sessionStatusTone } from "../src/entities/session/lib/status-tone.js"
+import { sessionFolder, sessionPath } from "../src/entities/session/lib/labels.js"
 import { sessionsAwaitingInput, sortByRecency } from "../src/entities/session/lib/selectors.js"
 import { filterSessions, matchParts } from "../src/widgets/session-sidebar/lib/sidebar-search.js"
 import { groupByRecency } from "../src/widgets/session-sidebar/lib/sidebar-groups.js"
@@ -104,6 +105,19 @@ it("leads with pinned sessions, newest first, and keeps them out of the day grou
     [SidebarGroup.Pinned, [codexCli.id, chat.id]],
     [SidebarGroup.Today, [terminal.id]],
   ])
+})
+
+it("names the folder a session works in and shortens the home folder in its path", () => {
+  const at = (cwd?: string) => ({ ...terminal, ...(cwd === undefined ? {} : { cwd }) }) as Session
+
+  expect([sessionFolder(at("/Users/someone/Desktop/agents remote")), sessionPath(at("/Users/someone/Desktop/agents remote"))]).toEqual([
+    "agents remote",
+    "~/Desktop/agents remote",
+  ])
+
+  expect(sessionPath(at("/Users/someone"))).toBe("~")
+  expect(sessionPath(at("/opt/work"))).toBe("/opt/work")
+  expect([sessionFolder(at()), sessionPath(at())]).toEqual([null, null])
 })
 
 it("formats compact relative times and falls back to a date after a week", () => {

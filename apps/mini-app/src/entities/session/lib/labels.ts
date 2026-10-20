@@ -38,3 +38,13 @@ export const connectorStates: Record<ConnectorDescriptor["state"], MessageKey> =
   [IntegrationState.Unsupported]: "connectorUnavailable",
   [IntegrationState.Disconnected]: "connectorDisconnected",
 }
+
+/** The folder the session works in: the last segment of its working directory. */
+export function sessionFolder(session: Session): string | null {
+  return session.cwd?.split("/").filter(Boolean).pop() ?? null
+}
+
+/** The working directory with the macOS home folder shortened to `~`. */
+export function sessionPath(session: Session): string | null {
+  return session.cwd?.replace(/^\/Users\/[^/]+(?=\/|$)/, "~") ?? null
+}
