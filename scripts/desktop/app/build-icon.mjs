@@ -5,7 +5,7 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
-const assets = resolve(fileURLToPath(new URL('../../apps/desktop/assets', import.meta.url)));
+const assets = resolve(fileURLToPath(new URL('../../../apps/desktop/assets', import.meta.url)));
 const svg = await readFile(join(assets, 'icon.svg'), 'utf8');
 const iconset = (await mkdtemp(join(tmpdir(), 'agent-remote-icon-'))) + '/icon.iconset';
 

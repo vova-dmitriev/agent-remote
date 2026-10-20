@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { resolve, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const root = resolve(process.argv[2] ?? fileURLToPath(new URL('../apps/mini-app', import.meta.url)));
+const root = resolve(process.argv[2] ?? fileURLToPath(new URL('../../apps/mini-app', import.meta.url)));
 const issues = [];
 const source = join(root, 'src');
 const layers = new Set(['app', 'pages', 'widgets', 'features', 'entities', 'shared']);

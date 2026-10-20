@@ -3,7 +3,9 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, expect, it } from 'vitest';
 // @ts-expect-error untyped build script
-import { CYCLE_LEVEL, cycleRoots, findCycles, gatedCycleLevels } from '../../../scripts/check-cycles.mjs';
+import * as cycleCheck from '../../../scripts/quality/check-cycles.mjs';
+
+const { CYCLE_LEVEL, cycleRoots, findCycles, gatedCycleLevels } = cycleCheck;
 
 const roots: string[] = [];
 

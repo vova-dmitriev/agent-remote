@@ -9,12 +9,12 @@ it('runs the frontend structure check from a relocated project with spaces and U
   const root = mkdtempSync(join(tmpdir(), 'agents remote # unicode-'));
 
   try {
-    mkdirSync(join(root, 'scripts'));
+    mkdirSync(join(root, 'scripts/quality'), { recursive: true });
     mkdirSync(join(root, 'apps/mini-app/src/shared'), { recursive: true });
-    const script = join(root, 'scripts/check-frontend-structure.mjs');
+    const script = join(root, 'scripts/quality/check-frontend-structure.mjs');
 
     copyFileSync(
-      fileURLToPath(new URL('../../../../scripts/check-frontend-structure.mjs', import.meta.url)),
+      fileURLToPath(new URL('../../../../scripts/quality/check-frontend-structure.mjs', import.meta.url)),
       script,
     );
 
@@ -34,12 +34,12 @@ it('rejects shared directories with more than six files', () => {
   const root = mkdtempSync(join(tmpdir(), 'agents remote shared-'));
 
   try {
-    mkdirSync(join(root, 'scripts'));
+    mkdirSync(join(root, 'scripts/quality'), { recursive: true });
     mkdirSync(join(root, 'apps/mini-app/src/shared/api'), { recursive: true });
 
     copyFileSync(
-      fileURLToPath(new URL('../../../../scripts/check-frontend-structure.mjs', import.meta.url)),
-      join(root, 'scripts/check-frontend-structure.mjs'),
+      fileURLToPath(new URL('../../../../scripts/quality/check-frontend-structure.mjs', import.meta.url)),
+      join(root, 'scripts/quality/check-frontend-structure.mjs'),
     );
 
     for (let index = 0; index < 7; index += 1) {
@@ -47,7 +47,7 @@ it('rejects shared directories with more than six files', () => {
     }
 
     expect(() =>
-      execFileSync(process.execPath, [join(root, 'scripts/check-frontend-structure.mjs')], {
+      execFileSync(process.execPath, [join(root, 'scripts/quality/check-frontend-structure.mjs')], {
         encoding: 'utf8',
         stdio: 'pipe',
       }),
@@ -62,13 +62,13 @@ it('rejects stylesheets outside the Tailwind allowlist', () => {
   const app = join(root, 'apps/mini-app/src');
 
   try {
-    mkdirSync(join(root, 'scripts'));
+    mkdirSync(join(root, 'scripts/quality'), { recursive: true });
     mkdirSync(join(app, 'app/styles'), { recursive: true });
     mkdirSync(join(app, 'features/x/ui'), { recursive: true });
 
     copyFileSync(
-      fileURLToPath(new URL('../../../../scripts/check-frontend-structure.mjs', import.meta.url)),
-      join(root, 'scripts/check-frontend-structure.mjs'),
+      fileURLToPath(new URL('../../../../scripts/quality/check-frontend-structure.mjs', import.meta.url)),
+      join(root, 'scripts/quality/check-frontend-structure.mjs'),
     );
 
     for (const file of ['globals.css', 'tokens.css', 'markdown.css']) {
@@ -82,7 +82,7 @@ it('rejects stylesheets outside the Tailwind allowlist', () => {
     let stderr = '';
 
     try {
-      execFileSync(process.execPath, [join(root, 'scripts/check-frontend-structure.mjs')], {
+      execFileSync(process.execPath, [join(root, 'scripts/quality/check-frontend-structure.mjs')], {
         encoding: 'utf8',
         stdio: 'pipe',
       });

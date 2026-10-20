@@ -2,11 +2,11 @@ import { access, readFile, rm } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
-import { packageDesktopRuntime } from './package-runtime.mjs';
-import { prepareDesktopNode } from './prepare-runtime.mjs';
-import { verifyDesktopRuntime } from './verify-runtime-lib.mjs';
+import { packageDesktopRuntime } from '../runtime/package-runtime.mjs';
+import { prepareDesktopNode } from '../runtime/prepare-runtime.mjs';
+import { verifyDesktopRuntime } from '../runtime/verify-runtime-lib.mjs';
 
-const repository = fileURLToPath(new URL('../../', import.meta.url));
+const repository = fileURLToPath(new URL('../../../', import.meta.url));
 const app = JSON.parse(await readFile(join(repository, 'apps/desktop/package.json'), 'utf8'));
 const nodePath = await prepareDesktopNode();
 const outputDirectory = resolve(repository, 'apps/desktop/dist/desktop-companion');

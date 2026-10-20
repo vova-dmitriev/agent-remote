@@ -10,7 +10,7 @@ describe('Desktop Forge build runtime', () => {
   it.runIf(process.platform === 'darwin')(
     'runs installed Forge under the verified Node runtime even when the caller uses obsolete Node',
     async () => {
-      const { stdout, stderr } = await run(process.execPath, ['scripts/desktop/make.mjs', '--version'], {
+      const { stdout, stderr } = await run(process.execPath, ['scripts/desktop/app/make.mjs', '--version'], {
         cwd: repository,
         timeout: 30_000,
       });

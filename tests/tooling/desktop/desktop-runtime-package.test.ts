@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { LOCAL_LIMITS } from '@protocol';
 import { installDesktopRuntime } from '@desktop/runtime/install-runtime.js';
-import { verifyDesktopRuntime } from '../../../scripts/desktop/verify-runtime-lib.mjs';
+import { verifyDesktopRuntime } from '../../../scripts/desktop/runtime/verify-runtime-lib.mjs';
 import { desktopRuntimeFixture } from '../../helpers/desktop/desktop-runtime-fixture.js';
 import { packagedCompanionFixture } from '../../helpers/desktop/packaged-companion.js';
 import { guardRuntimeProcesses } from '../../helpers/desktop/runtime-processes.js';
@@ -12,9 +12,9 @@ import {
   copyRuntimeTree,
   packageDesktopRuntime,
   runtimeFiles,
-} from '../../../scripts/desktop/package-runtime.mjs';
-import { desktopNodeTarget } from '../../../scripts/desktop/runtime-pin.mjs';
-import { FINDER_METADATA, listRuntimeFiles } from '../../../scripts/desktop/runtime-files.mjs';
+} from '../../../scripts/desktop/runtime/package-runtime.mjs';
+import { desktopNodeTarget } from '../../../scripts/desktop/runtime/runtime-pin.mjs';
+import { FINDER_METADATA, listRuntimeFiles } from '../../../scripts/desktop/runtime/runtime-files.mjs';
 
 const cleanups: Array<() => Promise<unknown>> = [];
 const itOnDarwin = it.skipIf(process.platform !== 'darwin');

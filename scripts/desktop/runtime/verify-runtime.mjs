@@ -3,11 +3,13 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { readFile } from 'node:fs/promises';
 import { verifyDesktopRuntime } from './verify-runtime-lib.mjs';
 
-const repository = fileURLToPath(new URL('../../', import.meta.url));
+const repository = fileURLToPath(new URL('../../../', import.meta.url));
 const [root] = process.argv.slice(2);
 
 if (!root || !resolve(root)) {
-  throw new Error('Usage: node scripts/desktop/verify-runtime.mjs /absolute/resources/desktop-companion');
+  throw new Error(
+    'Usage: node scripts/desktop/runtime/verify-runtime.mjs /absolute/resources/desktop-companion',
+  );
 }
 
 const limits = await import(

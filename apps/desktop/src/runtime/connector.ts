@@ -10,7 +10,7 @@ import type { DesktopCompanionConnector, DesktopCompanionOptions } from '../main
 import { readDesktopHandle, writeDesktopHandle } from './client-state.js';
 import { connectDesktopSocket } from './socket-client.js';
 import { installDesktopRuntime } from './install-runtime.js';
-import { verifyDesktopRuntime } from '../../../../scripts/desktop/verify-runtime-lib.mjs';
+import { verifyDesktopRuntime } from '../../../../scripts/desktop/runtime/verify-runtime-lib.mjs';
 
 const runFile = promisify(execFile);
 

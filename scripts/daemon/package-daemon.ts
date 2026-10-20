@@ -13,7 +13,7 @@ const files = [
   'pnpm-workspace.yaml',
   'dist',
   'apps/daemon/bin',
-  'scripts/prepare-node-pty.mjs',
+  'scripts/build/prepare-node-pty.mjs',
   'node_modules',
   'THIRD_PARTY_NOTICES.md',
   'README.md',

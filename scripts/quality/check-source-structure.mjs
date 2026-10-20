@@ -5,38 +5,33 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const MAX_FILES_PER_DIRECTORY = 6;
 const MAX_TEST_FILES_PER_DIRECTORY = 12;
 
-const sourceRoots = [
+// Every configured root must exist: a misspelled or removed root fails the gate instead of passing silently.
+export const sourceRoots = [
   { path: 'apps/daemon/src', max: MAX_FILES_PER_DIRECTORY },
   { path: 'apps/server/src', max: MAX_FILES_PER_DIRECTORY },
   { path: 'apps/desktop/src', max: MAX_FILES_PER_DIRECTORY },
   { path: 'apps/chrome-extension/src', max: MAX_FILES_PER_DIRECTORY },
   { path: 'packages/protocol/src', max: MAX_FILES_PER_DIRECTORY },
   { path: 'packages/transport/src', max: MAX_FILES_PER_DIRECTORY },
-  // The mirrored test tree. The browser suites and the shared helper pool keep their own layout.
-  {
-    path: 'tests',
-    max: MAX_TEST_FILES_PER_DIRECTORY,
-    skip: ['tests/e2e', 'tests/extension-e2e', 'tests/desktop-e2e', 'tests/helpers'],
-  },
+  // Tooling scripts are code like src and follow the same cap.
+  { path: 'scripts', max: MAX_FILES_PER_DIRECTORY },
+  // The whole test tree, browser suites and shared helpers included.
+  { path: 'tests', max: MAX_TEST_FILES_PER_DIRECTORY },
 ];
 
 const isCounted = (name) => /\.(ts|mjs)$/.test(name) && name !== 'index.ts' && !name.endsWith('.d.ts');
 
-export function checkSourceStructure(root) {
+export function checkSourceStructure(root, roots = sourceRoots) {
   const issues = [];
 
-  const visit = (directory, limits) => {
-    const { max, skip = [] } = limits;
-
-    if (skip.includes(relative(root, directory))) {
-      return;
-    }
-
+  const visit = (directory, max) => {
     let entries;
 
     try {
       entries = readdirSync(directory, { withFileTypes: true });
-    } catch {
+    } catch (error) {
+      issues.push(`${relative(root, directory)}: cannot be read (${error.code ?? error.message}).`);
+
       return;
     }
 
@@ -50,20 +45,20 @@ export function checkSourceStructure(root) {
 
     for (const entry of entries) {
       if (entry.isDirectory() && entry.name !== 'node_modules') {
-        visit(join(directory, entry.name), limits);
+        visit(join(directory, entry.name), max);
       }
     }
   };
 
-  for (const { path, ...limits } of sourceRoots) {
-    visit(join(root, path), limits);
+  for (const { path, max } of roots) {
+    visit(join(root, path), max);
   }
 
   return issues;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
-  const root = resolve(process.argv[2] ?? fileURLToPath(new URL('..', import.meta.url)));
+  const root = resolve(process.argv[2] ?? fileURLToPath(new URL('../..', import.meta.url)));
   const issues = checkSourceStructure(root);
 
   if (issues.length > 0) {

@@ -3,9 +3,9 @@ import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { delimiter, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { prepareDesktopNode } from './prepare-runtime.mjs';
+import { prepareDesktopNode } from '../runtime/prepare-runtime.mjs';
 
-const repository = fileURLToPath(new URL('../../', import.meta.url));
+const repository = fileURLToPath(new URL('../../../', import.meta.url));
 const directory = resolve(repository, 'apps/desktop');
 const requireDesktop = createRequire(resolve(directory, 'package.json'));
 const cliManifestPath = requireDesktop.resolve('@electron-forge/cli/package.json');

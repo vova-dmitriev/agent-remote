@@ -323,7 +323,7 @@ test('missing Docker fails the Semgrep step instead of skipping it', () => {
 
 function assessedFixture() {
   const directory = fixture();
-  const assessed = 'scripts/smoke-image.ts';
+  const assessed = 'scripts/server/smoke-image.ts';
 
   mkdirSync(join(directory, 'scripts/security'), { recursive: true });
   cpSync(join(repository, assessed), join(directory, assessed));
@@ -362,7 +362,12 @@ test('a new finding in an assessed file is blocked, including a nosemgrep line a
   const changed = scan(directory, 'worktree');
 
   assert.equal(changed.status, 1);
-  assert.match(changed.stderr, /rules_lgpl_javascript_ssrf_rule-node-ssrf: scripts\/smoke-image\.ts:\d+\n/);
+
+  assert.match(
+    changed.stderr,
+    /rules_lgpl_javascript_ssrf_rule-node-ssrf: scripts\/server\/smoke-image\.ts:\d+\n/,
+  );
+
   assert.equal(ssrfFindings(changed.stderr).length, 1);
 
   const start = original.indexOf('  async function request<T>');
@@ -684,7 +689,7 @@ test('staged scan reads the assessed list from the index, not the working copy',
 
   assert.match(
     unassessed.stderr,
-    /rules_lgpl_javascript_ssrf_rule-node-ssrf: scripts\/smoke-image\.ts:\d+\n/,
+    /rules_lgpl_javascript_ssrf_rule-node-ssrf: scripts\/server\/smoke-image\.ts:\d+\n/,
   );
 
   execFileSync('git', ['add', assessedPath], { cwd: directory });

@@ -183,7 +183,7 @@ export function findCycles(root, level) {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
-  const repositoryRoot = resolve(process.argv[2] ?? fileURLToPath(new URL('..', import.meta.url)));
+  const repositoryRoot = resolve(process.argv[2] ?? fileURLToPath(new URL('../..', import.meta.url)));
   const issues = [];
 
   for (const sourceRoot of cycleRoots(repositoryRoot)) {

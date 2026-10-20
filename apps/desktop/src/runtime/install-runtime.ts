@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { ErrorCode } from '@protocol';
 import { secureDirectory } from '@daemon/local/supervisor/runtime.js';
-import { verifyDesktopRuntime } from '../../../../scripts/desktop/verify-runtime-lib.mjs';
+import { verifyDesktopRuntime } from '../../../../scripts/desktop/runtime/verify-runtime-lib.mjs';
 
 export async function installDesktopRuntime(options: {
   sourceRoot: string;

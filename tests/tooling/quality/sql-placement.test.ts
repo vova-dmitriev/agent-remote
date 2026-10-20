@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, expect, it } from 'vitest';
 // @ts-expect-error untyped build script
-import { checkSqlPlacement } from '../../../scripts/check-sql-placement.mjs';
+import { checkSqlPlacement } from '../../../scripts/quality/check-sql-placement.mjs';
 
 const roots: string[] = [];
 

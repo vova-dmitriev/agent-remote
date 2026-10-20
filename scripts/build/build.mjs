@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, cpSync } from 'node:fs';
-import { buildNode } from './build/node.mjs';
+import { buildNode } from './node.mjs';
 
 await buildNode();
 

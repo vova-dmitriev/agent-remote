@@ -8,7 +8,7 @@
     "build": "npm run check && vite build --config vite.config.ts",
     "lint": "eslint . --max-warnings=0",
     "lint:fsd": "steiger src",
-    "lint:structure": "node ../../scripts/check-frontend-structure.mjs",
+    "lint:structure": "node ../../scripts/quality/check-frontend-structure.mjs",
     "format:check": "prettier --check .",
     "knip": "knip",
     "storybook": "npm run prepare:storybook && storybook dev -p 6006",

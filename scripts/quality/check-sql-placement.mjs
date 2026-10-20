@@ -79,7 +79,7 @@ export function checkSqlPlacement(root) {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
-  const root = resolve(process.argv[2] ?? fileURLToPath(new URL('..', import.meta.url)));
+  const root = resolve(process.argv[2] ?? fileURLToPath(new URL('../..', import.meta.url)));
   const issues = checkSqlPlacement(root);
 
   if (issues.length > 0) {

@@ -19,7 +19,7 @@ import { promisify } from 'node:util';
 import { assertPinnedDesktopNode, desktopNodeTarget } from './runtime-pin.mjs';
 
 const run = promisify(execFile);
-const repository = fileURLToPath(new URL('../../', import.meta.url));
+const repository = fileURLToPath(new URL('../../../', import.meta.url));
 const toolchains = join(repository, 'output', 'toolchains');
 
 export async function verifyPreparedRuntime(

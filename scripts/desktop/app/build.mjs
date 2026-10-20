@@ -4,7 +4,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { build as buildVite } from 'vite';
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const requireDesktop = createRequire(resolve(root, 'apps/desktop/package.json'));
 const { build: buildEsbuild } = requireDesktop('esbuild');
 const output = resolve(root, 'apps/desktop/dist');

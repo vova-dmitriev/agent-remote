@@ -24,9 +24,13 @@ it('rejects oversized files, crowded slice folders and hardcoded component color
 
     await writeFile(join(root, 'src/features/example/ui/rgb.css'), '.example {color:rgb(255,0,0)}\n');
 
-    const result = spawnSync(process.execPath, [resolve('scripts/check-frontend-structure.mjs'), root], {
-      encoding: 'utf8',
-    });
+    const result = spawnSync(
+      process.execPath,
+      [resolve('scripts/quality/check-frontend-structure.mjs'), root],
+      {
+        encoding: 'utf8',
+      },
+    );
 
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('200 lines');

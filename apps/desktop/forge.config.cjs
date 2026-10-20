@@ -17,7 +17,7 @@ module.exports = {
   ],
   hooks: {
     postPackage: async (_config, { outputPaths, platform, arch }) => {
-      const { finalizePackagedDesktop } = await import('../../scripts/desktop/finalize-package.mjs');
+      const { finalizePackagedDesktop } = await import('../../scripts/desktop/app/finalize-package.mjs');
 
       await finalizePackagedDesktop({ outputPaths, platform, arch });
     },

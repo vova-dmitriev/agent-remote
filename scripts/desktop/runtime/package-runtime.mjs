@@ -2,12 +2,12 @@ import { cp, lstat, mkdir, readFile, readdir, realpath, rm, stat, writeFile } fr
 import { createHash, randomUUID } from 'node:crypto';
 import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { packageCompanion } from '../extension/package-companion.mjs';
+import { packageCompanion } from '../../extension/package-companion.mjs';
 import { assertPinnedDesktopNode, desktopNodeTarget } from './runtime-pin.mjs';
 import { prepareDesktopNode } from './prepare-runtime.mjs';
 import { FINDER_METADATA } from './runtime-files.mjs';
 
-const repository = resolve(fileURLToPath(new URL('../../', import.meta.url)));
+const repository = resolve(fileURLToPath(new URL('../../../', import.meta.url)));
 
 const hashFile = async (path) =>
   createHash('sha256')
@@ -184,7 +184,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
 
   if (args.length !== 4 || args[0] !== '--outDir' || args[2] !== '--node') {
     throw new Error(
-      'Usage: node scripts/desktop/package-runtime.mjs --outDir /absolute/resources/desktop-companion --node /trusted/standalone/node',
+      'Usage: node scripts/desktop/runtime/package-runtime.mjs --outDir /absolute/resources/desktop-companion --node /trusted/standalone/node',
     );
   }
 

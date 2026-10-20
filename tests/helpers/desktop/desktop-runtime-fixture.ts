@@ -2,8 +2,8 @@ import { mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { packagedCompanionFixture } from './packaged-companion.js';
 import { isolateRuntimeHome, terminateRuntimeProcesses, trackRuntimeRoot } from './runtime-processes.js';
-import { packageDesktopRuntime } from '../../../scripts/desktop/package-runtime.mjs';
-import { prepareDesktopNode } from '../../../scripts/desktop/prepare-runtime.mjs';
+import { packageDesktopRuntime } from '../../../scripts/desktop/runtime/package-runtime.mjs';
+import { prepareDesktopNode } from '../../../scripts/desktop/runtime/prepare-runtime.mjs';
 
 export async function desktopRuntimeFixture() {
   const nodePath = await prepareDesktopNode();

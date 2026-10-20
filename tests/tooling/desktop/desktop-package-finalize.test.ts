@@ -2,7 +2,7 @@ import { link, mkdtemp, mkdir, readFile, realpath, rm, symlink, writeFile } from
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, expect, it } from 'vitest';
-import { removePackagerMetadata } from '../../../scripts/desktop/finalize-package.mjs';
+import { removePackagerMetadata } from '../../../scripts/desktop/app/finalize-package.mjs';
 
 const roots: string[] = [];
 
