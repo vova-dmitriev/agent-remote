@@ -22,6 +22,7 @@ export function SessionCreation({ sessions, disabled, online, create, profileDat
       {inline ? null : (
         <Button
           variant="ghost"
+          className="aria-expanded:-ml-[12px]"
           data-testid={SESSION_CREATE_IDS.toggle}
           aria-expanded={model.open}
           onClick={() => model.setOpen(!model.open)}

@@ -6,6 +6,8 @@ interface ChoiceOption<Value extends string> {
   description?: string
   icon?: LucideIcon
   testId: string
+  /** Shown but not selectable, e.g. a previously chosen value that is no longer offered. */
+  disabled?: boolean
 }
 
 export interface ChoiceDropdownProps<Value extends string> {
@@ -21,4 +23,5 @@ export interface ChoiceDropdownProps<Value extends string> {
   compactChevron?: boolean
   className?: string
   labelClassName?: string
+  disabled?: boolean
 }

@@ -4,6 +4,7 @@ import { ProviderFilterValue } from "@/entities/session"
 import { useTranslation } from "@/shared/lib/hooks"
 import { Button } from "@/shared/ui/button"
 import { ChoiceDropdown } from "@/shared/ui/dropdown"
+import { chipFieldClass, chipLabelClass } from "../config/chip-classes"
 import { SESSION_CREATE_IDS } from "../config/test-ids"
 import type { ProfileExecution } from "../model/profile-launch"
 import { resolveSessionProfileStatus } from "../model/profile-status"
@@ -42,8 +43,8 @@ export function SessionCreationForm({ model, disabled, online, profilesUnavailab
         triggerLabel={model.provider === AgentProvider.Codex ? ProviderFilterValue.Codex : ProviderFilterValue.Claude}
         icon={Bot}
         ids={SESSION_CREATE_IDS.provider}
-        className={fieldClass}
-        labelClassName={labelClass}
+        className={chipFieldClass}
+        labelClassName={chipLabelClass}
         options={[
           { value: AgentProvider.Claude, label: "Claude", testId: SESSION_CREATE_IDS.claude },
           { value: AgentProvider.Codex, label: "Codex", testId: SESSION_CREATE_IDS.codex },
@@ -56,8 +57,8 @@ export function SessionCreationForm({ model, disabled, online, profilesUnavailab
         triggerLabel={model.selected?.cwd ?? ""}
         icon={Folder}
         ids={SESSION_CREATE_IDS.project}
-        className={fieldClass}
-        labelClassName={labelClass}
+        className={chipFieldClass}
+        labelClassName={chipLabelClass}
         options={model.projects.map((session) => ({
           value: session.id,
           label: session.cwd ?? "",
@@ -96,6 +97,3 @@ export function SessionCreationForm({ model, disabled, online, profilesUnavailab
     </form>
   )
 }
-
-const fieldClass = "max-w-full min-w-0"
-const labelClass = "max-w-[240px] overflow-hidden text-ellipsis"

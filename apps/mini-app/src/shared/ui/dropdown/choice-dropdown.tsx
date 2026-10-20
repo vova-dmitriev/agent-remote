@@ -18,6 +18,7 @@ export function ChoiceDropdown<Value extends string>({
   compactChevron = false,
   className,
   labelClassName,
+  disabled = false,
 }: ChoiceDropdownProps<Value>) {
   return (
     <div role="group" aria-label={label} className={className} data-testid={ids.root}>
@@ -31,6 +32,7 @@ export function ChoiceDropdown<Value extends string>({
             title={label + ": " + triggerLabel}
             data-testid={ids.trigger}
             data-value={value}
+            disabled={disabled}
           >
             <Icon aria-hidden="true" size={15} />
             <span className={cn(compactIcon && "phone:hidden", labelClassName)}>{triggerLabel}</span>
@@ -53,7 +55,9 @@ export function ChoiceDropdown<Value extends string>({
                 value={option.value}
                 textValue={option.label}
                 className={menuItemClass}
+                disabled={option.disabled}
                 data-testid={option.testId}
+                data-value={option.value}
               >
                 {option.icon ? <option.icon aria-hidden="true" size={17} /> : null}
                 <span className="grid min-w-0 flex-1 gap-[2px] whitespace-normal wrap-anywhere">
