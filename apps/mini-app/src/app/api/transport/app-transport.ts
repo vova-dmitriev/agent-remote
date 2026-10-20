@@ -18,7 +18,7 @@ import {
   loadSessionHistory,
   restoreHistoryWindow,
 } from "@/entities/session"
-import { ReconnectBackoff } from "./reconnect-backoff"
+import { appReconnectBackoff } from "./reconnect-policy"
 import { RelayOperations } from "./relay-operations"
 
 export class AppTransport extends RelayOperations implements ApplicationClient {
@@ -27,7 +27,7 @@ export class AppTransport extends RelayOperations implements ApplicationClient {
   private stopped = false
   private expiresAt = 0
   private retry: ReturnType<typeof setTimeout> | undefined
-  private backoff = new ReconnectBackoff()
+  private backoff = appReconnectBackoff()
   private authentication: SessionAuthentication
   private deviceId: string | null = null
   private selectedId: string | null = null

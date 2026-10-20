@@ -9,17 +9,18 @@ import {
   type DeviceFrame,
 } from '@protocol';
 import { BoundedSender } from '@transport/bounded-sender.js';
+import { ReconnectBackoff } from '@transport/reconnect-backoff.js';
 import { EventEmitter } from 'node:events';
 import { WebSocket } from 'ws';
 import { validateRelayUrl } from './config.js';
-import { PROTOCOL_REPROBE_MS } from './runtime-timings.js';
+import { PROTOCOL_REPROBE_MS, RELAY_RECONNECT_BACKOFF } from './runtime-timings.js';
 import { logDebug } from './diagnostics/log.js';
 
 export class RelayClient extends EventEmitter {
   private sender = new BoundedSender();
   private socket: WebSocket | undefined;
   private stopped = false;
-  private attempt = 0;
+  private backoff = new ReconnectBackoff(RELAY_RECONNECT_BACKOFF);
   private retry: ReturnType<typeof setTimeout> | undefined;
   private heartbeat: ReturnType<typeof setInterval> | undefined;
   constructor(
@@ -52,7 +53,7 @@ export class RelayClient extends EventEmitter {
 
         if (frame.type === FrameType.Authenticated) {
           clearTimeout(authTimeout);
-          this.attempt = 0;
+          this.backoff.authenticated();
           this.heartbeat = setInterval(() => this.send({ type: FrameType.Heartbeat }), 10000);
           this.emit(RuntimeEvent.Online, frame.epoch);
         } else if (
@@ -91,7 +92,7 @@ export class RelayClient extends EventEmitter {
 
       // Fast reconnects cannot help until one side is upgraded or rolled back: probe again on a long interval.
       if (code === SocketCloseCode.ProtocolUnsupported) {
-        this.attempt = 0;
+        this.backoff.reset();
 
         if (!this.stopped) {
           this.retry = setTimeout(() => this.connect(), PROTOCOL_REPROBE_MS);
@@ -103,10 +104,7 @@ export class RelayClient extends EventEmitter {
       }
 
       if (!this.stopped) {
-        this.retry = setTimeout(
-          () => this.connect(),
-          Math.min(30000, 1000 * 2 ** this.attempt++) * (0.5 + Math.random() * 0.5),
-        );
+        this.retry = setTimeout(() => this.connect(), this.backoff.next());
       }
     });
   }
