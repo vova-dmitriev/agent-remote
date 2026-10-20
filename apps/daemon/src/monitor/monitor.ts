@@ -68,9 +68,12 @@ export class Monitor extends EventEmitter implements MonitorPort {
   private nativeModelRevisions = new Map<string, number>();
   private transcriptModels = new Map<string, { generation: string; model: string | undefined }>();
   private terminal: AppSnapshot['terminal'] = null;
+  /** Sessions the owner pinned; kept in the store so a pin outlives restarts. */
+  private pins: Set<string>;
   selectedId: string | null = null;
   constructor(private options: Options) {
     super();
+    this.pins = this.options.store.pinnedSessions();
 
     for (const { session: saved } of this.options.store.nativeSessions().slice(0, 10)) {
       const adapter = this.options.adapters.get(saved.target.connectorId);
@@ -626,6 +629,24 @@ export class Monitor extends EventEmitter implements MonitorPort {
     this.persistNative(session);
     this.emit(RuntimeEvent.Snapshot);
   }
+  /** Pins or unpins a known session; returns whether it changed. */
+  setPinned(id: string, pinned: boolean): boolean {
+    if (!this.sessions.has(id) || this.pins.has(id) === pinned) {
+      return false;
+    }
+
+    this.options.store.setPinned(id, pinned);
+
+    if (pinned) {
+      this.pins.add(id);
+    } else {
+      this.pins.delete(id);
+    }
+
+    this.emit(RuntimeEvent.Snapshot);
+
+    return true;
+  }
   setSessionTitle(id: string, title: string | undefined): boolean {
     const session = this.sessions.get(id);
     const parsed = sessionSchema.shape.title.safeParse(title);
@@ -781,7 +802,11 @@ export class Monitor extends EventEmitter implements MonitorPort {
   snapshot(): AppSnapshot {
     return structuredClone(
       boundSnapshotChanges({
-        sessions: boundSubagentSnapshots([...this.sessions.values()]),
+        sessions: boundSubagentSnapshots(
+          [...this.sessions.values()].map((session) =>
+            this.pins.has(session.id) ? { ...session, pinned: true as const } : session,
+          ),
+        ),
         deviceStatus: DeviceStatus.Online,
         cursor: this.options.store.cursor(),
         permissions: this.options.permissions.pending(),

@@ -47,6 +47,17 @@ export class SessionRepository {
   }
 
   /** Locks an owned session on a live device. */
+  /** An owned session on a device that is not revoked: its device and generation. */
+  async live(ownerId: string, sessionId: string) {
+    const [row] = await this.db.orm
+      .select({ deviceId: sessions.deviceId, generation: sql<string>`${sessions.data}->>'generation'` })
+      .from(sessions)
+      .innerJoin(devices, and(eq(devices.ownerId, sessions.ownerId), eq(devices.id, sessions.deviceId)))
+      .where(and(eq(sessions.ownerId, ownerId), eq(sessions.id, sessionId), isNull(devices.revokedAt)));
+
+    return row;
+  }
+
   async lockLive(tx: PoolClient, ownerId: string, sessionId: string) {
     const [row] = await ormOn(tx)
       .select({ data: sessions.data, device_id: sessions.deviceId })

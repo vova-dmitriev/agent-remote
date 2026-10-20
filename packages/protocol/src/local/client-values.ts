@@ -22,6 +22,7 @@ export const LocalOperation = {
   PreferencesGet: 'preferences_get',
   PreferencesSave: 'preferences_save',
   Rename: 'rename',
+  Pin: 'pin',
   ReadingGet: 'reading_get',
   ReadingSave: 'reading_save',
   Logout: 'logout',

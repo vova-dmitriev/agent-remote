@@ -9,7 +9,18 @@ import { rowDomId } from "@/widgets/session-sidebar/lib/row-dom-id"
 import { SidebarRow } from "./sidebar-row"
 import type { SidebarListProps } from "./list.types"
 
-export function SidebarList({ sections, activeId, cursorId, query, now, awaitingIds, onOpen, onKeyDown, onClear }: SidebarListProps) {
+export function SidebarList({
+  sections,
+  activeId,
+  cursorId,
+  query,
+  now,
+  awaitingIds,
+  onOpen,
+  onTogglePin,
+  onKeyDown,
+  onClear,
+}: SidebarListProps) {
   const { t } = useTranslation()
 
   if (!sections.length && !query.trim()) {
@@ -67,6 +78,7 @@ export function SidebarList({ sections, activeId, cursorId, query, now, awaiting
               query={query}
               now={now}
               onOpen={onOpen}
+              onTogglePin={onTogglePin}
             />
           ))}
         </div>

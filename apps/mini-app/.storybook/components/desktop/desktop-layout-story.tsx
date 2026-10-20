@@ -19,6 +19,8 @@ interface DesktopLayoutStoryProps {
   sessions?: Session[]
   initialActiveId?: string | null
   initialCollapsed?: boolean
+  /** Sessions shown pinned at first; the story pins and unpins locally. */
+  initialPinnedIds?: string[]
 }
 
 /** Story-only composition of the desktop mode: app bar, session sidebar and the selected session. */
@@ -26,11 +28,23 @@ export function DesktopLayoutStory({
   sessions = sidebarSessions,
   initialActiveId = sidebarSessions[0]!.id,
   initialCollapsed = false,
+  initialPinnedIds = [],
 }: DesktopLayoutStoryProps) {
   const [activeId, setActiveId] = useState<string | null>(initialActiveId)
   const [collapsed, setCollapsed] = useState(initialCollapsed)
   const [view, setView] = useState<DesktopView>(DesktopView.Sessions)
-  const active = sessions.find((session) => session.id === activeId)
+  const [pinnedIds, setPinnedIds] = useState(() => new Set(initialPinnedIds))
+  const shown = sessions.map((session) => (pinnedIds.has(session.id) ? { ...session, pinned: true as const } : session))
+  const active = shown.find((session) => session.id === activeId)
+
+  const togglePin = (session: Session) =>
+    setPinnedIds((current) => {
+      const next = new Set(current)
+
+      if (!next.delete(session.id)) next.add(session.id)
+
+      return next
+    })
 
   return (
     <div className="flex h-dvh min-w-[960px] flex-col bg-background text-foreground">
@@ -44,7 +58,7 @@ export function DesktopLayoutStory({
       />
       <div className="flex min-h-0 flex-1">
         <SessionSidebar
-          sessions={sessions}
+          sessions={shown}
           activeId={view === DesktopView.Sessions ? (active?.id ?? null) : null}
           collapsed={collapsed}
           deviceOnline
@@ -53,6 +67,7 @@ export function DesktopLayoutStory({
             setActiveId(session.id)
             setView(DesktopView.Sessions)
           }}
+          onTogglePin={togglePin}
           onExpand={() => setCollapsed(false)}
           onNewSession={() => {}}
         />

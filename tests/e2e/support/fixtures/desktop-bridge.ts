@@ -13,7 +13,7 @@ interface FakeBridgeOptions {
     result: string;
     version: number;
     snapshot: string;
-    operations: Record<'devices' | 'select' | 'history' | 'preferences' | 'reading' | 'draft' | 'queue', string>;
+    operations: Record<'devices' | 'select' | 'history' | 'preferences' | 'reading' | 'draft' | 'queue' | 'pin', string>;
     unavailable: string;
   };
 }
@@ -48,6 +48,7 @@ export async function installDesktopBridge(
         reading: LocalOperation.ReadingGet,
         draft: LocalOperation.DraftGet,
         queue: LocalOperation.QueueGet,
+        pin: LocalOperation.Pin,
       },
       unavailable: ErrorCode.CAPABILITY_UNAVAILABLE,
     },
@@ -57,6 +58,15 @@ export async function installDesktopBridge(
     const leaseId = crypto.randomUUID();
     const epoch = 1;
     const listeners = new Set<(event: unknown) => void>();
+    let sequence = 0;
+
+    const publish = () => {
+      const frame = { type: values.snapshot, deviceId, snapshot, connectors: [] };
+
+      sequence += 1;
+      for (const listener of listeners) listener({ kind: values.event, version: values.version, leaseId, epoch, sequence, frame });
+    };
+
     const { operations } = values;
 
     const data: Record<string, unknown> = {
@@ -72,17 +82,37 @@ export async function installDesktopBridge(
     Object.defineProperty(window, 'desktopBridge', {
       value: {
         open: async () => {
-          setTimeout(() => {
-            const frame = { type: values.snapshot, deviceId, snapshot, connectors: [] };
-
-            for (const listener of listeners) listener({ kind: values.event, version: values.version, leaseId, epoch, sequence: 1, frame });
-          }, 0);
+          setTimeout(publish, 0);
 
           return { leaseId, epoch };
         },
-        request: async (request: { requestId: string; action: { operation: string; agentId?: string } }) => {
+        request: async (request: {
+          requestId: string;
+          action: { operation: string; agentId?: string; sessionId?: string; pinned?: boolean };
+        }) => {
           const base = { kind: values.result, version: values.version, requestId: request.requestId, leaseId, epoch };
           const { operation, agentId } = request.action;
+
+          // Like the companion: the pin is applied to the snapshot, which is published again. `pinRefused` simulates
+          // a device that cannot take it.
+          if (operation === operations.pin) {
+            if ((window as unknown as { pinRefused?: boolean }).pinRefused) return { ...base, ok: false, code: values.unavailable };
+
+            snapshot = {
+              ...snapshot,
+              sessions: snapshot.sessions.map((session) => {
+                if (session.id !== request.action.sessionId) return session;
+
+                const rest = Object.fromEntries(Object.entries(session).filter(([key]) => key !== 'pinned'));
+
+                return (request.action.pinned ? { ...rest, pinned: true } : rest) as typeof session;
+              }),
+            };
+
+            setTimeout(publish, 0);
+
+            return { ...base, ok: true, data: null };
+          }
 
           if (operation === operations.history && agentId !== undefined) {
             // Recorded so tests can count subagent reads that reached the bridge.

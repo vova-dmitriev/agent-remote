@@ -29,6 +29,10 @@ export class DesktopOperations {
     return this.connection.request({ operation: LocalOperation.Rename, sessionId, title, generation })
   }
 
+  pinSession(sessionId: string, generation: string, pinned: boolean) {
+    return this.connection.request({ operation: LocalOperation.Pin, sessionId, generation, pinned })
+  }
+
   async getReadingPosition(sessionId: string) {
     const response = bookmarkSchema.parse(await this.connection.request({ operation: LocalOperation.ReadingGet, sessionId }))
 

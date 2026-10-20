@@ -159,6 +159,7 @@ export class LocalController {
       case LocalOperation.ReadingGet:
       case LocalOperation.ReadingSave:
       case LocalOperation.Rename:
+      case LocalOperation.Pin:
         return documentOperation(this.options, principal, action);
       case LocalOperation.History:
         return localHistory(this.options, action);

@@ -26,12 +26,18 @@ function groupOf(time: number, now: number): SidebarGroup {
   return SidebarGroup.Earlier
 }
 
-/** Sorts sessions newest first and buckets them into Today / Yesterday / Earlier by local calendar day. */
+/**
+ * Sorts sessions newest first: pinned ones lead in their own section, the rest are bucketed into Today / Yesterday /
+ * Earlier by local calendar day.
+ */
 export function groupByRecency(sessions: Session[], now: number): SidebarSection[] {
   const sorted = sortByRecency(sessions)
-  const sections: SidebarSection[] = []
+  const pinned = sorted.filter((session) => session.pinned)
+  const sections: SidebarSection[] = pinned.length ? [{ group: SidebarGroup.Pinned, sessions: pinned }] : []
 
   for (const session of sorted) {
+    if (session.pinned) continue
+
     const group = groupOf(sessionRecency(session), now)
     const last = sections.at(-1)
 

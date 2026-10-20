@@ -12,11 +12,12 @@ interface SidebarModelOptions {
   now: number
   collapsed: boolean
   onOpen: (session: Session) => void
+  onTogglePin?: ((session: Session) => void) | undefined
   onExpand: () => void
 }
 
 /** Local interaction state for the sidebar: search, provider chips, keyboard cursor and the ⌘K shortcut. */
-export function useSessionSidebar({ sessions, activeId, now, collapsed, onOpen, onExpand }: SidebarModelOptions) {
+export function useSessionSidebar({ sessions, activeId, now, collapsed, onOpen, onTogglePin, onExpand }: SidebarModelOptions) {
   const [query, setQuery] = useState("")
   const { provider, setProvider } = useProviderFilter()
   const [cursorId, setCursorId] = useState<string | null>(null)
@@ -55,6 +56,21 @@ export function useSessionSidebar({ sessions, activeId, now, collapsed, onOpen, 
     } else if (event.key === SidebarKey.Enter && cursor) {
       event.preventDefault()
       open(cursor)
+    } else if (
+      event.key === SidebarKey.Pin &&
+      onTogglePin &&
+      event.target === event.currentTarget &&
+      !event.metaKey &&
+      !event.ctrlKey &&
+      !event.altKey
+    ) {
+      // Only on the list itself: in the search field the key types a letter.
+      const target = cursor ?? order.find((session) => session.id === activeId)
+
+      if (target) {
+        event.preventDefault()
+        onTogglePin(target)
+      }
     } else if (event.key === SidebarKey.Escape) {
       if (query) clear()
       else setCursorId(null)

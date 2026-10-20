@@ -287,3 +287,40 @@ it('allows managed session creation to reclaim restored observers instead of blo
   expect(restarted.monitor.snapshot().sessions).toHaveLength(10);
   expect(restarted.monitor.findClaude('native', 'new-source')?.binding).toBe('verified');
 });
+
+it('keeps a pin across restarts and shows it only on the pinned session of the snapshot', () => {
+  const f = fixture(),
+    first = f.open();
+
+  for (const id of ['pinned-source', 'other-source']) {
+    first.monitor.ingestHook({ hook_event_name: 'SessionStart', session_id: id }, 'native');
+  }
+
+  const pinned = first.monitor.findClaude('native', 'pinned-source')!.id;
+
+  const pins = () =>
+    Object.fromEntries(
+      f
+        .open()
+        .monitor.snapshot()
+        .sessions.map((s) => [s.id, s.pinned]),
+    );
+
+  expect(first.monitor.setPinned('unknown-session', true)).toBe(false);
+  expect(first.monitor.setPinned(pinned, true)).toBe(true);
+  expect(first.monitor.setPinned(pinned, true)).toBe(false);
+  first.store.close();
+
+  const restarted = pins();
+
+  expect(restarted[pinned]).toBe(true);
+  expect(Object.values(restarted).filter(Boolean)).toHaveLength(1);
+
+  // Pins live beside the session, never in its saved data.
+  expect(
+    f
+      .open()
+      .store.nativeSessions()
+      .every(({ session }) => session.pinned === undefined),
+  ).toBe(true);
+});

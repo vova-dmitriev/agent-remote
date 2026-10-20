@@ -48,6 +48,7 @@ export interface MonitorPort extends EventEmitter {
   addDesktop(session: Session, binding: Binding): void;
   invalidate(connectorId: string): void;
   setSessionTitle(id: string, title: string | undefined): boolean;
+  setPinned(id: string, pinned: boolean): boolean;
   setSubagents(id: string, agents: Session['subagents']): void;
   settleSubagentPermission(sessionId: string, agentId: string, decision: PermissionDecision): void;
   setSessionModel(

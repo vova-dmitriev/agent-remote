@@ -23,6 +23,8 @@ export function SessionSidebar({
   now: fixedNow,
   awaitingIds = NO_SESSIONS,
   onOpen,
+  onTogglePin,
+  pinFailed = false,
   onExpand,
   onNewSession,
   width = SidebarWidth.Default,
@@ -31,7 +33,7 @@ export function SessionSidebar({
 }: SessionSidebarProps) {
   const { t } = useTranslation()
   const now = useSidebarClock(fixedNow)
-  const model = useSessionSidebar({ sessions, activeId, now, collapsed, onOpen, onExpand })
+  const model = useSessionSidebar({ sessions, activeId, now, collapsed, onOpen, onTogglePin, onExpand })
 
   if (collapsed) {
     return (
@@ -79,6 +81,11 @@ export function SessionSidebar({
           onKeyDown={model.onKeyDown}
         />
         <SidebarProviderChips value={model.provider} onChange={model.setProvider} />
+        {pinFailed ? (
+          <p role="status" data-testid={SESSION_SIDEBAR_IDS.pinError} className="px-0.5 text-xs text-destructive">
+            {t("pinFailed")}
+          </p>
+        ) : null}
       </div>
       <SidebarList
         sections={model.sections}
@@ -88,6 +95,7 @@ export function SessionSidebar({
         now={now}
         awaitingIds={awaitingIds}
         onOpen={model.open}
+        onTogglePin={onTogglePin}
         onKeyDown={model.onKeyDown}
         onClear={model.clear}
       />

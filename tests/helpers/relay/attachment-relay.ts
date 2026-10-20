@@ -7,7 +7,8 @@ import { sessionSchema, type ServerFrame, type Session } from '@protocol';
 import { databaseFixture } from './database.js';
 import { initData, testBotToken } from './telegram.js';
 
-export function relaySocket(origin: string, path: string, token: string) {
+/** A relay WebSocket client; `auth` adds fields to its auth frame, such as a daemon's `protocolVersion`. */
+export function relaySocket(origin: string, path: string, token: string, auth: Record<string, unknown> = {}) {
   const socket = new WebSocket(origin.replace('http:', 'ws:') + path, { origin: 'http://localhost' });
 
   const frames: ServerFrame[] = [],
@@ -15,7 +16,7 @@ export function relaySocket(origin: string, path: string, token: string) {
 
   const waiting: Array<{ type: ServerFrame['type']; resolve: (frame: ServerFrame) => void }> = [];
 
-  socket.on('open', () => socket.send(JSON.stringify({ type: 'auth', token })));
+  socket.on('open', () => socket.send(JSON.stringify({ type: 'auth', token, ...auth })));
   socket.on('error', () => {});
 
   socket.on('message', (raw) => {
@@ -152,8 +153,8 @@ export async function attachmentRelayFixture(inputEnabled = true) {
     path,
     upload: (bytes = Buffer.from('synthetic'), uploadId: string = randomUUID()) =>
       fetch(origin + path, { method: 'POST', headers: headers(uploadId), body: bytes }),
-    connect(path: string, token: string) {
-      const connection = relaySocket(origin, path, token);
+    connect(path: string, token: string, auth?: Record<string, unknown>) {
+      const connection = relaySocket(origin, path, token, auth);
 
       sockets.push(connection);
 

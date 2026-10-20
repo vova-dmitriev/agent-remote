@@ -1,4 +1,5 @@
 export const SidebarGroup = {
+  Pinned: "pinned",
   Today: "today",
   Yesterday: "yesterday",
   Earlier: "earlier",
@@ -12,6 +13,8 @@ export const SidebarKey = {
   Enter: "Enter",
   Escape: "Escape",
   Search: "k",
+  /** Pins or unpins the row under the cursor (or the open session) while the list has focus. */
+  Pin: "p",
   Left: "ArrowLeft",
   Right: "ArrowRight",
   Home: "Home",

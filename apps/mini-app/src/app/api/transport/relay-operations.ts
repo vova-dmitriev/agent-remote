@@ -52,6 +52,13 @@ export abstract class RelayOperations extends RelayCommandOperations implements 
     return this.request("/sessions/" + encodeURIComponent(sessionId), { method: "PATCH", body: JSON.stringify({ title, generation }) })
   }
 
+  pinSession(sessionId: string, generation: string, pinned: boolean) {
+    return this.request("/sessions/" + encodeURIComponent(sessionId) + "/pin", {
+      method: "PUT",
+      body: JSON.stringify({ pinned, generation }),
+    })
+  }
+
   devices() {
     return this.request<Device[]>("/devices")
   }

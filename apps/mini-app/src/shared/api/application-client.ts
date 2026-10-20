@@ -20,6 +20,8 @@ export interface ApplicationOperations {
   getPreferences(): Promise<AccountPreferences>
   savePreferences(patch: PreferencePatch): Promise<AccountPreferences>
   renameSession(sessionId: string, title: string, generation: string): Promise<unknown>
+  /** Pins or unpins a session on its device; the device's next snapshot shows the result. */
+  pinSession(sessionId: string, generation: string, pinned: boolean): Promise<unknown>
   claimDevice(code: string): Promise<unknown>
   revokeDevice(deviceId: string): Promise<unknown>
   getReadingPosition(sessionId: string): Promise<ReadingPositionResponse>

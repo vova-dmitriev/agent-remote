@@ -97,6 +97,15 @@ it("groups newest first into today, yesterday and earlier", () => {
   expect(sections.map((section) => section.sessions[0]!.id)).toEqual([terminal.id, codexCli.id, chat.id])
 })
 
+it("leads with pinned sessions, newest first, and keeps them out of the day groups", () => {
+  const sections = groupByRecency([at(chat, 60 * 40, { pinned: true }), at(terminal, 5), at(codexCli, 60 * 20, { pinned: true })], NOW)
+
+  expect(sections.map((section) => [section.group, section.sessions.map((session) => session.id)])).toEqual([
+    [SidebarGroup.Pinned, [codexCli.id, chat.id]],
+    [SidebarGroup.Today, [terminal.id]],
+  ])
+})
+
 it("formats compact relative times and falls back to a date after a week", () => {
   expect(relativeTime(NOW - 30_000, NOW, Language.En)).toBeNull()
   expect(relativeTime(NOW - 4 * MINUTE, NOW, Language.En)).toBe("4m")

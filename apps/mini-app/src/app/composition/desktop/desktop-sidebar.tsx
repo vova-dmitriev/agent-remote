@@ -1,6 +1,7 @@
 import { memo } from "react"
 import { ConnectionStatus, DeviceStatus, type Session } from "@protocol"
 import { useSessionStore, useSessionsAwaitingInput } from "@/entities/session"
+import { usePinSession } from "@/features/pin-session"
 import { SessionSidebar } from "@/widgets/session-sidebar"
 import type { DesktopSidebarProps } from "./desktop-layout.types"
 
@@ -25,15 +26,18 @@ export const DesktopSidebar = memo(function DesktopSidebar({
   const online = useSessionStore((state) => state.session.connection === ConnectionStatus.Online)
   const deviceOnline = useSessionStore((state) => state.session.snapshot?.deviceStatus === DeviceStatus.Online)
   const awaitingIds = useSessionsAwaitingInput()
+  const pins = usePinSession(sessions)
 
   return (
     <SessionSidebar
-      sessions={sessions}
+      sessions={pins.sessions}
       activeId={accounts ? null : selectedId}
       collapsed={collapsed}
       deviceOnline={online && deviceOnline}
       awaitingIds={awaitingIds}
       onOpen={onOpen}
+      onTogglePin={pins.toggle}
+      pinFailed={pins.failed}
       onExpand={onExpand}
       onNewSession={onNewSession}
       width={width}

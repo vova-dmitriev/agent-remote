@@ -12,6 +12,10 @@ export interface SessionSidebarProps {
   /** Sessions with a pending permission or question; they wear the attention tone. */
   awaitingIds?: ReadonlySet<string>
   onOpen: (session: Session) => void
+  /** Pins or unpins a session; rows offer it only when given. */
+  onTogglePin?: (session: Session) => void
+  /** The last pin change failed. */
+  pinFailed?: boolean
   onExpand: () => void
   onNewSession: () => void
   /** Expanded width in px; the sidebar is resizable when `onResize` is given. */

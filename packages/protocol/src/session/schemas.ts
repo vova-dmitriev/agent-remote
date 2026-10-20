@@ -115,6 +115,8 @@ export const sessionSchema = z
     binding: z.enum(BindingState),
     lastEventAt: time,
     lastMessageAt: time.optional(),
+    /** Present only when the owner pinned the session; the device keeps pins and puts them in its snapshot. */
+    pinned: z.literal(true).optional(),
     capabilities: capabilitySchema,
     nativeRestartState: z.enum(NativeRestartState).optional(),
     integrationState: integrationStateSchema,
@@ -132,6 +134,9 @@ export const sessionSchema = z
       s.claudeSessionId === null,
     'Codex must use its own thread identity',
   );
+/** Pins or unpins a session of the current generation; the device holds the pin. */
+export const sessionPinSchema = z.strictObject({ pinned: z.boolean(), generation: id });
+export type SessionPin = z.infer<typeof sessionPinSchema>;
 export const actionSchema = z.discriminatedUnion('type', [
   z
     .strictObject({
@@ -365,6 +370,7 @@ export const serverFrameSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal(FrameType.DeviceStatus), deviceId: id, status: z.enum(DeviceStatus) }),
   z.strictObject({ type: z.literal(FrameType.Error), code: id }),
   z.strictObject({ type: z.literal(FrameType.Select), sessionId: id.nullable() }),
+  z.strictObject({ type: z.literal(FrameType.SessionPin), sessionId: id, pinned: z.boolean() }),
   z.strictObject({ type: z.literal(FrameType.Command), command: commandSchema }),
   z.strictObject({ type: z.literal(FrameType.Ack), cursor: cursorSchema }),
   handoffSeedAdmissionFrameSchema,

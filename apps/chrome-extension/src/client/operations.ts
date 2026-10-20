@@ -44,6 +44,10 @@ export class ExtensionOperations {
     return this.connection.request({ operation: LocalOperation.Rename, sessionId, title, generation });
   }
 
+  pinSession(sessionId: string, generation: string, pinned: boolean) {
+    return this.connection.request({ operation: LocalOperation.Pin, sessionId, generation, pinned });
+  }
+
   async claimDevice(_code: string): Promise<never> {
     throw new Error(ErrorCode.CAPABILITY_UNAVAILABLE);
   }

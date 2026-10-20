@@ -60,6 +60,17 @@ export function documentOperation(
       return null;
     }
 
+    // `execute` already checked the session and its generation.
+    case LocalOperation.Pin:
+      // Pins are the device owner's: they reach the relay with this device's snapshot.
+      if (principal.ownerId !== options.ownerId) {
+        throw new CodedError(ErrorCode.ACCESS_DENIED);
+      }
+
+      options.monitor.setPinned(action.sessionId, action.pinned);
+
+      return null;
+
     default:
       throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
   }

@@ -65,6 +65,28 @@ export class LocalStore implements LocalStorePort {
     this.db.exec(
       'CREATE TABLE IF NOT EXISTS local_command_intents(id TEXT PRIMARY KEY,data TEXT NOT NULL,created_at INTEGER NOT NULL)',
     );
+
+    this.db.exec(
+      'CREATE TABLE IF NOT EXISTS session_pins(device_id TEXT NOT NULL,id TEXT NOT NULL,PRIMARY KEY(device_id,id))',
+    );
+  }
+  /** Ids of the sessions the owner pinned on this device. */
+  pinnedSessions(): Set<string> {
+    const rows = this.db.prepare('SELECT id FROM session_pins WHERE device_id=?').all(this.deviceId) as {
+      id: string;
+    }[];
+
+    return new Set(rows.map((row) => row.id));
+  }
+  setPinned(id: string, pinned: boolean) {
+    // ponytail: pins of sessions that are gone stay until unpinned; prune with native sessions if the table grows.
+    this.db
+      .prepare(
+        pinned
+          ? 'INSERT OR IGNORE INTO session_pins(device_id,id) VALUES(?,?)'
+          : 'DELETE FROM session_pins WHERE device_id=? AND id=?',
+      )
+      .run(this.deviceId, id);
   }
   cursor(): Cursor {
     return {

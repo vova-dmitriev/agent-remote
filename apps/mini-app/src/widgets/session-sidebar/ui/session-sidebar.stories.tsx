@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 import { userEvent } from "storybook/test"
 import { Language, ThemePreference } from "@protocol"
 import { DesktopLayoutStory, DESKTOP_LAYOUT_IDS } from "@storybook-components/desktop/desktop-layout-story"
-import { manySidebarSessions } from "@storybook-fixtures/sidebar-sessions"
+import { manySidebarSessions, sidebarSessions } from "@storybook-fixtures/sidebar-sessions"
 import { SESSION_SIDEBAR_IDS } from "../config/test-ids"
 
 /** Design spike: desktop mode (≥ 960 px) with a Codex-style session sidebar. Synthetic fixtures only. */
@@ -33,6 +33,7 @@ export const NoResults: Story = {
 
 export const ManySessions: Story = { args: { sessions: manySidebarSessions, initialActiveId: manySidebarSessions[30]!.id } }
 export const Collapsed: Story = { args: { initialCollapsed: true } }
+export const Pinned: Story = { args: { initialPinnedIds: [sidebarSessions[2]!.id, sidebarSessions[4]!.id] } }
 export const NothingSelected: Story = { args: { initialActiveId: null } }
 
 export const KeyboardNavigation: Story = {

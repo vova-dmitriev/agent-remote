@@ -45,6 +45,7 @@ export const FrameType = {
   DeviceStatus: 'device_status',
   Error: 'error',
   Select: 'select',
+  SessionPin: 'session_pin',
   Ack: 'ack',
 } as const;
 

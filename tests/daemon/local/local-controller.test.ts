@@ -154,3 +154,24 @@ it('rejects a Profiles request scoped to another device with ACCESS_DENIED', asy
 
   expect(request).not.toHaveBeenCalled();
 });
+
+it("pins only the device owner's current session and shows the pin in the snapshot", async () => {
+  const f = setup();
+  const pin = { operation: LocalOperation.Pin, sessionId: f.session.id, generation: f.session.generation };
+  const pinned = () => f.monitor.snapshot().sessions.find((session) => session.id === f.session.id)?.pinned;
+
+  await expect(
+    f.controller.execute(f.principal, { ...pin, generation: 'old', pinned: true }),
+  ).rejects.toThrow(ErrorCode.STALE_SESSION);
+
+  await expect(
+    f.controller.execute({ ...f.principal, ownerId: 'owner-other' }, { ...pin, pinned: true }),
+  ).rejects.toThrow();
+
+  expect(pinned()).toBeUndefined();
+
+  expect(await f.controller.execute(f.principal, { ...pin, pinned: true })).toBeNull();
+  expect(pinned()).toBe(true);
+  await f.controller.execute(f.principal, { ...pin, pinned: false });
+  expect(pinned()).toBeUndefined();
+});

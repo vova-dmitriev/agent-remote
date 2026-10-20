@@ -29,4 +29,6 @@ export interface LocalStorePort {
   hasLocalIntent(commandId: string): boolean;
   historyPage(request: Pick<HistoryRead, 'sessionId' | 'direction' | 'anchor'>): LocalHistoryPage;
   cursor(): Cursor;
+  pinnedSessions(): Set<string>;
+  setPinned(id: string, pinned: boolean): void;
 }

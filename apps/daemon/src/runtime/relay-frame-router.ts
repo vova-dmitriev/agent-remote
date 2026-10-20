@@ -35,6 +35,9 @@ export class RelayFrameRouter {
       } catch (error) {
         logDebug('runtime/relay-frame-router', error);
       }
+    } else if (frame.type === FrameType.SessionPin) {
+      // The relay sends pins only for its owner's sessions on this device; the snapshot carries the result back.
+      monitor.setPinned(frame.sessionId, frame.pinned);
     } else if (frame.type === FrameType.Command) {
       const result = await dispatcher.dispatch(frame.command);
 
