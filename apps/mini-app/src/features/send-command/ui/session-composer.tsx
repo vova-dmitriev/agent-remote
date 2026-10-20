@@ -50,7 +50,7 @@ export function SessionComposer({ controller, session, connection, deviceStatus 
         <Button
           type="submit"
           size="icon"
-          className="absolute right-[7px] bottom-[7px] size-[32px] rounded-full bg-foreground p-0 text-background hover:bg-foreground session:short:bottom-[4px] session:short:size-[26px]"
+          className="absolute right-[7px] bottom-[7px] size-[32px] rounded-full bg-foreground p-0 text-background hover:bg-foreground short:bottom-[4px] short:size-[26px]"
           data-testid={COMMAND_IDS.send}
           aria-label={t("send")}
           disabled={state.sendDisabled}
@@ -86,6 +86,6 @@ const labelClass = cn(
 )
 
 const promptClass =
-  "rounded-[24px] pr-[50px] disabled:overflow-hidden session:max-h-[88px] session:min-h-[46px] session:resize-none session:overflow-y-auto session:py-[10px] session:pr-[50px] session:pl-[15px] session:text-[16px] session:leading-[24px] session:disabled:overflow-hidden session:short:max-h-[50px] session:short:min-h-[34px] session:short:py-[7px] session:short:pr-[48px] session:short:pl-[13px] session:short:leading-[20px]"
+  "max-h-[88px] min-h-[46px] resize-none overflow-y-auto rounded-[24px] py-[10px] pr-[50px] pl-[15px] text-[16px] leading-[24px] disabled:overflow-hidden short:max-h-[50px] short:min-h-[34px] short:py-[6px] short:pr-[48px] short:pl-[13px] short:leading-[20px]"
 
-const promptWithAttachmentsClass = "pl-[46px] session:pl-[46px] session:short:pl-[40px]"
+const promptWithAttachmentsClass = "pl-[46px] short:pl-[40px]"

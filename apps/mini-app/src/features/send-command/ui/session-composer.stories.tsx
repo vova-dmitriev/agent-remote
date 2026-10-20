@@ -33,3 +33,12 @@ export const MultilineDraft: Story = {
     await userEvent.type(canvas.getByTestId(COMMAND_IDS.prompt), "First line{enter}Second line{enter}Third line{enter}Fourth line")
   },
 }
+
+export const WithAttachButton: Story = {
+  args: {
+    session: {
+      ...terminalSession,
+      capabilities: { ...terminalSession.capabilities, attachments: { images: "reference", files: "reference" } },
+    },
+  },
+}
