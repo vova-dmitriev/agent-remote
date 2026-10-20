@@ -27,7 +27,7 @@ function daemon(store: LocalStore, permissions: PermissionBroker) {
     terminal: { pasteAndSubmit: vi.fn(), sendEscape: vi.fn(), readScreen: vi.fn() },
   });
 
-  return { attach, monitor: new Monitor({ deviceId: 'device', store, adapters, permissions }) };
+  return { attach, adapters, monitor: new Monitor({ deviceId: 'device', store, adapters, permissions }) };
 }
 
 it('brings back idle cmux sessions after a restart while their Claude process still runs', async () => {
@@ -107,6 +107,31 @@ it('finds live Claude processes in cmux that this daemon never saw, without a tu
     expect(sessions[0]!.cwd).toBe('/synthetic/project');
     expect(onTranscript).toHaveBeenCalledWith(sessions[0]!.id, '/synthetic/in-cmux.jsonl');
     expect(events).not.toContain('turn_end');
+  } finally {
+    permissions.close();
+    store.close();
+  }
+});
+
+it('lists a cmux surface connector only while a session runs there, so closed tabs never fill a snapshot', async () => {
+  const store = new LocalStore(':memory:', 'device'),
+    permissions = new PermissionBroker();
+
+  try {
+    const { attach, monitor, adapters } = daemon(store, permissions);
+    const target = await attach({ workspaceId: WORKSPACE, surfaceId: LIVE }, 'device');
+
+    await attach({ workspaceId: WORKSPACE, surfaceId: GONE }, 'device');
+
+    monitor.ingestHook({ hook_event_name: 'Notification', session_id: 'live' }, LIVE, target, {
+      verifiedTerminal: true,
+    });
+
+    const listed = adapters.list(monitor.snapshot().sessions).map((connector) => connector.connectorId);
+
+    expect(listed).toContain(LIVE);
+    expect(listed).not.toContain(GONE);
+    expect(listed).toContain('native');
   } finally {
     permissions.close();
     store.close();

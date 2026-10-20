@@ -88,7 +88,11 @@ export class RelayLink {
           }
         }
 
-        relay.send({ type: FrameType.Snapshot, snapshot: current, connectors: adapters.list() });
+        relay.send({
+          type: FrameType.Snapshot,
+          snapshot: current,
+          connectors: adapters.list(current.sessions),
+        });
       }
     });
   };

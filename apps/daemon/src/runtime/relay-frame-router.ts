@@ -48,7 +48,9 @@ export class RelayFrameRouter {
       const result = await dispatcher.dispatch(frame.command);
 
       if (result.sessionId) {
-        relay.send({ type: FrameType.Snapshot, snapshot: monitor.snapshot(), connectors: adapters.list() });
+        const snapshot = monitor.snapshot();
+
+        relay.send({ type: FrameType.Snapshot, snapshot, connectors: adapters.list(snapshot.sessions) });
       }
 
       relay.send({ type: FrameType.CommandResult, result });

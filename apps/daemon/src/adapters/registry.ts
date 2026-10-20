@@ -7,6 +7,8 @@ import {
   targetSchema,
   type Target,
   type ConnectorDescriptor,
+  ConnectorTransport,
+  type Session,
 } from '@protocol';
 import { type PreparedAttachment } from '../attachments/types.js';
 import type { Binding } from '../domain/ports/binding.js';
@@ -175,8 +177,19 @@ export class AdapterRegistry {
   get(connectorId: string) {
     return this.adapters.get(connectorId);
   }
-  list() {
-    return [...this.adapters.values()].map((adapter) => adapter.descriptor());
+  /**
+   * Connector descriptors; given the sessions, a cmux surface's connector only while a session runs there, since a
+   * closed tab leaves its connector behind.
+   */
+  list(sessions?: readonly Session[]) {
+    return [...this.adapters.values()]
+      .map((adapter) => adapter.descriptor())
+      .filter(
+        (descriptor) =>
+          !sessions ||
+          descriptor.transport !== ConnectorTransport.Cmux ||
+          sessions.some((session) => session.target.connectorId === descriptor.connectorId),
+      );
   }
   async disconnect(connectorId: string) {
     await this.adapters.get(connectorId)?.close();

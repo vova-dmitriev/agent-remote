@@ -85,7 +85,7 @@ export class LocalController {
       type: FrameType.Snapshot,
       deviceId: this.options.deviceId,
       snapshot,
-      connectors: this.options.adapters.list(),
+      connectors: this.options.adapters.list(snapshot.sessions),
     };
   }
 
