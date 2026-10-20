@@ -6,11 +6,13 @@ import { PreferenceRepository } from '../../../apps/server/src/preferences/repos
 import { ReadingPositionRepository } from '../../../apps/server/src/reading-position/repository.js';
 import { SessionRepository } from '../../../apps/server/src/sessions/repository.js';
 import { PgErrorCode, ownershipFixture } from '../../helpers/ownership-fixture.js';
+import { postgresCode } from '../../../apps/server/src/db/pg-error.js';
 
 // Every owner-scoped repository method, called as owner B with owner A's ids, returns nothing and changes nothing.
 // A foreign insert keyed by (owner, device) cannot attach a row to A's device: PostgreSQL refuses it.
 
-const refused = { code: PgErrorCode.ForeignKeyViolation };
+/** A foreign-key refusal, whether the driver error is thrown directly or wrapped by the query builder. */
+const refused = (error: unknown) => postgresCode(error) === PgErrorCode.ForeignKeyViolation;
 
 let f: Awaited<ReturnType<typeof ownershipFixture>>;
 
@@ -54,7 +56,7 @@ describe('SessionRepository', () => {
     const { before, after } = await f.untouched('session_labels', () =>
       expect(
         f.db.transaction((tx) => sessions().saveLabel(tx, f.ownerB, f.deviceA, 'source-a', 'Foreign')),
-      ).rejects.toMatchObject(refused),
+      ).rejects.toSatisfy(refused),
     );
 
     expect(after).toBe(before);
@@ -175,7 +177,7 @@ describe('ReadingPositionRepository', () => {
             updatedAt: Date.now(),
           }),
         ),
-      ).rejects.toMatchObject(refused),
+      ).rejects.toSatisfy(refused),
     );
 
     expect(after).toBe(before);
@@ -200,7 +202,7 @@ describe('HistoryRepository', () => {
             occurredAt: 1,
           } as never),
         ),
-      ).rejects.toMatchObject(refused),
+      ).rejects.toSatisfy(refused),
     );
 
     expect(after).toBe(before);
@@ -218,7 +220,7 @@ describe('HistoryRepository', () => {
     const { before, after } = await f.untouched('session_activity', () =>
       expect(
         f.db.transaction((tx) => history().recordActivity(tx, f.ownerB, f.deviceA, f.sessionA, 99)),
-      ).rejects.toMatchObject(refused),
+      ).rejects.toSatisfy(refused),
     );
 
     expect(after).toBe(before);

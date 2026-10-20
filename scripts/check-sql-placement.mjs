@@ -48,8 +48,6 @@ export const RAW_SQL_PENDING = new Set([
   'apps/server/src/history/repository.ts',
   'apps/server/src/notifications/repositories/notifications.ts',
   'apps/server/src/profiles/routing/repository.ts',
-  'apps/server/src/reading-position/repository.ts',
-  'apps/server/src/sessions/repository.ts',
 ]);
 
 /** Raw SQL entry points: every `<receiver>.query(...)` call, every `sql.raw(...)` and every value import of `pg`. */

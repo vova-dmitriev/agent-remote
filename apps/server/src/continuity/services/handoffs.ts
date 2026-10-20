@@ -7,6 +7,7 @@ import { ContinuityRepository } from '../repository.js';
 import { ContinuityError, type ContinuityReadScope, type StartHandoffInput } from '../types.js';
 import { CommandClaimKind, reserveHandoffCommandIds } from '../../commands/command-claims.js';
 import { fingerprint, uuid } from './values.js';
+import { PgErrorCode, postgresCode } from '../../db/pg-error.js';
 
 export class HandoffContinuityService {
   private readonly repository = new ContinuityRepository();
@@ -133,7 +134,7 @@ export class HandoffContinuityService {
           .value;
       });
     } catch (error) {
-      if (error && typeof error === 'object' && 'code' in error && error.code === '23505') {
+      if (postgresCode(error) === PgErrorCode.UniqueViolation) {
         throw new Fault(ContinuityError.ReplayConflict);
       }
 

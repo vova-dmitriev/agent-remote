@@ -23,7 +23,8 @@ export function redactError(error: unknown): RedactedError {
     return { message: typeof error };
   }
 
-  const code = (error as { code?: unknown }).code;
+  // A query builder keeps the driver's error (and its SQLSTATE) as `cause`.
+  const code = (error as { code?: unknown }).code ?? (error.cause as { code?: unknown } | undefined)?.code;
 
   const stack = error.stack
     ?.split('\n')

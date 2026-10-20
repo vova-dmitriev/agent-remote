@@ -101,6 +101,18 @@ it('keeps only names, code-like messages, safe codes and stack frames of an erro
   expect(coded('A'.repeat(41))).toBeUndefined();
 });
 
+it('logs the SQLSTATE a query builder keeps as cause, never its query text or parameters', () => {
+  const wrapped = new Error(
+    'Failed query: insert into "session_labels" values ($1, $2)\nparams: owner-secret,Synthetic private title',
+    { cause: Object.assign(new Error('violates foreign key constraint'), { code: '23503' }) },
+  );
+
+  const logged = redactError(wrapped);
+
+  expect(logged.code).toBe('23503');
+  expect(JSON.stringify(logged)).not.toMatch(/owner-secret|Synthetic private title|insert into/);
+});
+
 it('writes one JSON line per log entry', () => {
   const logger = new ConsoleLogger({ json: true, logLevels: ['error'] });
   const write = vi.spyOn(process.stderr, 'write').mockReturnValue(true);

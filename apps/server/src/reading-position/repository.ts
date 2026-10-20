@@ -1,12 +1,21 @@
 import type { ReadingPosition } from '@protocol';
-import type { Pool, PoolClient } from 'pg';
-import type { Database } from '../db/database.js';
+import { and, eq, isNull, sql } from 'drizzle-orm';
+import type { PoolClient } from 'pg';
+import { ormOn, type Database } from '../db/database.js';
+import { devices, readingPositions, sessions } from '../db/schema/index.js';
 
 export type ReadingPositionRow = {
   message_id: string;
   pixel_offset: number;
   cursor: string | null;
-  updated_at: string;
+  updated_at: number;
+};
+
+const row = {
+  message_id: readingPositions.messageId,
+  pixel_offset: readingPositions.pixelOffset,
+  cursor: readingPositions.cursor,
+  updated_at: readingPositions.updatedAt,
 };
 
 export class ReadingPositionRepository {
@@ -25,15 +34,15 @@ export class ReadingPositionRepository {
     sessionId: string,
     { tx, lock = false }: { tx?: PoolClient; lock?: boolean } = {},
   ): Promise<string | undefined> {
-    const executor: Pool | PoolClient = tx ?? this.db.pool;
+    const query = (tx ? ormOn(tx) : this.db.orm)
+      .select({ deviceId: sessions.deviceId })
+      .from(sessions)
+      .innerJoin(devices, and(eq(devices.ownerId, sessions.ownerId), eq(devices.id, sessions.deviceId)))
+      .where(and(eq(sessions.ownerId, ownerId), eq(sessions.id, sessionId), isNull(devices.revokedAt)));
 
-    const result = await executor.query<{ device_id: string }>(
-      `SELECT s.device_id FROM sessions s JOIN devices d ON d.owner_id=s.owner_id AND d.id=s.device_id
-       WHERE s.owner_id=$1 AND s.id=$2 AND d.revoked_at IS NULL${lock ? ' FOR SHARE OF d' : ''}`,
-      [ownerId, sessionId],
-    );
+    const [found] = lock ? await query.for('share', { of: devices }) : await query;
 
-    return result.rows[0]?.device_id;
+    return found?.deviceId;
   }
 
   async find(
@@ -42,14 +51,18 @@ export class ReadingPositionRepository {
     sessionId: string,
     tx?: PoolClient,
   ): Promise<ReadingPositionRow | undefined> {
-    const executor: Pool | PoolClient = tx ?? this.db.pool;
+    const [found] = await (tx ? ormOn(tx) : this.db.orm)
+      .select(row)
+      .from(readingPositions)
+      .where(
+        and(
+          eq(readingPositions.ownerId, ownerId),
+          eq(readingPositions.deviceId, deviceId),
+          eq(readingPositions.sessionId, sessionId),
+        ),
+      );
 
-    const result = await executor.query<ReadingPositionRow>(
-      'SELECT message_id,pixel_offset,cursor,updated_at FROM reading_positions WHERE owner_id=$1 AND device_id=$2 AND session_id=$3',
-      [ownerId, deviceId, sessionId],
-    );
-
-    return result.rows[0];
+    return found;
   }
 
   /** Stores a newer position; returns nothing when the stored one is at least as recent. */
@@ -60,22 +73,29 @@ export class ReadingPositionRepository {
     sessionId: string,
     position: ReadingPosition,
   ): Promise<ReadingPositionRow | undefined> {
-    const result = await tx.query<ReadingPositionRow>(
-      `INSERT INTO reading_positions(owner_id,device_id,session_id,message_id,pixel_offset,cursor,updated_at)
-         VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(owner_id,device_id,session_id) DO UPDATE SET
-         message_id=EXCLUDED.message_id,pixel_offset=EXCLUDED.pixel_offset,cursor=EXCLUDED.cursor,updated_at=EXCLUDED.updated_at
-         WHERE EXCLUDED.updated_at>reading_positions.updated_at RETURNING message_id,pixel_offset,cursor,updated_at`,
-      [
+    const [saved] = await ormOn(tx)
+      .insert(readingPositions)
+      .values({
         ownerId,
         deviceId,
         sessionId,
-        position.messageId,
-        position.offset,
-        position.cursor ?? null,
-        position.updatedAt,
-      ],
-    );
+        messageId: position.messageId,
+        pixelOffset: position.offset,
+        cursor: position.cursor ?? null,
+        updatedAt: position.updatedAt,
+      })
+      .onConflictDoUpdate({
+        target: [readingPositions.ownerId, readingPositions.deviceId, readingPositions.sessionId],
+        set: {
+          messageId: sql`excluded.message_id`,
+          pixelOffset: sql`excluded.pixel_offset`,
+          cursor: sql`excluded.cursor`,
+          updatedAt: sql`excluded.updated_at`,
+        },
+        setWhere: sql`excluded.updated_at > ${readingPositions.updatedAt}`,
+      })
+      .returning(row);
 
-    return result.rows[0];
+    return saved;
   }
 }
