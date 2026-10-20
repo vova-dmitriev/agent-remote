@@ -8,7 +8,7 @@ function violations(source: string, frontend: boolean) {
   const result = spawnSync(
     process.execPath,
     [
-      resolve('apps/mini-app/node_modules/eslint/bin/eslint.js'),
+      resolve('node_modules/eslint/bin/eslint.js'),
       '--stdin',
       '--stdin-filename',
       frontend ? 'src/features/example/ui/example.tsx' : 'apps/daemon/src/example.ts',
@@ -37,7 +37,7 @@ function ruleViolations(source: string, filename: string, ruleId: string) {
   const result = spawnSync(
     process.execPath,
     [
-      resolve('apps/mini-app/node_modules/eslint/bin/eslint.js'),
+      resolve('node_modules/eslint/bin/eslint.js'),
       '--stdin',
       '--stdin-filename',
       frontend ? filename.slice('apps/mini-app/'.length) : filename,

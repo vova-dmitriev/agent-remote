@@ -20,7 +20,7 @@ const eslintConfig = daemonOnly ? 'apps/daemon/eslint.config.mjs' : 'eslint.conf
 const eslintPaths = daemonOnly ? ['apps/daemon/src'] : ['.'];
 
 const eslintArguments = [
-  'apps/mini-app/node_modules/eslint/bin/eslint.js',
+  'node_modules/eslint/bin/eslint.js',
   '--config',
   eslintConfig,
   ...eslintPaths,
