@@ -5,6 +5,7 @@ import {
   hasErrorCode,
   ProfileAction,
   profileListSchema,
+  type ProfileList,
   type ProfileMutation,
   profileMutationSchema,
   type ProfileOperation,
@@ -17,6 +18,8 @@ import { mutateProfile } from './lifecycle/mutation.js';
 import { removeProfileCredentials } from './lifecycle/cleanup.js';
 import type { ProfileServiceOptions } from './lifecycle/types.js';
 
+const profileListEnvelopeSchema = profileListSchema.omit({ profiles: true });
+
 export class ProfileService {
   readonly registry: ProfileRegistry;
   private journal: ProfileJournal;
@@ -27,17 +30,23 @@ export class ProfileService {
     this.journal = new ProfileJournal(this.options.database, this.options.scope);
   }
 
-  list() {
-    return profileListSchema.parse({
-      available: true,
-      observedAt: Date.now(),
-      profiles: this.registry.list(),
-      operations: this.journal.pending(),
-      defaults: {
-        [AgentProvider.Claude]: this.registry.defaultFor(AgentProvider.Claude)?.id ?? null,
-        [AgentProvider.Codex]: this.registry.defaultFor(AgentProvider.Codex)?.id ?? null,
-      },
-    });
+  list(): ProfileList {
+    // Each profile is validated as it is read and the registry caps how many are active, so only the rest of the
+    // list is parsed here: paging reads the whole list once per page.
+    const profiles = this.registry.list();
+
+    return {
+      profiles,
+      ...profileListEnvelopeSchema.parse({
+        available: true,
+        observedAt: Date.now(),
+        operations: this.journal.pending(),
+        defaults: {
+          [AgentProvider.Claude]: this.registry.defaultFor(AgentProvider.Claude)?.id ?? null,
+          [AgentProvider.Codex]: this.registry.defaultFor(AgentProvider.Codex)?.id ?? null,
+        },
+      }),
+    };
   }
 
   operation(id: string) {

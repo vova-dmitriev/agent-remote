@@ -12,6 +12,12 @@ import type { LocalDatabase } from '../../local/state/database.js';
 import type { ProfileScope } from '../types.js';
 
 export class ProfileRepository {
+  /**
+   * Stored texts already validated, by profile id. Paging re-reads the whole registry on every page; a text that is
+   * exactly the JSON of its validated profile parses back to that profile without validating it again.
+   */
+  private validated = new Map<string, string>();
+
   constructor(
     private database: LocalDatabase,
     private scope: ProfileScope,
@@ -26,11 +32,20 @@ export class ProfileRepository {
   }
 
   private decode(row: unknown): ExecutionProfileSummary {
-    const { value } = row as { value: string };
+    const { id, value } = row as { id: string; value: string };
+
+    if (this.validated.get(id) === value) {
+      return JSON.parse(value) as ExecutionProfileSummary;
+    }
+
     const profile = executionProfileSummarySchema.parse(JSON.parse(value));
 
     if (profile.ownerId !== this.scope.ownerId || profile.deviceId !== this.scope.deviceId) {
       throw new CodedError(ErrorCode.NOT_FOUND);
+    }
+
+    if (JSON.stringify(profile) === value) {
+      this.validated.set(id, value);
     }
 
     return profile;
@@ -38,7 +53,7 @@ export class ProfileRepository {
 
   get(id: string) {
     const row = this.database.connection
-      .prepare('SELECT value FROM execution_profiles WHERE owner=? AND device=? AND id=?')
+      .prepare('SELECT id,value FROM execution_profiles WHERE owner=? AND device=? AND id=?')
       .get(this.scope.ownerId, this.scope.deviceId, id);
 
     if (!row) {
@@ -50,7 +65,9 @@ export class ProfileRepository {
 
   list() {
     return this.database.connection
-      .prepare('SELECT value FROM execution_profiles WHERE owner=? AND device=? AND status<>? ORDER BY rowid')
+      .prepare(
+        'SELECT id,value FROM execution_profiles WHERE owner=? AND device=? AND status<>? ORDER BY rowid',
+      )
       .all(this.scope.ownerId, this.scope.deviceId, ProfileStatus.Removed)
       .map((row) => this.decode(row));
   }

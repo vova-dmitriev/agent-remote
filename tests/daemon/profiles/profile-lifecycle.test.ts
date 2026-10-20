@@ -173,3 +173,27 @@ it('fences operation receipts and mutations by owner/device before observing a s
 
   expect(service.registry.get(created.profileId).label).toBe('OpenAI Personal');
 });
+
+it('validates a stored profile again whenever its stored text changes', () => {
+  const { options, service } = fixture();
+  const profile = service.registry.create({ ...codexSubscription, label: 'Synthetic' });
+  const rows = options.database.connection;
+
+  expect(service.list().profiles.map((item) => item.label)).toEqual(['Synthetic']);
+
+  rows
+    .prepare('UPDATE execution_profiles SET value=? WHERE id=?')
+    .run(JSON.stringify({ ...profile, label: 'Renamed' }), profile.id);
+
+  expect(service.list().profiles.map((item) => item.label)).toEqual(['Renamed']);
+
+  // A read never hands out a profile the cache shares: changing it changes nothing stored.
+  service.list().profiles[0]!.label = 'Mutated';
+  expect(service.list().profiles[0]!.label).toBe('Renamed');
+
+  rows
+    .prepare('UPDATE execution_profiles SET value=? WHERE id=?')
+    .run(JSON.stringify({ ...profile, ownerId: 'owner-b' }), profile.id);
+
+  expect(() => service.list()).toThrow(CodedError);
+});
