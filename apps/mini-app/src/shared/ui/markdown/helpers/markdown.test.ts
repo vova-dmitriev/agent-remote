@@ -24,6 +24,17 @@ describe("safe Markdown", () => {
     expect(html).toContain(`data-testid="${MARKDOWN_IDS.copyCode}"`)
   })
 
+  it("shows raw HTML and XML-like messages as their literal text instead of an empty message", () => {
+    const html = render(
+      "<heartbeat>\n  <task_id>synthetic-task</task_id>\n  <decision>NOTIFY</decision>\n</heartbeat>\n\nInline <b>tag</b> stays text.",
+    )
+
+    expect(html).toContain("&lt;heartbeat&gt;")
+    expect(html).toContain("&lt;task_id&gt;synthetic-task&lt;/task_id&gt;")
+    expect(html).toContain("Inline &lt;b&gt;tag&lt;/b&gt; stays text.")
+    expect(html).not.toMatch(/<(heartbeat|task_id|decision|b)>/)
+  })
+
   it("drops raw HTML and dangerous link protocols", () => {
     const html = render(
       '<script>alert(1)</script>\n\n<img src="https://example.test/track" onerror="alert(1)">\n\n[unsafe](javascript:alert%281%29)\n\n[safe](https://example.test/docs)',

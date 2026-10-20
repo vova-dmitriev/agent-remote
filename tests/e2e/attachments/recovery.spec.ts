@@ -45,9 +45,16 @@ test('retains the exact command and attachment IDs until uncertain delivery is r
     await route.abort('connectionfailed');
   });
 
+  let released = false;
+
   await page.route('**/commands/*', async (route) => {
     if (statusAvailable) {
-      await releaseCommandOutcome();
+      // Status polls continue after the release; the outcome is released once.
+      if (!released) {
+        released = true;
+        await releaseCommandOutcome();
+      }
+
       await route.continue();
     } else await route.abort('connectionfailed');
   });
@@ -69,6 +76,8 @@ test('retains the exact command and attachment IDs until uncertain delivery is r
   await expect(page.getByTestId(UPLOAD_IDS.pending)).toHaveCount(0);
   expect(delivered).toHaveLength(1);
   expect(delivered[0]).toMatchObject(commands[0]!);
+  // The page keeps polling the command status; stop handling it before the relay shuts down.
+  await page.unrouteAll({ behavior: 'ignoreErrors' });
 });
 
 test('retains original attachment and command IDs when the source reports an explicit unknown outcome', async ({
