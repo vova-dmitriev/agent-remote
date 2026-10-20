@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { databaseFixture } from './helpers/database.js';
 import { NotificationDelivery } from '../apps/server/src/notifications/delivery.js';
+import { NotificationRepository } from '../apps/server/src/notifications/repositories/notifications.js';
 
 let fixture: Awaited<ReturnType<typeof databaseFixture>>;
 
@@ -49,11 +50,15 @@ async function send(id: string, at: number) {
 
   const sent: Array<{ text: string; reply_markup: unknown }> = [];
 
-  const delivery = new NotificationDelivery(fixture.db, 'https://example.invalid', async (body) => {
-    sent.push(body as (typeof sent)[number]);
+  const delivery = new NotificationDelivery(
+    new NotificationRepository(fixture.db),
+    'https://example.invalid',
+    async (body) => {
+      sent.push(body as (typeof sent)[number]);
 
-    return { ok: true };
-  });
+      return { ok: true };
+    },
+  );
 
   await delivery.deliver(Date.now(), id);
 

@@ -23,13 +23,13 @@ import { AttachmentService } from '../attachments/service.js';
 import { Limiter, hash, type Principal } from '../auth/security.js';
 import { ContinuityService } from '../continuity/service.js';
 import { ContinuityError } from '../continuity/types.js';
-import { Database } from '../db/database.js';
 import { emptySnapshot } from '../devices/device-state.js';
 import { DeviceFence } from '../devices/fence.js';
 import { DeviceService } from '../devices/service.js';
 import { Fault } from '../http/errors/fault.js';
 import { RelayHub } from '../realtime/relay-hub.js';
 import { claimHandoffCreateCommandId, claimRelayCommandId } from './command-claims.js';
+import { CommandRepository } from './repositories/audit.js';
 
 function commandCapability(action: ClientCommand['action']['type']) {
   switch (action) {
@@ -51,7 +51,7 @@ function commandCapability(action: ClientCommand['action']['type']) {
 export class CommandDispatcher {
   constructor(
     @Inject(RELAY_CONFIG) private readonly config: RelayConfig,
-    @Inject(Database) private readonly db: Database,
+    @Inject(CommandRepository) private readonly commands: CommandRepository,
     @Inject(DeviceService) private readonly devices: DeviceService,
     @Inject(DeviceFence) private readonly fence: DeviceFence,
     @Inject(Limiter) private readonly limiter: Limiter,
@@ -68,21 +68,15 @@ export class CommandDispatcher {
   };
 
   readonly dispatchHandoffCreate = async (p: Principal, operationId: string): Promise<CommandResult> => {
-    const { db, devices, fence, continuity } = this;
+    const { commands, devices, fence, continuity } = this;
+    const deviceId = await commands.handoffDevice(p.userId, operationId);
 
-    const row = (
-      await db.pool.query<{ device_id: string }>(
-        'SELECT device_id FROM handoff_operations WHERE owner_id=$1 AND id=$2',
-        [p.userId, operationId],
-      )
-    ).rows[0];
-
-    if (!row) {
+    if (!deviceId) {
       throw new Fault(ErrorCode.NOT_FOUND);
     }
 
-    return fence.run(row.device_id, async () => {
-      const device = await devices.owned(p, row.device_id);
+    return fence.run(deviceId, async () => {
+      const device = await devices.owned(p, deviceId);
       const scope = { deviceId: device.id, deviceGeneration: device.generation };
       const operation = await continuity.getHandoff(p, scope, operationId);
 
@@ -140,31 +134,21 @@ export class CommandDispatcher {
     input: ClientCommand,
     handoffOperationId?: string,
   ): Promise<CommandResult> {
-    const { config, db, devices, limiter, attachments } = this;
+    const { config, commands, devices, limiter, attachments } = this;
     const { live, send } = this.hub;
     const source = clientCommandSchema.parse(input);
 
     await devices.owned(p, source.target.deviceId);
     const fingerprint = hash(JSON.stringify(source));
 
-    const previous = (
-      await db.pool.query<{
-        fingerprint: string;
-        status: CommandResult['status'];
-        code: string | null;
-        result_session_id: string | null;
-      }>(
-        'SELECT fingerprint,status,code,result_session_id FROM command_audit WHERE owner_id=$1 AND command_id=$2',
-        [p.userId, source.commandId],
-      )
-    ).rows[0];
+    const previous = await commands.find(p.userId, source.commandId);
 
     if (previous) {
       if (previous.fingerprint !== fingerprint) {
         throw new Fault(ErrorCode.COMMAND_ID_REUSED);
       }
 
-      await db.transaction((tx) =>
+      await commands.transaction((tx) =>
         handoffOperationId
           ? claimHandoffCreateCommandId(
               tx,
@@ -304,7 +288,7 @@ export class CommandDispatcher {
       expiresAt = Math.min(expiresAt, pending.expiresAt);
     }
 
-    const inserted = await db.transaction(async (tx) => {
+    const inserted = await commands.transaction(async (tx) => {
       if (handoffOperationId && source.action.type !== CommandActionType.CreateSession) {
         throw new Fault(ContinuityError.CommandIdReserved);
       }
@@ -329,7 +313,7 @@ export class CommandDispatcher {
           );
 
       if (!claimed) {
-        return { rowCount: 0 };
+        return false;
       }
 
       const createEvidence =
@@ -340,34 +324,26 @@ export class CommandDispatcher {
             }
           : null;
 
-      return tx.query(
-        'INSERT INTO command_audit(owner_id,command_id,device_id,session_id,action,fingerprint,status,created_at,create_selection,create_expected_profile_version) VALUES($1,$2,$3,$4,$5,$6,$8,$7,$9,$10) ON CONFLICT DO NOTHING RETURNING command_id',
-        [
-          p.userId,
-          source.commandId,
-          source.target.deviceId,
-          source.sessionId,
-          source.action.type,
-          fingerprint,
-          Date.now(),
-          CommandStatus.Accepted,
-          createEvidence?.selection ?? null,
-          createEvidence?.version ?? null,
-        ],
-      );
+      return commands.insert(tx, {
+        ownerId: p.userId,
+        commandId: source.commandId,
+        deviceId: source.target.deviceId,
+        sessionId: source.sessionId,
+        action: source.action.type,
+        fingerprint,
+        createdAt: Date.now(),
+        status: CommandStatus.Accepted,
+        createSelection: createEvidence?.selection ?? null,
+        createExpectedProfileVersion: createEvidence?.version ?? null,
+      });
     });
 
-    if (!inserted.rowCount) {
+    if (!inserted) {
       return this.executeCommand(p, source);
     }
 
     if (live.get(source.target.deviceId) !== connection) {
-      await db.pool.query('UPDATE command_audit SET status=$3,code=$4 WHERE owner_id=$1 AND command_id=$2', [
-        p.userId,
-        source.commandId,
-        CommandStatus.Rejected,
-        ErrorCode.DEVICE_OFFLINE,
-      ]);
+      await commands.setOutcome(p.userId, source.commandId, CommandStatus.Rejected, ErrorCode.DEVICE_OFFLINE);
 
       return { commandId: source.commandId, status: CommandStatus.Rejected, code: 'DEVICE_OFFLINE' };
     }

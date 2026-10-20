@@ -28,5 +28,6 @@ export default defineConfig({
       'apps/mini-app/src/shared/ui/markdown/**/*.test.ts',
     ],
     testTimeout: 10_000,
+    setupFiles: ['tests/setup/quiet-nest-lifecycle.ts'],
   },
 });

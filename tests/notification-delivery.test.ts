@@ -2,6 +2,7 @@ import { afterAll, beforeAll, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { databaseFixture } from './helpers/database.js';
 import { NotificationDelivery } from '../apps/server/src/notifications/delivery.js';
+import { NotificationRepository } from '../apps/server/src/notifications/repositories/notifications.js';
 
 let fixture: Awaited<ReturnType<typeof databaseFixture>>;
 
@@ -35,11 +36,15 @@ it('sends only to the persisted private recipient and skips an already sent outb
   const id = await outbox();
   const calls: unknown[] = [];
 
-  const delivery = new NotificationDelivery(fixture.db, 'https://example.invalid', async (body) => {
-    calls.push(body);
+  const delivery = new NotificationDelivery(
+    new NotificationRepository(fixture.db),
+    'https://example.invalid',
+    async (body) => {
+      calls.push(body);
 
-    return { ok: true };
-  });
+      return { ok: true };
+    },
+  );
 
   expect(await delivery.deliver(Date.now(), id)).toBe(0);
   expect(await delivery.deliver(Date.now(), id)).toBe(0);
@@ -58,8 +63,8 @@ it('locks a row across competing consumers so only one sends it', async () => {
     return { ok: true };
   };
 
-  const a = new NotificationDelivery(fixture.db, 'https://example.invalid', send);
-  const b = new NotificationDelivery(fixture.db, 'https://example.invalid', send);
+  const a = new NotificationDelivery(new NotificationRepository(fixture.db), 'https://example.invalid', send);
+  const b = new NotificationDelivery(new NotificationRepository(fixture.db), 'https://example.invalid', send);
 
   await Promise.all([a.deliver(Date.now(), id), b.deliver(Date.now(), id)]);
   expect(sends).toBe(1);
@@ -69,11 +74,15 @@ it('honors Telegram retry_after without resending before the stored deadline', a
   const id = await outbox();
   let sends = 0;
 
-  const delivery = new NotificationDelivery(fixture.db, 'https://example.invalid', async () => {
-    sends++;
+  const delivery = new NotificationDelivery(
+    new NotificationRepository(fixture.db),
+    'https://example.invalid',
+    async () => {
+      sends++;
 
-    return { ok: false, error_code: 429, parameters: { retry_after: 2 } };
-  });
+      return { ok: false, error_code: 429, parameters: { retry_after: 2 } };
+    },
+  );
 
   const now = Date.now();
 
@@ -85,11 +94,15 @@ it('honors Telegram retry_after without resending before the stored deadline', a
 it('disables notifications after a blocked bot response and does not send later jobs', async () => {
   let sends = 0;
 
-  const delivery = new NotificationDelivery(fixture.db, 'https://example.invalid', async () => {
-    sends++;
+  const delivery = new NotificationDelivery(
+    new NotificationRepository(fixture.db),
+    'https://example.invalid',
+    async () => {
+      sends++;
 
-    return { ok: false, error_code: 403 };
-  });
+      return { ok: false, error_code: 403 };
+    },
+  );
 
   await delivery.deliver(Date.now(), await outbox('blocked'));
   await delivery.deliver(Date.now() + 2000, await outbox('blocked'));

@@ -40,6 +40,7 @@ import { boundedBody, nativeFile } from './relay/io.js';
 import { type NativeMedia, type PreparedAttachment } from './types.js';
 import type { LocalAttachmentBackend } from './relay/local-backend.js';
 import { RelayAttachmentMirror } from './relay/relay-mirror.js';
+import { logDebug } from '../diagnostics/log.js';
 
 export type { NativeMedia, PreparedAttachment } from './types.js';
 interface Options {
@@ -82,7 +83,7 @@ export class AttachmentService {
     );
 
     this.maintenance = setInterval(() => {
-      void this.pruneExpired().catch(() => {});
+      void this.pruneExpired().catch((error: unknown) => logDebug('attachments/service', error));
     }, ATTACHMENT_MAINTENANCE_INTERVAL_MS);
 
     this.maintenance.unref();
@@ -94,7 +95,7 @@ export class AttachmentService {
     const parsed = attachmentsSchema.parse(attachments);
     const run = this.queue.then(() => this.download(session, parsed));
 
-    this.queue = run.catch(() => {});
+    this.queue = run.catch((error: unknown) => logDebug('attachments/service', error));
 
     return run;
   }
@@ -127,9 +128,7 @@ export class AttachmentService {
         ) {
           this.history.load(JSON.parse(await readFile(metadata, 'utf8')));
         }
-      } catch {
-        /* First launch has no attachment history. */
-      }
+      } catch {} // ignore: first launch has no attachment history.
 
       for (const entry of (await readdir(parent, { withFileTypes: true }))
         .filter(
@@ -260,7 +259,7 @@ export class AttachmentService {
       await rename(temporary, path);
     });
 
-    this.metadataQueue = save.catch(() => {});
+    this.metadataQueue = save.catch((error: unknown) => logDebug('attachments/service', error));
     await save;
   }
   restore(session: Session, message: HistoryMessage, paths: readonly string[] = []) {
@@ -291,9 +290,7 @@ export class AttachmentService {
 
           return false;
         }
-      } catch {
-        /* Ordinary user text remains untouched. */
-      }
+      } catch {} // ignore: ordinary user text remains untouched.
 
       return true;
     });
@@ -404,7 +401,7 @@ export class AttachmentService {
       .finally(() => {
         delete this.retrying;
       })
-      .catch(() => {});
+      .catch((error: unknown) => logDebug('attachments/service', error));
 
     return run;
   }
@@ -540,9 +537,7 @@ export class AttachmentService {
       throw new CodedError(AttachmentErrorCode.IntegrityFailed);
     }
 
-    await this.options.local?.importDescriptor(session, value, bytes).catch(() => {
-      /* A bounded relay export remains usable when the optional local cache is full. */
-    });
+    await this.options.local?.importDescriptor(session, value, bytes).catch(() => {}); // ignore: a bounded relay export remains usable when the optional local cache is full.
 
     this.exported.set(key, {
       descriptor: value,
@@ -618,7 +613,7 @@ export class AttachmentService {
       }
     });
 
-    this.queue = run.catch(() => {});
+    this.queue = run.catch((error: unknown) => logDebug('attachments/service', error));
 
     return run;
   }
@@ -644,7 +639,7 @@ export class AttachmentService {
     clearInterval(this.maintenance);
     await this.queue;
     await this.metadataQueue;
-    await this.retrying?.catch(() => {});
+    await this.retrying?.catch((error: unknown) => logDebug('attachments/service', error));
     // Prepared files remain readable by native turns until their bounded retention expires.
     this.pending.clear();
     this.files.clear();

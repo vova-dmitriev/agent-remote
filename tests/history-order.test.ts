@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest';
 import { databaseFixture } from './helpers/database.js';
 import { SessionHistory } from '../apps/server/src/history/service.js';
+import { HistoryRepository } from '../apps/server/src/history/repository.js';
 import type { Principal } from '../apps/server/src/auth/security.js';
 
 it('preserves source sequence across page boundaries when timestamps tie and random IDs disagree', async () => {
@@ -38,7 +39,7 @@ it('preserves source sequence across page boundaries when timestamps tie and ran
       );
     }
 
-    const history = new SessionHistory(fixture.db);
+    const history = new SessionHistory(new HistoryRepository(fixture.db));
     const principal = { userId: 'owner' } as Principal;
     const first = await history.page(principal, 'session');
 

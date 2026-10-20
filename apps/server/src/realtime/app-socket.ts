@@ -7,9 +7,13 @@ import { SessionRevocations } from '../auth/sessions/session-revocations.js';
 import { CommandDispatcher } from '../commands/command-dispatcher.js';
 import { DeviceState } from '../devices/device-state.js';
 import { DeviceService } from '../devices/service.js';
-import { Fault, toFault } from '../http/errors/fault.js';
+import { ServerErrorCode } from '../error-codes.js';
+import { logWarning, reportFault } from '../http/errors/error-log.js';
+import { Fault, parseClientJson, toFault } from '../http/errors/fault.js';
 import { ProfileProxy } from '../profiles/transport/proxy.js';
 import { RelayHub, type AppConnection } from './relay-hub.js';
+
+const APP_SOCKET_CONTEXT = 'AppSocket';
 
 /** One Mini App connection: authenticates, subscribes to a device, resumes events and forwards commands. */
 @Injectable()
@@ -53,6 +57,7 @@ export class AppSocket implements OnModuleInit, OnModuleDestroy {
     const { command } = this.dispatcher;
     let client: AppConnection | undefined;
     let chain = Promise.resolve();
+    let rejected = false;
 
     let queued = 0,
       queuedBytes = 0;
@@ -80,14 +85,14 @@ export class AppSocket implements OnModuleInit, OnModuleDestroy {
             return;
           }
 
-          const frame = appFrameSchema.parse(JSON.parse(raw.toString()));
+          const frame = appFrameSchema.parse(parseClientJson(raw.toString()));
 
           if (!client) {
             if (frame.type !== FrameType.Auth) {
               throw new Fault(ErrorCode.UNAUTHORIZED);
             }
 
-            const p = await auth.authenticate(frame.token);
+            const { expiresAt, ...principal } = await auth.authenticate(frame.token);
 
             if (socket.readyState !== WebSocket.OPEN || hub.closing) {
               return;
@@ -95,8 +100,9 @@ export class AppSocket implements OnModuleInit, OnModuleDestroy {
 
             client = {
               socket,
-              principal: p,
+              principal,
               token: frame.token,
+              expiresAt,
               deviceId: null,
               sessionId: null,
               selected: false,
@@ -109,7 +115,13 @@ export class AppSocket implements OnModuleInit, OnModuleDestroy {
             return;
           }
 
-          await auth.authenticate(client.token);
+          // Every request re-checks the token, so a revocation made anywhere stops the next request and the socket.
+          const current = await auth.authenticate(client.token).catch((error: unknown) => {
+            rejected = true;
+            throw error;
+          });
+
+          client.expiresAt = Math.min(client.expiresAt, current.expiresAt);
 
           if (frame.type === FrameType.Subscribe) {
             await devices.owned(client.principal, frame.deviceId);
@@ -149,10 +161,15 @@ export class AppSocket implements OnModuleInit, OnModuleDestroy {
           }
         })
         .catch((error) => {
-          send(socket, { type: FrameType.Error, code: toFault(error).code });
+          send(socket, {
+            type: FrameType.Error,
+            code: reportFault(error, toFault(error), APP_SOCKET_CONTEXT).code,
+          });
 
           if (!client) {
             socket.close(SocketCloseCode.Unauthorized, SocketCloseReason.Unauthorized);
+          } else if (rejected) {
+            socket.close(SocketCloseCode.Unauthorized, SocketCloseReason.TokenExpired);
           }
         })
         .finally(() => {
@@ -169,6 +186,6 @@ export class AppSocket implements OnModuleInit, OnModuleDestroy {
       }
     });
 
-    socket.on('error', () => {});
+    socket.on('error', (error) => logWarning(APP_SOCKET_CONTEXT, error, ServerErrorCode.SOCKET_ERROR));
   };
 }

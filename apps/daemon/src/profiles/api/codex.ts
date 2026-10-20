@@ -4,6 +4,7 @@ import { withCodexApiKey, readCodexCredentialIdentity, credentialReference } fro
 import { profileApiBody } from './body.js';
 import { ProfileApiEndpoint, ProfileApiLimit, ProfileApiRequest } from './values.js';
 import type { ProfileApiFetch } from './types.js';
+import { logDebug } from '../../diagnostics/log.js';
 
 const catalogSchema = z.object({
   data: z.array(z.object({ id: z.string().min(1).max(256) })).max(ProfileApiLimit.Models),
@@ -28,7 +29,7 @@ export async function verifyCodexApiCredential(directory: string, fetcher: Profi
     }
 
     if (!response.ok) {
-      await response.body?.cancel().catch(() => {});
+      await response.body?.cancel().catch((error: unknown) => logDebug('profiles/api/codex', error));
 
       if (response.status === HttpStatus.Unauthorized || response.status === HttpStatus.Forbidden) {
         throw new CodedError(ErrorCode.PROFILE_NOT_READY);

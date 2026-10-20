@@ -1,80 +1,165 @@
 import { Inject, Injectable, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
-import { CommandStatus, ErrorCode, SocketCloseCode, SocketCloseReason } from '@protocol';
-import { AttachmentService } from '../attachments/service.js';
+import { ErrorCode, SocketCloseCode, SocketCloseReason } from '@protocol';
+import { MESSAGING } from '../app/relay-config.js';
+import { AttachmentRepository } from '../attachments/repositories/attachments.js';
 import { AuthService } from '../auth/auth-service.js';
-import { Database } from '../db/database.js';
+import { CommandRepository } from '../commands/repositories/audit.js';
 import { DeviceState } from '../devices/device-state.js';
-import { RelayHub } from './relay-hub.js';
+import { ServerErrorCode } from '../error-codes.js';
+import { HistoryRepository } from '../history/repository.js';
+import { logWarning } from '../http/errors/error-log.js';
+import type { Messaging } from '../infrastructure/messaging.js';
+import {
+  AUTH_RECHECK_MAX_FAILURES,
+  AUTH_RECHECK_MS,
+  COMMAND_ACK_SWEEP_MS,
+  COMMAND_ACK_TIMEOUT_MS,
+  DEVICE_SILENCE_MS,
+  MAINTENANCE_TICK_MS,
+  RETENTION_INTERVAL_MS,
+} from '../maintenance/limits.js';
+import { Retention } from '../maintenance/retention.js';
+import { RelayHub, type AppConnection } from './relay-hub.js';
+
+const MAINTENANCE_CONTEXT = 'MaintenanceService';
+
+const closeExpired = (client: AppConnection) =>
+  client.socket.close(SocketCloseCode.Unauthorized, SocketCloseReason.TokenExpired);
 
 /**
- * Every second: drops devices silent for 30 s and app sockets whose token expired.
- * Every 10 s: prunes attachments, old events and command audit, and times out unacknowledged commands.
+ * Every second, without storage: drops devices silent for 30 s and app sockets whose token expired.
+ * Every 5 s, on every relay: marks commands unacknowledged for 15 s as unknown.
+ * Every 30 s: re-checks every app socket's token in PostgreSQL, to catch revocations made on another relay;
+ * after 3 failed rechecks in a row it closes every app socket rather than trust unverified tokens.
+ * Every 60 s: retention deletes, from one shared BullMQ job when Redis is configured, else in this process.
  */
 @Injectable()
 export class MaintenanceService implements OnModuleInit, OnModuleDestroy {
   private timer: ReturnType<typeof setInterval> | undefined;
+  private recheck: ReturnType<typeof setInterval> | undefined;
+  private recheckFailures = 0;
+  private ackSweep: ReturnType<typeof setInterval> | undefined;
   private retention: ReturnType<typeof setInterval> | undefined;
 
   constructor(
     @Inject(RelayHub) private readonly hub: RelayHub,
     @Inject(AuthService) private readonly auth: AuthService,
     @Inject(DeviceState) private readonly state: DeviceState,
-    @Inject(AttachmentService) private readonly attachments: AttachmentService,
-    @Inject(Database) private readonly db: Database,
+    @Inject(HistoryRepository) private readonly history: HistoryRepository,
+    @Inject(CommandRepository) private readonly commands: CommandRepository,
+    @Inject(AttachmentRepository) private readonly attachments: AttachmentRepository,
+    @Inject(MESSAGING) private readonly messaging: Messaging | undefined,
   ) {}
 
-  onModuleInit() {
-    const { auth, attachments, db } = this;
+  async onModuleInit() {
     const { live, clients } = this.hub;
     const { offline } = this.state;
+    const retention = new Retention(this.history, this.commands, this.attachments);
 
     this.timer = setInterval(() => {
+      const now = Date.now();
+
       for (const connection of live.values()) {
-        if (connection.lastSeen < Date.now() - 30000) {
+        if (connection.lastSeen < now - DEVICE_SILENCE_MS) {
           connection.socket.close(SocketCloseCode.Offline, SocketCloseReason.Offline);
-          void offline(connection).catch(() => {});
+
+          void offline(connection).catch((error: unknown) =>
+            logWarning(MAINTENANCE_CONTEXT, error, ServerErrorCode.DEVICE_OFFLINE_FAILED),
+          );
         }
       }
 
       for (const client of clients) {
-        void auth
-          .authenticate(client.token)
-          .catch(() => client.socket.close(SocketCloseCode.Unauthorized, SocketCloseReason.TokenExpired));
+        if (client.expiresAt <= now) {
+          closeExpired(client);
+        }
       }
-    }, 1000);
+    }, MAINTENANCE_TICK_MS);
 
     this.timer.unref();
 
-    this.retention = setInterval(() => {
-      void attachments.prune().catch(() => {});
+    this.recheck = setInterval(() => void this.recheckTokens(), AUTH_RECHECK_MS);
+    this.recheck.unref();
 
-      void db.pool
-        .query(
-          'DELETE FROM events WHERE occurred_at<$1 OR ctid IN (SELECT ctid FROM (SELECT ctid,row_number() OVER(PARTITION BY device_id ORDER BY occurred_at DESC) AS rank FROM events) e WHERE rank>10000)',
-          [Date.now() - 86400000],
-        )
-        .catch(() => {});
+    this.ackSweep = setInterval(
+      () =>
+        void this.commands
+          .expireUnacknowledged(Date.now() - COMMAND_ACK_TIMEOUT_MS)
+          .catch((error: unknown) =>
+            logWarning(MAINTENANCE_CONTEXT, error, ServerErrorCode.ACK_SWEEP_FAILED),
+          ),
+      COMMAND_ACK_SWEEP_MS,
+    );
 
-      void db.pool
-        .query('UPDATE command_audit SET status=$2,code=$3 WHERE status=$4 AND created_at<$1', [
-          Date.now() - 15000,
-          CommandStatus.Unknown,
-          ErrorCode.ACK_TIMEOUT,
-          CommandStatus.Accepted,
-        ])
-        .catch(() => {});
+    this.ackSweep.unref();
 
-      void db.pool
-        .query('DELETE FROM command_audit WHERE created_at<$1', [Date.now() - 86400000])
-        .catch(() => {});
-    }, 10000);
+    if (this.messaging) {
+      await this.messaging.retention.start(() => retention.run());
+    } else {
+      this.retention = setInterval(
+        () =>
+          void retention
+            .run()
+            .catch((error: unknown) =>
+              logWarning(MAINTENANCE_CONTEXT, error, ServerErrorCode.RETENTION_FAILED),
+            ),
+        RETENTION_INTERVAL_MS,
+      );
 
-    this.retention.unref();
+      this.retention.unref();
+    }
+  }
+
+  /**
+   * Closes the sockets whose token was revoked or expired; a stored expiry only ever brings a deadline closer.
+   * A failed check is recorded; after `AUTH_RECHECK_MAX_FAILURES` in a row every app socket is closed.
+   */
+  private async recheckTokens() {
+    const clients = [...this.hub.clients];
+
+    // With no socket nothing is trusted, so earlier failures must not count against sockets that connect later.
+    if (!clients.length) {
+      this.recheckFailures = 0;
+
+      return;
+    }
+
+    let unexpired: Map<string, number>;
+
+    try {
+      unexpired = await this.auth.unexpired([...new Set(clients.map((client) => client.token))]);
+    } catch (error) {
+      this.recheckFailures++;
+      logWarning(MAINTENANCE_CONTEXT, error, ServerErrorCode.AUTH_RECHECK_FAILED);
+
+      if (this.recheckFailures >= AUTH_RECHECK_MAX_FAILURES) {
+        for (const client of this.hub.clients) {
+          client.socket.close(SocketCloseCode.TryAgainLater, ErrorCode.SERVICE_UNAVAILABLE);
+        }
+      }
+
+      return;
+    }
+
+    this.recheckFailures = 0;
+
+    for (const client of clients) {
+      const expiresAt = unexpired.get(client.token);
+
+      if (expiresAt === undefined) {
+        closeExpired(client);
+      } else {
+        client.expiresAt = Math.min(client.expiresAt, expiresAt);
+      }
+    }
   }
 
   // `app.close()` calls this before it closes the HTTP server, so no maintenance tick runs during shutdown.
-  onModuleDestroy() {
+  async onModuleDestroy() {
     clearInterval(this.timer);
+    clearInterval(this.recheck);
+    clearInterval(this.ackSweep);
     clearInterval(this.retention);
+    await this.messaging?.retention.stop();
   }
 }

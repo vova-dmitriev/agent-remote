@@ -8,7 +8,7 @@ import {
   type PreferencePatch,
   type ReadingPosition,
 } from "@protocol"
-import type { ApplicationOperations } from "@/shared/api"
+import type { ApplicationOperations, Device } from "@/shared/api"
 import { RelayCommandOperations } from "./relay-command-operations"
 
 export abstract class RelayOperations extends RelayCommandOperations implements ApplicationOperations {
@@ -50,6 +50,10 @@ export abstract class RelayOperations extends RelayCommandOperations implements 
 
   renameSession(sessionId: string, title: string, generation: string) {
     return this.request("/sessions/" + encodeURIComponent(sessionId), { method: "PATCH", body: JSON.stringify({ title, generation }) })
+  }
+
+  devices() {
+    return this.request<Device[]>("/devices")
   }
 
   claimDevice(code: string) {

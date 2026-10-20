@@ -107,18 +107,14 @@ export class AuthenticatedSeedIntentService {
         return;
       }
 
-      await tx.query(
-        'INSERT INTO command_audit(owner_id,command_id,device_id,session_id,action,fingerprint,status,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',
-        [
-          principal.userId,
-          operation.seedCommandId,
-          scope.deviceId,
-          target.nativeSessionId,
-          CommandActionType.Prompt,
-          fingerprint,
-          CommandStatus.Accepted,
-          this.now(),
-        ],
+      await this.repository.insertSeedCommand(
+        tx,
+        principal.userId,
+        operation.seedCommandId,
+        scope.deviceId,
+        target.nativeSessionId,
+        fingerprint,
+        this.now(),
       );
     });
   }

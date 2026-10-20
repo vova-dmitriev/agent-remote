@@ -14,6 +14,7 @@ import { CodedError, ErrorCode } from '@protocol';
 import { ManagedCodexPath } from './launch/values.js';
 import { managedCodexSocketPath } from './launch/paths.js';
 import { forgetOwnedProfileChild, ownedProfileChild, trackOwnedProfileChild } from './launch/owned-child.js';
+import { logDebug } from '../diagnostics/log.js';
 
 async function listening(path: string): Promise<boolean> {
   return new Promise((resolve) => {
@@ -264,7 +265,7 @@ export async function ensureManagedCodexSocket(
       throw new CodedError(ErrorCode.CODEX_DAEMON_START_FAILED);
     } finally {
       await handle.close();
-      await unlink(lock).catch(() => {});
+      await unlink(lock).catch((error: unknown) => logDebug('codex/launcher', error));
     }
   } catch (error) {
     if (options?.onEvidence && !possibleChild) {

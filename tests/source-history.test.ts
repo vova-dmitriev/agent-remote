@@ -2,6 +2,7 @@ import { expect, it } from 'vitest';
 import type { WebSocket } from 'ws';
 import { databaseFixture } from './helpers/database.js';
 import { SourceHistory } from '../apps/server/src/history/source.js';
+import { HistoryRepository } from '../apps/server/src/history/repository.js';
 import type { Principal } from '../apps/server/src/auth/security.js';
 import type { HistoryRead, ServerFrame } from '@protocol';
 
@@ -33,12 +34,16 @@ it('authorizes native page requests and fences responses by owner, device, epoch
       dispatch = resolve;
     });
 
-    const source = new SourceHistory(fixture.db, new Map([['device', connection]]), (_socket, frame) => {
-      sent.push(frame);
-      dispatch();
+    const source = new SourceHistory(
+      new HistoryRepository(fixture.db),
+      new Map([['device', connection]]),
+      (_socket, frame) => {
+        sent.push(frame);
+        dispatch();
 
-      return true;
-    });
+        return true;
+      },
+    );
 
     await expect(source.page({ userId: 'foreign' } as Principal, 'session')).rejects.toThrow('NOT_FOUND');
     expect(sent).toHaveLength(0);

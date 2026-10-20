@@ -9,6 +9,7 @@ import { homedir } from 'node:os';
 import { join, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadConfig, localSecret, socketPath, stateDirectory } from './config.js';
+import { readRelayStatus, relayStatusIsLive } from './diagnostics/relay-status.js';
 import { requestLocal } from './code/hooks/ipc.js';
 import { installHooks, uninstallHooks } from './code/hooks/install-hooks.js';
 import { startDaemon } from './main.js';
@@ -290,7 +291,17 @@ export async function runCli(argv = process.argv.slice(2)) {
   if (command === CliCommand.Status) {
     const config = await loadConfig();
 
-    process.stdout.write(JSON.stringify({ relayUrl: config.relayUrl, deviceId: config.deviceId }) + '\n');
+    // A record whose companion no longer runs is stale: it is left out.
+    const record = await readRelayStatus(stateDirectory());
+    const relayStatus = record && relayStatusIsLive(record) ? record.code : undefined;
+
+    process.stdout.write(
+      JSON.stringify({
+        relayUrl: config.relayUrl,
+        deviceId: config.deviceId,
+        ...(relayStatus ? { relayStatus } : {}),
+      }) + '\n',
+    );
 
     return;
   }

@@ -6,6 +6,7 @@ import { homedir } from 'node:os';
 import { isAbsolute, join, relative } from 'node:path';
 import { sessionSchema } from '@protocol';
 import { object, type Data } from '../events.js';
+import { logDebug } from '../../diagnostics/log.js';
 
 function records(
   buffer: Buffer,
@@ -34,9 +35,7 @@ function records(
         position: start + offset,
         hash: createHash('sha256').update(line).digest('hex'),
       });
-    } catch {
-      // Incomplete and malformed native records cannot supply model metadata.
-    }
+    } catch {} // ignore: incomplete and malformed native records cannot supply model metadata.
 
     offset = end + 1;
   }
@@ -144,8 +143,9 @@ export class CodexModelReader {
       } finally {
         await file.close();
       }
-    } catch {
+    } catch (error) {
       // Missing or inaccessible native metadata never changes session authority or reveals a path.
+      logDebug('codex/history/model-reader', error);
     } finally {
       this.reading = false;
     }

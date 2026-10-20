@@ -1,5 +1,5 @@
 import type { PoolClient } from 'pg';
-import { HandoffPhase, type HandoffOperation } from '@protocol';
+import { CommandActionType, CommandStatus, HandoffPhase, type HandoffOperation } from '@protocol';
 import { Fault } from '../../http/errors/fault.js';
 import { ContinuityError, HandoffCommandKind, type PersistHandoffInput } from '../types.js';
 import { asOperation, type ContinuityRow } from './mapping.js';
@@ -131,6 +131,31 @@ export class HandoffRepository {
           [ownerId, deviceId, commandId],
         )
       ).rows[0] ?? null
+    );
+  }
+
+  /** Records the accepted prompt that seeds a handoff's target. */
+  async insertSeedCommand(
+    tx: PoolClient,
+    ownerId: string,
+    commandId: string,
+    deviceId: string,
+    sessionId: string,
+    fingerprint: string,
+    now: number,
+  ) {
+    await tx.query(
+      'INSERT INTO command_audit(owner_id,command_id,device_id,session_id,action,fingerprint,status,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',
+      [
+        ownerId,
+        commandId,
+        deviceId,
+        sessionId,
+        CommandActionType.Prompt,
+        fingerprint,
+        CommandStatus.Accepted,
+        now,
+      ],
     );
   }
 

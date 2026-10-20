@@ -2,6 +2,7 @@ import { constants } from 'node:fs';
 import { lstat, mkdir, open, realpath, unlink } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
 import { CheckpointError, checkpointFailure } from '../values.js';
+import { logDebug } from '../../../diagnostics/log.js';
 
 const uid = () => (typeof process.getuid === 'function' ? process.getuid() : null);
 
@@ -74,7 +75,7 @@ export async function writePrivateFile(directory: string, name: string, data: Ui
     }
   } catch (error) {
     await handle.close();
-    await unlink(path).catch(() => undefined);
+    await unlink(path).catch((error: unknown) => logDebug('continuity/context/storage/storage', error));
     throw error;
   }
 

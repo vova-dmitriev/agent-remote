@@ -7,6 +7,7 @@ import {
 } from '../../domain/codex/codex.js';
 import { object, type Data } from '../events.js';
 import { userInputQuestionSchema } from '@protocol';
+import { logDebug } from '../../diagnostics/log.js';
 
 const OPEN = '<send_user_message_question_reply>',
   CLOSE = '</send_user_message_question_reply>';
@@ -57,7 +58,9 @@ export function asyncReplyKeys(items: unknown[]): Set<string> {
           answered.add(JSON.stringify([value.questionItemId, value.question, value.answer]));
         }
       }
-    } catch {}
+    } catch (error) {
+      logDebug('codex/desktop/desktop-user-input', error);
+    }
   }
 
   return answered;

@@ -138,9 +138,7 @@ export class TranscriptTitle {
         if (row && typeof row === 'object' && !Array.isArray(row)) {
           this.observe(row as Record<string, unknown>, start + end, buffer.subarray(offset, end));
         }
-      } catch {
-        // Partial or malformed JSONL is never title metadata.
-      }
+      } catch {} // ignore: partial or malformed JSONL is never title metadata.
 
       offset = end + 1;
     }

@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import { ConsoleLogger, type LogLevel } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AttachmentService } from '../attachments/service.js';
@@ -11,10 +12,18 @@ import { DeviceService } from '../devices/service.js';
 import { createMessaging, type Messaging } from '../infrastructure/messaging.js';
 import { Notifier } from '../notifications/notify.js';
 import { RelayHub } from '../realtime/relay-hub.js';
+import { logError } from '../http/errors/error-log.js';
 import { JsonExpressAdapter } from '../http/pipeline/json-express-adapter.js';
 import { securityHeaders } from '../http/pipeline/middleware.js';
 import type { RelayConfig } from './relay-config.js';
 import { RelayModule } from './relay.module.js';
+
+/** Nest's levels the relay writes: errors, warnings and lifecycle lines, one JSON object per line. */
+const RELAY_LOG_LEVELS = ['error', 'warn', 'log'] as const satisfies readonly LogLevel[];
+const RELEASE_CONTEXT = 'RelayRelease';
+
+/** The relay's logger: one JSON object per line on stdout (`log`) and stderr (`warn`, `error`). */
+export const relayLogger = () => new ConsoleLogger({ json: true, logLevels: [...RELAY_LOG_LEVELS] });
 
 export interface Relay {
   db: Database;
@@ -47,7 +56,7 @@ export async function createRelay(config: RelayConfig): Promise<Relay> {
       RelayModule.register({ config, db, messaging }),
       new JsonExpressAdapter(),
       {
-        logger: false,
+        logger: relayLogger(),
         bodyParser: false,
         // Rethrow a provider or hook failure instead of exiting the process, so it is released below.
         abortOnError: false,
@@ -60,7 +69,16 @@ export async function createRelay(config: RelayConfig): Promise<Relay> {
 
     return facade(app, db, messaging);
   } catch (error) {
-    await release(app, messaging, db);
+    const closeErrors = await release(app, messaging, db);
+
+    if (closeErrors.length && error instanceof Error) {
+      Object.defineProperty(error, 'suppressed', {
+        value: closeErrors,
+        enumerable: false,
+        configurable: true,
+      });
+    }
+
     throw error;
   }
 }
@@ -102,17 +120,24 @@ function facade(app: NestExpressApplication, db: Database, messaging: Messaging 
 /**
  * Releases what a failed start acquired: the application's hooks stop its timers and subscriptions, then storage
  * closes. It never throws: the start already failed, and that original error is the one the caller must see.
+ * A resource that fails to close does not stop the others; its error is logged and returned, so the caller can
+ * attach it to the startup error as `suppressed`.
  */
 async function release(
   app: NestExpressApplication | undefined,
   messaging: Messaging | undefined,
   db: Database,
-) {
+): Promise<unknown[]> {
+  const errors: unknown[] = [];
+
   for (const close of [() => app?.close(), () => messaging?.close(), () => db.close()]) {
     try {
       await close();
-    } catch {
-      // Closing the remaining resources matters more than reporting why this one failed to close.
+    } catch (error) {
+      logError(RELEASE_CONTEXT, error);
+      errors.push(error);
     }
   }
+
+  return errors;
 }

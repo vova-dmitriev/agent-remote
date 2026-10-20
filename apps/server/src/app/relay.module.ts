@@ -20,14 +20,17 @@ import { PairingController } from '../devices/pairing.controller.js';
 import { FaultFilter } from '../http/errors/fault.filter.js';
 import type { Messaging } from '../infrastructure/messaging.js';
 import { PreferencesController } from '../preferences/preferences.controller.js';
+import { PreferenceRepository } from '../preferences/repository.js';
 import { PreferenceService } from '../preferences/service.js';
 import { ProfilesModule } from '../profiles/profiles.module.js';
 import { ReadingPositionController } from '../reading-position/reading-position.controller.js';
+import { ReadingPositionRepository } from '../reading-position/repository.js';
 import { ReadingPositionService } from '../reading-position/service.js';
 import { RealtimeModule } from '../realtime/realtime.module.js';
 import { SessionsModule } from '../sessions/sessions.module.js';
 import { CoreModule, type CoreResources } from './core.module.js';
 import { HealthController } from '../health/health.controller.js';
+import { HealthRepository } from '../health/repository.js';
 import { JsonBodyMiddleware } from '../http/pipeline/middleware.js';
 import { MESSAGING, RELAY_CONFIG, type RelayConfig } from './relay-config.js';
 
@@ -64,16 +67,31 @@ export class RelayModule implements NestModule, OnModuleInit {
       providers: [
         { provide: APP_FILTER, useClass: FaultFilter },
         {
+          provide: HealthRepository,
+          inject: [Database],
+          useFactory: (db: Database) => new HealthRepository(db),
+        },
+        {
+          provide: PreferenceRepository,
+          inject: [Database],
+          useFactory: (db: Database) => new PreferenceRepository(db),
+        },
+        {
+          provide: ReadingPositionRepository,
+          inject: [Database],
+          useFactory: (db: Database) => new ReadingPositionRepository(db),
+        },
+        {
           provide: PreferenceService,
-          inject: [Database, MESSAGING],
-          useFactory: (db: Database, messaging: Messaging | undefined) =>
-            new PreferenceService(db, messaging?.cache),
+          inject: [PreferenceRepository, MESSAGING],
+          useFactory: (preferences: PreferenceRepository, messaging: Messaging | undefined) =>
+            new PreferenceService(preferences, messaging?.cache),
         },
         {
           provide: ReadingPositionService,
-          inject: [Database, MESSAGING],
-          useFactory: (db: Database, messaging: Messaging | undefined) =>
-            new ReadingPositionService(db, messaging?.cache),
+          inject: [ReadingPositionRepository, MESSAGING],
+          useFactory: (positions: ReadingPositionRepository, messaging: Messaging | undefined) =>
+            new ReadingPositionService(positions, messaging?.cache),
         },
       ],
     };

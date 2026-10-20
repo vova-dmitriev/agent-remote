@@ -1,6 +1,8 @@
 import { RuntimeEvent } from './domain/runtime.js';
 import {
+  ErrorCode,
   FrameType,
+  RELAY_PROTOCOL,
   SocketCloseCode,
   SocketCloseReason,
   serverFrameSchema,
@@ -10,6 +12,8 @@ import { BoundedSender } from '@transport/bounded-sender.js';
 import { EventEmitter } from 'node:events';
 import { WebSocket } from 'ws';
 import { validateRelayUrl } from './config.js';
+import { PROTOCOL_REPROBE_MS } from './runtime-timings.js';
+import { logDebug } from './diagnostics/log.js';
 
 export class RelayClient extends EventEmitter {
   private sender = new BoundedSender();
@@ -38,7 +42,9 @@ export class RelayClient extends EventEmitter {
     this.socket = socket;
     const authTimeout = setTimeout(() => socket.terminate(), 5000);
 
-    socket.on('open', () => this.send({ type: FrameType.Auth, token: this.token }));
+    socket.on('open', () =>
+      this.send({ type: FrameType.Auth, token: this.token, protocolVersion: RELAY_PROTOCOL.Current }),
+    );
 
     socket.on('message', (raw) => {
       try {
@@ -64,7 +70,7 @@ export class RelayClient extends EventEmitter {
       }
     });
 
-    socket.on('error', () => {});
+    socket.on('error', (error) => logDebug('relay-client', error));
 
     socket.on('close', (code) => {
       clearTimeout(authTimeout);
@@ -79,6 +85,19 @@ export class RelayClient extends EventEmitter {
       if (code === SocketCloseCode.Revoked) {
         this.stopped = true;
         this.emit(RuntimeEvent.Revoked);
+
+        return;
+      }
+
+      // Fast reconnects cannot help until one side is upgraded or rolled back: probe again on a long interval.
+      if (code === SocketCloseCode.ProtocolUnsupported) {
+        this.attempt = 0;
+
+        if (!this.stopped) {
+          this.retry = setTimeout(() => this.connect(), PROTOCOL_REPROBE_MS);
+        }
+
+        this.emit(RuntimeEvent.ProtocolUnsupported, ErrorCode.PROTOCOL_UNSUPPORTED);
 
         return;
       }

@@ -1,3 +1,4 @@
+import type { ErrorCode } from '@protocol';
 import { RuntimeEvent } from './domain/runtime.js';
 import { NativeProcesses } from './sessions/native-process.js';
 import { CodexManager } from './runtime/services/codex-manager.js';
@@ -23,6 +24,8 @@ import { createAttachments } from './runtime/wiring/attachments.js';
 import { startLocalSurface } from './runtime/wiring/local-surface.js';
 import { startHookWiring } from './runtime/wiring/hook-wiring.js';
 import { localSecret, socketPath, stateDirectory } from './config.js';
+import { logWarning } from './diagnostics/log.js';
+import { saveRelayStatus } from './diagnostics/relay-status.js';
 import { runtimeConfiguration } from './local/bootstrap/configuration.js';
 import { openLocalServices } from './runtime/services/local-services.js';
 import { NoRelay } from './local/bootstrap/no-relay.js';
@@ -157,6 +160,8 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
   sourcePoller.start();
   nativePoller.start();
   await codex.start();
+  // A record left by an earlier companion, crashed or not, never describes this one.
+  await saveRelayStatus(stateDirectory(), null).catch((error: unknown) => logWarning('main', error));
   relay.connect();
 
   const close = async () => {
@@ -186,11 +191,23 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
     await adapters.close();
     store.close();
     localServices.database.close();
+    await saveRelayStatus(stateDirectory(), null).catch((error: unknown) => logWarning('main', error));
   };
 
   relay.on(RuntimeEvent.Revoked, () => {
     relay.close();
     dispatcher.setConnection(false);
+  });
+
+  // The relay client keeps probing on a long interval; `remote status` reports the reason meanwhile.
+  relay.on(RuntimeEvent.ProtocolUnsupported, (code: ErrorCode) => {
+    dispatcher.setConnection(false);
+    process.stderr.write(`${code}\n`);
+    void saveRelayStatus(stateDirectory(), code).catch((error: unknown) => logWarning('main', error));
+  });
+
+  relay.on(RuntimeEvent.Online, () => {
+    void saveRelayStatus(stateDirectory(), null).catch((error: unknown) => logWarning('main', error));
   });
 
   return {

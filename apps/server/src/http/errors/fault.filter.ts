@@ -1,10 +1,12 @@
 import { Catch, HttpException, type ArgumentsHost } from '@nestjs/common';
 import { BaseExceptionFilter } from '@nestjs/core';
 import type { Response } from 'express';
+import { reportFault } from './error-log.js';
 import { toFault, type Fault } from './fault.js';
 
 /**
  * Application errors answer `{ code }` with the status derived from the code.
+ * An unexpected error answers 500 `INTERNAL_ERROR`; only the log gets its details.
  * Framework errors (body parser, unknown route, undecodable path) keep Nest's default response.
  */
 @Catch()
@@ -16,7 +18,7 @@ export class FaultFilter extends BaseExceptionFilter {
       return;
     }
 
-    const fault = this.toFault(exception);
+    const fault = reportFault(exception, this.toFault(exception));
     const response = host.switchToHttp().getResponse<Response>();
 
     if (!response.headersSent) {

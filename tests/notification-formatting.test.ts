@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { NotificationDelivery } from '../apps/server/src/notifications/delivery.js';
+import { NotificationRepository } from '../apps/server/src/notifications/repositories/notifications.js';
 import { databaseFixture } from './helpers/database.js';
 
 let fixture: Awaited<ReturnType<typeof databaseFixture>>;
@@ -67,11 +68,15 @@ async function deliver(
 
   const sent: SentMessage[] = [];
 
-  await new NotificationDelivery(fixture.db, 'https://example.invalid/app', async (body) => {
-    sent.push(body as SentMessage);
+  await new NotificationDelivery(
+    new NotificationRepository(fixture.db),
+    'https://example.invalid/app',
+    async (body) => {
+      sent.push(body as SentMessage);
 
-    return { ok: true };
-  }).deliver(Date.now(), id);
+      return { ok: true };
+    },
+  ).deliver(Date.now(), id);
 
   expect(sent).toHaveLength(1);
 

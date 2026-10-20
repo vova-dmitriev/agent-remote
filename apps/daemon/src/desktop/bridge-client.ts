@@ -4,6 +4,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { dirname, join, parse } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CodedError, ErrorCode } from '@protocol';
+import { logDebug } from '../diagnostics/log.js';
 
 export function installationRoot() {
   let directory = dirname(fileURLToPath(import.meta.url));
@@ -16,7 +17,9 @@ export function installationRoot() {
         if ((JSON.parse(readFileSync(path, 'utf8')) as { name: string }).name === 'claude-remote') {
           return directory;
         }
-      } catch {}
+      } catch (error) {
+        logDebug('desktop/bridge-client', error);
+      }
     }
 
     directory = dirname(directory);
@@ -41,7 +44,9 @@ export class BridgeClient {
       join(installationRoot(), 'artifacts/ClaudeRemoteBridge.app/Contents/MacOS/ClaudeBridge'),
   ) {}
   request(value: unknown): Promise<unknown> {
-    const result = this.queue.catch(() => {}).then(() => this.execute(value));
+    const result = this.queue
+      .catch((error: unknown) => logDebug('desktop/bridge-client', error))
+      .then(() => this.execute(value));
 
     this.queue = result;
 

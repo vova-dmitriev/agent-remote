@@ -7,7 +7,7 @@ import { WebSocketServer, type WebSocket } from 'ws';
 import { RELAY_CONFIG, type RelayConfig } from '../app/relay-config.js';
 import type { Principal } from '../auth/security.js';
 import { ContinuityProxy } from '../continuity/proxy.js';
-import type { DeviceRecord } from '../devices/service.js';
+import type { DeviceRecord } from '../devices/repositories/devices.js';
 import { SourceHistory } from '../history/source.js';
 import { ProfileProxy } from '../profiles/transport/proxy.js';
 import { upgradeHandler } from './upgrade.js';
@@ -17,12 +17,16 @@ export interface DeviceConnection {
   epoch: string;
   device: DeviceRecord;
   lastSeen: number;
+  /** The daemon↔relay protocol version negotiated at authentication; see `RELAY_PROTOCOL`. */
+  protocolVersion: number;
 }
 
 export interface AppConnection {
   socket: WebSocket;
   principal: Principal;
   token: string;
+  /** When the token expires, as authenticated; checks may only bring it closer, never extend it. */
+  expiresAt: number;
   deviceId: string | null;
   sessionId: string | null;
   selected: boolean;
@@ -45,9 +49,12 @@ export class RelayHub {
 
   readonly send = (socket: WebSocket, frame: ServerFrame) => this.sender.send(socket, frame);
 
+  /** Sends to the owner's sockets on a device; a socket whose token expired gets nothing while it awaits closing. */
   readonly fanout = (owner: string, deviceId: string, frame: ServerFrame) => {
+    const now = Date.now();
+
     for (const client of this.clients) {
-      if (client.principal.userId === owner && client.deviceId === deviceId) {
+      if (client.principal.userId === owner && client.deviceId === deviceId && client.expiresAt > now) {
         this.send(client.socket, frame);
       }
     }

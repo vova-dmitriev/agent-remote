@@ -2,6 +2,7 @@ import { ConnectorId, NativeRestartState, TargetKind } from '@protocol';
 import type { Monitor } from '../monitor/monitor.js';
 import type { NativeProcesses } from '../sessions/native-process.js';
 import { NATIVE_PROCESS_POLL_INTERVAL_MS } from '../runtime-timings.js';
+import { logDebug } from '../diagnostics/log.js';
 
 export type NativeRestartPollerDeps = {
   monitor: Monitor;
@@ -17,8 +18,12 @@ export class NativeRestartPoller {
   constructor(private readonly deps: NativeRestartPollerDeps) {}
 
   start() {
-    this.timer = setInterval(() => void this.refresh().catch(() => {}), NATIVE_PROCESS_POLL_INTERVAL_MS);
-    void this.refresh().catch(() => {});
+    this.timer = setInterval(
+      () => void this.refresh().catch((error: unknown) => logDebug('runtime/native-restart-poller', error)),
+      NATIVE_PROCESS_POLL_INTERVAL_MS,
+    );
+
+    void this.refresh().catch((error: unknown) => logDebug('runtime/native-restart-poller', error));
   }
 
   stop() {

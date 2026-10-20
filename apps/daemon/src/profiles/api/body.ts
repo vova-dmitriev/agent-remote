@@ -1,5 +1,6 @@
 import { CodedError, ErrorCode } from '@protocol';
 import { ProfileApiLimit } from './values.js';
+import { logDebug } from '../../diagnostics/log.js';
 
 export async function profileApiBody(response: Response): Promise<unknown> {
   const reader = response.body?.getReader();
@@ -34,7 +35,7 @@ export async function profileApiBody(response: Response): Promise<unknown> {
       throw new CodedError(ErrorCode.CODEX_PROTOCOL_ERROR);
     }
   } finally {
-    await reader.cancel().catch(() => {});
+    await reader.cancel().catch((error: unknown) => logDebug('profiles/api/body', error));
     reader.releaseLock();
   }
 }

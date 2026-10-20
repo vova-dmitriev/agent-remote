@@ -79,9 +79,7 @@ export class CmuxClient {
         },
       );
 
-      child.stdin?.on('error', () => {
-        /* Early exit/EPIPE is handled by execFile's completion. */
-      });
+      child.stdin?.on('error', () => {}); // ignore: early exit/EPIPE is handled by execFile's completion.
 
       child.stdin?.end(input);
     });

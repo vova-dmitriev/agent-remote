@@ -25,6 +25,7 @@ import { SourceAdapter, type AdapterRegistry, type DispatchReceipt } from '../..
 import { PermissionBroker, permissionHookOutput } from '../../commands/permission-broker.js';
 import { bindHookSocket } from './hook-socket.js';
 import { lineReader, writeFrame } from './ipc.js';
+import { logDebug } from '../../diagnostics/log.js';
 
 type WrapperReply = DispatchReceipt & { text?: string };
 
@@ -120,7 +121,7 @@ export async function startHookServer(options: Options) {
     let busy = false;
     const authTimer = setTimeout(() => socket.destroy(), 5000);
 
-    socket.on('error', () => {});
+    socket.on('error', (error) => logDebug('code/hooks/hook-server', error));
 
     socket.on('close', () => {
       clearTimeout(authTimer);

@@ -23,6 +23,11 @@ import { z } from 'zod';
 import { openTranscript, type TranscriptOpenOptions } from './transcript-file.js';
 import { transcriptRowItems, transcriptWindow } from './transcript-window.js';
 import { TranscriptReader } from './transcript-reader.js';
+import { logDebugCount } from '../../diagnostics/log.js';
+
+const TRANSCRIPT_PAGES_SCOPE = 'code/transcript/transcript-pages';
+/** Partial or malformed JSONL rows, which never become messages. */
+const MALFORMED_ROWS = 'malformed_rows';
 
 const cursorSchema = z.strictObject({
   dev: z.number(),
@@ -206,6 +211,20 @@ export class TranscriptPages {
     size: number,
     id: string,
   ): Promise<number | undefined> {
+    let malformed = 0;
+
+    try {
+      return await this.search(file, size, id, () => malformed++);
+    } finally {
+      logDebugCount(TRANSCRIPT_PAGES_SCOPE, MALFORMED_ROWS, malformed);
+    }
+  }
+  private async search(
+    file: import('node:fs/promises').FileHandle,
+    size: number,
+    id: string,
+    skip: () => void,
+  ): Promise<number | undefined> {
     let end = size;
     // Only this explicit saved-message request searches backwards. Opening a chat never scans from the beginning.
     const floor = Math.max(0, size - TRANSCRIPT_WINDOW_BYTES);
@@ -239,7 +258,9 @@ export class TranscriptPages {
 
             return start + offset;
           }
-        } catch {}
+        } catch {
+          skip();
+        }
 
         offset = next + 1;
       }
@@ -256,6 +277,21 @@ export class TranscriptPages {
     start: number,
     size: number,
     count: number,
+  ) {
+    let malformed = 0;
+
+    try {
+      return await this.scanForward(file, start, size, count, () => malformed++);
+    } finally {
+      logDebugCount(TRANSCRIPT_PAGES_SCOPE, MALFORMED_ROWS, malformed);
+    }
+  }
+  private async scanForward(
+    file: import('node:fs/promises').FileHandle,
+    start: number,
+    size: number,
+    count: number,
+    skip: () => void,
   ) {
     const limit = Math.min(size, start + TRANSCRIPT_WINDOW_BYTES);
 
@@ -295,7 +331,9 @@ export class TranscriptPages {
           if (items && found >= count) {
             return base + next + 1;
           }
-        } catch {}
+        } catch {
+          skip();
+        }
 
         at = next + 1;
       }

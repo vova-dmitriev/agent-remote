@@ -22,9 +22,9 @@ import {
 } from './limits.js';
 import { randomUUID } from 'node:crypto';
 import { type WebSocket } from 'ws';
-import { type Database } from '../db/database.js';
 import { type Principal } from '../auth/security.js';
 import { Fault } from '../http/errors/fault.js';
+import { type HistoryRepository } from './repository.js';
 import { type HistoryPage } from './service.js';
 
 interface Connection {
@@ -48,7 +48,7 @@ interface Pending {
 export class SourceHistory {
   private pending = new Map<string, Pending>();
   constructor(
-    private db: Database,
+    private repository: HistoryRepository,
     private live: Map<string, Connection>,
     private send: (socket: WebSocket, frame: ServerFrame) => boolean,
   ) {}
@@ -66,15 +66,7 @@ export class SourceHistory {
       throw new Fault(ErrorCode.INVALID_REQUEST);
     }
 
-    const row = (
-      await this.db.pool.query<{
-        device_id: string;
-        data: { generation: string; capabilities?: { historyWindow?: boolean; subagentHistory?: boolean } };
-      }>(
-        'SELECT s.device_id,s.data FROM sessions s JOIN devices d ON d.id=s.device_id AND d.owner_id=s.owner_id WHERE s.owner_id=$1 AND s.id=$2 AND d.revoked_at IS NULL',
-        [principal.userId, sessionId],
-      )
-    ).rows[0];
+    const row = await this.repository.sourceSession(principal.userId, sessionId);
 
     if (!row) {
       throw new Fault(ErrorCode.NOT_FOUND);

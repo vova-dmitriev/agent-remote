@@ -3,6 +3,7 @@ import { ASCII_CONTROL_CHARACTERS } from '../../validation/control-characters.js
 import { constants } from 'node:fs';
 import { open, realpath, stat } from 'node:fs/promises';
 import { isAbsolute, resolve } from 'node:path';
+import { logDebug } from '../../diagnostics/log.js';
 
 export async function boundedBody(response: Response, maximum = MAX_ATTACHMENT_BYTES): Promise<Buffer> {
   const length = response.headers.get('content-length');
@@ -40,7 +41,7 @@ export async function boundedBody(response: Response, maximum = MAX_ATTACHMENT_B
 
     return Buffer.concat(chunks, total);
   } finally {
-    await reader.cancel().catch(() => {});
+    await reader.cancel().catch((error: unknown) => logDebug('attachments/relay/io', error));
     reader.releaseLock();
   }
 }

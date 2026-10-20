@@ -8,18 +8,13 @@ import {
   type EventEnvelope,
 } from '@protocol';
 
-import {
-  HISTORY_WINDOW_BEFORE_MESSAGES,
-  HISTORY_WINDOW_AFTER_MESSAGES,
-  HISTORY_CACHE_CURSOR_PREFIX,
-  HISTORY_WINDOW_CACHE_VERSION,
-} from './limits.js';
+import { HISTORY_CACHE_CURSOR_PREFIX, HISTORY_WINDOW_CACHE_VERSION } from './limits.js';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { type Principal } from '../auth/security.js';
 import { Fault } from '../http/errors/fault.js';
-import { type Database } from '../db/database.js';
 import { type RedisCache } from '../infrastructure/redis.js';
+import { type HistoryRepository, type HistoryRow } from './repository.js';
 
 const cursorSchema = z
   .strictObject({
@@ -43,15 +38,8 @@ export interface HistoryPage {
   nextCursor: string | null;
   afterCursor: string | null;
 }
-interface Row {
-  data: EventEnvelope;
-  event_id: string;
-  occurred_at: string;
-  stream_id: string;
-  seq: string;
-}
 
-const encode = (row: Row) =>
+const encode = (row: HistoryRow) =>
   Buffer.from(
     JSON.stringify({
       at: Number(row.occurred_at),
@@ -77,20 +65,9 @@ function decode(value: unknown): Cursor | undefined {
   }
 }
 
-// Native timestamps determine conversation order. Import time only chooses the latest revision of an ID.
-const source = `WITH messages AS (
- SELECT DISTINCT ON (coalesce(data->'payload'->>'id',event_id)) data,event_id,stream_id,seq,
- CASE WHEN data->>'type'=$4 AND (data->'payload'->>'occurredAt') ~ '^[0-9]{1,15}$' THEN (data->'payload'->>'occurredAt')::bigint ELSE occurred_at END AS occurred_at
- FROM events WHERE owner_id=$1 AND device_id=$2 AND session_id=$3
- ORDER BY coalesce(data->'payload'->>'id',event_id),events.occurred_at DESC,stream_id DESC,seq DESC,event_id DESC
-)`;
-
-const tuple = '(occurred_at,stream_id,seq,event_id)';
-const params = (cursor: Cursor) => [cursor.at, cursor.streamId ?? '', cursor.seq ?? 0, cursor.id];
-
 export class SessionHistory {
   constructor(
-    private db: Database,
+    private repository: HistoryRepository,
     private cache?: RedisCache,
   ) {}
   async page(
@@ -100,12 +77,8 @@ export class SessionHistory {
     around?: unknown,
     after?: unknown,
   ): Promise<HistoryPage> {
-    const session = (
-      await this.db.pool.query<{ device_id: string; history_revision: string }>(
-        'SELECT s.device_id,d.history_revision FROM sessions s JOIN devices d ON d.id=s.device_id AND d.owner_id=s.owner_id WHERE s.owner_id=$1 AND s.id=$2 AND d.revoked_at IS NULL',
-        [principal.userId, sessionId],
-      )
-    ).rows[0];
+    const { repository } = this;
+    const session = await repository.liveSession(principal.userId, sessionId);
 
     if (!session) {
       throw new Fault(ErrorCode.NOT_FOUND);
@@ -120,18 +93,13 @@ export class SessionHistory {
       throw new Fault(ErrorCode.INVALID_CURSOR);
     }
 
-    const values = [principal.userId, session.device_id, sessionId, EventType.Message];
+    const scope = { ownerId: principal.userId, deviceId: session.device_id, sessionId };
 
     const load = async (): Promise<HistoryPage> => {
       let boundary = before ?? newer;
 
       if (anchor) {
-        const row = (
-          await this.db.pool.query<Row>(
-            source + ` SELECT * FROM messages WHERE data->'payload'->>'id'=$5 LIMIT 1`,
-            [...values, anchor],
-          )
-        ).rows[0];
+        const row = await repository.message(scope, anchor);
 
         if (row) {
           boundary = {
@@ -143,33 +111,7 @@ export class SessionHistory {
         }
       }
 
-      const legacy = boundary && boundary.streamId === undefined;
-      const compare = legacy ? '(occurred_at,event_id)' : tuple;
-      const against = legacy ? '($5::bigint,$6::text)' : '($5::bigint,$6::text,$7::bigint,$8::text)';
-      let boundValues: (string | number)[] = [];
-
-      if (boundary) {
-        boundValues = legacy ? [boundary.at, boundary.id] : params(boundary);
-      }
-
-      const order = legacy ? 'occurred_at,event_id' : 'occurred_at,stream_id,seq,event_id';
-
-      const descending = order
-        .split(',')
-        .map((key) => key + ' DESC')
-        .join(',');
-
-      const ascending = order
-        .split(',')
-        .map((key) => key + ' ASC')
-        .join(',');
-
-      const query =
-        anchor && boundary
-          ? `SELECT * FROM ((SELECT * FROM messages WHERE ${compare}<=${against} ORDER BY ${descending} LIMIT ${HISTORY_WINDOW_BEFORE_MESSAGES}) UNION ALL (SELECT * FROM messages WHERE ${compare}>${against} ORDER BY ${ascending} LIMIT ${HISTORY_WINDOW_AFTER_MESSAGES})) history_window ORDER BY ${ascending}`
-          : `SELECT * FROM messages ${boundary ? `WHERE ${compare}${newer ? '>' : '<'}${against}` : ''} ORDER BY ${newer ? ascending : descending} LIMIT ${HISTORY_PAGE_MESSAGES}`;
-
-      let rows = (await this.db.pool.query<Row>(source + ' ' + query, [...values, ...boundValues])).rows;
+      let rows = await repository.page(scope, boundary, Boolean(anchor), Boolean(newer));
 
       if (!(anchor && boundary) && !newer) {
         rows = rows.reverse();
@@ -178,14 +120,7 @@ export class SessionHistory {
       const first = rows[0],
         last = rows.at(-1);
 
-      const has = async (row: Row, operator: string) =>
-        (
-          await this.db.pool.query(
-            source +
-              ` SELECT 1 FROM messages WHERE ${tuple}${operator}($5::bigint,$6::text,$7::bigint,$8::text) LIMIT 1`,
-            [...values, Number(row.occurred_at), row.stream_id, Number(row.seq), row.event_id],
-          )
-        ).rowCount;
+      const has = (row: HistoryRow, operator: string) => repository.beyond(scope, row, operator);
 
       return {
         events: rows.map((row) => ({

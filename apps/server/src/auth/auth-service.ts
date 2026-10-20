@@ -1,67 +1,56 @@
 import { ErrorCode } from '@protocol';
 import { randomUUID } from 'node:crypto';
-import { type Database } from '../db/database.js';
 import { hash, secret, telegramIdentity, type Principal } from './security.js';
 import { Fault } from '../http/errors/fault.js';
+import { type AuthRepository } from './repository.js';
 
 export class AuthService {
   constructor(
-    private db: Database,
+    private repository: AuthRepository,
     private botToken: string,
   ) {}
   async login(raw: string, now = Date.now()) {
+    const { repository } = this;
     const telegramId = telegramIdentity(raw, this.botToken, now);
     const token = secret();
     const expiresAt = now + 900000;
 
-    await this.db.transaction(async (tx) => {
-      const row = await tx.query<{ id: string }>(
-        'INSERT INTO users(id,telegram_id,created_at) VALUES($1,$2,$3) ON CONFLICT(telegram_id) DO UPDATE SET telegram_id=EXCLUDED.telegram_id RETURNING id',
-        [randomUUID(), telegramId, now],
-      );
+    await repository.transaction(async (tx) => {
+      const ownerId = await repository.upsertUser(tx, randomUUID(), telegramId, now);
 
-      await tx.query('INSERT INTO auth_sessions(token_hash,owner_id,expires_at) VALUES($1,$2,$3)', [
-        hash(token),
-        row.rows[0]!.id,
-        expiresAt,
-      ]);
-
-      await tx.query('DELETE FROM auth_sessions WHERE expires_at<$1', [now]);
+      await repository.insertToken(tx, hash(token), ownerId, expiresAt);
+      await repository.deleteExpiredTokens(tx, now);
     });
 
     return { token, expiresAt };
   }
-  async authenticate(token: string, now = Date.now()): Promise<Principal> {
-    const rows = await this.db.pool.query<{ id: string; telegram_id: string }>(
-      'SELECT u.id,u.telegram_id FROM auth_sessions a JOIN users u ON u.id=a.owner_id WHERE a.token_hash=$1 AND a.expires_at>$2',
-      [hash(token), now],
-    );
-
-    const row = rows.rows[0];
+  async authenticate(token: string, now = Date.now()): Promise<Principal & { expiresAt: number }> {
+    const row = await this.repository.principal(hash(token), now);
 
     if (!row) {
       throw new Fault(ErrorCode.UNAUTHORIZED);
     }
 
-    return { userId: row.id, telegramId: row.telegram_id };
+    return { userId: row.id, telegramId: row.telegram_id, expiresAt: Number(row.expires_at) };
+  }
+  /** One query for many tokens: the stored expiry of each token that is neither revoked nor expired. */
+  async unexpired(tokens: readonly string[], now = Date.now()): Promise<Map<string, number>> {
+    const hashes = new Map(tokens.map((token) => [hash(token), token]));
+    const stored = await this.repository.unexpired([...hashes.keys()], now);
+
+    return new Map([...stored].map(([tokenHash, expiresAt]) => [hashes.get(tokenHash)!, expiresAt]));
   }
   async logout(token: string) {
-    return this.db.transaction(async (tx) => {
-      await tx.query('SELECT token_hash FROM auth_sessions WHERE token_hash=$1 FOR UPDATE', [hash(token)]);
+    const { repository } = this;
+    const tokenHash = hash(token);
 
-      const revoked = (
-        await tx.query<{ token_hash: string }>(
-          'SELECT token_hash FROM auth_sessions WHERE token_hash=$1 OR browser_session_hash=(SELECT browser_session_hash FROM auth_sessions WHERE token_hash=$1)',
-          [hash(token)],
-        )
-      ).rows.map((row) => row.token_hash);
+    return repository.transaction(async (tx) => {
+      await repository.lockToken(tx, tokenHash);
 
-      await tx.query(
-        'DELETE FROM browser_sessions WHERE token_hash=(SELECT browser_session_hash FROM auth_sessions WHERE token_hash=$1)',
-        [hash(token)],
-      );
+      const revoked = await repository.siblingTokens(tx, tokenHash);
 
-      await tx.query('DELETE FROM auth_sessions WHERE token_hash=$1', [hash(token)]);
+      await repository.deleteBrowserSessionOf(tx, tokenHash);
+      await repository.deleteToken(tx, tokenHash);
 
       return revoked;
     });

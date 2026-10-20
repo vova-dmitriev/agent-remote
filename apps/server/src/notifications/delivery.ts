@@ -1,41 +1,27 @@
 import { EventType, HttpStatus } from '@protocol';
 import { NotificationKind } from '../domain/notifications.js';
-import { type Database } from '../db/database.js';
 import { notificationContext } from './context.js';
+import { type NotificationRepository } from './repositories/notifications.js';
 
 export interface TelegramSendResult {
   ok: boolean;
   error_code?: number;
   parameters?: { retry_after?: number };
 }
-interface OutboxRow {
-  id: string;
-  owner_id: string;
-  private_chat_id: string;
-  kind: string;
-  session_id: string | null;
-  attempts: number;
-  next_attempt_at: string;
-  created_at: string;
-}
-
 export class NotificationDelivery {
   private perChat = new Map<string, number>();
   private nextGlobal = 0;
   constructor(
-    private db: Database,
+    private outbox: NotificationRepository,
     private appUrl: string,
     private send: (body: unknown) => Promise<TelegramSendResult>,
     private reserveChat?: (id: string) => Promise<number>,
   ) {}
   async deliver(now = Date.now(), outboxId?: string): Promise<number> {
-    return this.db.transaction(async (tx) => {
-      const row = (
-        await tx.query<OutboxRow>(
-          'SELECT o.*,u.private_chat_id FROM notification_outbox o JOIN users u ON u.id=o.owner_id WHERE o.sent=false AND ($2::text IS NULL OR o.id=$2) AND ($2::text IS NOT NULL OR o.next_attempt_at<=$1) AND u.private_chat_id IS NOT NULL AND u.notifications_enabled=true ORDER BY o.created_at LIMIT 1 FOR UPDATE OF o SKIP LOCKED',
-          [now, outboxId ?? null],
-        )
-      ).rows[0];
+    const { outbox } = this;
+
+    return outbox.transaction(async (tx) => {
+      const row = await outbox.lockNext(tx, now, outboxId ?? null);
 
       if (!row) {
         return 0;
@@ -80,7 +66,7 @@ export class NotificationDelivery {
       } else if (
         [EventType.TurnEnd, EventType.Permission].some((candidateValue) => candidateValue === row.kind)
       ) {
-        text = await notificationContext(tx, row);
+        text = await notificationContext(outbox, tx, row);
       }
 
       const url = new URL(this.appUrl);
@@ -113,14 +99,14 @@ export class NotificationDelivery {
       }
 
       if (response.ok) {
-        await tx.query('UPDATE notification_outbox SET sent=true WHERE id=$1', [row.id]);
+        await outbox.markSent(tx, row.id);
 
         return 0;
       }
 
       if (response.error_code === HttpStatus.Forbidden) {
-        await tx.query('UPDATE users SET notifications_enabled=false WHERE id=$1', [row.owner_id]);
-        await tx.query('UPDATE notification_outbox SET sent=true WHERE id=$1', [row.id]);
+        await outbox.disableOwner(tx, row.owner_id);
+        await outbox.markSent(tx, row.id);
 
         return 0;
       }
@@ -130,10 +116,7 @@ export class NotificationDelivery {
         (response.parameters?.retry_after ?? Math.min(300, 2 ** Math.min(row.attempts, 8))) * 1000,
       );
 
-      await tx.query('UPDATE notification_outbox SET attempts=attempts+1,next_attempt_at=$1 WHERE id=$2', [
-        now + retry,
-        row.id,
-      ]);
+      await outbox.retryAt(tx, now + retry, row.id);
 
       if (response.error_code === HttpStatus.TooManyRequests) {
         this.nextGlobal = now + retry;

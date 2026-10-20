@@ -1,12 +1,13 @@
 import { expect, it } from 'vitest';
 import { attachmentRelayFixture } from './helpers/attachment-relay.js';
 import { SessionLabels } from '../apps/server/src/sessions/labels.js';
+import { SessionRepository } from '../apps/server/src/sessions/repository.js';
 
 it('persists an owned label across native snapshots and rejects another owner or an obsolete generation', async () => {
   const f = await attachmentRelayFixture();
 
   try {
-    const labels = new SessionLabels(f.database.db);
+    const labels = new SessionLabels(new SessionRepository(f.database.db));
 
     await expect(
       labels.rename(await f.relay.auth.authenticate(f.otherToken), f.session.id, {
@@ -24,9 +25,11 @@ it('persists an owned label across native snapshots and rejects another owner or
       generation: f.session.generation,
     });
 
-    const sessions = await new SessionLabels(f.database.db).apply(f.principal, f.deviceId, [
-      { ...f.session, title: 'Native original title' },
-    ]);
+    const sessions = await new SessionLabels(new SessionRepository(f.database.db)).apply(
+      f.principal,
+      f.deviceId,
+      [{ ...f.session, title: 'Native original title' }],
+    );
 
     expect(sessions[0]?.title).toBe('Parser review');
 
@@ -48,11 +51,15 @@ it('orders server snapshots by actual last message time, independently of status
   const f = await attachmentRelayFixture();
 
   try {
-    const ordered = await new SessionLabels(f.database.db).apply(f.principal, f.deviceId, [
-      { ...f.session, id: 'old', lastMessageAt: 10, lastEventAt: 999999, status: 'running' },
-      { ...f.session, id: 'latest', lastMessageAt: 30, lastEventAt: 1, status: 'unknown' },
-      { ...f.session, id: 'middle', lastMessageAt: 20, lastEventAt: 2 },
-    ]);
+    const ordered = await new SessionLabels(new SessionRepository(f.database.db)).apply(
+      f.principal,
+      f.deviceId,
+      [
+        { ...f.session, id: 'old', lastMessageAt: 10, lastEventAt: 999999, status: 'running' },
+        { ...f.session, id: 'latest', lastMessageAt: 30, lastEventAt: 1, status: 'unknown' },
+        { ...f.session, id: 'middle', lastMessageAt: 20, lastEventAt: 2 },
+      ],
+    );
 
     expect(ordered.map((session) => session.id)).toEqual(['latest', 'middle', 'old']);
   } finally {

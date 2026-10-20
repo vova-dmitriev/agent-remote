@@ -12,6 +12,7 @@ import { MediaCatalog } from './catalog.js';
 import { MediaTransfers } from './transfers.js';
 import { TrustedMedia } from './trusted.js';
 import { MEDIA_LIMITS, type LocalMediaOptions } from './types.js';
+import { logDebug } from '../../diagnostics/log.js';
 
 export class LocalMediaRepository {
   private catalog: MediaCatalog;
@@ -30,9 +31,7 @@ export class LocalMediaRepository {
       try {
         this.transfers.prune();
         this.catalog.prune();
-      } catch {
-        /* A later request returns the storage error. */
-      }
+      } catch {} // ignore: a later request returns the storage error.
     }, MEDIA_LIMITS.maintenanceMs);
 
     this.maintenance.unref();
@@ -91,7 +90,10 @@ export class LocalMediaRepository {
     })();
 
     this.requests.add(run);
-    void run.finally(() => this.requests.delete(run)).catch(() => {});
+
+    void run
+      .finally(() => this.requests.delete(run))
+      .catch((error: unknown) => logDebug('local/media/repository', error));
 
     return run;
   }

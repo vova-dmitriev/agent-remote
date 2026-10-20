@@ -30,6 +30,10 @@ Every second the reconciler scans eligible unsent outbox rows and restores missi
 
 Delivery is at least once: a crash after Telegram accepts a send but before the PostgreSQL commit may duplicate a notification. Interactive prompt/permission commands keep their authenticated WebSocket path, command IDs, expiry and generation fences; BullMQ does not retry model turns.
 
+## Retention scheduler
+
+Every relay upserts the same BullMQ job scheduler (`retention`, every 60 seconds) and runs a worker, so each interval produces one job and one relay runs it. The job prunes expired attachments, drops events older than 24 hours or beyond each device's newest 10 000, and drops command audit older than 24 hours. Deletes run in batches of 5 000 rows until a batch removes nothing. Without Redis the relay runs the same pass in-process every 60 seconds. Marking commands unacknowledged after 15 seconds as unknown is not part of it: every relay runs that idempotent update itself every 5 seconds.
+
 ## Verification
 
 `docker compose -f compose.test.yml up -d --wait` starts PostgreSQL 55432 and Redis 56380. Tests use isolated namespaces and synthetic Telegram transports; no test messages go to real users. Run `npm test` and `npm run check:frontend`. Tests cover cache hit/TTL/corruption/fallback, ownership/revocation, in-flight revision races, concurrent delivery, delayed retry, network loss through a Redis proxy, queue reconstruction and startup/shutdown failures.

@@ -3,6 +3,7 @@ import { Redis } from 'ioredis';
 import { Queue } from 'bullmq';
 import { randomUUID } from 'node:crypto';
 import { NotificationQueue } from '../apps/server/src/notifications/queue.js';
+import { NotificationRepository } from '../apps/server/src/notifications/repositories/notifications.js';
 import { redisClient } from '../apps/server/src/infrastructure/redis.js';
 import { databaseFixture } from './helpers/database.js';
 
@@ -71,13 +72,13 @@ it('recovers eligible unsent outbox records that were never published to Redis',
     return 0;
   });
 
-  await broker.reconcile(fixture.db);
+  await broker.reconcile(new NotificationRepository(fixture.db));
   await expect.poll(() => delivered).toContain('recovered');
   const inspect = new Queue('notifications', { connection: client, prefix });
 
   try {
     await expect.poll(async () => (await inspect.getJob('recovered'))?.getState()).toBe('completed');
-    await broker.reconcile(fixture.db);
+    await broker.reconcile(new NotificationRepository(fixture.db));
     await expect.poll(() => delivered.filter((id) => id === 'recovered').length).toBe(2);
   } finally {
     await inspect.close();

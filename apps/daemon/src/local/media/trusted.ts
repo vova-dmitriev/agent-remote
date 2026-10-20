@@ -4,6 +4,7 @@ import { attachmentSourceCurrent } from '../../attachments/content/source-curren
 import { MediaCatalog } from './catalog.js';
 import { MediaTransfers } from './transfers.js';
 import { validateUpload, type LocalMediaOptions } from './types.js';
+import { logDebug } from '../../diagnostics/log.js';
 
 export class TrustedMedia {
   private closed = false;
@@ -126,7 +127,7 @@ export class TrustedMedia {
 
       return Buffer.concat(parts, length);
     } finally {
-      await reader.cancel().catch(() => {});
+      await reader.cancel().catch((error: unknown) => logDebug('local/media/trusted', error));
       reader.releaseLock();
       this.readers.delete(reader);
     }
@@ -135,7 +136,7 @@ export class TrustedMedia {
     this.closed = true;
 
     for (const reader of this.readers) {
-      void reader.cancel().catch(() => {});
+      void reader.cancel().catch((error: unknown) => logDebug('local/media/trusted', error));
     }
   }
 }

@@ -7,7 +7,6 @@ import {
   requestJson,
   startSessionAuthentication,
   type ApplicationClient,
-  type Device,
   type TransportHandlers,
 } from "@/shared/api"
 import { AttachmentTransfer } from "@/entities/attachment"
@@ -19,6 +18,7 @@ import {
   loadSessionHistory,
   restoreHistoryWindow,
 } from "@/entities/session"
+import { ReconnectBackoff } from "./reconnect-backoff"
 import { RelayOperations } from "./relay-operations"
 
 export class AppTransport extends RelayOperations implements ApplicationClient {
@@ -27,6 +27,7 @@ export class AppTransport extends RelayOperations implements ApplicationClient {
   private stopped = false
   private expiresAt = 0
   private retry: ReturnType<typeof setTimeout> | undefined
+  private backoff = new ReconnectBackoff()
   private authentication: SessionAuthentication
   private deviceId: string | null = null
   private selectedId: string | null = null
@@ -64,7 +65,6 @@ export class AppTransport extends RelayOperations implements ApplicationClient {
       },
     )
   }
-
   start() {
     return startSessionAuthentication(this.authentication, this.initData, this.handlers)
   }
@@ -89,6 +89,7 @@ export class AppTransport extends RelayOperations implements ApplicationClient {
         const frame = serverFrameSchema.parse(JSON.parse(String(event.data)))
 
         if (frame.type === FrameType.Authenticated) {
+          this.backoff.authenticated()
           this.handlers.onConnection(ConnectionStatus.Online)
           if (this.deviceId) this.selectTarget(this.deviceId, this.selectedId)
           this.restoreHistory = this.selectedId ? this.selection : null
@@ -117,7 +118,7 @@ export class AppTransport extends RelayOperations implements ApplicationClient {
       if (this.stopped || socket !== this.socket) return
       this.handlers.onConnection(ConnectionStatus.Offline)
       if (event.code === SocketCloseCode.Unauthorized || Date.now() >= this.expiresAt) void this.authentication.renew()
-      else this.retry = setTimeout(() => this.connect(), 1500)
+      else this.retry = setTimeout(() => this.connect(), this.backoff.next())
     }
   }
   async request<T>(path: string, options: RequestInit = {}, onResponse?: (response: Response) => void): Promise<T> {
@@ -128,7 +129,6 @@ export class AppTransport extends RelayOperations implements ApplicationClient {
       onResponse,
     )
   }
-  devices = () => this.request<Device[]>("/devices")
   profiles = (deviceId: string) => this.profileAccess(deviceId, () => !this.stopped)
   profileRouting = (deviceId: string) => this.routingAccess(deviceId, () => !this.stopped)
   continuity(deviceId: string) {
@@ -148,7 +148,6 @@ export class AppTransport extends RelayOperations implements ApplicationClient {
   resetTarget() {
     ++this.selection
     this.deviceId = this.selectedId = null
-
     this.resetCommands()
   }
   private currentHistory = (socket: WebSocket | undefined, sessionId: string, generation: number) =>
@@ -190,6 +189,7 @@ export class AppTransport extends RelayOperations implements ApplicationClient {
   close() {
     this.stopped = true
     clearTimeout(this.retry)
+    this.backoff.reset()
     this.authentication.close()
     this.reading.close()
     this.socket?.close()

@@ -89,7 +89,10 @@ export class Dispatcher {
 
     const previous = this.scheduler.queues.get(queueKey) ?? Promise.resolve();
     const epoch = this.epoch;
-    const result = previous.catch(() => {}).then(() => this.execute(command, epoch, authorize));
+
+    const result = previous
+      .catch(() => {}) // ignore: the previous command's caller already handles its failure
+      .then(() => this.execute(command, epoch, authorize));
 
     this.scheduler.inFlight.set(command.commandId, result);
     this.scheduler.queues.set(queueKey, result);

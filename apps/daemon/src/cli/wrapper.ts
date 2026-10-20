@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { PtySessionManager, type RemotePtyBinding } from '../code/pty-session-manager.js';
 import { parseClaudeArgs } from './arguments.js';
 import { lineReader, writeFrame } from '../code/hooks/ipc.js';
+import { logDebug } from '../diagnostics/log.js';
 
 const actionSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal(WrapperActionType.Bind), sessionId: z.string().min(1).max(512) }),
@@ -83,7 +84,9 @@ export async function startClaude(
 
       try {
         manager.disconnectRemote(local);
-      } catch {}
+      } catch (error) {
+        logDebug('cli/wrapper', error);
+      }
 
       if (!stopped) {
         retry = setTimeout(connectRemote, 1000);
@@ -180,13 +183,17 @@ export async function startClaude(
   const data = (chunk: Buffer) => {
     try {
       manager.writeLocal(local, chunk.toString('utf8'));
-    } catch {}
+    } catch (error) {
+      logDebug('cli/wrapper', error);
+    }
   };
 
   const resize = () => {
     try {
       manager.resize(local, terminal.stdout.columns || 80, terminal.stdout.rows || 24);
-    } catch {}
+    } catch (error) {
+      logDebug('cli/wrapper', error);
+    }
   };
 
   if (terminal.stdin.isTTY) {

@@ -4,6 +4,7 @@ import { createServer, type IncomingMessage } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import type { ClientCommand } from '@protocol';
 import { NotificationDelivery } from '../../../apps/server/src/notifications/delivery.js';
+import { NotificationRepository } from '../../../apps/server/src/notifications/repositories/notifications.js';
 import { NotificationWorker } from '../../../apps/server/src/notifications/worker.js';
 import { createRelay } from '../../../apps/server/src/app/create-relay.js';
 import { testBotToken } from '../../helpers/telegram.js';
@@ -38,7 +39,7 @@ type Updates = Parameters<NotificationWorker['updates']>[0];
 async function deliverNotification(appUrl: string, outboxId: string) {
   const sent: unknown[] = [];
 
-  const delivery = new NotificationDelivery(relay.db, appUrl, async (body) => {
+  const delivery = new NotificationDelivery(new NotificationRepository(relay.db), appUrl, async (body) => {
     sent.push(body);
 
     return { ok: true };

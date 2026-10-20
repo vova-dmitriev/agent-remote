@@ -88,6 +88,7 @@ export const SocketCloseCode = {
   Unauthorized: 4001,
   Replaced: 4002,
   Revoked: 4003,
+  ProtocolUnsupported: 4004,
 } as const;
 export type SocketCloseCode = (typeof SocketCloseCode)[keyof typeof SocketCloseCode];
 
@@ -99,5 +100,6 @@ export const SocketCloseReason = {
   Replaced: 'REPLACED',
   Revoked: 'REVOKED',
   InvalidFrame: 'INVALID_FRAME',
+  ProtocolUnsupported: 'PROTOCOL_UNSUPPORTED',
 } as const;
 export type SocketCloseReason = (typeof SocketCloseReason)[keyof typeof SocketCloseReason];

@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest';
 import { databaseFixture } from './helpers/database.js';
 import { persistEvent } from '../apps/server/src/history/events.js';
+import { HistoryRepository } from '../apps/server/src/history/repository.js';
 import type { EventEnvelope } from '@protocol';
 
 it('rolls back the event and revision if notification intent cannot be persisted, then retries once', async () => {
@@ -33,7 +34,10 @@ it('rolls back the event and revision if notification intent cannot be persisted
       payload: {},
     };
 
-    await expect(persistEvent(fixture.db, 'owner', event)).rejects.toThrow('synthetic outbox failure');
+    await expect(persistEvent(new HistoryRepository(fixture.db), 'owner', event)).rejects.toThrow(
+      'synthetic outbox failure',
+    );
+
     expect((await fixture.db.pool.query('SELECT count(*) FROM events')).rows[0].count).toBe('0');
 
     expect(
@@ -41,8 +45,8 @@ it('rolls back the event and revision if notification intent cannot be persisted
     ).toBe('0');
 
     await fixture.db.pool.query('DROP TRIGGER reject_outbox ON notification_outbox');
-    expect(await persistEvent(fixture.db, 'owner', event)).toBe(true);
-    expect(await persistEvent(fixture.db, 'owner', event)).toBe(false);
+    expect(await persistEvent(new HistoryRepository(fixture.db), 'owner', event)).toBe(true);
+    expect(await persistEvent(new HistoryRepository(fixture.db), 'owner', event)).toBe(false);
 
     expect((await fixture.db.pool.query('SELECT owner_id,sent FROM notification_outbox')).rows).toEqual([
       { owner_id: 'owner', sent: false },

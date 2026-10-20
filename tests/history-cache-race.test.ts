@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { databaseFixture } from './helpers/database.js';
 import { RedisCache } from '../apps/server/src/infrastructure/redis.js';
 import { SessionHistory } from '../apps/server/src/history/service.js';
+import { HistoryRepository } from '../apps/server/src/history/repository.js';
 import { persistEvent } from '../apps/server/src/history/events.js';
 import type { EventEnvelope } from '@protocol';
 
@@ -62,14 +63,18 @@ it('cannot let an old in-flight history fill overwrite a newer committed revisio
       payload: {},
     });
 
-    const history = new SessionHistory(fixture.db, new DelayedCache(client, 'race-' + randomUUID()));
+    const history = new SessionHistory(
+      new HistoryRepository(fixture.db),
+      new DelayedCache(client, 'race-' + randomUUID()),
+    );
+
     const principal = { userId: 'owner', telegramId: '8901' };
 
-    await persistEvent(fixture.db, 'owner', event(1));
+    await persistEvent(new HistoryRepository(fixture.db), 'owner', event(1));
     const old = history.page(principal, 'session');
 
     await ready;
-    await persistEvent(fixture.db, 'owner', event(2));
+    await persistEvent(new HistoryRepository(fixture.db), 'owner', event(2));
     expect((await history.page(principal, 'session')).events).toHaveLength(2);
     release();
     expect((await old).events).toHaveLength(1);
