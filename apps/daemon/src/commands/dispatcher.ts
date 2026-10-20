@@ -23,6 +23,7 @@ import type { MonitorPort } from '../domain/ports/monitor.js';
 import { type AdapterRegistry } from '../adapters/registry.js';
 import { type UserInputBroker } from './user-input-broker.js';
 import { type PermissionBroker } from './permission-broker.js';
+import { logDebug } from '../diagnostics/log.js';
 
 export interface DispatcherOptions {
   deviceId: string;
@@ -89,7 +90,10 @@ export class Dispatcher {
 
     const previous = this.scheduler.queues.get(queueKey) ?? Promise.resolve();
     const epoch = this.epoch;
-    const result = previous.catch(() => {}).then(() => this.execute(command, epoch, authorize));
+
+    const result = previous
+      .catch((error: unknown) => logDebug('commands/dispatcher', error))
+      .then(() => this.execute(command, epoch, authorize));
 
     this.scheduler.inFlight.set(command.commandId, result);
     this.scheduler.queues.set(queueKey, result);

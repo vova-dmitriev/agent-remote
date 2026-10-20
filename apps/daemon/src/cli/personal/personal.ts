@@ -15,6 +15,7 @@ import { personalBot } from './personal-bot.js';
 import { startNamedTunnel } from './personal-tunnel.js';
 import { ensureMacConnected } from '../pairing/connect.js';
 import { CodedError } from '@protocol';
+import { logDebug } from '../../diagnostics/log.js';
 
 const execute = promisify(execFile);
 const localOrigin = 'http://127.0.0.1:3040';
@@ -83,7 +84,7 @@ export async function startPersonal(root = installationRoot()) {
       try {
         await worker?.close();
       } finally {
-        await companionStarting.catch(() => {});
+        await companionStarting.catch((error: unknown) => logDebug('cli/personal/personal', error));
 
         try {
           await daemon?.close();
@@ -184,9 +185,7 @@ export async function startPersonal(root = installationRoot()) {
           healthy = true;
           break;
         }
-      } catch {
-        /* DNS and tunnel routing may take a few seconds to converge. */
-      }
+      } catch {} // ignore: DNS and tunnel routing may take a few seconds to converge.
 
       await delay(2000);
     }

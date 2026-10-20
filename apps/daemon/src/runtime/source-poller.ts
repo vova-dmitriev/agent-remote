@@ -12,6 +12,7 @@ import { type MessageTracker, type TranscriptSources } from '../monitor/history.
 import { type AdapterRegistry, SourceAdapter } from '../adapters/registry.js';
 import type { BridgeClient } from '../desktop/bridge-client.js';
 import type { DesktopBinding } from '../desktop/adapter.js';
+import { logDebug } from '../diagnostics/log.js';
 
 export type DesktopBindingEntry = { desktop: DesktopBinding; connectorId: string; tracker: MessageTracker };
 
@@ -65,9 +66,7 @@ export class SourcePoller {
     this.reading = true;
 
     this.polling = this.pollOnce()
-      .catch(() => {
-        /* Source failures must not terminate the local daemon. */
-      })
+      .catch(() => {}) // ignore: source failures must not terminate the local daemon.
       .finally(() => {
         this.reading = false;
       });
@@ -82,7 +81,7 @@ export class SourcePoller {
 
     this.activityTask = this.deps.readers
       .refreshActivity()
-      .catch(() => {})
+      .catch((error: unknown) => logDebug('runtime/source-poller', error))
       .finally(() => {
         this.activityBusy = false;
       });

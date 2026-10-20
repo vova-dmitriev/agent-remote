@@ -18,8 +18,6 @@ export class Notifier {
 
     await outbox.record(id, owner, sessionId, kind, Date.now());
 
-    void messaging?.queue.enqueue(id).catch(() => {
-      /* PostgreSQL outbox is reconciled by the worker. */
-    });
+    void messaging?.queue.enqueue(id).catch(() => {}); // ignore: PostgreSQL outbox is reconciled by the worker.
   };
 }

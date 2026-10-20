@@ -6,6 +6,7 @@ import { defaultStateDirectory, hookSocketPath, readLocalSecret } from '../../co
 import { secureDirectory } from '../../local/supervisor/runtime.js';
 import type { HookSocketOptions } from './hook-server.js';
 import { requestLocal } from './ipc.js';
+import { logDebug } from '../../diagnostics/log.js';
 
 /** How often the companion tries to take the legacy path back while the CLI daemon holds it. */
 export const LEGACY_HOOK_RETRY_MS = 30_000;
@@ -137,7 +138,7 @@ export async function startLegacyHookSocket(
  */
 export async function requestHookSocketRelease(path: string, token: string) {
   const reply = await requestLocal(path, { type: IpcMessageType.ReleaseHookSocket, token }).catch(
-    () => undefined,
+    (error: unknown) => logDebug('code/hooks/legacy-socket', error),
   );
 
   if (reply?.type === IpcMessageType.ReleaseResult && !reply.code) {

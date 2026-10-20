@@ -5,6 +5,7 @@ import type { TranscriptSources } from '../monitor/history.js';
 import type { AdapterRegistry } from '../adapters/registry.js';
 import type { Dispatcher } from '../commands/dispatcher.js';
 import type { RuntimeProfileRelay } from '../profiles/runtime/router/relay.js';
+import { logDebug } from '../diagnostics/log.js';
 
 export type RelayFrameRouterDeps = {
   relay: { send(frame: DeviceFrame): boolean };
@@ -31,7 +32,9 @@ export class RelayFrameRouter {
     } else if (frame.type === FrameType.Select) {
       try {
         monitor.select(frame.sessionId);
-      } catch {}
+      } catch (error) {
+        logDebug('runtime/relay-frame-router', error);
+      }
     } else if (frame.type === FrameType.Command) {
       const result = await dispatcher.dispatch(frame.command);
 

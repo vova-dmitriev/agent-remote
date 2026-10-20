@@ -49,9 +49,7 @@ export class RedisCache {
           return validate(JSON.parse(cached));
         }
       }
-    } catch {
-      /* Read from PostgreSQL when the cache is unavailable or corrupt. */
-    }
+    } catch {} // ignore: read from PostgreSQL when the cache is unavailable or corrupt.
 
     const value = await load();
 
@@ -67,9 +65,7 @@ export class RedisCache {
           this.ttlMs,
         );
       }
-    } catch {
-      /* Cache writes do not change the authoritative response. */
-    }
+    } catch {} // ignore: cache writes do not change the authoritative response.
 
     return value;
   }
@@ -86,9 +82,7 @@ export class RedisCache {
           randomUUID(),
         );
       }
-    } catch {
-      /* PostgreSQL remains authoritative during a Redis outage. */
-    }
+    } catch {} // ignore: PostgreSQL remains authoritative during a Redis outage.
   }
   async remember<T>(key: string, validate: (value: unknown) => T, load: () => Promise<T>): Promise<T> {
     const cacheKey = `${this.prefix}:cache:${key}`;
@@ -101,9 +95,7 @@ export class RedisCache {
           return validate(JSON.parse(cached));
         }
       }
-    } catch {
-      /* Corrupt or unavailable cache falls back to the authoritative source. */
-    }
+    } catch {} // ignore: corrupt or unavailable cache falls back to the authoritative source.
 
     const value = await load();
 
@@ -116,9 +108,7 @@ export class RedisCache {
       ) {
         await this.client.set(cacheKey, encoded, 'PX', this.ttlMs);
       }
-    } catch {
-      /* A failed cache write must not fail an otherwise authorized read. */
-    }
+    } catch {} // ignore: a failed cache write must not fail an otherwise authorized read.
 
     return value;
   }

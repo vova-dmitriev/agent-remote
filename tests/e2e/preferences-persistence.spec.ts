@@ -117,7 +117,7 @@ test('a failed save remains visible, survives reopening, and reaches the server 
 
   await page.route('**/preferences', (route) =>
     route.request().method() === 'PATCH'
-      ? route.fulfill({ status: 503, json: { code: 'INTERNAL_ERROR' } })
+      ? route.fulfill({ status: 500, json: { code: 'INTERNAL_ERROR' } })
       : route.continue(),
   );
 
@@ -139,7 +139,7 @@ test('reopening with a failed preferences load immediately restores the unsaved 
 
   await page.route('**/preferences', (route) =>
     route.request().method() === 'PATCH' || reopening
-      ? route.fulfill({ status: 503, json: { code: 'INTERNAL_ERROR' } })
+      ? route.fulfill({ status: 500, json: { code: 'INTERNAL_ERROR' } })
       : route.continue(),
   );
 

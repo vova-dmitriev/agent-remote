@@ -11,6 +11,7 @@ import { join, isAbsolute } from 'node:path';
 import { type LaunchContext } from './launch-context.js';
 import { type CmuxContext } from '../../cmux/context.js';
 import { launchInCmux } from '../../cmux/launch.js';
+import { logDebug } from '../../diagnostics/log.js';
 
 const execute = promisify(execFile);
 
@@ -92,8 +93,8 @@ export async function launchClaudeSession(options: {
       ]);
     }
   } catch {
-    await rm(payload, { force: true }).catch(() => {});
-    await rm(script, { force: true }).catch(() => {});
+    await rm(payload, { force: true }).catch((error: unknown) => logDebug('sessions/launch/launcher', error));
+    await rm(script, { force: true }).catch((error: unknown) => logDebug('sessions/launch/launcher', error));
     throw new CodedError(ErrorCode.UNKNOWN_AFTER_WRITE);
   }
 

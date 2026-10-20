@@ -41,7 +41,7 @@ const statusByCode = {
   [ErrorCode.RATE_LIMITED]: HttpStatus.TooManyRequests,
   [ErrorCode.QUEUE_FULL]: HttpStatus.TooManyRequests,
   [AttachmentFaultCode.UploadBusy]: HttpStatus.TooManyRequests,
-  [ErrorCode.INTERNAL_ERROR]: HttpStatus.ServiceUnavailable,
+  [ErrorCode.INTERNAL_ERROR]: HttpStatus.InternalServerError,
   [ErrorCode.SERVICE_UNAVAILABLE]: HttpStatus.ServiceUnavailable,
   [ErrorCode.ATTACHMENT_UNAVAILABLE]: HttpStatus.ServiceUnavailable,
   [ErrorCode.HISTORY_RELOAD_FAILED]: HttpStatus.ServiceUnavailable,

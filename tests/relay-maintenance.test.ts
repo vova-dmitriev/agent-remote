@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { CommandStatus, ErrorCode, FrameType, SocketCloseCode, type ServerFrame } from '@protocol';
 import { randomUUID } from 'node:crypto';
 import { afterEach, expect, it, vi } from 'vitest';
@@ -27,10 +28,15 @@ afterEach(async () => {
   vi.useRealTimers();
 });
 
-/** Waits on real I/O turns, without moving the fake clock, until a condition holds or 200 turns pass. */
+const SETTLE_TIMEOUT_MS = 5_000;
+const nextTurn = () => new Promise((resolve) => setImmediate(resolve));
+
+/** Waits on real I/O, without moving the fake clock, until a condition holds or 5 s of real time pass. */
 async function settled(condition: () => boolean) {
-  for (let turn = 0; turn < 200 && !condition(); turn++) {
-    await new Promise((resolve) => setImmediate(resolve));
+  const deadline = performance.now() + SETTLE_TIMEOUT_MS;
+
+  while (!condition() && performance.now() < deadline) {
+    await nextTurn();
   }
 }
 
@@ -106,51 +112,70 @@ it('sends no frames to a socket whose token expired while it waits to be closed'
   expect(send.mock.calls.map(([socket]) => socket)).toEqual([current.socket]);
 });
 
-it('closes every app socket after consecutive failed rechecks, and a success resets the count', async () => {
+async function openApp(f: Awaited<ReturnType<typeof attachmentRelayFixture>>) {
+  const connection = f.connect('/ws/app', f.token);
+
+  const closed = new Promise<{ code: number; reason: string }>((resolve) =>
+    connection.socket.once('close', (code, reason) => resolve({ code, reason: String(reason) })),
+  );
+
+  await connection.next(FrameType.Authenticated);
+
+  return { ...connection, closed };
+}
+
+/** A relay whose token recheck query fails while `failing()` is true; counts the logged failures. */
+async function failingRecheck() {
   fakeMaintenanceClock();
   const f = await attachmentRelayFixture();
 
   cleanups.push(() => f.close());
 
-  const sockets = await Promise.all(
-    [1, 2].map(async () => {
-      const connection = f.connect('/ws/app', f.token);
-
-      const closed = new Promise<{ code: number; reason: string }>((resolve) =>
-        connection.socket.once('close', (code, reason) => resolve({ code, reason: String(reason) })),
-      );
-
-      await connection.next(FrameType.Authenticated);
-
-      return { ...connection, closed };
-    }),
-  );
-
   const { pool } = f.relay.db;
   const query = pool.query.bind(pool) as (...args: unknown[]) => Promise<unknown>;
-  let failing = true;
+  const state = { failing: true, startedRechecks: 0, settledRechecks: 0 };
 
-  vi.spyOn(pool, 'query').mockImplementation(((...args: unknown[]) =>
-    failing && String(args[0]).includes('token_hash=ANY')
-      ? Promise.reject(new Error('synthetic recheck failure'))
-      : query(...args)) as never);
+  vi.spyOn(pool, 'query').mockImplementation(((...args: unknown[]) => {
+    if (!String(args[0]).includes('token_hash=ANY')) {
+      return query(...args);
+    }
 
-  const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+    state.startedRechecks++;
+    const result = state.failing ? Promise.reject(new Error('synthetic recheck failure')) : query(...args);
+
+    void result.then(
+      () => state.settledRechecks++,
+      () => state.settledRechecks++,
+    );
+
+    return result;
+  }) as never);
+
+  const warned = vi.spyOn(Logger, 'warn').mockImplementation(() => {});
 
   const failures = () =>
-    stderr.mock.calls.filter(([line]) => String(line).includes(ServerErrorCode.AUTH_RECHECK_FAILED));
+    warned.mock.calls.filter(([message]) => String(message).startsWith(ServerErrorCode.AUTH_RECHECK_FAILED))
+      .length;
 
+  return { f, state, failures };
+}
+
+it('closes every app socket after consecutive failed rechecks, and a success resets the count', async () => {
+  const { f, state, failures } = await failingRecheck();
+  const sockets = await Promise.all([openApp(f), openApp(f)]);
   const open = () => sockets.every(({ socket }) => socket.readyState === socket.OPEN);
 
   // Two failures, one success, then two failures again: never three in a row.
   await vi.advanceTimersByTimeAsync(AUTH_RECHECK_MS * (AUTH_RECHECK_MAX_FAILURES - 1));
-  failing = false;
+  state.failing = false;
   await vi.advanceTimersByTimeAsync(AUTH_RECHECK_MS);
-  failing = true;
+  // The successful recheck reads PostgreSQL; let it finish before the next failures count.
+  await settled(() => state.settledRechecks === AUTH_RECHECK_MAX_FAILURES);
+  state.failing = true;
   await vi.advanceTimersByTimeAsync(AUTH_RECHECK_MS * (AUTH_RECHECK_MAX_FAILURES - 1));
-  await settled(() => failures().length === (AUTH_RECHECK_MAX_FAILURES - 1) * 2);
+  await settled(() => failures() === (AUTH_RECHECK_MAX_FAILURES - 1) * 2);
 
-  expect(failures()).toHaveLength((AUTH_RECHECK_MAX_FAILURES - 1) * 2);
+  expect(failures()).toBe((AUTH_RECHECK_MAX_FAILURES - 1) * 2);
   expect(open()).toBe(true);
 
   await vi.advanceTimersByTimeAsync(AUTH_RECHECK_MS);
@@ -162,7 +187,40 @@ it('closes every app socket after consecutive failed rechecks, and a success res
     });
   }
 
-  expect(failures()).toHaveLength((AUTH_RECHECK_MAX_FAILURES - 1) * 2 + 1);
+  expect(failures()).toBe((AUTH_RECHECK_MAX_FAILURES - 1) * 2 + 1);
+});
+
+it('does not carry recheck failures across a period without app sockets', async () => {
+  const { f, state, failures } = await failingRecheck();
+  const first = await openApp(f);
+
+  await vi.advanceTimersByTimeAsync(AUTH_RECHECK_MS * (AUTH_RECHECK_MAX_FAILURES - 1));
+  await settled(() => failures() === AUTH_RECHECK_MAX_FAILURES - 1);
+  first.socket.close();
+  await first.closed;
+
+  // An idle recheck finds no socket and queries nothing; the next socket starts from zero failures.
+  // The relay may see the close after one more recheck, so advance until a recheck runs idle.
+  let idle = false;
+
+  for (let attempt = 0; attempt < AUTH_RECHECK_MAX_FAILURES && !idle; attempt++) {
+    const started = state.startedRechecks;
+
+    await vi.advanceTimersByTimeAsync(AUTH_RECHECK_MS);
+    await settled(() => state.settledRechecks === state.startedRechecks);
+
+    idle = state.startedRechecks === started;
+  }
+
+  expect(idle).toBe(true);
+  const before = failures();
+  const second = await openApp(f);
+
+  await vi.advanceTimersByTimeAsync(AUTH_RECHECK_MS);
+  await settled(() => failures() === before + 1);
+
+  expect(failures()).toBe(before + 1);
+  expect(second.socket.readyState).toBe(second.socket.OPEN);
 });
 
 it('rechecks tokens in chunks and finds stored tokens in every chunk', async () => {

@@ -3,7 +3,7 @@ export class DeviceFence {
   private pending = new Map<string, Promise<unknown>>();
   run<T>(deviceId: string, operation: () => Promise<T>): Promise<T> {
     const previous = this.pending.get(deviceId) ?? Promise.resolve();
-    const next = previous.catch(() => {}).then(operation);
+    const next = previous.catch(() => {}).then(operation); // ignore: the previous operation's caller handles its failure
 
     this.pending.set(deviceId, next);
 

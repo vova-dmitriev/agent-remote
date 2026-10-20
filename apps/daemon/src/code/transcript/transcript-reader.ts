@@ -19,6 +19,7 @@ import { positiveInteger, truncateUtf8, type HistoryMessage } from '@protocol';
 import { TranscriptTitle } from './transcript-title.js';
 import { transcriptWindow } from './transcript-window.js';
 import { transcriptToolItems } from './transcript-tools.js';
+import { logDebug } from '../../diagnostics/log.js';
 
 interface Candidate {
   message: HistoryMessage;
@@ -91,7 +92,7 @@ export class TranscriptReader {
   readNext(): Promise<HistoryMessage[]> {
     const result = this.queue.then(() => this.read());
 
-    this.queue = result.catch(() => undefined);
+    this.queue = result.catch((error: unknown) => logDebug('code/transcript/transcript-reader', error));
 
     return result;
   }

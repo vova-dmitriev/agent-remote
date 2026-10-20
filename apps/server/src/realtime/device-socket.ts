@@ -23,12 +23,15 @@ import { ServerErrorCode } from '../error-codes.js';
 import { persistEvent, eventNotificationId } from '../history/events.js';
 import { HistoryRepository } from '../history/repository.js';
 import { SourceHistory } from '../history/source.js';
+import { logWarning } from '../http/errors/error-log.js';
 import { Fault, toFault } from '../http/errors/fault.js';
 import type { Messaging } from '../infrastructure/messaging.js';
 import { ProfileProxy } from '../profiles/transport/proxy.js';
 import { SessionLabels } from '../sessions/labels.js';
 import { SessionRepository } from '../sessions/repository.js';
 import { RelayHub, type DeviceConnection } from './relay-hub.js';
+
+const DEVICE_SOCKET_CONTEXT = 'DeviceSocket';
 
 /** One companion connection: authenticates the device, then stores its snapshots, events and command results. */
 @Injectable()
@@ -284,7 +287,7 @@ export class DeviceSocket {
                 const notificationId = eventNotificationId(ctx.owner_id, event);
 
                 if (notificationId) {
-                  void messaging?.queue.enqueue(notificationId).catch(() => {});
+                  void messaging?.queue.enqueue(notificationId).catch(() => {}); // ignore: the outbox reconciler re-enqueues
                 }
               }
 
@@ -337,7 +340,7 @@ export class DeviceSocket {
       clearTimeout(timeout);
 
       if (connection) {
-        void offline(connection).catch(() => {});
+        void offline(connection).catch((error: unknown) => logWarning(DEVICE_SOCKET_CONTEXT, error));
       }
     });
 

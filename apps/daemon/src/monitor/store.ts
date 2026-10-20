@@ -231,9 +231,7 @@ export class LocalStore implements LocalStorePort {
           session,
           ...(row.transcript_path ? { transcriptPath: row.transcript_path } : {}),
         });
-      } catch {
-        /* Invalid local metadata must not grant a source or command binding. */
-      }
+      } catch {} // ignore: invalid local metadata must not grant a source or command binding.
     }
 
     return registrations.sort((a, b) => b.session.lastEventAt - a.session.lastEventAt);
@@ -259,9 +257,7 @@ export class LocalStore implements LocalStorePort {
         ) {
           return saved;
         }
-      } catch {
-        /* Replay safely from the retained prefix when acknowledgement metadata is invalid. */
-      }
+      } catch {} // ignore: replay safely from the retained prefix when acknowledgement metadata is invalid.
     }
 
     return { streamId: current.streamId, seq: 0 };

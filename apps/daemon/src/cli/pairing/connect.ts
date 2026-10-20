@@ -6,6 +6,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import { loadConfig, saveConfig, localSecret, validateRelayUrl, type DaemonConfig } from '../../config.js';
 import { openTelegram, confirmOnMac } from './local.js';
+import { logDebug } from '../../diagnostics/log.js';
 
 export interface PairingDependencies {
   request: (
@@ -218,7 +219,9 @@ export async function connectMac(options: ConnectOptions = {}, deps = defaults) 
     clearTimeout(timer);
 
     if (started && !complete) {
-      await deps.request(relayUrl, '/device/pair/cancel', { proof }).catch(() => {});
+      await deps
+        .request(relayUrl, '/device/pair/cancel', { proof })
+        .catch((error: unknown) => logDebug('cli/pairing/connect', error));
     }
   }
 }

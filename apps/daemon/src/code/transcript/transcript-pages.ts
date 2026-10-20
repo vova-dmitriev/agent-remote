@@ -22,6 +22,7 @@ import { z } from 'zod';
 import { openTranscript, type TranscriptOpenOptions } from './transcript-file.js';
 import { transcriptRowItems, transcriptWindow } from './transcript-window.js';
 import { TranscriptReader } from './transcript-reader.js';
+import { logDebug } from '../../diagnostics/log.js';
 
 const cursorSchema = z.strictObject({
   dev: z.number(),
@@ -241,7 +242,9 @@ export class TranscriptPages {
 
             return start + offset;
           }
-        } catch {}
+        } catch (error) {
+          logDebug('code/transcript/transcript-pages', error);
+        }
 
         offset = next + 1;
       }
@@ -297,7 +300,9 @@ export class TranscriptPages {
           if (items && found >= count) {
             return base + next + 1;
           }
-        } catch {}
+        } catch (error) {
+          logDebug('code/transcript/transcript-pages', error);
+        }
 
         at = next + 1;
       }

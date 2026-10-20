@@ -13,6 +13,7 @@ import type { LocalServices } from './services/local-services.js';
 import { RuntimeProfileRelay } from '../profiles/runtime/router/relay.js';
 import type { DeviceFrame } from '@protocol';
 import type { EventEmitter } from 'node:events';
+import { logDebug } from '../diagnostics/log.js';
 
 type RelayEndpoint = EventEmitter & { send(frame: DeviceFrame): boolean };
 
@@ -105,7 +106,7 @@ export class RelayLink {
     this.snapshot();
     setImmediate(this.flush);
 
-    void this.deps.retryAttachmentExports().catch(() => {});
+    void this.deps.retryAttachmentExports().catch((error: unknown) => logDebug('runtime/relay-link', error));
   }
 
   private handleOffline() {

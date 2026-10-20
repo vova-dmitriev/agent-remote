@@ -2,6 +2,7 @@ import { Catch } from '@nestjs/common';
 import { ErrorCode } from '@protocol';
 import type { Response } from 'express';
 import { z } from 'zod';
+import { reportFault } from '../../http/errors/error-log.js';
 import { FaultFilter } from '../../http/errors/fault.filter.js';
 import { Fault } from '../../http/errors/fault.js';
 import { AttachmentFaultCode } from '../errors.js';
@@ -21,7 +22,7 @@ const toAttachmentFault = (error: unknown): Fault => {
 
 /** Answers an attachment error from middleware, which runs outside the controller's filter. */
 export const replyAttachmentFault = (res: Response, error: unknown) => {
-  const fault = toAttachmentFault(error);
+  const fault = reportFault(error, toAttachmentFault(error));
 
   if (!res.headersSent) {
     res.status(fault.status).json({ code: fault.code });

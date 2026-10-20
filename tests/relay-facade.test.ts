@@ -1,4 +1,5 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { ConsoleLogger, Logger } from '@nestjs/common';
 import { NestApplicationContext } from '@nestjs/core';
 import { FrameType } from '@protocol';
 import { afterAll, beforeAll, expect, it, vi } from 'vitest';
@@ -182,6 +183,9 @@ it('releases its intervals, Redis and PostgreSQL when the application fails to i
 });
 
 it('rethrows the original startup error when releasing resources fails too', async () => {
+  // The failure is expected: keep its error log out of the test output.
+  const quiet = vi.spyOn(ConsoleLogger.prototype, 'error').mockImplementation(() => {});
+
   const name = 'failed-release-' + randomUUID();
   const close = Database.prototype.close;
 
@@ -199,12 +203,55 @@ it('rethrows the original startup error when releasing resources fails too', asy
     expect(dbClose).toHaveBeenCalledTimes(1);
     await expect.poll(() => openSessions(name)).toBe(0);
   } finally {
+    quiet.mockRestore();
     bootstrap.mockRestore();
     dbClose.mockRestore();
   }
 });
 
+it('closes PostgreSQL when closing Redis fails, and attaches and logs that close error', async () => {
+  const name = 'failed-messaging-close-' + randomUUID();
+  const close = NotificationQueue.prototype.close;
+  const logged = vi.spyOn(Logger, 'error').mockImplementation(() => {});
+  const dbClose = vi.spyOn(Database.prototype, 'close');
+
+  const queueClose = vi.spyOn(NotificationQueue.prototype, 'close').mockImplementation(async function (
+    this: NotificationQueue,
+  ) {
+    await close.call(this);
+    throw new Error('QUEUE_CLOSE_FAILED');
+  });
+
+  const bootstrap = vi.spyOn(RealtimeModule.prototype, 'onApplicationBootstrap').mockImplementation(() => {
+    throw new Error('BOOTSTRAP_FAILED');
+  });
+
+  try {
+    const failure = await startWithRedis(namedDatabaseUrl(name)).catch((error: unknown) => error);
+
+    expect(failure).toBeInstanceOf(Error);
+    expect((failure as Error).message).toBe('BOOTSTRAP_FAILED');
+
+    expect((failure as Error & { suppressed: Error[] }).suppressed.map((error) => error.message)).toEqual([
+      'QUEUE_CLOSE_FAILED',
+    ]);
+
+    expect(queueClose).toHaveBeenCalledTimes(1);
+    expect(dbClose).toHaveBeenCalledTimes(1);
+    await expect.poll(() => openSessions(name)).toBe(0);
+    expect(logged).toHaveBeenCalledWith('Error: QUEUE_CLOSE_FAILED', expect.any(String), 'RelayRelease');
+  } finally {
+    bootstrap.mockRestore();
+    queueClose.mockRestore();
+    dbClose.mockRestore();
+    logged.mockRestore();
+  }
+});
+
 it('releases Redis and PostgreSQL when a provider fails while the application is created', async () => {
+  // The failure is expected: keep its error log out of the test output.
+  const quiet = vi.spyOn(ConsoleLogger.prototype, 'error').mockImplementation(() => {});
+
   const name = 'failed-create-' + randomUUID();
   const queueClose = vi.spyOn(NotificationQueue.prototype, 'close');
   const register = RelayModule.register.bind(RelayModule);
@@ -232,12 +279,16 @@ it('releases Redis and PostgreSQL when a provider fails while the application is
     expect(queueClose).toHaveBeenCalledTimes(1);
     await expect.poll(() => openSessions(name)).toBe(0);
   } finally {
+    quiet.mockRestore();
     broken.mockRestore();
     queueClose.mockRestore();
   }
 });
 
 it('releases Redis and PostgreSQL when resolving a facade service fails after initialization', async () => {
+  // The failure is expected: keep its error log out of the test output.
+  const quiet = vi.spyOn(ConsoleLogger.prototype, 'error').mockImplementation(() => {});
+
   const name = 'failed-resolve-' + randomUUID();
   const queueClose = vi.spyOn(NotificationQueue.prototype, 'close');
   const get = NestApplicationContext.prototype.get;
@@ -259,6 +310,7 @@ it('releases Redis and PostgreSQL when resolving a facade service fails after in
     expect(queueClose).toHaveBeenCalledTimes(1);
     await expect.poll(() => openSessions(name)).toBe(0);
   } finally {
+    quiet.mockRestore();
     resolve.mockRestore();
     queueClose.mockRestore();
   }

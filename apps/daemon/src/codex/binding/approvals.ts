@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { type PermissionBroker } from '../../commands/permission-broker.js';
 import type { CodexClient, RpcFrame } from '../../domain/codex/client.js';
 import { object } from '../events.js';
+import { logDebug } from '../../diagnostics/log.js';
 
 export class CodexApprovals {
   private requests = new Map<string | number, string>();
@@ -87,7 +88,9 @@ export class CodexApprovals {
                 ? CodexApprovalDecision.Accept
                 : CodexApprovalDecision.Decline,
           });
-        } catch {}
+        } catch (error) {
+          logDebug('codex/binding/approvals', error);
+        }
 
         this.session.status = this.requests.size ? SessionStatus.WaitingPermission : SessionStatus.Running;
         this.changed();

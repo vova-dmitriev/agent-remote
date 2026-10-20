@@ -4,6 +4,7 @@ import { AgentProvider, CodedError, ErrorCode, ProfileAuthMode } from '@protocol
 import { credentialReference } from '../credentials.js';
 import { readClaudeApiKey } from './api-key-helper.js';
 import { ClaudeProfileApi } from './values.js';
+import { logDebug } from '../../diagnostics/log.js';
 
 const modelsSchema = z.object({
   data: z.array(z.object({ id: z.string().min(1).max(256) })).max(ClaudeProfileApi.MaxModels),
@@ -11,7 +12,7 @@ const modelsSchema = z.object({
 
 async function responseBody(response: Response) {
   if (!response.ok || response.redirected) {
-    await response.body?.cancel().catch(() => {});
+    await response.body?.cancel().catch((error: unknown) => logDebug('profiles/claude/api', error));
     throw new CodedError(ErrorCode.PROFILE_NOT_READY);
   }
 

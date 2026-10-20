@@ -6,6 +6,7 @@ import { dirname, join } from 'node:path';
 import { CodedError, ErrorCode, hasErrorCode } from '@protocol';
 import { DaemonErrorCode } from '../../error-codes.js';
 import { prepareLocalSocket, removeOwnedSocket } from '../../local/server/socket-path.js';
+import { logDebug } from '../../diagnostics/log.js';
 
 // Refuses unsafe paths (symlinks, foreign or shared parent/socket), never replaces a live
 // listener (DAEMON_ALREADY_RUNNING) and removes only an owned stale socket.
@@ -64,7 +65,9 @@ export async function bindHookSocket(server: Server, path: string): Promise<Hook
     await closeServer(server);
 
     if (linked && owned) {
-      await removeOwnedSocket(path, owned).catch(() => {});
+      await removeOwnedSocket(path, owned).catch((error: unknown) =>
+        logDebug('code/hooks/hook-socket', error),
+      );
     }
 
     throw (error as NodeJS.ErrnoException).code === 'EEXIST'
@@ -81,7 +84,10 @@ export async function bindHookSocket(server: Server, path: string): Promise<Hook
     }
 
     closed = closeServer(server);
-    await removeOwnedSocket(path, socket).catch(() => {});
+
+    await removeOwnedSocket(path, socket).catch((error: unknown) =>
+      logDebug('code/hooks/hook-socket', error),
+    );
   };
 
   return {

@@ -85,9 +85,7 @@ export class TranscriptActivity {
             if (row && typeof row === 'object' && !Array.isArray(row)) {
               latest = Math.max(latest, messageTime(row as Record<string, unknown>, this.sessionId));
             }
-          } catch {
-            /* Incomplete and malformed JSONL never provides a timestamp. */
-          }
+          } catch {} // ignore: incomplete and malformed JSONL never provides a timestamp.
 
           offset = end + 1;
         }

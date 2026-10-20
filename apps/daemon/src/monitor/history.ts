@@ -9,6 +9,7 @@ import {
   subagentDirectory,
   subagentTranscriptPath,
 } from '../code/subagents/subagent-files.js';
+import { logDebug } from '../diagnostics/log.js';
 
 /** Subagent transcripts kept open per session generation; each has its own page cursors. */
 const SUBAGENT_PAGE_SOURCES = 8;
@@ -116,7 +117,7 @@ export class TranscriptSources {
     void this.refreshSubagents(sessionId);
 
     if (this.initialWindow === 0) {
-      void reader.readNext().catch(() => {});
+      void reader.readNext().catch((error: unknown) => logDebug('monitor/history', error));
     }
 
     return reader;
@@ -177,8 +178,9 @@ export class TranscriptSources {
         if (this.sources.get(sessionId) === source) {
           listing.merge(sessionId, source.generation, found);
         }
-      } catch {
-        /* An unreadable subagent directory leaves the hook-observed list unchanged. */
+      } catch (error) {
+        // An unreadable subagent directory leaves the hook-observed list unchanged.
+        logDebug('monitor/history', error);
       } finally {
         source.scannedAt = Date.now();
         source.backfill = undefined;
@@ -257,9 +259,7 @@ export class TranscriptSources {
         if (time && this.sources.get(id) === source) {
           this.onActivity(id, source.generation, time);
         }
-      } catch {
-        /* A failed metadata read does not discard the history reader. */
-      }
+      } catch {} // ignore: a failed metadata read does not discard the history reader.
     }
   }
   *entries(): IterableIterator<[string, TranscriptReader]> {

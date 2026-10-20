@@ -9,6 +9,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { z } from 'zod';
 import { installationRoot } from '../desktop/bridge-client.js';
 import { launchContextSchema, restartArguments } from './launch/launch-context.js';
+import { logDebug } from '../diagnostics/log.js';
 
 const execute = promisify(execFile);
 
@@ -80,7 +81,9 @@ export class NativeProcesses {
         if (path && isAbsolute(path)) {
           try {
             executables.add(await realpath(path));
-          } catch {}
+          } catch (error) {
+            logDebug('sessions/native-process', error);
+          }
         }
       }
     } catch {
@@ -122,9 +125,7 @@ export class NativeProcesses {
         if (identity?.start === parsed.data.procStart && executables.has(identity.executable)) {
           matches.push(parsed.data);
         }
-      } catch {
-        /* Stale or concurrently rewritten native records never grant authority. */
-      }
+      } catch {} // ignore: stale or concurrently rewritten native records never grant authority.
     }
 
     return matches;

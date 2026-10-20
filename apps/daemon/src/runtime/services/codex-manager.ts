@@ -27,6 +27,7 @@ import type { CodexRpcClient } from '../../codex/rpc/rpc-client.js';
 import { nativeProfileIdentity } from '../../profiles/native/metadata.js';
 import { nativeProfileModels } from '../../profiles/native/models.js';
 import { codexConnectionSchema, type CodexConnection } from '../../domain/codex/connection.js';
+import { logDebug } from '../../diagnostics/log.js';
 
 interface Dependencies {
   monitor: Monitor;
@@ -69,7 +70,9 @@ export class CodexManager {
         .array(codexConnectionSchema)
         .max(10)
         .parse(JSON.parse(await readFile(join(this.deps.stateDirectory, 'codex-connections.json'), 'utf8')));
-    } catch {}
+    } catch (error) {
+      logDebug('runtime/services/codex-manager', error);
+    }
 
     for (const selection of saved) {
       this.saved.set(JSON.stringify(selection), selection);
@@ -264,9 +267,7 @@ export class CodexManager {
 
           return session.id;
         }
-      } catch {
-        /* A created thread must never be automatically created again. */
-      }
+      } catch {} // ignore: a created thread must never be automatically created again.
 
       throw new CodedError(ErrorCode.UNKNOWN_AFTER_WRITE);
     });
@@ -337,7 +338,9 @@ export class CodexManager {
 
         try {
           await this.refresh(entry);
-        } catch {}
+        } catch (error) {
+          logDebug('runtime/services/codex-manager', error);
+        }
       }
     }).finally(() => {
       this.reading = false;

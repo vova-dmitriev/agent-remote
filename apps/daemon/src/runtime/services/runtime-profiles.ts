@@ -24,6 +24,7 @@ import { RuntimeProfileRequestRouter } from '../../profiles/runtime/router/reque
 import { createRuntimeEnrollment } from '../../profiles/runtime/native/enrollment-adapter.js';
 import { waitForProfileInactive } from '../../profiles/runtime/execution/wait-for-inactive.js';
 import { RuntimeProfileQuotaService } from '../../profiles/quota/service.js';
+import { logDebug } from '../../diagnostics/log.js';
 
 export class RuntimeProfiles implements RuntimeProfilesPort {
   readonly scope;
@@ -95,7 +96,9 @@ export class RuntimeProfiles implements RuntimeProfilesPort {
     }
 
     if (request.kind === ProfileRequestKind.Reconcile) {
-      await this.pendingMutations.get(request.operationId)?.catch(() => undefined);
+      await this.pendingMutations
+        .get(request.operationId)
+        ?.catch((error: unknown) => logDebug('runtime/services/runtime-profiles', error));
     }
 
     return this.executeRequest(request, authorized);
@@ -121,7 +124,7 @@ export class RuntimeProfiles implements RuntimeProfilesPort {
     let pending: Promise<ProfileResponse> | undefined;
 
     while ((pending = this.pendingMutations.get(operationId))) {
-      await pending.catch(() => undefined);
+      await pending.catch((error: unknown) => logDebug('runtime/services/runtime-profiles', error));
     }
 
     const execution = this.executeRequest(request, authorized);

@@ -24,6 +24,7 @@ import { DesktopIpcClient, type OversizedConversation } from './desktop-ipc.js';
 import { desktopTurns, desktopModel, applyDesktopPatches } from './desktop-state.js';
 import { desktopItemTime } from '../history/history-times.js';
 import { object, type Data } from '../events.js';
+import { logDebug } from '../../diagnostics/log.js';
 
 export class DesktopCodexClient extends EventEmitter {
   private state: Data = {};
@@ -283,7 +284,9 @@ export class DesktopCodexClient extends EventEmitter {
         { hostId: CodexDesktopHost.Local, conversationId: this.threadId, following: false },
         this.ownerId,
       );
-    } catch {}
+    } catch (error) {
+      logDebug('codex/desktop/desktop-client', error);
+    }
 
     this.ipc.off(RuntimeEvent.Broadcast, this.broadcast);
     this.ipc.off(RuntimeEvent.FrameTooLarge, this.frameTooLarge);
@@ -400,7 +403,7 @@ export class DesktopCodexClient extends EventEmitter {
 
     timer.unref();
     // Avoid unhandled rejection while awaiting the transport acknowledgement.
-    void receipt.catch(() => {});
+    void receipt.catch((error: unknown) => logDebug('codex/desktop/desktop-client', error));
 
     try {
       if (asynchronous) {

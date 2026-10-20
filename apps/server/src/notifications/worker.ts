@@ -7,6 +7,7 @@ import { DeviceRepository } from '../devices/repositories/devices.js';
 import { PairingRepository } from '../devices/repositories/pairings.js';
 import { DeviceService } from '../devices/service.js';
 import { hash } from '../auth/security.js';
+import { logWarning } from '../http/errors/error-log.js';
 import { Fault } from '../http/errors/fault.js';
 import { type Database } from '../db/database.js';
 
@@ -20,6 +21,8 @@ interface Update {
   update_id: number;
   message?: { text?: string; from?: { id: number }; chat?: { id: number; type: string } };
 }
+const WORKER_CONTEXT = 'NotificationWorker';
+
 export class NotificationWorker {
   private stopped = false;
   private timer: ReturnType<typeof setTimeout> | undefined;
@@ -94,9 +97,7 @@ export class NotificationWorker {
 
           await this.outbox.recordPairing(id, owner, kind, Date.now());
 
-          void this.broker?.enqueue(id).catch(() => {
-            /* Outbox reconciliation retries enqueue. */
-          });
+          void this.broker?.enqueue(id).catch(() => {}); // ignore: outbox reconciliation retries enqueue.
         }
       }
 
@@ -147,7 +148,9 @@ export class NotificationWorker {
         } else {
           await this.deliver();
         }
-      } catch {}
+      } catch (error) {
+        logWarning(WORKER_CONTEXT, error);
+      }
 
       if (!this.stopped) {
         this.timer = setTimeout(

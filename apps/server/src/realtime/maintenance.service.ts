@@ -7,6 +7,7 @@ import { CommandRepository } from '../commands/repositories/audit.js';
 import { DeviceState } from '../devices/device-state.js';
 import { ServerErrorCode } from '../error-codes.js';
 import { HistoryRepository } from '../history/repository.js';
+import { logWarning } from '../http/errors/error-log.js';
 import type { Messaging } from '../infrastructure/messaging.js';
 import {
   AUTH_RECHECK_MAX_FAILURES,
@@ -19,6 +20,8 @@ import {
 } from '../maintenance/limits.js';
 import { Retention } from '../maintenance/retention.js';
 import { RelayHub, type AppConnection } from './relay-hub.js';
+
+const MAINTENANCE_CONTEXT = 'MaintenanceService';
 
 const closeExpired = (client: AppConnection) =>
   client.socket.close(SocketCloseCode.Unauthorized, SocketCloseReason.TokenExpired);
@@ -59,7 +62,7 @@ export class MaintenanceService implements OnModuleInit, OnModuleDestroy {
       for (const connection of live.values()) {
         if (connection.lastSeen < now - DEVICE_SILENCE_MS) {
           connection.socket.close(SocketCloseCode.Offline, SocketCloseReason.Offline);
-          void offline(connection).catch(() => {});
+          void offline(connection).catch((error: unknown) => logWarning(MAINTENANCE_CONTEXT, error));
         }
       }
 
@@ -76,7 +79,10 @@ export class MaintenanceService implements OnModuleInit, OnModuleDestroy {
     this.recheck.unref();
 
     this.ackSweep = setInterval(
-      () => void this.commands.expireUnacknowledged(Date.now() - COMMAND_ACK_TIMEOUT_MS).catch(() => {}),
+      () =>
+        void this.commands
+          .expireUnacknowledged(Date.now() - COMMAND_ACK_TIMEOUT_MS)
+          .catch((error: unknown) => logWarning(MAINTENANCE_CONTEXT, error)),
       COMMAND_ACK_SWEEP_MS,
     );
 
@@ -85,7 +91,11 @@ export class MaintenanceService implements OnModuleInit, OnModuleDestroy {
     if (this.messaging) {
       await this.messaging.retention.start(() => retention.run());
     } else {
-      this.retention = setInterval(() => void retention.run().catch(() => {}), RETENTION_INTERVAL_MS);
+      this.retention = setInterval(
+        () => void retention.run().catch((error: unknown) => logWarning(MAINTENANCE_CONTEXT, error)),
+        RETENTION_INTERVAL_MS,
+      );
+
       this.retention.unref();
     }
   }
@@ -97,7 +107,10 @@ export class MaintenanceService implements OnModuleInit, OnModuleDestroy {
   private async recheckTokens() {
     const clients = [...this.hub.clients];
 
+    // With no socket nothing is trusted, so earlier failures must not count against sockets that connect later.
     if (!clients.length) {
+      this.recheckFailures = 0;
+
       return;
     }
 
@@ -105,9 +118,9 @@ export class MaintenanceService implements OnModuleInit, OnModuleDestroy {
 
     try {
       unexpired = await this.auth.unexpired([...new Set(clients.map((client) => client.token))]);
-    } catch {
+    } catch (error) {
       this.recheckFailures++;
-      process.stderr.write(ServerErrorCode.AUTH_RECHECK_FAILED + '\n');
+      logWarning(MAINTENANCE_CONTEXT, error, ServerErrorCode.AUTH_RECHECK_FAILED);
 
       if (this.recheckFailures >= AUTH_RECHECK_MAX_FAILURES) {
         for (const client of this.hub.clients) {

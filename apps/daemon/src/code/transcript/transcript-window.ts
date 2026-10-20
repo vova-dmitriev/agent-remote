@@ -138,9 +138,7 @@ export async function transcriptWindow(
             }
           }
         }
-      } catch {
-        /* Malformed and oversized tool records do not become messages. */
-      }
+      } catch {} // ignore: malformed and oversized tool records do not become messages.
 
       lineEnd = previous;
     }

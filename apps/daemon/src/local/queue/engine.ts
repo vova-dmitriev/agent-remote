@@ -13,6 +13,7 @@ import type { LocalControllerOptions } from '../controller/types.js';
 import type { LocalPrincipal } from '../grants/types.js';
 import { QueueRepository } from './repository.js';
 import { queueReceipt } from './validation.js';
+import { logDebug } from '../../diagnostics/log.js';
 
 export class LocalQueueEngine {
   private repository: QueueRepository;
@@ -53,7 +54,7 @@ export class LocalQueueEngine {
       this.pending = false;
 
       this.task = this.process()
-        .catch(() => {})
+        .catch((error: unknown) => logDebug('local/queue/engine', error))
         .finally(() => {
           this.task = undefined;
 
