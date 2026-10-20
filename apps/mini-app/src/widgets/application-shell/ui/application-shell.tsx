@@ -3,7 +3,7 @@ import { useTranslation } from "@/shared/lib/hooks"
 import { feedbackText } from "@/shared/lib/i18n"
 import { SHELL_IDS } from "../config/test-ids"
 import { ShellHeader } from "./header/shell-header"
-import { ShellLayout } from "../config/values"
+import { SESSION_SHELL_CLASS, ShellLayout } from "../config/values"
 import type { ApplicationShellProps } from "./application-shell.types"
 
 export function ApplicationShell({
@@ -20,7 +20,7 @@ export function ApplicationShell({
 
   return (
     <main
-      className={compact ? sessionClass : pageClass}
+      className={compact ? SESSION_SHELL_CLASS : pageClass}
       data-shell-layout={compact ? ShellLayout.Session : ShellLayout.Page}
       data-testid={SHELL_IDS.root}
     >
@@ -48,9 +48,6 @@ export function ApplicationShell({
 
 const pageClass =
   "m-auto max-w-[820px] px-[18px] pt-[calc(10px+env(safe-area-inset-top))] pb-[calc(16px+env(safe-area-inset-bottom))] phone:px-[14px]"
-
-const sessionClass =
-  "m-auto flex h-[var(--tg-viewport-height,100dvh)] max-h-dvh min-h-0 w-full max-w-[980px] flex-col overflow-hidden px-[18px] pt-[calc(6px+env(safe-area-inset-top))] pb-[calc(8px+env(safe-area-inset-bottom))] phone:px-[10px]"
 
 const receiptClass =
   "p-[16px] text-center text-[12px] text-primary session:my-[5px] session:max-h-[14dvh] session:flex-none session:overflow-y-auto session:px-[10px] session:py-[7px] session:text-[11px] session:short:my-[3px] session:short:max-h-[32px] session:short:px-[8px] session:short:py-[4px] session:short:text-[10px]"

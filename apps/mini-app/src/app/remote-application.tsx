@@ -4,7 +4,8 @@ import { useApplicationView } from "./model/navigation/use-application-view"
 import { useSubagentView } from "./model/navigation/use-subagent-view"
 import { ApplicationShell } from "@/widgets/application-shell"
 import { CommandNotice } from "@/features/send-command"
-import { StartupSkeleton } from "./startup-skeleton"
+import { StartupSkeleton } from "./startup/startup-skeleton"
+import { LinkedStartup } from "./startup/linked-startup"
 import { ApplicationContent } from "./composition/application-content"
 import { useApplication } from "./model/use-application"
 import { useDesktopLayout } from "./model/navigation/use-desktop-layout"
@@ -47,7 +48,8 @@ export function RemoteApplication() {
     close: back,
   })
 
-  if (!model.preferencesReady && !model.error) return <StartupSkeleton />
+  // A session link starts on the session's own skeleton, which stays until the session page replaces it.
+  if (!model.preferencesReady && !model.error) return model.linkPending ? <LinkedStartup /> : <StartupSkeleton />
 
   if (desktop && state.connection !== ConnectionStatus.Expired) {
     return (
@@ -60,7 +62,7 @@ export function RemoteApplication() {
   return (
     <AttachmentProvider access={model.attachments}>
       <ApplicationShell
-        compact={!!selected && state.connection !== ConnectionStatus.Expired}
+        compact={(!!selected || model.linkPending) && state.connection !== ConnectionStatus.Expired}
         connection={state.connection}
         result={model.result}
         onHome={back}

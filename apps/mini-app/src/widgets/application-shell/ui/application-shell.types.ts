@@ -19,3 +19,8 @@ export interface DesktopHeaderProps extends Omit<ShellHeaderProps, "leading" | "
   sidebarCollapsed: boolean
   onToggleSidebar: () => void
 }
+
+export interface SessionFrameProps {
+  children: ReactNode
+  testId: string
+}

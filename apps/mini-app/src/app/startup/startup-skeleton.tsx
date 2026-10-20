@@ -1,5 +1,5 @@
 import { Skeleton } from "@/shared/ui/skeleton"
-import { STARTUP_IDS } from "./config/test-ids"
+import { STARTUP_IDS } from "../config/test-ids"
 
 export function StartupSkeleton() {
   return (
