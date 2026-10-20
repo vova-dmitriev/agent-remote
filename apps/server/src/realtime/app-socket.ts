@@ -7,9 +7,13 @@ import { SessionRevocations } from '../auth/sessions/session-revocations.js';
 import { CommandDispatcher } from '../commands/command-dispatcher.js';
 import { DeviceState } from '../devices/device-state.js';
 import { DeviceService } from '../devices/service.js';
+import { ServerErrorCode } from '../error-codes.js';
+import { logWarning, reportFault } from '../http/errors/error-log.js';
 import { Fault, toFault } from '../http/errors/fault.js';
 import { ProfileProxy } from '../profiles/transport/proxy.js';
 import { RelayHub, type AppConnection } from './relay-hub.js';
+
+const APP_SOCKET_CONTEXT = 'AppSocket';
 
 /** One Mini App connection: authenticates, subscribes to a device, resumes events and forwards commands. */
 @Injectable()
@@ -157,7 +161,10 @@ export class AppSocket implements OnModuleInit, OnModuleDestroy {
           }
         })
         .catch((error) => {
-          send(socket, { type: FrameType.Error, code: toFault(error).code });
+          send(socket, {
+            type: FrameType.Error,
+            code: reportFault(error, toFault(error), APP_SOCKET_CONTEXT).code,
+          });
 
           if (!client) {
             socket.close(SocketCloseCode.Unauthorized, SocketCloseReason.Unauthorized);
@@ -179,6 +186,6 @@ export class AppSocket implements OnModuleInit, OnModuleDestroy {
       }
     });
 
-    socket.on('error', () => {});
+    socket.on('error', (error) => logWarning(APP_SOCKET_CONTEXT, error, ServerErrorCode.SOCKET_ERROR));
   };
 }

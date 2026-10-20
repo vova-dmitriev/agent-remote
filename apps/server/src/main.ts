@@ -2,8 +2,12 @@ import { ServerErrorCode } from './error-codes.js';
 import { SharedPrivateErrorCode } from '@protocol/private';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createRelay } from './app/create-relay.js';
+import { Logger } from '@nestjs/common';
+import { createRelay, relayLogger } from './app/create-relay.js';
+import { logError } from './http/errors/error-log.js';
 import { NotificationWorker } from './notifications/worker.js';
+
+const MAIN_CONTEXT = 'RelayMain';
 
 async function main() {
   const databaseUrl = process.env.DATABASE_URL,
@@ -49,7 +53,7 @@ async function main() {
     throw error;
   }
 
-  process.stdout.write('Relay ready\n');
+  Logger.log('Relay ready', MAIN_CONTEXT);
   let closing: Promise<void> | undefined;
 
   const close = () => {
@@ -59,7 +63,8 @@ async function main() {
       process.exitCode = 0;
     })();
 
-    void closing.catch(() => {
+    void closing.catch((error: unknown) => {
+      logError(MAIN_CONTEXT, error, ServerErrorCode.SERVER_STOP_FAILED);
       process.exitCode = 1;
     });
   };
@@ -69,8 +74,11 @@ async function main() {
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  void main().catch(() => {
-    process.stderr.write('SERVER_START_FAILED\n');
+  // JSON lines from the first one: a start that fails before Nest exists still logs through the relay's logger.
+  Logger.overrideLogger(relayLogger());
+
+  void main().catch((error: unknown) => {
+    logError(MAIN_CONTEXT, error, ServerErrorCode.SERVER_START_FAILED);
     process.exitCode = 1;
   });
 }

@@ -1,33 +1,24 @@
+import { redactError } from '@transport/diagnostics/redact-error.js';
+
 /** Debug output is off unless the companion runs with `REMOTE_DEBUG=1`. */
 const DEBUG_VARIABLE = 'REMOTE_DEBUG';
 const DEBUG_ENABLED = '1';
 
-/** A message made only of a code, such as `SOURCE_UNAVAILABLE`, carries no user data. */
-const CODE_MESSAGE = /^[A-Z][A-Z0-9_]*$/;
-const STACK_FRAME = /^\s+at /;
+const debugEnabled = () => process.env[DEBUG_VARIABLE] === DEBUG_ENABLED;
 
 /**
  * Writes one JSON line describing a failure the companion recovers from, to stderr and only in debug mode.
- * It keeps the error's name, its message only when that is a code, and its stack frames: the stack's header repeats
- * the message, which may hold tokens, paths, prompts or file contents.
+ * The error is redacted: its name, a code-like message or code, and its stack frames, never its free text.
  */
 export function logDebug(scope: string, error: unknown): void {
-  if (process.env[DEBUG_VARIABLE] !== DEBUG_ENABLED) {
-    return;
+  if (debugEnabled()) {
+    process.stderr.write(JSON.stringify({ scope, ...redactError(error) }) + '\n');
   }
+}
 
-  const entry =
-    error instanceof Error
-      ? {
-          scope,
-          name: error.name,
-          ...(CODE_MESSAGE.test(error.message) ? { code: error.message } : {}),
-          stack: error.stack
-            ?.split('\n')
-            .filter((line) => STACK_FRAME.test(line))
-            .join('\n'),
-        }
-      : { scope, name: typeof error };
-
-  process.stderr.write(JSON.stringify(entry) + '\n');
+/** Writes one JSON line counting what a pass skipped, such as malformed records in one page, in debug mode. */
+export function logDebugCount(scope: string, skipped: string, count: number): void {
+  if (debugEnabled() && count > 0) {
+    process.stderr.write(JSON.stringify({ scope, skipped, count }) + '\n');
+  }
 }

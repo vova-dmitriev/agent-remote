@@ -31,11 +31,16 @@ export async function createMessaging(url: string, identity: string) {
 
       await client.ping();
     },
+    /** Closes both queues even when one fails, then the shared client; rethrows the first failure. */
     async close() {
-      try {
-        await Promise.all([retention.close(), queue.close()]);
-      } finally {
-        client.disconnect();
+      const results = await Promise.allSettled([retention.close(), queue.close()]);
+
+      client.disconnect();
+
+      const failures = results.flatMap((result) => ('reason' in result ? [result.reason as unknown] : []));
+
+      if (failures.length) {
+        throw failures[0];
       }
     },
   };

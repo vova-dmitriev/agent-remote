@@ -22,6 +22,9 @@ import { RelayModule } from './relay.module.js';
 const RELAY_LOG_LEVELS = ['error', 'warn', 'log'] as const satisfies readonly LogLevel[];
 const RELEASE_CONTEXT = 'RelayRelease';
 
+/** The relay's logger: one JSON object per line on stdout (`log`) and stderr (`warn`, `error`). */
+export const relayLogger = () => new ConsoleLogger({ json: true, logLevels: [...RELAY_LOG_LEVELS] });
+
 export interface Relay {
   db: Database;
   messaging: Messaging | undefined;
@@ -53,7 +56,7 @@ export async function createRelay(config: RelayConfig): Promise<Relay> {
       RelayModule.register({ config, db, messaging }),
       new JsonExpressAdapter(),
       {
-        logger: new ConsoleLogger({ json: true, logLevels: [...RELAY_LOG_LEVELS] }),
+        logger: relayLogger(),
         bodyParser: false,
         // Rethrow a provider or hook failure instead of exiting the process, so it is released below.
         abortOnError: false,

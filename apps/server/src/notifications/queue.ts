@@ -38,9 +38,7 @@ export class NotificationQueue {
       },
     });
 
-    this.queue.on('error', () => {
-      /* Durable outbox reconciliation retries publication. */
-    });
+    this.queue.on('error', () => {}); // ignore: durable outbox reconciliation retries publication.
   }
   async enqueue(outboxId: string) {
     const data = payload.parse({ outboxId });
@@ -105,9 +103,7 @@ export class NotificationQueue {
       { connection, prefix: this.prefix, concurrency: 1, limiter: { max: 1, duration: 34 } },
     );
 
-    this.worker.on('error', () => {
-      /* A reconnecting worker retains jobs in Redis. */
-    });
+    this.worker.on('error', () => {}); // ignore: a reconnecting worker retains jobs in Redis.
 
     await this.worker.waitUntilReady();
   }

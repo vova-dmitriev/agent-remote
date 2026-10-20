@@ -1,10 +1,10 @@
-import { ConsoleLogger, Logger } from '@nestjs/common';
+import { ConsoleLogger } from '@nestjs/common';
 import { ErrorCode, HttpStatus } from '@protocol';
 import { afterAll, afterEach, beforeAll, expect, it, vi } from 'vitest';
 import { logDebug } from '../apps/daemon/src/diagnostics/log.js';
 import { createRelay } from '../apps/server/src/app/create-relay.js';
-import { describeError } from '../apps/server/src/http/errors/error-log.js';
 import { PreferenceService } from '../apps/server/src/preferences/service.js';
+import { redactError } from '@transport/diagnostics/redact-error.js';
 import { databaseFixture } from './helpers/database.js';
 import { initData, testBotToken } from './helpers/telegram.js';
 
@@ -40,7 +40,9 @@ const secretInitData = initData('7302');
 const chatText = 'synthetic chat message text';
 
 it('answers an unexpected controller error with 500 INTERNAL_ERROR and logs it without the request secrets', async () => {
-  const logged = vi.spyOn(Logger, 'error').mockImplementation(() => {});
+  // The instance path every Nest logger ends in, and the bytes it writes: nothing reaches stderr unredacted.
+  const logged = vi.spyOn(ConsoleLogger.prototype, 'error');
+  const written = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
 
   vi.spyOn(PreferenceService.prototype, 'get').mockRejectedValue(
     new Error(`boom ${token} ${secretInitData} ${chatText} https://example.invalid/app?token=${token}`),
@@ -54,17 +56,20 @@ it('answers an unexpected controller error with 500 INTERNAL_ERROR and logs it w
   expect(await response.json()).toEqual({ code: ErrorCode.INTERNAL_ERROR });
   expect(logged).toHaveBeenCalledTimes(1);
 
-  const line = JSON.stringify(logged.mock.calls[0]);
-
-  for (const secret of [token, secretInitData, chatText, 'boom', '?token=']) {
-    expect(line).not.toContain(secret);
-  }
-
   expect(logged.mock.calls[0]).toEqual(['Error', expect.stringContaining('    at '), 'FaultFilter']);
+  expect(written).toHaveBeenCalledTimes(1);
+
+  const line = String(written.mock.calls[0]![0]);
+
+  expect(JSON.parse(line)).toMatchObject({ level: 'error', context: 'FaultFilter', message: 'Error' });
+
+  for (const secret of [token, secretInitData, chatText, 'boom', '?token=', 'agent_remote_refresh']) {
+    expect(line + JSON.stringify(logged.mock.calls)).not.toContain(secret);
+  }
 });
 
 it('logs nothing for faults and validation errors', async () => {
-  const logged = vi.spyOn(Logger, 'error').mockImplementation(() => {});
+  const logged = vi.spyOn(ConsoleLogger.prototype, 'error').mockImplementation(() => {});
 
   expect((await fetch(origin + '/preferences')).status).toBe(HttpStatus.Unauthorized);
 
@@ -78,15 +83,22 @@ it('logs nothing for faults and validation errors', async () => {
   expect(logged).not.toHaveBeenCalled();
 });
 
-it('keeps only a code-like message and the stack frames of an error', () => {
-  const plain = describeError(new Error(`Bearer ${'a'.repeat(64)}\nsecond line`));
+it('keeps only names, code-like messages, safe codes and stack frames of an error', () => {
+  const plain = redactError(new Error(`Bearer ${'a'.repeat(64)}\nsecond line`));
 
   expect(plain.message).toBe('Error');
   expect(plain.stack?.split('\n').every((line) => line.startsWith('    at '))).toBe(true);
-  expect(JSON.stringify(plain)).not.toContain('Bearer');
+  expect(JSON.stringify(plain)).not.toMatch(/Bearer|second line/);
 
-  expect(describeError(new TypeError('QUEUE_CLOSE_FAILED')).message).toBe('TypeError: QUEUE_CLOSE_FAILED');
-  expect(describeError('a thrown string with content')).toEqual({ message: 'string', stack: undefined });
+  expect(redactError(new TypeError('QUEUE_CLOSE_FAILED')).message).toBe('TypeError: QUEUE_CLOSE_FAILED');
+  expect(redactError('a thrown string with content')).toEqual({ message: 'string' });
+
+  const coded = (code: string) => redactError(Object.assign(new Error('detail'), { code })).code;
+
+  expect(coded('ECONNRESET')).toBe('ECONNRESET');
+  expect(coded('23503')).toBe('23503');
+  expect(coded('secret value')).toBeUndefined();
+  expect(coded('A'.repeat(41))).toBeUndefined();
 });
 
 it('writes one JSON line per log entry', () => {
@@ -122,10 +134,9 @@ it('writes companion debug lines only with REMOTE_DEBUG=1 and never the error me
       ([line]) => JSON.parse(String(line)) as Record<string, unknown>,
     );
 
-    expect(first).toMatchObject({ scope: 'runtime/relay-link', name: 'Error' });
-    expect(first).not.toHaveProperty('code');
+    expect(first).toMatchObject({ scope: 'runtime/relay-link', message: 'Error' });
     expect(JSON.stringify(first)).not.toMatch(/Bearer|auth_date|synthetic chat/);
-    expect(second).toMatchObject({ code: 'SOURCE_UNAVAILABLE' });
+    expect(second).toMatchObject({ message: 'Error: SOURCE_UNAVAILABLE' });
   } finally {
     vi.unstubAllEnvs();
   }

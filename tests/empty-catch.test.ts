@@ -17,15 +17,78 @@ const sourceFiles = (directory: string): string[] =>
     return entry.name.endsWith('.ts') && !entry.name.endsWith('.d.ts') ? [path] : [];
   });
 
-/** A `.catch(...)` handler that does nothing: `() => {}`, `() => undefined`. */
-function emptyHandler(node: ts.Node): boolean {
+/** Names of same-file functions that do nothing, such as `const noop = () => {}`. */
+function emptyFunctionNames(source: ts.SourceFile): Set<string> {
+  const names = new Set<string>();
+
+  const visit = (node: ts.Node) => {
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.initializer &&
+      isNoOp(node.initializer)
+    ) {
+      names.add(node.name.text);
+    }
+
+    if (ts.isFunctionDeclaration(node) && node.name && node.body && node.body.statements.length === 0) {
+      names.add(node.name.text);
+    }
+
+    ts.forEachChild(node, visit);
+  };
+
+  visit(source);
+
+  return names;
+}
+
+/** A handler that does nothing: `() => {}`, `() => undefined`, `() => null`, `() => void 0`. */
+function isNoOp(node: ts.Node): boolean {
   if (!ts.isArrowFunction(node) && !ts.isFunctionExpression(node)) {
     return false;
   }
 
   const { body } = node;
 
-  return ts.isBlock(body) ? body.statements.length === 0 : ts.isIdentifier(body) && body.text === 'undefined';
+  if (ts.isBlock(body)) {
+    return body.statements.length === 0;
+  }
+
+  return (
+    (ts.isIdentifier(body) && body.text === 'undefined') ||
+    body.kind === ts.SyntaxKind.NullKeyword ||
+    (ts.isVoidExpression(body) && ts.isLiteralExpression(body.expression))
+  );
+}
+
+/** The error handler a call passes, if it is one: `.catch(h)`, `.then(x, h)`, `.on('error', h)`, `.once('error', h)`. */
+function errorHandler(node: ts.CallExpression): ts.Expression | undefined {
+  if (!ts.isPropertyAccessExpression(node.expression)) {
+    return undefined;
+  }
+
+  const method = node.expression.name.text;
+  const [first, second] = node.arguments;
+
+  if (method === 'catch' && node.arguments.length === 1) {
+    return first;
+  }
+
+  if (method === 'then' && node.arguments.length === 2) {
+    return second;
+  }
+
+  if (
+    (method === 'on' || method === 'once') &&
+    first &&
+    ts.isStringLiteralLike(first) &&
+    first.text === 'error'
+  ) {
+    return second;
+  }
+
+  return undefined;
 }
 
 /** Every swallowed error, as `file:line`, whose line does not say why it is ignored. */
@@ -44,17 +107,19 @@ function unexplainedCatches(root: string): string[] {
       }
     };
 
+    const noOps = emptyFunctionNames(source);
+
     const visit = (node: ts.Node) => {
       if (ts.isCatchClause(node) && node.block.statements.length === 0) {
         check(node.block.end);
       }
 
+      const handler = ts.isCallExpression(node) ? errorHandler(node) : undefined;
+
       if (
-        ts.isCallExpression(node) &&
-        ts.isPropertyAccessExpression(node.expression) &&
-        node.expression.name.text === 'catch' &&
-        node.arguments.length === 1 &&
-        emptyHandler(node.arguments[0]!)
+        handler &&
+        (isNoOp(handler) ||
+          (ts.isIdentifier(handler) && (noOps.has(handler.text) || /^noop$/i.test(handler.text))))
       ) {
         check(node.end);
       }

@@ -23,7 +23,6 @@ import type { MonitorPort } from '../domain/ports/monitor.js';
 import { type AdapterRegistry } from '../adapters/registry.js';
 import { type UserInputBroker } from './user-input-broker.js';
 import { type PermissionBroker } from './permission-broker.js';
-import { logDebug } from '../diagnostics/log.js';
 
 export interface DispatcherOptions {
   deviceId: string;
@@ -92,7 +91,7 @@ export class Dispatcher {
     const epoch = this.epoch;
 
     const result = previous
-      .catch((error: unknown) => logDebug('commands/dispatcher', error))
+      .catch(() => {}) // ignore: the previous command's caller already handles its failure
       .then(() => this.execute(command, epoch, authorize));
 
     this.scheduler.inFlight.set(command.commandId, result);

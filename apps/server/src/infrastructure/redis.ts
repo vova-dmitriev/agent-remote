@@ -20,9 +20,7 @@ export function redisClient(url: string, worker = false): Redis {
     retryStrategy: (attempt) => Math.min(REDIS_RETRY_MAX_DELAY_MS, attempt * REDIS_RETRY_DELAY_STEP_MS),
   });
 
-  client.on('error', () => {
-    /* Callers handle failures without logging connection credentials. */
-  });
+  client.on('error', () => {}); // ignore: callers handle failures without logging connection credentials.
 
   return client;
 }

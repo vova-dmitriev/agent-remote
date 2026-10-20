@@ -25,7 +25,7 @@ import { ServerErrorCode } from '../error-codes.js';
 import { persistEvent, eventNotificationId } from '../history/events.js';
 import { HistoryRepository } from '../history/repository.js';
 import { SourceHistory } from '../history/source.js';
-import { logWarning } from '../http/errors/error-log.js';
+import { logWarning, reportFault } from '../http/errors/error-log.js';
 import { Fault, toFault } from '../http/errors/fault.js';
 import type { Messaging } from '../infrastructure/messaging.js';
 import { ProfileProxy } from '../profiles/transport/proxy.js';
@@ -341,9 +341,11 @@ export class DeviceSocket {
           });
         })
         .catch((error) => {
-          send(socket, { type: FrameType.Error, code: toFault(error).code });
+          const fault = reportFault(error, toFault(error), DEVICE_SOCKET_CONTEXT);
 
-          if (!connection || toFault(error).code === ErrorCode.STALE_EPOCH) {
+          send(socket, { type: FrameType.Error, code: fault.code });
+
+          if (!connection || fault.code === ErrorCode.STALE_EPOCH) {
             socket.close(SocketCloseCode.Unauthorized, SocketCloseReason.Unauthorized);
           }
         })
@@ -357,10 +359,12 @@ export class DeviceSocket {
       clearTimeout(timeout);
 
       if (connection) {
-        void offline(connection).catch((error: unknown) => logWarning(DEVICE_SOCKET_CONTEXT, error));
+        void offline(connection).catch((error: unknown) =>
+          logWarning(DEVICE_SOCKET_CONTEXT, error, ServerErrorCode.DEVICE_OFFLINE_FAILED),
+        );
       }
     });
 
-    socket.on('error', () => {});
+    socket.on('error', (error) => logWarning(DEVICE_SOCKET_CONTEXT, error, ServerErrorCode.SOCKET_ERROR));
   };
 }

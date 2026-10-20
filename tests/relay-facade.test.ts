@@ -199,7 +199,14 @@ it('rethrows the original startup error when releasing resources fails too', asy
   });
 
   try {
-    await expect(startWithRedis(namedDatabaseUrl(name))).rejects.toThrow('BOOTSTRAP_FAILED');
+    const failure = await startWithRedis(namedDatabaseUrl(name)).catch((error: unknown) => error);
+
+    expect((failure as Error).message).toBe('BOOTSTRAP_FAILED');
+
+    expect((failure as Error & { suppressed: Error[] }).suppressed.map((error) => error.message)).toEqual([
+      'RELEASE_FAILED',
+    ]);
+
     expect(dbClose).toHaveBeenCalledTimes(1);
     await expect.poll(() => openSessions(name)).toBe(0);
   } finally {

@@ -7,6 +7,7 @@ import { DeviceRepository } from '../devices/repositories/devices.js';
 import { PairingRepository } from '../devices/repositories/pairings.js';
 import { DeviceService } from '../devices/service.js';
 import { hash } from '../auth/security.js';
+import { ServerErrorCode } from '../error-codes.js';
 import { logWarning } from '../http/errors/error-log.js';
 import { Fault } from '../http/errors/fault.js';
 import { type Database } from '../db/database.js';
@@ -149,7 +150,7 @@ export class NotificationWorker {
           await this.deliver();
         }
       } catch (error) {
-        logWarning(WORKER_CONTEXT, error);
+        logWarning(WORKER_CONTEXT, error, ServerErrorCode.NOTIFICATION_PASS_FAILED);
       }
 
       if (!this.stopped) {

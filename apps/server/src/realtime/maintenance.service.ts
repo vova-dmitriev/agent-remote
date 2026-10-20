@@ -62,7 +62,10 @@ export class MaintenanceService implements OnModuleInit, OnModuleDestroy {
       for (const connection of live.values()) {
         if (connection.lastSeen < now - DEVICE_SILENCE_MS) {
           connection.socket.close(SocketCloseCode.Offline, SocketCloseReason.Offline);
-          void offline(connection).catch((error: unknown) => logWarning(MAINTENANCE_CONTEXT, error));
+
+          void offline(connection).catch((error: unknown) =>
+            logWarning(MAINTENANCE_CONTEXT, error, ServerErrorCode.DEVICE_OFFLINE_FAILED),
+          );
         }
       }
 
@@ -82,7 +85,9 @@ export class MaintenanceService implements OnModuleInit, OnModuleDestroy {
       () =>
         void this.commands
           .expireUnacknowledged(Date.now() - COMMAND_ACK_TIMEOUT_MS)
-          .catch((error: unknown) => logWarning(MAINTENANCE_CONTEXT, error)),
+          .catch((error: unknown) =>
+            logWarning(MAINTENANCE_CONTEXT, error, ServerErrorCode.ACK_SWEEP_FAILED),
+          ),
       COMMAND_ACK_SWEEP_MS,
     );
 
@@ -92,7 +97,12 @@ export class MaintenanceService implements OnModuleInit, OnModuleDestroy {
       await this.messaging.retention.start(() => retention.run());
     } else {
       this.retention = setInterval(
-        () => void retention.run().catch((error: unknown) => logWarning(MAINTENANCE_CONTEXT, error)),
+        () =>
+          void retention
+            .run()
+            .catch((error: unknown) =>
+              logWarning(MAINTENANCE_CONTEXT, error, ServerErrorCode.RETENTION_FAILED),
+            ),
         RETENTION_INTERVAL_MS,
       );
 

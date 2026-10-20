@@ -66,7 +66,8 @@ export class SourcePoller {
     this.reading = true;
 
     this.polling = this.pollOnce()
-      .catch(() => {}) // ignore: source failures must not terminate the local daemon.
+      // Source failures must not terminate the local daemon.
+      .catch((error: unknown) => logDebug('runtime/source-poller', error))
       .finally(() => {
         this.reading = false;
       });

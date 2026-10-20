@@ -21,9 +21,7 @@ export class RetentionQueue {
   ) {
     this.queue = new Queue(RETENTION_QUEUE, { connection: client, prefix });
 
-    this.queue.on('error', () => {
-      /* The scheduler survives a Redis outage; the next interval runs again. */
-    });
+    this.queue.on('error', () => {}); // ignore: the scheduler survives a Redis outage; the next interval runs again.
   }
   async start(run: () => Promise<unknown>) {
     if (this.worker) {
@@ -50,9 +48,7 @@ export class RetentionQueue {
       concurrency: 1,
     });
 
-    this.worker.on('error', () => {
-      /* A reconnecting worker picks up the next scheduled job. */
-    });
+    this.worker.on('error', () => {}); // ignore: a reconnecting worker picks up the next scheduled job.
 
     await this.worker.waitUntilReady();
   }

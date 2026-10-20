@@ -1,55 +1,37 @@
 import { Logger } from '@nestjs/common';
 import { ErrorCode } from '@protocol';
+import { redactError } from '@transport/diagnostics/redact-error.js';
 import { Fault } from './fault.js';
 
-/** A message made only of a code, such as `QUEUE_CLOSE_FAILED`, carries no user data. */
-const CODE_MESSAGE = /^[A-Z][A-Z0-9_]*$/;
-const STACK_FRAME = /^\s+at /;
 const FAULT_CONTEXT = 'FaultFilter';
 
-export interface ErrorDescription {
-  message: string;
-  stack: string | undefined;
+/** `[what failed] Name[: CODE] [code=error.code]`: only codes and names, never an error's free text. */
+function logMessage(error: unknown, failure?: string) {
+  const { message, code, stack } = redactError(error);
+
+  return { message: [failure, message, code && `code=${code}`].filter(Boolean).join(' '), stack };
 }
 
-/**
- * What an error may put in a log: its name, its message only when that is a code, and its stack frames.
- * The stack's header repeats the message, so only the `at …` frames are kept. Tokens, init data, cookies,
- * chat content and URLs in a message never reach the log.
- */
-export function describeError(error: unknown): ErrorDescription {
-  if (!(error instanceof Error)) {
-    return { message: typeof error, stack: undefined };
-  }
-
-  return {
-    message: CODE_MESSAGE.test(error.message) ? `${error.name}: ${error.message}` : error.name,
-    stack: error.stack
-      ?.split('\n')
-      .filter((line) => STACK_FRAME.test(line))
-      .join('\n'),
-  };
-}
-
-/** Logs an error the relay did not expect, with its stack. */
-export function logError(context: string, error: unknown) {
-  const { message, stack } = describeError(error);
+/** Logs an error the relay did not expect, with its stack frames; `failure` names what failed. */
+export function logError(context: string, error: unknown, failure?: string) {
+  const { message, stack } = logMessage(error, failure);
 
   Logger.error(message, stack, context);
 }
 
-/** Logs the error behind an internal fault, which the client sees only as `INTERNAL_ERROR`; returns the fault. */
-export function reportFault(error: unknown, fault: Fault): Fault {
+/** Logs a failure the relay recovers from, without its stack; `failure` names what failed. */
+export function logWarning(context: string, error: unknown, failure?: string) {
+  Logger.warn(logMessage(error, failure).message, context);
+}
+
+/**
+ * Logs the error behind an internal fault, which the client sees only as `INTERNAL_ERROR`; returns the fault.
+ * Faults and validation errors are the client's and are not logged.
+ */
+export function reportFault(error: unknown, fault: Fault, context = FAULT_CONTEXT): Fault {
   if (!(error instanceof Fault) && fault.code === ErrorCode.INTERNAL_ERROR) {
-    logError(FAULT_CONTEXT, error);
+    logError(context, error);
   }
 
   return fault;
-}
-
-/** Logs a failure the relay recovers from, without its stack; `code` names what failed. */
-export function logWarning(context: string, error: unknown, code?: string) {
-  const { message } = describeError(error);
-
-  Logger.warn(code ? `${code} ${message}` : message, context);
 }

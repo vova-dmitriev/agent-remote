@@ -351,7 +351,7 @@ export class CodexManager {
 
     this.scanning = task.then(
       () => {},
-      () => {},
+      (error: unknown) => logDebug('runtime/services/codex-manager', error),
     );
 
     return task;

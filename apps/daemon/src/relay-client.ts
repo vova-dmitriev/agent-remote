@@ -12,6 +12,7 @@ import { BoundedSender } from '@transport/bounded-sender.js';
 import { EventEmitter } from 'node:events';
 import { WebSocket } from 'ws';
 import { validateRelayUrl } from './config.js';
+import { logDebug } from './diagnostics/log.js';
 
 export class RelayClient extends EventEmitter {
   private sender = new BoundedSender();
@@ -68,7 +69,7 @@ export class RelayClient extends EventEmitter {
       }
     });
 
-    socket.on('error', () => {});
+    socket.on('error', (error) => logDebug('relay-client', error));
 
     socket.on('close', (code) => {
       clearTimeout(authTimeout);
