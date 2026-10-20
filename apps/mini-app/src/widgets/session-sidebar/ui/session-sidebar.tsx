@@ -9,6 +9,8 @@ import { SidebarSearch } from "./sidebar-search"
 import { SidebarProviderChips } from "./sidebar-provider-chips"
 import { SidebarRail } from "./sidebar-rail"
 import { SidebarList } from "./list/sidebar-list"
+import { SidebarResizeHandle } from "./resize/sidebar-resize-handle"
+import { SidebarWidth } from "../config/values"
 import type { SessionSidebarProps } from "./session-sidebar.types"
 
 const NO_SESSIONS: ReadonlySet<string> = new Set()
@@ -23,6 +25,9 @@ export function SessionSidebar({
   onOpen,
   onExpand,
   onNewSession,
+  width = SidebarWidth.Default,
+  onResize,
+  onResetWidth,
 }: SessionSidebarProps) {
   const { t } = useTranslation()
   const now = useSidebarClock(fixedNow)
@@ -45,8 +50,10 @@ export function SessionSidebar({
     <aside
       aria-label={t("sidebarSessions")}
       data-testid={SESSION_SIDEBAR_IDS.root}
-      className="flex h-full w-[280px] shrink-0 flex-col border-r border-border bg-card"
+      className="relative flex h-full shrink-0 flex-col border-r border-border bg-card"
+      style={{ width }}
     >
+      {onResize && onResetWidth ? <SidebarResizeHandle width={width} onResize={onResize} onReset={onResetWidth} /> : null}
       <div className="flex flex-col gap-2.5 px-3 pt-3 pb-1">
         <div data-testid={SESSION_SIDEBAR_IDS.device} className="flex items-center gap-1.5 px-0.5 text-xs text-muted-foreground">
           <Laptop aria-hidden="true" size={14} />

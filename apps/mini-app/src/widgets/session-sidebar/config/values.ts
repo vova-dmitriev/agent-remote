@@ -12,7 +12,22 @@ export const SidebarKey = {
   Enter: "Enter",
   Escape: "Escape",
   Search: "k",
+  Left: "ArrowLeft",
+  Right: "ArrowRight",
+  Home: "Home",
+  End: "End",
 } as const
+
+/** Sidebar width in px. At the 960 px desktop breakpoint the maximum still leaves the main pane 480 px. */
+export const SidebarWidth = {
+  Default: 280,
+  Min: 220,
+  Max: 480,
+  KeyStep: 16,
+} as const
+
+/** Per-viewer sidebar width; the value is a decimal pixel count. */
+export const SIDEBAR_WIDTH_STORAGE_KEY = "agent-remote:sidebar-width"
 
 export const RelativeUnit = {
   Minute: "minute",

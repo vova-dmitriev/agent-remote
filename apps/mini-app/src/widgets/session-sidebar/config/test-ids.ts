@@ -14,6 +14,7 @@ export const SESSION_SIDEBAR_IDS = {
   rowTitle: "session-sidebar-row-title",
   empty: "session-sidebar-empty",
   emptyClear: "session-sidebar-empty-clear",
+  resize: "session-sidebar-resize",
   rail: "session-sidebar-rail",
   railSearch: "session-sidebar-rail-search",
   railNewSession: "session-sidebar-rail-new",

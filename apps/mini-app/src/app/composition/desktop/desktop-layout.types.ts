@@ -18,6 +18,9 @@ export interface DesktopSidebarProps {
   onOpen: (session: Session) => void
   onExpand: () => void
   onNewSession: () => void
+  width: number
+  onResize: (width: number, done: boolean) => void
+  onResetWidth: () => void
 }
 
 export interface DesktopPaneProps {

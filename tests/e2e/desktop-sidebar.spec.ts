@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { SESSION_SIDEBAR_IDS } from '../../apps/mini-app/src/widgets/session-sidebar/config/test-ids.js';
+import { SidebarWidth } from '../../apps/mini-app/src/widgets/session-sidebar/config/values.js';
 import { SHELL_IDS } from '../../apps/mini-app/src/widgets/application-shell/config/test-ids.js';
 import { SESSION_PAGE_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
 import { SESSIONS_PAGE_IDS } from '../../apps/mini-app/src/pages/sessions/config/test-ids.js';
@@ -44,6 +45,43 @@ test('shows the session sidebar with a placeholder pane and opens a row in the m
   await page.getByTestId(SHELL_IDS.home).click();
   await expect(page.getByTestId(DESKTOP_IDS.placeholder)).toBeVisible();
   await expect.poll(() => routeOf(page)).toBe(AppRoute.Root);
+});
+
+test('resizes the sidebar by dragging its edge, remembers the width and resets on double-click', async ({ page }) => {
+  const sidebar = page.getByTestId(SESSION_SIDEBAR_IDS.root);
+  const handle = page.getByTestId(SESSION_SIDEBAR_IDS.resize);
+  const width = async () => (await sidebar.boundingBox())!.width;
+
+  expect(await width()).toBe(SidebarWidth.Default);
+  const edge = (await handle.boundingBox())!;
+  const x = edge.x + edge.width / 2;
+  const y = edge.y + edge.height / 2;
+
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x + 60, y, { steps: 4 });
+  await page.mouse.move(x + 100, y, { steps: 4 });
+  await page.mouse.up();
+  expect(await width()).toBe(SidebarWidth.Default + 100);
+  await expect(handle).toHaveAttribute('aria-valuenow', String(SidebarWidth.Default + 100));
+
+  await page.mouse.move(x + 100, y);
+  await page.mouse.down();
+  await page.mouse.move(x + 900, y, { steps: 4 });
+  await page.mouse.up();
+  expect(await width()).toBe(SidebarWidth.Max);
+
+  await page.reload();
+  expect(await width()).toBe(SidebarWidth.Max);
+
+  await handle.dblclick();
+  expect(await width()).toBe(SidebarWidth.Default);
+
+  await handle.focus();
+  await page.keyboard.press('ArrowRight');
+  expect(await width()).toBe(SidebarWidth.Default + SidebarWidth.KeyStep);
+  await page.keyboard.press('Home');
+  expect(await width()).toBe(SidebarWidth.Min);
 });
 
 test('keeps the route and selection in sync across the 960 px breakpoint', async ({ page }) => {

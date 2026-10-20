@@ -2,6 +2,7 @@
 const navigationEN = {
   settings: "Settings",
   sidebarSessions: "Sessions",
+  sidebarResize: "Resize sidebar",
   sidebarDevice: "This Mac",
   sidebarSearch: "Search sessions",
   sidebarShortcut: "⌘K",
@@ -22,6 +23,7 @@ const navigationEN = {
 const navigationRU = {
   settings: "Настройки",
   sidebarSessions: "Сессии",
+  sidebarResize: "Изменить ширину боковой панели",
   sidebarDevice: "Этот Mac",
   sidebarSearch: "Поиск сессий",
   sidebarShortcut: "⌘K",

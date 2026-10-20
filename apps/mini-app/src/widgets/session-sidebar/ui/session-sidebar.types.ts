@@ -14,6 +14,17 @@ export interface SessionSidebarProps {
   onOpen: (session: Session) => void
   onExpand: () => void
   onNewSession: () => void
+  /** Expanded width in px; the sidebar is resizable when `onResize` is given. */
+  width?: number
+  onResize?: (width: number, done: boolean) => void
+  onResetWidth?: () => void
+}
+
+export interface SidebarResizeHandleProps {
+  width: number
+  /** `done` is false while the pointer moves and true when the drag or key press ends. */
+  onResize: (width: number, done: boolean) => void
+  onReset: () => void
 }
 
 export interface SidebarSearchProps {

@@ -1,5 +1,5 @@
 import { ApplicationShell, DesktopHeader } from "@/widgets/application-shell"
-import { useSidebarCollapsed } from "@/widgets/session-sidebar"
+import { useSidebarCollapsed, useSidebarWidth } from "@/widgets/session-sidebar"
 import { CommandNotice } from "@/features/send-command"
 import { useStableCallback } from "@/shared/lib/hooks"
 import { DESKTOP_IDS } from "@/app/config/test-ids"
@@ -16,6 +16,9 @@ export function DesktopLayout({ model, view, subagent, back, logout, open }: Des
   const onAccounts = model.devices.length ? view.openAccounts : undefined
   const onOpen = useStableCallback(open)
   const onExpand = useStableCallback(() => sidebar.setCollapsed(false))
+  const sidebarWidth = useSidebarWidth()
+  const onResize = useStableCallback(sidebarWidth.resize)
+  const onResetWidth = useStableCallback(sidebarWidth.reset)
 
   const onNewSession = useStableCallback(() => {
     back()
@@ -39,6 +42,9 @@ export function DesktopLayout({ model, view, subagent, back, logout, open }: Des
           onOpen={onOpen}
           onExpand={onExpand}
           onNewSession={onNewSession}
+          width={sidebarWidth.width}
+          onResize={onResize}
+          onResetWidth={onResetWidth}
         />
         <div className="min-w-0 flex-1 overflow-y-auto [--tg-viewport-height:calc(100dvh-3rem)]">
           <ApplicationShell

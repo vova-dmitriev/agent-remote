@@ -10,7 +10,16 @@ const NO_SESSIONS: Session[] = []
  * Subscribes only to what the list shows (sessions, selection, connection, device status, pending input), so message,
  * history and outbox updates do not re-render the sidebar. Callers pass stable callbacks.
  */
-export const DesktopSidebar = memo(function DesktopSidebar({ accounts, collapsed, onOpen, onExpand, onNewSession }: DesktopSidebarProps) {
+export const DesktopSidebar = memo(function DesktopSidebar({
+  accounts,
+  collapsed,
+  onOpen,
+  onExpand,
+  onNewSession,
+  width,
+  onResize,
+  onResetWidth,
+}: DesktopSidebarProps) {
   const sessions = useSessionStore((state) => state.session.snapshot?.sessions) ?? NO_SESSIONS
   const selectedId = useSessionStore((state) => state.session.selectedId)
   const online = useSessionStore((state) => state.session.connection === ConnectionStatus.Online)
@@ -27,6 +36,9 @@ export const DesktopSidebar = memo(function DesktopSidebar({ accounts, collapsed
       onOpen={onOpen}
       onExpand={onExpand}
       onNewSession={onNewSession}
+      width={width}
+      onResize={onResize}
+      onResetWidth={onResetWidth}
     />
   )
 })
