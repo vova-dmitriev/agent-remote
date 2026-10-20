@@ -3,6 +3,7 @@ import { useVirtualizer, type VirtualItem } from "@tanstack/react-virtual"
 import { HistoryDirection, type HistoryMessage } from "@protocol"
 import { useHistoryPagination } from "./history/use-history-pagination"
 import { useReadingPosition } from "./use-reading-position"
+import { useRenderedRowSizes } from "./use-rendered-row-sizes"
 import { navigationScrollBehavior } from "../lib/message-navigation"
 
 import { FEED_READING_INSET } from "../config/reading"
@@ -61,6 +62,8 @@ export function useFollowMessages(
   // Preserve the reading line when a measured row above it changes, including after backward jumps.
   virtualizer.shouldAdjustScrollPositionOnItemSizeChange = (item, _delta, instance) =>
     item.end <= (instance.scrollOffset ?? 0) + FEED_READING_INSET
+
+  useRenderedRowSizes(virtualizer)
 
   const updatePosition = useCallback(() => {
     const node = scroll.current
