@@ -92,13 +92,14 @@ test('follows back and forward through the session history', async ({ page }) =>
   await expect(terminal).toHaveAttribute('aria-selected', 'true');
 });
 
-test('opens a deep link, keeps the parent selected for a subagent route and replaces an unknown session', async ({ page }) => {
+test('opens a deep link, replaces a subagent route the session cannot show and replaces an unknown session', async ({ page }) => {
   const terminal = byTestId(page, SESSION_SIDEBAR_IDS.row, { 'session-id': 'terminal-session' });
 
   await page.goto(DESKTOP_PAGE + subagentRoute('terminal-session', 'synthetic-agent'));
   await expect(page.getByTestId(SESSION_PAGE_IDS.title)).toContainText('Synthetic sprint fixes');
   await expect(terminal).toHaveAttribute('aria-selected', 'true');
-  expect(routeOf(page)).toBe(subagentRoute('terminal-session', 'synthetic-agent'));
+  // Without subagent history on this session the subagent route is replaced by its parent's.
+  await expect.poll(() => routeOf(page)).toBe(sessionRoute('terminal-session'));
 
   await page.goto('about:blank');
   await page.goto(DESKTOP_PAGE + sessionRoute('missing-session'));

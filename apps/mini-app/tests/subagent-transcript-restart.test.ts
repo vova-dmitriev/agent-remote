@@ -63,3 +63,19 @@ it("treats skipped and stale pages as no-ops and reports them like the parent fe
   expect(ids(transcript)).toEqual(["a"])
   transcript.stop()
 })
+
+it("keeps polling after a retry discarded a read: the stale read does not release the new read's pending slot", async () => {
+  const { gates, read } = gatedRead()
+  const transcript = new SubagentTranscript(read, visibility)
+
+  transcript.start(true)
+  await vi.advanceTimersByTimeAsync(0)
+  transcript.retry()
+  gates[0]!.resolve(page("old"))
+  await vi.advanceTimersByTimeAsync(0)
+  gates[1]!.resolve(page("a"))
+  await vi.advanceTimersByTimeAsync(SUBAGENT_POLL_INTERVAL_MS)
+  expect(read).toHaveBeenCalledTimes(3)
+  expect(ids(transcript)).toEqual(["a"])
+  transcript.stop()
+})

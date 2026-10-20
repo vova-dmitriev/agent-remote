@@ -16,6 +16,10 @@ interface FakeBridgeOptions {
   };
 }
 
+/** Subagent ids of the history requests the fake bridge received, in order. */
+export const subagentReads = (page: Page) =>
+  page.evaluate(() => (window as unknown as { subagentReads?: string[] }).subagentReads ?? []);
+
 /** Installs a synthetic `window.desktopBridge` so the desktop host runs in a plain browser page. */
 export async function installDesktopBridge(page: Page, deviceId: string, snapshot: AppSnapshot, agents: Record<string, unknown[]> = {}) {
   const options: FakeBridgeOptions = {
@@ -71,8 +75,15 @@ export async function installDesktopBridge(page: Page, deviceId: string, snapsho
           const base = { kind: values.result, version: values.version, requestId: request.requestId, leaseId, epoch };
           const { operation, agentId } = request.action;
 
-          if (operation === operations.history && agentId !== undefined)
+          if (operation === operations.history && agentId !== undefined) {
+            // Recorded so tests can count subagent reads that reached the bridge.
+            (window as unknown as { subagentReads?: string[] }).subagentReads = [
+              ...((window as unknown as { subagentReads?: string[] }).subagentReads ?? []),
+              agentId,
+            ];
+
             return { ...base, ok: true, data: { events: agents[agentId] ?? [], before: null, after: null } };
+          }
 
           return operation in data ? { ...base, ok: true, data: data[operation] } : { ...base, ok: false, code: values.unavailable };
         },

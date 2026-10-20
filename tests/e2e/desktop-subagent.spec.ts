@@ -8,9 +8,10 @@ import {
 } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
 import { sessionRoute, subagentRoute } from '../../apps/mini-app/src/shared/lib/routes/app-route.js';
 import { byTestId } from './support/testid.js';
-import { installDesktopBridge } from './support/desktop-bridge.js';
+import { installDesktopBridge, subagentReads } from './support/desktop-bridge.js';
 import { sessionSnapshot } from './support/session-fixtures.js';
 import { baseTranscript } from './support/subagent-fixtures.js';
+import { SUBAGENT_POLL_BACKOFF_MAX_MS } from '../../apps/mini-app/src/pages/session/config/subagent.js';
 
 const deviceId = 'desktop-e2e-device';
 const DESKTOP_PAGE = '/desktop.html';
@@ -85,4 +86,26 @@ test('opens a subagent deep link directly and leaves it when another session is 
   await expect.poll(() => routeOf(page)).toBe(sessionRoute(otherId));
   await expect(page.getByTestId(SUBAGENT_VIEW_IDS.root)).toHaveCount(0);
   await expect(page.getByTestId(SESSION_PAGE_IDS.root)).toBeVisible();
+});
+
+test('replaces a forged or over-long subagent route with its parent and never reads it', async ({ page }) => {
+  for (const route of [`#/sessions/${SESSION}/agents/..%2F..`, subagentRoute(SESSION, 'x'.repeat(129))]) {
+    await page.goto('about:blank');
+    await page.goto(DESKTOP_PAGE + route);
+    await expect.poll(() => routeOf(page), route).toBe(sessionRoute(SESSION));
+    await expect(page.getByTestId(SESSION_PAGE_IDS.root)).toBeVisible();
+    await expect(page.getByTestId(SUBAGENT_VIEW_IDS.root)).toHaveCount(0);
+    expect(await subagentReads(page), route).toEqual([]);
+  }
+});
+
+test('reads a well-formed subagent id that the session does not list yet, once', async ({ page }) => {
+  await page.clock.install();
+  await page.goto(DESKTOP_PAGE + subagentRoute(SESSION, 'unlisted-agent'));
+  await expect(page.getByTestId(SUBAGENT_VIEW_IDS.title)).toHaveText('unlisted-agent');
+  await expect.poll(() => subagentReads(page)).toEqual(['unlisted-agent']);
+  await page.clock.fastForward(SUBAGENT_POLL_BACKOFF_MAX_MS);
+  await expect(page.getByTestId(SUBAGENT_VIEW_IDS.root)).toBeVisible();
+  expect(await subagentReads(page)).toEqual(['unlisted-agent']);
+  expect(routeOf(page)).toBe(subagentRoute(SESSION, 'unlisted-agent'));
 });

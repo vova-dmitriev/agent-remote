@@ -17,10 +17,7 @@ export function ApplicationContent({ model, accounts, subagent, back, closeAccou
       />
     )
   if (!selected) return home
-  // Subagent transcripts need both the client and the session's source; otherwise a subagent route keeps the parent.
-  const subagents = subagent.supported && !!selected.capabilities.subagentHistory
-
-  if (subagent.agentId && subagents)
+  if (subagent.agentId)
     return (
       <SubagentPage
         key={[selected.id, subagent.agentId, selected.generation].join(":")}
@@ -45,7 +42,7 @@ export function ApplicationContent({ model, accounts, subagent, back, closeAccou
       showBack={sessionBack}
       rename={model.rename}
       controller={commands}
-      onOpenSubagent={subagents ? (agentId) => subagent.open(selected.id, agentId) : undefined}
+      onOpenSubagent={subagent.readable ? (agentId) => subagent.open(selected.id, agentId) : undefined}
     />
   )
 }
