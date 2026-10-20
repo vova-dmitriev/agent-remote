@@ -144,17 +144,30 @@ export function notificationPreview(markdown: string): string {
   // A bold cell inside a bold row label adds nothing.
   let bold = 0;
 
-  const strong = (node: MarkdownNode, content: () => void) => {
-    if (bold || containsCode(node)) {
-      content();
+  // Telegram rejects code inside bold, so bold wraps each run of the node's children around its code instead.
+  function strong(node: MarkdownNode, depth: number) {
+    if (bold) {
+      children(node, '', depth);
 
       return;
     }
 
-    bold++;
-    output.wrap('b', content);
-    bold--;
-  };
+    if (!containsCode(node)) {
+      bold++;
+      output.wrap('b', () => children(node, '', depth));
+      bold--;
+
+      return;
+    }
+
+    for (const child of node.children ?? []) {
+      if (containsCode(child)) {
+        render(child, depth + 1);
+      } else {
+        strong({ type: MarkdownNodeType.Strong, children: [child] }, depth);
+      }
+    }
+  }
 
   // Telegram has no tables. A two-column row reads "label — value"; a wider row puts each further cell on its
   // own line after its header.
@@ -174,7 +187,7 @@ export function notificationPreview(markdown: string): string {
       }
 
       if (label) {
-        strong(label, () => children(label, '', depth));
+        strong(label, depth);
       }
 
       for (const [column, cell] of cells.entries()) {
@@ -233,7 +246,7 @@ export function notificationPreview(markdown: string): string {
         break;
       case MarkdownNodeType.Heading:
       case MarkdownNodeType.Strong:
-        strong(node, content);
+        strong(node, depth);
         break;
       case MarkdownNodeType.Table:
         table(node, depth);

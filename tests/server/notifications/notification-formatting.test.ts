@@ -106,12 +106,12 @@ it('delivers paragraphs, ordered list items and supported Markdown as Telegram H
 // Telegram has no tables: raw pipes wrap into an unreadable wall, so each row becomes its own line.
 it('renders Markdown tables as one readable line per row', async () => {
   const { body } = await deliver(
-    '| Step | Result |\n|---|---|\n| Build | passed `npm run build` |\n| **Tests** | 90 ✅ |\n\n' +
+    '| Step | Result |\n|---|---|\n| Build | passed `npm run build` |\n| **Tests** | 90 ✅ |\n| Move `scripts/` | done |\n\n' +
       '| Step | State | Note |\n|---|---|---|\n| Gates | running | full |',
   );
 
   expect(body.text).toContain(
-    '<b>Build</b> — passed <code>npm run build</code>\n<b>Tests</b> — 90 ✅\n\n<b>Gates</b>\nState: running\nNote: full',
+    '<b>Build</b> — passed <code>npm run build</code>\n<b>Tests</b> — 90 ✅\n<b>Move </b><code>scripts/</code> — done\n\n<b>Gates</b>\nState: running\nNote: full',
   );
 
   expect(body.text).not.toContain('|');
@@ -188,7 +188,8 @@ it('does not nest code inside style or link entities that Telegram rejects', asy
 
   expect(body.text).toContain('<code>npm test</code>');
   expect(body.text).toContain('<code>API</code>');
-  expect(body.text).toContain('Use <code>npm test</code> now and the <code>API</code> docs.');
+  // Bold stays on the text around the code instead of dropping for the whole span.
+  expect(body.text).toContain('<b>Use </b><code>npm test</code><b> now</b> and the <code>API</code> docs.');
 });
 
 it('closes a truncated fenced code block and keeps reference links readable', async () => {
