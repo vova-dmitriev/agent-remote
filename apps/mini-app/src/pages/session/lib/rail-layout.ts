@@ -1,4 +1,4 @@
-import { RAIL_BAND_MIN_SIZE, RAIL_HIT_SIZE } from "../config/message-navigation"
+import { RAIL_HIT_SIZE, RailTick } from "../config/message-navigation"
 
 export interface RailViewport {
   scrollTop: number
@@ -45,21 +45,20 @@ export function railGroupOf(groups: readonly RailGroup[], index: number) {
   return groups.findIndex((group) => group.first <= index && index <= group.last)
 }
 
-/** The visible window on the track, sized and moved with the native thumb's formula. */
-export function railBand(viewport: RailViewport, height: number, min = RAIL_BAND_MIN_SIZE) {
-  const extent = Math.max(viewport.scrollHeight, viewport.clientHeight)
-  const range = extent - viewport.clientHeight
+/** The group whose tick sits nearest a track position (groups are ordered by position). */
+export function nearestGroup(groups: readonly RailGroup[], position: number) {
+  let best = -1
 
-  if (extent <= 0 || range <= 0) return { top: 0, size: height }
-  const size = clamp((viewport.clientHeight / extent) * height, Math.min(min, height), height)
+  groups.forEach((group, index) => {
+    if (best < 0 || Math.abs(group.center - position) < Math.abs(groups[best]!.center - position)) best = index
+  })
 
-  return { top: clamp(viewport.scrollTop / range, 0, 1) * (height - size), size }
+  return best
 }
 
-/** The scroll offset that centers the viewport on a clicked track position. */
-export function railSeekOffset(position: number, height: number, viewport: RailViewport) {
-  const extent = Math.max(viewport.scrollHeight, viewport.clientHeight)
-  const target = height > 0 ? (position / height) * extent - viewport.clientHeight / 2 : 0
+/** 0..1 magnification of a tick at `center` for a pointer at `pointer`; nothing without a pointer. */
+export function tickMagnification(center: number, pointer: number | null, reach: number = RailTick.Reach) {
+  if (pointer === null) return 0
 
-  return clamp(target, 0, extent - viewport.clientHeight)
+  return Math.max(0, 1 - Math.abs(center - pointer) / reach)
 }

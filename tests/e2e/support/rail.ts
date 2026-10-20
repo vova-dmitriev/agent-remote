@@ -75,14 +75,6 @@ export async function box(locator: Locator) {
   return bounds!;
 }
 
-/** Band edges relative to the track, in pixels. */
-export async function bandEdges(page: Page) {
-  const track = await box(page.getByTestId(SESSION_FEED_IDS.railTrack));
-  const band = await box(page.getByTestId(SESSION_FEED_IDS.railBand));
-
-  return { top: band.y - track.y, bottom: track.y + track.height - (band.y + band.height), height: track.height };
-}
-
 /** The test id of the focused element, or null. */
 export function focusedTestId(page: Page) {
   return page.evaluate(() => document.activeElement?.getAttribute('data-testid') ?? null);

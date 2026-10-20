@@ -92,11 +92,11 @@ for (const motion of MOTIONS) {
       overlaps.push(...(await overlappingRows(page)).map((overlap) => `marker ${marker}: ${overlap}`));
     }
 
-    const seek = page.getByTestId(SESSION_FEED_IDS.railSeek);
-    const track = await box(seek);
+    const track = await box(page.getByTestId(SESSION_FEED_IDS.railTrack));
 
+    // Pointer clicks anywhere on the rail jump to the nearest marker.
     for (const point of [0.1, 0.8, 0.3]) {
-      await seek.dispatchEvent('click', { clientX: track.x + track.width / 2, clientY: track.y + track.height * point });
+      await page.mouse.click(track.x + track.width / 2, track.y + track.height * point);
       overlaps.push(...(await overlappingRows(page)).map((overlap) => `track ${point}: ${overlap}`));
     }
 

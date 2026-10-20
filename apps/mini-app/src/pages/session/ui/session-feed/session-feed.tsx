@@ -29,7 +29,7 @@ export function SessionFeed({
 }: SessionFeedProps) {
   const edges = useHistoryEdges(messages, onHistoryPage, newestAt)
 
-  const { scroll, content, settled, onScroll, onUserScroll, atBottom, activeId, jump, seek, latest, virtualizer } = useFollowMessages(
+  const { scroll, content, settled, onScroll, onUserScroll, atBottom, activeId, jump, latest, virtualizer } = useFollowMessages(
     messages,
     tab === SessionTab.History,
     readingScope,
@@ -77,7 +77,6 @@ export function SessionFeed({
           {...railEntries(messages, map.starts)}
           activeId={railActiveId(messages, activeId)}
           jump={jump}
-          seek={seek}
           older={edges.older}
           newer={edges.newer}
           loadPage={edges.page}

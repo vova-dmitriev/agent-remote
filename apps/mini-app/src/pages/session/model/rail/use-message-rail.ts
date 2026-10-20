@@ -1,9 +1,12 @@
-import { useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from "react"
-import { railBand, railGroupOf, railGroups, railSeekOffset } from "@/pages/session/lib/rail-layout"
+import { useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type PointerEvent } from "react"
+import { RAIL_HIT_SIZE, RAIL_TICK_GAP } from "@/pages/session/config/message-navigation"
+import { nearestGroup, railGroupOf, railGroups } from "@/pages/session/lib/rail-layout"
 import type { MessageRailProps } from "@/pages/session/model/types/message-rail.types"
 import { useRailFocus } from "./use-rail-focus"
 
-type RailInput = Pick<MessageRailProps, "messages" | "starts" | "total" | "viewport" | "activeId" | "jump" | "seek">
+type RailInput = Pick<MessageRailProps, "messages" | "starts" | "total" | "viewport" | "activeId" | "jump">
+
+const COARSE_POINTER = "(pointer: coarse)"
 
 const keyMoves: Record<string, (index: number, last: number) => number> = {
   ArrowUp: (index) => index - 1,
@@ -12,10 +15,29 @@ const keyMoves: Record<string, (index: number, last: number) => number> = {
   End: (_, last) => last,
 }
 
-export function useMessageRail({ messages, starts, total, viewport, activeId, jump, seek }: RailInput) {
+function subscribeCoarse(onChange: () => void) {
+  const media = window.matchMedia(COARSE_POINTER)
+
+  media.addEventListener("change", onChange)
+
+  return () => media.removeEventListener("change", onChange)
+}
+
+/** A finger needs a full-size target per marker; a mouse picks the nearest tick, so ticks may sit close. */
+const useMarkerGap = () =>
+  useSyncExternalStore(
+    subscribeCoarse,
+    () => (window.matchMedia(COARSE_POINTER).matches ? RAIL_HIT_SIZE : RAIL_TICK_GAP),
+    () => RAIL_HIT_SIZE,
+  )
+
+export function useMessageRail({ messages, starts, total, viewport, activeId, jump }: RailInput) {
   const track = useRef<HTMLDivElement>(null)
   const buttons = useRef(new Map<string, HTMLButtonElement>())
   const [height, setHeight] = useState(0)
+  /** Pointer position on the track, for the magnification and the nearest marker; null when away. */
+  const [pointer, setPointer] = useState<number | null>(null)
+  const gap = useMarkerGap()
 
   useLayoutEffect(() => {
     const node = track.current
@@ -32,11 +54,11 @@ export function useMessageRail({ messages, starts, total, viewport, activeId, ju
   }, [])
 
   const extent = Math.max(total, viewport.clientHeight)
-  const groups = useMemo(() => railGroups(starts, extent, height), [starts, extent, height])
+  const groups = useMemo(() => railGroups(starts, extent, height, gap), [starts, extent, height, gap])
   const selectedId = activeId ?? messages.at(-1)?.id
   const selectedIndex = useMemo(() => messages.findIndex((message) => message.id === selectedId), [messages, selectedId])
   const selected = railGroupOf(groups, selectedIndex)
-  const band = railBand(viewport, height)
+  const hovered = pointer === null ? -1 : nearestGroup(groups, pointer)
   const focus = useRailFocus(groups, messages, buttons)
 
   function register(id: string, node: HTMLButtonElement | null) {
@@ -57,11 +79,40 @@ export function useMessageRail({ messages, starts, total, viewport, activeId, ju
     jump(message.id)
   }
 
-  function onTrackClick(event: MouseEvent<HTMLButtonElement>) {
-    const rect = event.currentTarget.getBoundingClientRect()
+  /** Mouse and pen only: a finger taps the marker under it instead. */
+  function onPointerMove(event: PointerEvent<HTMLElement>) {
+    const node = track.current
 
-    seek(railSeekOffset(event.clientY - rect.top, rect.height, viewport))
+    if (event.pointerType === "touch" || !node) return
+    setPointer(event.clientY - node.getBoundingClientRect().top)
   }
 
-  return { track, groups, band, selectedId, selected, focus, register, onKeyDown, onTrackClick }
+  /** Moving between a marker and the free track stays on the rail. */
+  function onPointerLeave(event: PointerEvent<HTMLElement>) {
+    if (!(event.relatedTarget instanceof Node && track.current?.contains(event.relatedTarget))) setPointer(null)
+  }
+
+  const hoveredMessage = hovered >= 0 ? messages[groups[hovered]!.first] : undefined
+
+  /** A click on the free track jumps to the nearest marker, as hovering it showed. */
+  function onTrackClick() {
+    if (hoveredMessage) jump(hoveredMessage.id)
+  }
+
+  return {
+    track,
+    groups,
+    gap,
+    pointer,
+    hovered,
+    hoveredNode: hoveredMessage ? (buttons.current.get(hoveredMessage.id) ?? null) : null,
+    hoveredMessage,
+    selectedId,
+    selected,
+    focus,
+    register,
+    onKeyDown,
+    pointerHandlers: { onPointerMove, onPointerLeave },
+    onTrackClick,
+  }
 }

@@ -1,4 +1,4 @@
-import type { FocusEvent, KeyboardEvent } from "react"
+import type { FocusEvent, KeyboardEvent, PointerEvent } from "react"
 import { AgentName } from "@/entities/session"
 import type { HistoryMessage, HistoryPageDirection } from "@protocol"
 import type { RailGroup, RailViewport } from "@/pages/session/lib/rail-layout"
@@ -13,8 +13,6 @@ export interface MessageRailProps {
   viewport: RailViewport
   activeId: string | null
   jump: (id: string) => void
-  /** Scrolls the feed to a content offset. */
-  seek: (offset: number) => void
   older: boolean
   newer: boolean
   loadPage: (direction: HistoryPageDirection) => void
@@ -28,6 +26,11 @@ export interface HistoryCapProps {
 
 export interface RailMarkerProps {
   group: RailGroup
+  /** Height of the marker's target: the minimum distance between ticks. */
+  gap: number
+  /** Pointer position on the track, for the magnification; null when away. */
+  pointer: number | null
+  pointerHandlers: { onPointerMove: (event: PointerEvent<HTMLElement>) => void; onPointerLeave: (event: PointerEvent<HTMLElement>) => void }
   messages: HistoryMessage[]
   agent: AgentName
   current: boolean

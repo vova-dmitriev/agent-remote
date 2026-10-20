@@ -2,7 +2,7 @@ import { expect, type Page } from '@playwright/test';
 import { test, publishMessages } from './support/relay-fixture.js';
 import { identity } from './support/identity.js';
 import { byTestId } from './support/testid.js';
-import { bandEdges, box, expectLoadedMessages, focusedTestId, railConversation } from './support/rail.js';
+import { box, expectLoadedMessages, focusedTestId, railConversation } from './support/rail.js';
 import { scrollSettled } from './support/scroll-settled.js';
 import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
 import { SESSION_FEED_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
@@ -36,11 +36,9 @@ test('the rail maps the whole loaded feed on its left and moves with the scrollb
   // The track spans the scroll container's full height, exactly like the native scrollbar.
   expect(Math.abs(fullTrack.y - scroller.y)).toBeLessThan(0.5);
   expect(Math.abs(fullTrack.height - scroller.height)).toBeLessThan(0.5);
-  await expect.poll(async () => (await bandEdges(page)).bottom).toBeLessThan(1);
   await page.screenshot({ path: 'artifacts/chat-rail-mobile.png', fullPage: true });
 
   await feed.evaluate((node) => node.scrollTo({ top: 0 }));
-  await expect.poll(async () => (await bandEdges(page)).top).toBeLessThan(1);
   // The only page is loaded, so reaching the top proves there is no earlier history.
   await expect(page.getByTestId(SESSION_FEED_IDS.railCap)).toHaveCount(0);
 
@@ -55,33 +53,48 @@ test('the rail maps the whole loaded feed on its left and moves with the scrollb
   expect(track.y + track.height - (tops.at(-1)! + RAIL_HIT_SIZE)).toBeLessThan(RAIL_HIT_SIZE);
 
   await feed.evaluate((node) => node.scrollTo({ top: node.scrollHeight }));
-  await expect.poll(async () => (await bandEdges(page)).bottom).toBeLessThan(1);
+  await scrollSettled(feed);
 
   await markers.first().click();
   await expect.poll(() => feed.evaluate((node) => node.scrollTop)).toBeLessThan(2);
   await expect(byTestId(page, SESSION_FEED_IDS.message, { 'message-id': 'rail-0' })).toBeVisible();
   await expect(markers.first()).toHaveAttribute('aria-current', 'true');
 
-  // A click on the point track centers the viewport on that point, like a native scrollbar track. Markers sit
-  // above the track, so the click is dispatched to the track itself at its midpoint.
-  const seek = page.getByTestId(SESSION_FEED_IDS.railSeek);
-  const seekBox = await box(seek);
-  const point = seekBox.height / 2;
+});
 
-  const before = await feed.evaluate((node) => ({ scrollHeight: node.scrollHeight, clientHeight: node.clientHeight }));
+test('the pointer previews and magnifies the nearest tick, and a click there jumps to it', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await publishMessages(conversation(60));
+  await open(page);
+  const markers = page.getByTestId(SESSION_FEED_IDS.marker);
+  const ticks = page.getByTestId(SESSION_FEED_IDS.railTick);
 
-  await seek.dispatchEvent('click', { clientX: seekBox.x + seekBox.width / 2, clientY: seekBox.y + point });
-  await scrollSettled(feed);
-  const after = await feed.evaluate((node) => ({ scrollTop: node.scrollTop, scrollHeight: node.scrollHeight, clientHeight: node.clientHeight }));
-  const band = await bandEdges(page);
+  await expectLoadedMessages(page, 60);
+  const target = Math.floor((await markers.count()) / 3);
+  const tick = await box(ticks.nth(target));
+  const id = (await markers.nth(target).getAttribute('data-message-id'))!;
 
-  // Rows measured on arrival may grow the feed while it settles, so the target lies between both estimates.
-  const target = (extent: number) => (point / seekBox.height) * extent - before.clientHeight / 2;
-  const [low, high] = [target(before.scrollHeight), target(after.scrollHeight)].sort((a, b) => a - b);
+  // A few pixels off the tick still picks it.
+  await page.mouse.move(tick.x + 2, tick.y + tick.height / 2 + 3);
+  await expect(page.getByTestId(SESSION_FEED_IDS.preview)).toBeVisible();
+  await expect(markers.nth(target)).toHaveAttribute('aria-describedby', /.+/);
 
-  expect(after.scrollTop).toBeGreaterThanOrEqual(low! - 2);
-  expect(after.scrollTop).toBeLessThanOrEqual(high! + 2);
-  expect(Math.abs(band.top + (seekBox.height - band.top - band.bottom) / 2 - point)).toBeLessThan(RAIL_HIT_SIZE / 2);
+  await expect
+    .poll(async () => {
+      const widths = await ticks.evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().width));
+
+      return widths[target] === Math.max(...widths) && widths[target]! > widths[0]!;
+    })
+    .toBe(true);
+
+  await page.mouse.down();
+  await page.mouse.up();
+  await scrollSettled(page.getByTestId(SESSION_FEED_IDS.root));
+  await expect(byTestId(page, SESSION_FEED_IDS.message, { 'message-id': id })).toBeInViewport();
+  await expect(markers.nth(target)).toHaveAttribute('aria-current', 'true');
+
+  await page.mouse.move(0, 0);
+  await expect(page.getByTestId(SESSION_FEED_IDS.preview)).toHaveCount(0);
 });
 
 test('a middle marker sits where its row sits in the scrollable content', async ({ page }) => {

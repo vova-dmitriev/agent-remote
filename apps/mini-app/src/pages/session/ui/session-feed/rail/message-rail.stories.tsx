@@ -45,7 +45,6 @@ const meta = {
     older: false,
     newer: false,
     jump: () => undefined,
-    seek: () => undefined,
     loadPage: () => undefined,
   },
 } satisfies Meta<typeof MessageRail>

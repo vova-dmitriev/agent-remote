@@ -1,4 +1,4 @@
-import { memo } from "react"
+import { memo, useEffect } from "react"
 import { HistoryDirection } from "@protocol"
 import { useTranslation } from "@/shared/lib/hooks"
 import { Button } from "@/shared/ui/button"
@@ -11,47 +11,64 @@ import { MessagePreview } from "../preview/message-preview"
 import { HistoryCap } from "./history-cap"
 import { RailMarker } from "./rail-marker"
 
-/** A map of the whole loaded feed beside it: markers and the visible window share the native scrollbar's scale. */
+/**
+ * A Codex-style map of the loaded feed beside it: hairline ticks at the native scrollbar's scale. The mouse picks the
+ * tick nearest to it, magnifies its neighbours and previews that message; a click on the rail jumps to it.
+ */
 export const MessageRail = memo(function MessageRail(props: MessageRailProps) {
   const { messages, jump, agent, older, newer, loadPage } = props
   const { t } = useTranslation()
   const preview = useMessagePreview(messages)
-  const { track, groups, band, selectedId, selected, focus, register, onKeyDown, onTrackClick } = useMessageRail(props)
+  const rail = useMessageRail(props)
+  const { track, groups, gap, pointer, pointerHandlers, hoveredNode, hoveredMessage, selected, focus, register, onKeyDown } = rail
+
+  useEffect(() => {
+    if (hoveredMessage && hoveredNode) {
+      preview.releaseHover()
+      preview.show(hoveredMessage.id, hoveredNode, PreviewSource.Hover)
+    } else {
+      preview.hide(PreviewSource.Hover)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- preview's functions change identity every render
+  }, [hoveredMessage, hoveredNode])
 
   return (
     <>
       <nav
-        className="absolute inset-y-0 left-0 w-[40px]"
+        className="group/rail absolute inset-y-0 left-0 w-[40px]"
         data-testid={SESSION_FEED_IDS.rail}
         data-message-count={messages.length}
-        data-active-message-id={selectedId}
+        data-active-message-id={rail.selectedId}
         aria-label={t("messageNavigation")}
       >
-        {older ? <HistoryCap direction={HistoryDirection.Before} loadPage={loadPage} /> : null}
-        {/* Caps sit in their own column so the track keeps the scrollbar's full height and scale. */}
+        {/* Pages beyond the loaded window: only shown while the pointer or focus is on the rail. */}
+        <div className="opacity-0 transition-opacity group-focus-within/rail:opacity-100 group-hover/rail:opacity-100">
+          {older ? <HistoryCap direction={HistoryDirection.Before} loadPage={loadPage} /> : null}
+          {newer ? <HistoryCap direction={HistoryDirection.After} loadPage={loadPage} /> : null}
+        </div>
         <div ref={track} className="absolute inset-y-0 right-0 left-[16px]" data-testid={SESSION_FEED_IDS.railTrack}>
-          {/* Like a native scrollbar track, the free track is a pointer-only shortcut; markers carry keyboard navigation. */}
+          {/* The free track is a pointer-only shortcut to the nearest marker; markers carry keyboard navigation. */}
           <Button
             variant="ghost"
             className="absolute inset-0 h-auto cursor-default rounded-none p-0 hover:bg-transparent dark:hover:bg-transparent"
             tabIndex={-1}
             aria-hidden="true"
-            data-testid={SESSION_FEED_IDS.railSeek}
-            onClick={onTrackClick}
-          />
-          <div
-            className="pointer-events-none absolute inset-x-[3px] rounded-[4px] bg-muted"
-            style={{ top: band.top, height: band.size }}
-            data-testid={SESSION_FEED_IDS.railBand}
-            aria-hidden="true"
+            {...pointerHandlers}
+            onClick={() => {
+              if (hoveredMessage) preview.dismiss(hoveredMessage.id)
+              rail.onTrackClick()
+            }}
           />
           {groups.map((group, index) => (
             <RailMarker
               key={messages[group.first]!.id}
               group={group}
+              gap={gap}
+              pointer={pointer}
+              pointerHandlers={pointerHandlers}
+              current={index === selected}
               messages={messages}
               agent={agent}
-              current={index === selected}
               preview={preview}
               register={register}
               focus={focus}
@@ -60,7 +77,6 @@ export const MessageRail = memo(function MessageRail(props: MessageRailProps) {
             />
           ))}
         </div>
-        {newer ? <HistoryCap direction={HistoryDirection.After} loadPage={loadPage} /> : null}
       </nav>
       {preview.message && preview.target ? (
         <MessagePreview

@@ -7,7 +7,7 @@ import { box, expectLoadedMessages, jumpNear, railConversation } from './support
 import { scrollSettled } from './support/scroll-settled.js';
 import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
 import { SESSION_FEED_IDS, SESSION_PAGE_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
-import { RAIL_BAND_MIN_SIZE, RAIL_HIT_SIZE } from '../../apps/mini-app/src/pages/session/config/message-navigation.js';
+import { RAIL_HIT_SIZE } from '../../apps/mini-app/src/pages/session/config/message-navigation.js';
 
 const earlier = (page: Page) => byTestId(page, SESSION_FEED_IDS.railCap, { direction: HistoryDirection.Before });
 const later = (page: Page) => byTestId(page, SESSION_FEED_IDS.railCap, { direction: HistoryDirection.After });
@@ -62,10 +62,9 @@ test('loading an earlier page from the cap keeps the reading position', async ({
   expect(Math.abs((await row.evaluate((node) => node.getBoundingClientRect().top)) - before)).toBeLessThan(3);
 });
 
-test('with both caps visible the band still matches the scrollbar thumb', async ({ page }) => {
+test('with history beyond both ends, a busy later page never marks the later edge exhausted', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
 
-  // Short rows and a tall feed keep the band above its minimum size, where it equals scrollTop / scrollHeight × height.
   await page.setViewportSize({ width: 390, height: 1400 });
 
   const short = Array.from({ length: 330 }, (_, index) => ({
@@ -96,29 +95,6 @@ test('with both caps visible the band still matches the scrollbar thumb', async 
   await expect(earlier(page)).toBeVisible();
   await expect(later(page)).toBeVisible();
   await page.screenshot({ path: 'artifacts/chat-rail-caps-mobile.png' });
-
-  const feed = page.getByTestId(SESSION_FEED_IDS.root);
-
-  for (const top of [0.25, 0.5, 0.75]) {
-    await feed.evaluate((node, fraction) => node.scrollTo({ top: fraction * (node.scrollHeight - node.clientHeight) }), top);
-    await scrollSettled(feed);
-
-    await expect
-      .poll(async () => {
-        // Measured against the scroll container itself, which is what the native scrollbar spans.
-        const scroller = await box(feed);
-        const band = await box(page.getByTestId(SESSION_FEED_IDS.railBand));
-        const view = await feed.evaluate((node) => ({ top: node.scrollTop, size: node.clientHeight, extent: node.scrollHeight }));
-        const scale = scroller.height / view.extent;
-
-        return (
-          band.height > RAIL_BAND_MIN_SIZE &&
-          Math.abs(band.y - scroller.y - view.top * scale) < 1 &&
-          Math.abs(band.y + band.height - scroller.y - (view.top + view.size) * scale) < 1
-        );
-      })
-      .toBe(true);
-  }
 
   // An earlier page in flight makes the later request busy; that must not prove the later edge exhausted.
   let release!: () => void;

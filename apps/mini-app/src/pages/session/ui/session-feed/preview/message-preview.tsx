@@ -22,7 +22,7 @@ export function MessagePreview({ id, message, anchor, agent, keep, leave }: Mess
       ref={root}
       id={id}
       role="tooltip"
-      className="fixed z-50 max-h-[calc(100dvh_-_16px)] w-[min(360px,calc(100vw_-_16px))] overflow-hidden rounded-[12px] border border-border bg-surface px-[15px] py-[13px] text-foreground shadow-[0_6px_24px_color-mix(in_srgb,var(--foreground)_18%,transparent)]"
+      className="fixed z-50 max-h-[calc(100dvh_-_16px)] w-[min(320px,calc(100vw_-_16px))] overflow-hidden rounded-[10px] border border-border bg-surface px-[12px] py-[10px] text-foreground shadow-[0_6px_24px_color-mix(in_srgb,var(--foreground)_18%,transparent)]"
       data-testid={SESSION_FEED_IDS.preview}
       data-message-id={message.id}
       style={position}
@@ -30,7 +30,7 @@ export function MessagePreview({ id, message, anchor, agent, keep, leave }: Mess
       onPointerLeave={leave}
       onPointerDown={(event) => event.preventDefault()}
     >
-      <div className="mb-[7px] flex items-baseline justify-between gap-[12px] text-[12px]">
+      <div className="mb-[4px] flex items-baseline justify-between gap-[12px] text-[12px]">
         <strong className="text-primary" data-testid={SESSION_FEED_IDS.previewAuthor}>
           {message.role === MessageRole.User ? t("you") : agent}
         </strong>
@@ -53,9 +53,9 @@ export function MessagePreview({ id, message, anchor, agent, keep, leave }: Mess
   )
 }
 
-/** Denser rendered Markdown inside the hover preview. */
+/** Denser rendered Markdown inside the hover preview, cut to three lines like Codex. */
 const previewContentClass = [
-  "max-h-[min(260px,calc(100dvh_-_100px))] overflow-hidden text-[13px] leading-[1.5] wrap-anywhere",
+  "line-clamp-3 text-[13px] leading-[1.5] wrap-anywhere",
   "[&_.message-markdown_:is(p,ul,ol,blockquote,table,pre)]:my-[0.45rem]",
   "[&_.message-markdown_:is(h1,h2,h3,h4,h5,h6)]:mt-[0.6rem] [&_.message-markdown_:is(h1,h2,h3,h4,h5,h6)]:mb-[0.3rem] [&_.message-markdown_:is(h1,h2,h3,h4,h5,h6)]:text-[14px]",
   "[&_.message-markdown_:is(p,li)]:whitespace-pre-line",

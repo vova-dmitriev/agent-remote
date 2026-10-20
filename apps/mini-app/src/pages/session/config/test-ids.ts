@@ -27,8 +27,6 @@ export const SESSION_FEED_IDS = {
   virtualRow: "session-feed-virtual-row",
   rail: "session-feed-rail",
   railTrack: "session-feed-rail-track",
-  railSeek: "session-feed-rail-seek",
-  railBand: "session-feed-rail-band",
   railCap: "session-feed-rail-cap",
   marker: "session-feed-marker",
   railTick: "session-feed-rail-tick",

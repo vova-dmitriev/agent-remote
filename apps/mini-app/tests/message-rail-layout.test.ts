@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { RAIL_BAND_MIN_SIZE, RAIL_HIT_SIZE } from "../src/pages/session/config/message-navigation"
-import { railBand, railGroupOf, railGroups, railSeekOffset } from "../src/pages/session/lib/rail-layout"
+import { RAIL_HIT_SIZE, RailTick } from "../src/pages/session/config/message-navigation"
+import { nearestGroup, railGroupOf, railGroups, tickMagnification } from "../src/pages/session/lib/rail-layout"
 
 describe("message rail layout", () => {
   it("places every message on the track in the scrollbar's coordinate system", () => {
@@ -43,25 +43,21 @@ describe("message rail layout", () => {
     expect(railGroupOf(groups, 9)).toBe(-1)
   })
 
-  it("sizes and moves the viewport band exactly like the native thumb", () => {
-    expect(railBand({ scrollTop: 0, clientHeight: 500, scrollHeight: 2000 }, 400)).toEqual({ top: 0, size: 100 })
-    expect(railBand({ scrollTop: 750, clientHeight: 500, scrollHeight: 2000 }, 400)).toEqual({ top: 150, size: 100 })
-    expect(railBand({ scrollTop: 1500, clientHeight: 500, scrollHeight: 2000 }, 400)).toEqual({ top: 300, size: 100 })
-    expect(railBand({ scrollTop: 0, clientHeight: 500, scrollHeight: 400 }, 400)).toEqual({ top: 0, size: 400 })
+  it("picks the tick nearest the pointer, wherever on the track it is", () => {
+    const groups = railGroups([0, 1000, 3000], 4000, 400, 8)
+
+    expect(nearestGroup(groups, 0)).toBe(0)
+    expect(nearestGroup(groups, 60)).toBe(1)
+    expect(nearestGroup(groups, 210)).toBe(2)
+    expect(nearestGroup(groups, 400)).toBe(2)
+    expect(nearestGroup([], 10)).toBe(-1)
   })
 
-  it("keeps a tiny band visible and still reaches both ends", () => {
-    const viewport = { clientHeight: 100, scrollHeight: 100000 }
-
-    expect(railBand({ ...viewport, scrollTop: 0 }, 400)).toEqual({ top: 0, size: RAIL_BAND_MIN_SIZE })
-    expect(railBand({ ...viewport, scrollTop: 99900 }, 400)).toEqual({ top: 400 - RAIL_BAND_MIN_SIZE, size: RAIL_BAND_MIN_SIZE })
-  })
-
-  it("centers the viewport on a clicked track position within the scroll range", () => {
-    const viewport = { scrollTop: 0, clientHeight: 500, scrollHeight: 4000 }
-
-    expect(railSeekOffset(200, 400, viewport)).toBe(1750)
-    expect(railSeekOffset(0, 400, viewport)).toBe(0)
-    expect(railSeekOffset(400, 400, viewport)).toBe(3500)
+  it("magnifies the tick under the pointer fully and its neighbours less with distance", () => {
+    expect(tickMagnification(100, null)).toBe(0)
+    expect(tickMagnification(100, 100)).toBe(1)
+    expect(tickMagnification(100, 100 + RailTick.Reach / 2)).toBe(0.5)
+    expect(tickMagnification(100, 100 - RailTick.Reach)).toBe(0)
+    expect(tickMagnification(100, 100 + RailTick.Reach * 2)).toBe(0)
   })
 })
