@@ -34,7 +34,7 @@ function fixture() {
         throw new Fault(ErrorCode.NOT_FOUND, HttpStatus.NotFound);
       }
 
-      return { ...connection.device, revoked_at: null, last_seen_at: '', snapshot: null, connectors: [] };
+      return { ...connection.device, revoked_at: null, last_seen_at: 0, snapshot: null, connectors: [] };
     },
   };
 

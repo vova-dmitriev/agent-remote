@@ -1,5 +1,5 @@
 import { readFileSync, readdirSync } from 'node:fs';
-import { basename, dirname, join, relative, resolve, sep } from 'node:path';
+import { join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import ts from 'typescript';
 
@@ -28,28 +28,60 @@ function listSourceFiles(directory) {
   });
 }
 
-/** SQL may live in `repository.ts`, directly under a `repositories/` directory, or in the database layer. */
+/**
+ * Raw SQL lives only in the database layer (migrations, the journal, transactions). Repositories use Drizzle's query
+ * builder; `sql` fragments are allowed there for constructs the builder lacks, never `sql.raw`.
+ */
 function mayQuery(path) {
-  return (
-    basename(path) === 'repository.ts' ||
-    basename(dirname(path)) === 'repositories' ||
-    path.startsWith(DATABASE_DIRECTORY)
-  );
+  return path.startsWith(DATABASE_DIRECTORY);
 }
 
-/** Every `<receiver>.query(...)` / `<receiver>.query<T>(...)` call: pg pools, transactions and clients alike. */
-function queryLines(file) {
-  const lines = [];
+/**
+ * Repositories still on raw SQL while the move to Drizzle is in progress (Tasks 38–39). The list only shrinks:
+ * a file leaves it when it is migrated, and Task 40 empties it.
+ */
+export const RAW_SQL_PENDING = new Set([
+  'apps/server/src/auth/repository.ts',
+  'apps/server/src/auth/sessions/repository.ts',
+  'apps/server/src/commands/repositories/audit.ts',
+  'apps/server/src/commands/repositories/claims.ts',
+  'apps/server/src/continuity/repositories/conversations.ts',
+  'apps/server/src/continuity/repositories/handoffs.ts',
+  'apps/server/src/continuity/repositories/seed-proofs.ts',
+  'apps/server/src/health/repository.ts',
+  'apps/server/src/history/repository.ts',
+  'apps/server/src/notifications/repositories/notifications.ts',
+  'apps/server/src/profiles/repository.ts',
+  'apps/server/src/profiles/routing/repository.ts',
+  'apps/server/src/reading-position/repository.ts',
+  'apps/server/src/sessions/repository.ts',
+]);
+
+/** Raw SQL entry points: every `<receiver>.query(...)` call, every `sql.raw(...)` and every value import of `pg`. */
+function rawSql(file) {
+  const found = [];
+  const at = (node) => file.getLineAndCharacterOfPosition(node.getStart(file)).line + 1;
 
   const visit = (node) => {
-    if (
-      ts.isCallExpression(node) &&
-      ts.isPropertyAccessExpression(node.expression) &&
-      node.expression.name.text === 'query'
-    ) {
-      const { line } = file.getLineAndCharacterOfPosition(node.expression.name.getStart(file));
+    if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)) {
+      const name = node.expression.name.text;
+      const receiver = node.expression.expression;
 
-      lines.push(line + 1);
+      if (name === 'query') {
+        found.push({ line: at(node.expression.name), kind: 'raw SQL query; use the Drizzle query builder' });
+      } else if (name === 'raw' && ts.isIdentifier(receiver) && receiver.text === 'sql') {
+        found.push({ line: at(node.expression.name), kind: 'sql.raw; use sql`` fragments with parameters' });
+      }
+    }
+
+    if (
+      ts.isImportDeclaration(node) &&
+      ts.isStringLiteral(node.moduleSpecifier) &&
+      node.moduleSpecifier.text === 'pg' &&
+      !node.importClause?.isTypeOnly &&
+      !node.importClause?.namedBindings?.elements?.every((element) => element.isTypeOnly)
+    ) {
+      found.push({ line: at(node), kind: 'pg import outside the database layer' });
     }
 
     ts.forEachChild(node, visit);
@@ -57,13 +89,13 @@ function queryLines(file) {
 
   visit(file);
 
-  return lines;
+  return found;
 }
 
 export function checkSqlPlacement(root) {
   return listSourceFiles(join(root, SERVER_SOURCE))
     .map((file) => ({ file, path: relative(root, file).split(sep).join('/') }))
-    .filter(({ path }) => !mayQuery(path))
+    .filter(({ path }) => !mayQuery(path) && !RAW_SQL_PENDING.has(path))
     .sort((left, right) => left.path.localeCompare(right.path))
     .flatMap(({ file, path }) => {
       const parsed = ts.createSourceFile(
@@ -74,7 +106,7 @@ export function checkSqlPlacement(root) {
         ts.ScriptKind.TS,
       );
 
-      return queryLines(parsed).map((line) => `${path}:${line}: SQL query outside a repository`);
+      return rawSql(parsed).map(({ line, kind }) => `${path}:${line}: ${kind}`);
     });
 }
 
@@ -87,5 +119,5 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
     process.exit(1);
   }
 
-  console.log('SQL stays in repositories');
+  console.log('No raw SQL outside the database layer');
 }

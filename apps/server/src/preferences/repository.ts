@@ -1,32 +1,40 @@
 import type { AccountPreferences } from '@protocol';
+import { eq, sql } from 'drizzle-orm';
 import type { Database } from '../db/database.js';
+import { userPreferences } from '../db/schema/index.js';
+
+const columns = { language: userPreferences.language, theme: userPreferences.theme };
 
 export class PreferenceRepository {
   constructor(private readonly db: Database) {}
 
   async find(ownerId: string): Promise<AccountPreferences | undefined> {
-    const result = await this.db.pool.query<AccountPreferences>(
-      'SELECT language,theme FROM user_preferences WHERE owner_id=$1',
-      [ownerId],
-    );
+    const [row] = await this.db.orm
+      .select(columns)
+      .from(userPreferences)
+      .where(eq(userPreferences.ownerId, ownerId));
 
-    return result.rows[0];
+    return row as AccountPreferences | undefined;
   }
 
+  /** Upserts the owner's preferences; a null field keeps the stored value. */
   async save(
     ownerId: string,
     language: AccountPreferences['language'],
     theme: AccountPreferences['theme'],
   ): Promise<AccountPreferences> {
-    const result = await this.db.pool.query<AccountPreferences>(
-      `INSERT INTO user_preferences(owner_id,language,theme) VALUES($1,$2,$3)
-       ON CONFLICT(owner_id) DO UPDATE SET
-       language=COALESCE(EXCLUDED.language,user_preferences.language),
-       theme=COALESCE(EXCLUDED.theme,user_preferences.theme)
-       RETURNING language,theme`,
-      [ownerId, language, theme],
-    );
+    const [row] = await this.db.orm
+      .insert(userPreferences)
+      .values({ ownerId, language, theme })
+      .onConflictDoUpdate({
+        target: userPreferences.ownerId,
+        set: {
+          language: sql`coalesce(excluded.language, ${userPreferences.language})`,
+          theme: sql`coalesce(excluded.theme, ${userPreferences.theme})`,
+        },
+      })
+      .returning(columns);
 
-    return result.rows[0]!;
+    return row as AccountPreferences;
   }
 }

@@ -1,5 +1,7 @@
+import { and, asc, desc, eq, exists, gt, inArray, isNotNull, isNull, lte, min, or, sql } from 'drizzle-orm';
 import type { PoolClient } from 'pg';
-import type { Database } from '../../db/database.js';
+import { ormOn, type Database } from '../../db/database.js';
+import { attachmentBlobs, attachments, devices, sessions, users } from '../../db/schema/index.js';
 
 export interface OwnedSession {
   ownerId: string;
@@ -11,7 +13,7 @@ export interface StoredAttachmentRow {
   descriptor: unknown;
   device_id: string;
   session_id: string;
-  expires_at: string;
+  expires_at: number;
   available: boolean;
 }
 
@@ -27,6 +29,27 @@ export interface NewAttachment {
   sourcePosition: string | null;
 }
 
+/** The attachment's own bytes or a blob of the same owner it references. */
+const hasBytes = or(
+  isNotNull(attachments.bytes),
+  exists(
+    sql`(SELECT 1 FROM ${attachmentBlobs} WHERE ${attachmentBlobs.ownerId}=${attachments.ownerId} AND ${attachmentBlobs.sha256}=${attachments.blobSha256})`,
+  ),
+)!;
+
+/** The attachment's device belongs to its owner and is not revoked. */
+const liveDevice = and(eq(devices.ownerId, attachments.ownerId), eq(devices.id, attachments.deviceId))!;
+
+const inSession = (scope: OwnedSession) =>
+  and(
+    eq(attachments.ownerId, scope.ownerId),
+    eq(attachments.deviceId, scope.deviceId),
+    eq(attachments.sessionId, scope.sessionId),
+  )!;
+
+/** Blobs the owner keeps that no attachment references any more. */
+const unreferencedBlob = sql`NOT EXISTS (SELECT 1 FROM ${attachments} WHERE ${attachments.ownerId}=${attachmentBlobs.ownerId} AND ${attachments.blobSha256}=${attachmentBlobs.sha256})`;
+
 /** Uploaded attachments and their content-addressed blobs, per owner. */
 export class AttachmentRepository {
   constructor(private readonly db: Database) {}
@@ -37,65 +60,87 @@ export class AttachmentRepository {
 
   /** The data of an owned session on a live device. */
   async session(scope: OwnedSession): Promise<unknown> {
-    return (
-      await this.db.pool.query<{ data: unknown }>(
-        'SELECT s.data FROM sessions s JOIN devices d ON d.id=s.device_id AND d.owner_id=s.owner_id WHERE s.owner_id=$1 AND s.device_id=$2 AND s.id=$3 AND d.revoked_at IS NULL',
-        [scope.ownerId, scope.deviceId, scope.sessionId],
-      )
-    ).rows[0]?.data;
+    const [row] = await this.db.orm
+      .select({ data: sessions.data })
+      .from(sessions)
+      .innerJoin(devices, and(eq(devices.id, sessions.deviceId), eq(devices.ownerId, sessions.ownerId)))
+      .where(
+        and(
+          eq(sessions.ownerId, scope.ownerId),
+          eq(sessions.deviceId, scope.deviceId),
+          eq(sessions.id, scope.sessionId),
+          isNull(devices.revokedAt),
+        ),
+      );
+
+    return row?.data;
   }
 
   /** The device of an owned session on a live device. */
   async sessionDevice(ownerId: string, sessionId: string): Promise<string | undefined> {
-    return (
-      await this.db.pool.query<{ device_id: string }>(
-        'SELECT s.device_id FROM sessions s JOIN devices d ON d.id=s.device_id AND d.owner_id=s.owner_id WHERE s.owner_id=$1 AND s.id=$2 AND d.revoked_at IS NULL',
-        [ownerId, sessionId],
-      )
-    ).rows[0]?.device_id;
+    const [row] = await this.db.orm
+      .select({ deviceId: sessions.deviceId })
+      .from(sessions)
+      .innerJoin(devices, and(eq(devices.id, sessions.deviceId), eq(devices.ownerId, sessions.ownerId)))
+      .where(and(eq(sessions.ownerId, ownerId), eq(sessions.id, sessionId), isNull(devices.revokedAt)));
+
+    return row?.deviceId;
   }
 
   /** Serializes an owner's uploads. */
   async lockOwner(tx: PoolClient, ownerId: string) {
-    await tx.query('SELECT id FROM users WHERE id=$1 FOR UPDATE', [ownerId]);
+    await ormOn(tx).select({ id: users.id }).from(users).where(eq(users.id, ownerId)).for('update');
   }
 
   /** Holds an owned, unrevoked device against revocation; returns whether it exists. */
   async shareDevice(tx: PoolClient, ownerId: string, deviceId: string): Promise<boolean> {
-    return Boolean(
-      (
-        await tx.query(
-          'SELECT id FROM devices WHERE owner_id=$1 AND id=$2 AND revoked_at IS NULL FOR SHARE',
-          [ownerId, deviceId],
-        )
-      ).rowCount,
-    );
+    const rows = await ormOn(tx)
+      .select({ id: devices.id })
+      .from(devices)
+      .where(and(eq(devices.ownerId, ownerId), eq(devices.id, deviceId), isNull(devices.revokedAt)))
+      .for('share');
+
+    return rows.length > 0;
   }
 
   async sessionData(tx: PoolClient, scope: OwnedSession): Promise<unknown> {
-    return (
-      await tx.query<{ data: unknown }>(
-        'SELECT data FROM sessions WHERE owner_id=$1 AND device_id=$2 AND id=$3',
-        [scope.ownerId, scope.deviceId, scope.sessionId],
-      )
-    ).rows[0]?.data;
+    const [row] = await ormOn(tx)
+      .select({ data: sessions.data })
+      .from(sessions)
+      .where(
+        and(
+          eq(sessions.ownerId, scope.ownerId),
+          eq(sessions.deviceId, scope.deviceId),
+          eq(sessions.id, scope.sessionId),
+        ),
+      );
+
+    return row?.data;
   }
 
   async stored(tx: PoolClient, ownerId: string, id: string): Promise<StoredAttachmentRow | undefined> {
-    return (
-      await tx.query<StoredAttachmentRow>(
-        'SELECT descriptor,device_id,session_id,expires_at,(bytes IS NOT NULL OR EXISTS(SELECT 1 FROM attachment_blobs b WHERE b.owner_id=attachments.owner_id AND b.sha256=attachments.blob_sha256)) AS available FROM attachments WHERE owner_id=$1 AND id=$2',
-        [ownerId, id],
-      )
-    ).rows[0];
+    const [row] = await ormOn(tx)
+      .select({
+        descriptor: attachments.descriptor,
+        device_id: attachments.deviceId,
+        session_id: attachments.sessionId,
+        expires_at: attachments.expiresAt,
+        available: sql<boolean>`${hasBytes}`,
+      })
+      .from(attachments)
+      .where(and(eq(attachments.ownerId, ownerId), eq(attachments.id, id)));
+
+    return row;
   }
 
   /** Points a device export at the message it came from. */
   async setSource(tx: PoolClient, ownerId: string, id: string, messageId: string, position: string) {
-    await tx.query(
-      'UPDATE attachments SET source_message_id=$3,source_position=$4 WHERE owner_id=$1 AND id=$2 AND device_export',
-      [ownerId, id, messageId, position],
-    );
+    await ormOn(tx)
+      .update(attachments)
+      .set({ sourceMessageId: messageId, sourcePosition: position })
+      .where(
+        and(eq(attachments.ownerId, ownerId), eq(attachments.id, id), eq(attachments.deviceExport, true)),
+      );
   }
 
   /** Fills a device export's missing source from the given one. */
@@ -106,32 +151,40 @@ export class AttachmentRepository {
     messageId: string | null,
     position: string | null,
   ) {
-    await tx.query(
-      'UPDATE attachments SET source_message_id=coalesce($3,source_message_id),source_position=coalesce($4,source_position) WHERE owner_id=$1 AND id=$2 AND device_export',
-      [ownerId, id, messageId, position],
-    );
+    await ormOn(tx)
+      .update(attachments)
+      .set({
+        sourceMessageId: sql`coalesce(${messageId}, ${attachments.sourceMessageId})`,
+        sourcePosition: sql`coalesce(${position}, ${attachments.sourcePosition})`,
+      })
+      .where(
+        and(eq(attachments.ownerId, ownerId), eq(attachments.id, id), eq(attachments.deviceExport, true)),
+      );
   }
 
   async insertBlob(tx: PoolClient, ownerId: string, sha256: string, bytes: Buffer) {
-    await tx.query(
-      'INSERT INTO attachment_blobs(owner_id,sha256,bytes) VALUES($1,$2,$3) ON CONFLICT DO NOTHING',
-      [ownerId, sha256, bytes],
-    );
+    await ormOn(tx).insert(attachmentBlobs).values({ ownerId, sha256, bytes }).onConflictDoNothing();
   }
 
   async hasBlob(tx: PoolClient, ownerId: string, sha256: string): Promise<boolean> {
-    return Boolean(
-      (await tx.query('SELECT 1 FROM attachment_blobs WHERE owner_id=$1 AND sha256=$2', [ownerId, sha256]))
-        .rowCount,
-    );
+    const rows = await ormOn(tx)
+      .select({ sha256: attachmentBlobs.sha256 })
+      .from(attachmentBlobs)
+      .where(and(eq(attachmentBlobs.ownerId, ownerId), eq(attachmentBlobs.sha256, sha256)));
+
+    return rows.length > 0;
   }
 
   async delete(tx: PoolClient, ownerId: string, id: string) {
-    await tx.query('DELETE FROM attachments WHERE owner_id=$1 AND id=$2', [ownerId, id]);
+    await ormOn(tx)
+      .delete(attachments)
+      .where(and(eq(attachments.ownerId, ownerId), eq(attachments.id, id)));
   }
 
   async deleteExpired(tx: PoolClient, ownerId: string, now: number) {
-    await tx.query('DELETE FROM attachments WHERE owner_id=$1 AND expires_at<=$2', [ownerId, now]);
+    await ormOn(tx)
+      .delete(attachments)
+      .where(and(eq(attachments.ownerId, ownerId), lte(attachments.expiresAt, now)));
   }
 
   /** The newest unexpired device export of the same file in a session. */
@@ -141,123 +194,186 @@ export class AttachmentRepository {
     file: { sha256: string; name: string; mimeType: string },
     expiresAfter: number,
   ) {
-    return (
-      await tx.query<{ descriptor: unknown; inline: boolean }>(
-        "SELECT descriptor,bytes IS NOT NULL AS inline FROM attachments WHERE owner_id=$1 AND device_id=$2 AND session_id=$3 AND descriptor->>'sha256'=$4 AND descriptor->>'name'=$5 AND descriptor->>'mimeType'=$6 AND expires_at>$7 ORDER BY created_at DESC LIMIT 1",
-        [scope.ownerId, scope.deviceId, scope.sessionId, file.sha256, file.name, file.mimeType, expiresAfter],
+    const [row] = await ormOn(tx)
+      .select({ descriptor: attachments.descriptor, inline: sql<boolean>`${attachments.bytes} IS NOT NULL` })
+      .from(attachments)
+      .where(
+        and(
+          inSession(scope),
+          sql`${attachments.descriptor}->>'sha256'=${file.sha256}`,
+          sql`${attachments.descriptor}->>'name'=${file.name}`,
+          sql`${attachments.descriptor}->>'mimeType'=${file.mimeType}`,
+          gt(attachments.expiresAt, expiresAfter),
+        ),
       )
-    ).rows[0];
+      .orderBy(desc(attachments.createdAt))
+      .limit(1);
+
+    return row;
   }
 
   async insert(tx: PoolClient, scope: OwnedSession, attachment: NewAttachment) {
-    await tx.query(
-      'INSERT INTO attachments(owner_id,device_id,session_id,id,descriptor,bytes,created_at,expires_at,blob_sha256,device_export,source_message_id,source_position) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)',
-      [
-        scope.ownerId,
-        scope.deviceId,
-        scope.sessionId,
-        attachment.id,
-        attachment.descriptor,
-        attachment.bytes,
-        attachment.createdAt,
-        attachment.expiresAt,
-        attachment.blobSha256,
-        attachment.deviceExport,
-        attachment.sourceMessageId,
-        attachment.sourcePosition,
-      ],
-    );
+    await ormOn(tx)
+      .insert(attachments)
+      .values({
+        ownerId: scope.ownerId,
+        deviceId: scope.deviceId,
+        sessionId: scope.sessionId,
+        id: attachment.id,
+        descriptor: sql`${attachment.descriptor}::jsonb`,
+        bytes: attachment.bytes,
+        createdAt: attachment.createdAt,
+        expiresAt: attachment.expiresAt,
+        blobSha256: attachment.blobSha256,
+        deviceExport: attachment.deviceExport,
+        sourceMessageId: attachment.sourceMessageId,
+        sourcePosition: attachment.sourcePosition,
+      });
   }
 
   /** An owned attachment's descriptor, bytes (inline or from its blob) and expiry, on a live device. */
   async read(scope: OwnedSession, id: string) {
-    return (
-      await this.db.pool.query<{ descriptor: unknown; bytes: Buffer; expires_at: string }>(
-        'SELECT a.descriptor,coalesce(a.bytes,b.bytes) AS bytes,a.expires_at FROM attachments a LEFT JOIN attachment_blobs b ON b.owner_id=a.owner_id AND b.sha256=a.blob_sha256 JOIN devices d ON d.owner_id=a.owner_id AND d.id=a.device_id WHERE a.owner_id=$1 AND a.device_id=$2 AND a.session_id=$3 AND a.id=$4 AND d.revoked_at IS NULL',
-        [scope.ownerId, scope.deviceId, scope.sessionId, id],
+    const [row] = await this.db.orm
+      .select({
+        descriptor: attachments.descriptor,
+        bytes: sql<Buffer>`coalesce(${attachments.bytes}, ${attachmentBlobs.bytes})`,
+        expires_at: attachments.expiresAt,
+      })
+      .from(attachments)
+      .leftJoin(
+        attachmentBlobs,
+        and(
+          eq(attachmentBlobs.ownerId, attachments.ownerId),
+          eq(attachmentBlobs.sha256, attachments.blobSha256),
+        ),
       )
-    ).rows[0];
+      .innerJoin(devices, liveDevice)
+      .where(and(inSession(scope), eq(attachments.id, id), isNull(devices.revokedAt)));
+
+    return row;
   }
 
   async available(scope: OwnedSession, id: string, now: number): Promise<boolean> {
-    const result = await this.db.pool.query(
-      'SELECT 1 FROM attachments a JOIN devices d ON d.owner_id=a.owner_id AND d.id=a.device_id WHERE a.owner_id=$1 AND a.device_id=$2 AND a.session_id=$3 AND a.id=$4 AND a.expires_at>$5 AND d.revoked_at IS NULL AND (a.bytes IS NOT NULL OR EXISTS(SELECT 1 FROM attachment_blobs b WHERE b.owner_id=a.owner_id AND b.sha256=a.blob_sha256))',
-      [scope.ownerId, scope.deviceId, scope.sessionId, id, now],
-    );
+    const rows = await this.db.orm
+      .select({ id: attachments.id })
+      .from(attachments)
+      .innerJoin(devices, liveDevice)
+      .where(
+        and(
+          inSession(scope),
+          eq(attachments.id, id),
+          gt(attachments.expiresAt, now),
+          isNull(devices.revokedAt),
+          hasBytes,
+        ),
+      );
 
-    return Boolean(result.rowCount);
+    return rows.length > 0;
   }
 
   async source(scope: OwnedSession, id: string, now: number) {
-    return (
-      await this.db.pool.query<{ source_message_id: string; source_position: string }>(
-        'SELECT a.source_message_id,a.source_position FROM attachments a JOIN devices d ON d.owner_id=a.owner_id AND d.id=a.device_id WHERE a.owner_id=$1 AND a.device_id=$2 AND a.session_id=$3 AND a.id=$4 AND a.expires_at>$5 AND d.revoked_at IS NULL AND a.device_export AND a.source_message_id IS NOT NULL AND a.source_position IS NOT NULL',
-        [scope.ownerId, scope.deviceId, scope.sessionId, id, now],
-      )
-    ).rows[0];
+    const [row] = await this.db.orm
+      .select({ source_message_id: attachments.sourceMessageId, source_position: attachments.sourcePosition })
+      .from(attachments)
+      .innerJoin(devices, liveDevice)
+      .where(
+        and(
+          inSession(scope),
+          eq(attachments.id, id),
+          gt(attachments.expiresAt, now),
+          isNull(devices.revokedAt),
+          eq(attachments.deviceExport, true),
+          isNotNull(attachments.sourceMessageId),
+          isNotNull(attachments.sourcePosition),
+        ),
+      );
+
+    return row as { source_message_id: string; source_position: string } | undefined;
   }
 
   async descriptors(scope: OwnedSession, ids: readonly string[]) {
-    return (
-      await this.db.pool.query<{ id: string; descriptor: unknown; expires_at: string }>(
-        'SELECT a.id,a.descriptor,a.expires_at FROM attachments a JOIN devices d ON d.owner_id=a.owner_id AND d.id=a.device_id WHERE a.owner_id=$1 AND a.device_id=$2 AND a.session_id=$3 AND a.id=ANY($4::text[]) AND d.revoked_at IS NULL',
-        [scope.ownerId, scope.deviceId, scope.sessionId, ids],
-      )
-    ).rows;
+    if (!ids.length) {
+      return [];
+    }
+
+    return this.db.orm
+      .select({ id: attachments.id, descriptor: attachments.descriptor, expires_at: attachments.expiresAt })
+      .from(attachments)
+      .innerJoin(devices, liveDevice)
+      .where(and(inSession(scope), inArray(attachments.id, [...ids]), isNull(devices.revokedAt)));
   }
 
   /** Drops every owner's expired attachments, then blobs no attachment references. */
   async prune(now: number) {
     return this.db.transaction(async (tx) => {
-      const result = await tx.query('DELETE FROM attachments WHERE expires_at<=$1', [now]);
+      const orm = ormOn(tx);
+      const result = await orm.delete(attachments).where(lte(attachments.expiresAt, now));
 
-      await tx.query(
-        'DELETE FROM attachment_blobs b WHERE NOT EXISTS(SELECT 1 FROM attachments a WHERE a.owner_id=b.owner_id AND a.blob_sha256=b.sha256)',
-      );
+      await orm.delete(attachmentBlobs).where(unreferencedBlob);
 
       return result;
     });
   }
 
   async pruneBlobs(tx: PoolClient, ownerId: string) {
-    await tx.query(
-      'DELETE FROM attachment_blobs b WHERE b.owner_id=$1 AND NOT EXISTS(SELECT 1 FROM attachments a WHERE a.owner_id=b.owner_id AND a.blob_sha256=b.sha256)',
-      [ownerId],
-    );
+    await ormOn(tx)
+      .delete(attachmentBlobs)
+      .where(and(eq(attachmentBlobs.ownerId, ownerId), unreferencedBlob));
   }
 
   /** Bytes an owner stores inline and in blobs. */
   async usage(tx: PoolClient, ownerId: string): Promise<number> {
-    const size = (
-      await tx.query<{ total: string }>(
-        `SELECT ((SELECT coalesce(sum(octet_length(bytes)),0) FROM attachments WHERE owner_id=$1)+(SELECT coalesce(sum(octet_length(bytes)),0) FROM attachment_blobs WHERE owner_id=$1))::text AS total`,
-        [ownerId],
-      )
-    ).rows[0];
+    const [row] = await ormOn(tx)
+      .select({
+        total: sql<string>`((SELECT coalesce(sum(octet_length(${attachments.bytes})),0) FROM ${attachments} WHERE ${attachments.ownerId}=${ownerId})+(SELECT coalesce(sum(octet_length(${attachmentBlobs.bytes})),0) FROM ${attachmentBlobs} WHERE ${attachmentBlobs.ownerId}=${ownerId}))::text`,
+      })
+      .from(sql`(SELECT 1) AS one`);
 
-    return Number(size?.total ?? 0);
+    return Number(row?.total ?? 0);
   }
 
   /** Blobs only device exports reference, oldest first: the ones quota may evict. */
   async evictable(tx: PoolClient, ownerId: string) {
-    return (
-      await tx.query<{ sha256: string; size: number }>(
-        `SELECT b.sha256,max(octet_length(b.bytes))::int AS size FROM attachment_blobs b JOIN attachments a ON a.owner_id=b.owner_id AND a.blob_sha256=b.sha256 WHERE b.owner_id=$1 GROUP BY b.sha256 HAVING bool_and(a.device_export) ORDER BY min(a.created_at)`,
-        [ownerId],
+    return ormOn(tx)
+      .select({
+        sha256: attachmentBlobs.sha256,
+        size: sql<number>`max(octet_length(${attachmentBlobs.bytes}))::int`,
+      })
+      .from(attachmentBlobs)
+      .innerJoin(
+        attachments,
+        and(
+          eq(attachments.ownerId, attachmentBlobs.ownerId),
+          eq(attachments.blobSha256, attachmentBlobs.sha256),
+        ),
       )
-    ).rows;
+      .where(eq(attachmentBlobs.ownerId, ownerId))
+      .groupBy(attachmentBlobs.sha256)
+      .having(sql`bool_and(${attachments.deviceExport})`)
+      .orderBy(asc(min(attachments.createdAt)));
   }
 
   /** Drops evicted blobs and the sourceless device exports that reference them. */
   async evict(tx: PoolClient, ownerId: string, sha256s: readonly string[]) {
-    await tx.query(
-      'DELETE FROM attachments WHERE owner_id=$1 AND device_export AND source_position IS NULL AND blob_sha256=ANY($2::text[])',
-      [ownerId, sha256s],
-    );
+    if (!sha256s.length) {
+      return;
+    }
 
-    await tx.query('DELETE FROM attachment_blobs WHERE owner_id=$1 AND sha256=ANY($2::text[])', [
-      ownerId,
-      sha256s,
-    ]);
+    const orm = ormOn(tx);
+
+    await orm
+      .delete(attachments)
+      .where(
+        and(
+          eq(attachments.ownerId, ownerId),
+          eq(attachments.deviceExport, true),
+          isNull(attachments.sourcePosition),
+          inArray(attachments.blobSha256, [...sha256s]),
+        ),
+      );
+
+    await orm
+      .delete(attachmentBlobs)
+      .where(and(eq(attachmentBlobs.ownerId, ownerId), inArray(attachmentBlobs.sha256, [...sha256s])));
   }
 }

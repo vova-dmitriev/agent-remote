@@ -5,6 +5,7 @@
 - Keep responses terse and concrete; preserve technical details.
 - Follow the plans and specifications linked from README.md. Creating this repository does not authorize implementing or deploying the application.
 - Support multiple users with ownership checks on every data and command path.
+- Server data access goes through Drizzle query builders in repositories (`apps/server/src/db/schema` mirrors the SQL migrations; a drift test keeps them equal). No raw SQL strings, `.query(` calls, `sql.raw` or value imports of `pg` outside `apps/server/src/db/`; `sql` template fragments with parameters are allowed in repositories only for constructs the builder lacks. Schema changes stay SQL migrations plus the matching schema edit. `npm run lint:sql` enforces this.
 - cmux is optional. Keep Claude Desktop Chat, Desktop Code, native CLI and managed PTY capabilities distinct.
 - Never claim Desktop Chat Accessibility integration works before verifying it against the actual application.
 - Never import or call `expect` or any assertion API in `*.stories.*`. Storybook play functions may only perform interactions; assertions belong in test/spec files.

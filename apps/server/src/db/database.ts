@@ -1,10 +1,19 @@
 import { ServerErrorCode } from '../error-codes.js';
 import { Pool, type PoolClient } from 'pg';
+import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
+import * as schema from './schema/index.js';
 import { readFile } from 'node:fs/promises';
 import { applyMigrationJournal, MigrationVersion } from './migration-journal.js';
 
+/** Typed query builder over the relay schema; repositories use it instead of SQL strings. */
+export type Orm = NodePgDatabase<typeof schema>;
+
+/** Binds the query builder to a pool or to one transaction's client, so a transaction stays on its connection. */
+export const ormOn = (client: Pool | PoolClient): Orm => drizzle({ client, schema });
+
 export class Database {
   readonly pool: Pool;
+  readonly orm: Orm;
   constructor(url: string, schema = 'public') {
     if (!/^[a-z][a-z0-9_]*$/.test(schema)) {
       throw new Error(ServerErrorCode.INVALID_DB_SCHEMA);
@@ -17,6 +26,8 @@ export class Database {
       connectionTimeoutMillis: 5000,
       statement_timeout: 10000,
     });
+
+    this.orm = ormOn(this.pool);
   }
   async migrate() {
     const migrations = await Promise.all(
