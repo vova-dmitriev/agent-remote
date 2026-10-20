@@ -44,11 +44,17 @@ function failedState(error: unknown): LegacyHookSocketState {
  */
 export async function startLegacyHookSocket(
   listen: (socket: HookSocketOptions) => Promise<HookListener>,
-  options: { retryMs?: number } = {},
+  options: { retryMs?: number; onState?: (state: LegacyHookSocketState) => void } = {},
 ) {
   const directory = defaultStateDirectory();
   const retryMs = options.retryMs ?? LEGACY_HOOK_RETRY_MS;
-  let state: LegacyHookSocketState = LegacyHookSocketState.Disabled;
+  let current: LegacyHookSocketState = LegacyHookSocketState.Disabled;
+
+  const setState = (next: LegacyHookSocketState) => {
+    current = next;
+    options.onState?.(next);
+  };
+
   let server: HookListener | undefined;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let stopped = false;
@@ -67,7 +73,7 @@ export async function startLegacyHookSocket(
     }
 
     server = undefined;
-    state = LegacyHookSocketState.Released;
+    setState(LegacyHookSocketState.Released);
     retired.add(listener);
     void listener.close().finally(() => retired.delete(listener));
     schedule();
@@ -101,15 +107,15 @@ export async function startLegacyHookSocket(
       }
 
       server = listener;
-      state = LegacyHookSocketState.Listening;
+      setState(LegacyHookSocketState.Listening);
 
       if (releasedEarly) {
         released(listener);
       }
     } catch (error) {
-      state = failedState(error);
+      setState(failedState(error));
 
-      if (state === LegacyHookSocketState.Occupied) {
+      if (current === LegacyHookSocketState.Occupied) {
         schedule();
       }
     }
@@ -119,7 +125,7 @@ export async function startLegacyHookSocket(
 
   return {
     get state() {
-      return state;
+      return current;
     },
     async close() {
       stopped = true;

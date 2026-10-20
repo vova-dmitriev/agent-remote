@@ -20,6 +20,8 @@ import { startHookServer, type HookSocketOptions } from '@daemon/code/hooks/hook
 import { startLegacyHookSocket } from '@daemon/code/hooks/legacy-socket.js';
 import { startHookWiring } from '@daemon/runtime/wiring/hook-wiring.js';
 import { requestLocal } from '@daemon/code/hooks/ipc.js';
+import { deliverHook, hookTargets } from '@daemon/code/hooks/hook-delivery.js';
+import { existsSync } from 'node:fs';
 import { localSecret, socketPath } from '@daemon/config.js';
 
 const RETRY_MS = 20;
@@ -510,3 +512,50 @@ it.each([
     await expect(lstat(join(directory, 'hooks.sock'))).rejects.toMatchObject({ code: 'ENOENT' });
   },
 );
+
+it('delivers `remote hook` to both the CLI daemon and a desktop companion that yielded it the path', async () => {
+  const cli = await cliDaemon();
+  const directory = join(home, 'companion');
+  const { adapters, permissions, monitor } = runtime();
+
+  const wiring = await startHookWiring({
+    path: join(directory, 'hooks.sock'),
+    token: await localSecret(directory),
+    deviceId: 'device',
+    monitor,
+    adapters,
+    permissions,
+    inputEnabled: false,
+    permissionsEnabled: false,
+    codex: {} as never,
+    desktopBridge: {} as never,
+    desktopBindings: new Map(),
+    readers: {} as never,
+    legacyClaudeHooks: true,
+    store: { cmuxSessions: () => [] },
+    nativeProcesses: {} as never,
+  });
+
+  try {
+    expect(wiring.legacyHookSocket).toBe(LegacyHookSocketState.Occupied);
+
+    // `remote hook` runs without CLAUDE_REMOTE_HOME, from the CLI default home.
+    vi.stubEnv('CLAUDE_REMOTE_HOME', undefined);
+    await until(() => existsSync(join(legacyDirectory, 'hook-peer.json')));
+
+    expect(
+      await deliverHook(
+        await hookTargets(),
+        { type: IpcMessageType.Hook, payload: hook('both', ClaudeHookEvent.SessionStart) },
+        1500,
+      ),
+    ).toEqual({});
+
+    expect(cli.monitor.snapshot().sessions).toHaveLength(1);
+    expect(monitor.snapshot().sessions).toHaveLength(1);
+  } finally {
+    await wiring.close();
+  }
+
+  expect(existsSync(join(legacyDirectory, 'hook-peer.json'))).toBe(false);
+});

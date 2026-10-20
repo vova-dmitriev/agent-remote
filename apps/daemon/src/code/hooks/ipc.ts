@@ -49,7 +49,13 @@ export interface LocalReply {
   result?: { connected?: number };
 }
 
-export function requestLocal(path: string, frame: unknown, timeoutMs = 5000): Promise<LocalReply> {
+/** One request over a local socket; aborting `signal` drops it, which the peer sees as a closed request. */
+export function requestLocal(
+  path: string,
+  frame: unknown,
+  timeoutMs = 5000,
+  signal?: AbortSignal,
+): Promise<LocalReply> {
   return new Promise((resolve, reject) => {
     const socket = connect(path);
 
@@ -76,6 +82,7 @@ export function requestLocal(path: string, frame: unknown, timeoutMs = 5000): Pr
       }
     };
 
+    signal?.addEventListener('abort', () => done(new CodedError(ErrorCode.IPC_CLOSED)), { once: true });
     socket.on('connect', () => writeFrame(socket, frame));
     socket.on('error', (error) => done(error));
     socket.on('close', () => done(new CodedError(ErrorCode.IPC_CLOSED)));

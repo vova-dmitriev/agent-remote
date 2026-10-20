@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { loadConfig, localSecret, socketPath, stateDirectory } from './config.js';
 import { readRelayStatus, relayStatusIsLive } from './diagnostics/relay-status.js';
 import { requestLocal } from './code/hooks/ipc.js';
+import { deliverHook, hookTargets } from './code/hooks/hook-delivery.js';
 import { installHooks, uninstallHooks } from './code/hooks/install-hooks.js';
 import { startDaemon } from './main.js';
 import { startClaude } from './cli/wrapper.js';
@@ -245,13 +246,12 @@ export async function runCli(argv = process.argv.slice(2)) {
       }
 
       const payload = JSON.parse(input);
-      const token = await localSecret();
 
-      const result = await requestLocal(
-        socketPath(),
+      // The CLI daemon and a desktop companion both watch this Mac's sessions; the first decision answers.
+      const output = await deliverHook(
+        await hookTargets(),
         {
           type: IpcMessageType.Hook,
-          token,
           payload,
           ...(process.env.CLAUDE_REMOTE_WRAPPER_ID
             ? { wrapperId: process.env.CLAUDE_REMOTE_WRAPPER_ID }
@@ -260,7 +260,7 @@ export async function runCli(argv = process.argv.slice(2)) {
         payload.hook_event_name === ClaudeHookEvent.PermissionRequest ? 50000 : 1500,
       );
 
-      process.stdout.write(JSON.stringify(result.output ?? {}) + '\n');
+      process.stdout.write(JSON.stringify(output) + '\n');
     } catch {
       process.stdout.write('{}\n');
     }

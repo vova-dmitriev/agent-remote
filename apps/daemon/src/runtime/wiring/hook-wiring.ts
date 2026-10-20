@@ -11,6 +11,8 @@ import { hasErrorCode } from '@protocol';
 import { DaemonErrorCode } from '../../error-codes.js';
 import { startHookServer, type HookSocketOptions } from '../../code/hooks/hook-server.js';
 import { requestHookSocketRelease, startLegacyHookSocket } from '../../code/hooks/legacy-socket.js';
+import { removeHookPeer, writeHookPeer } from '../../code/hooks/hook-delivery.js';
+import { dirname } from 'node:path';
 import type { DesktopBindingEntry } from '../source-poller.js';
 import type { LocalStore } from '../../monitor/store.js';
 import type { NativeProcesses } from '../../sessions/native-process.js';
@@ -113,8 +115,14 @@ export async function startHookWiring(deps: HookWiringDeps) {
   }).catch((error: unknown) => logDebug('runtime/wiring/hook-wiring', error));
 
   // Desktop companion only: the CLI daemon owns the legacy path itself.
+  // While the CLI daemon holds the legacy path, `remote hook` also delivers to this companion's own socket.
+  const peer = (state: LegacyHookSocketState) =>
+    void (
+      state === LegacyHookSocketState.Listening ? removeHookPeer() : writeHookPeer(dirname(deps.path))
+    ).catch((error: unknown) => logDebug('runtime/wiring/hook-wiring', error));
+
   const legacy = deps.legacyClaudeHooks
-    ? await startLegacyHookSocket(listen)
+    ? await startLegacyHookSocket(listen, { onState: peer })
     : { state: LegacyHookSocketState.Disabled, close: async () => {} };
 
   if (deps.legacyClaudeHooks && legacy.state !== LegacyHookSocketState.Listening) {
@@ -127,6 +135,11 @@ export async function startHookWiring(deps: HookWiringDeps) {
     },
     async close() {
       await legacy.close();
+
+      if (deps.legacyClaudeHooks) {
+        await removeHookPeer().catch((error: unknown) => logDebug('runtime/wiring/hook-wiring', error));
+      }
+
       await primary.close();
     },
   };
