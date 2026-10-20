@@ -8,6 +8,7 @@ import { LOCAL_LIMITS } from './local-limits.js';
 import { MAX_ATTACHMENT_BYTES, attachmentsSchema } from '../history/attachments.js';
 import { profileRequestSchema } from '../profile/profile-access.js';
 import { subagentIdSchema } from '../session/subagents.js';
+import { sessionFileQuerySchema } from '../session/file-changes.js';
 
 const id = z.string().min(1).max(512);
 const attachmentId = z.uuid();
@@ -41,6 +42,12 @@ export const localActionSchema = z.discriminatedUnion('operation', [
     title: z.string().trim().min(1).max(512),
   }),
   z.strictObject({ ...operation(LocalOperation.Pin), ...session, generation: id, pinned: z.boolean() }),
+  z.strictObject({
+    ...operation(LocalOperation.File),
+    ...session,
+    generation: id,
+    ...sessionFileQuerySchema.shape,
+  }),
   z.strictObject({ ...operation(LocalOperation.ReadingGet), ...session }),
   z.strictObject({
     ...operation(LocalOperation.ReadingSave),

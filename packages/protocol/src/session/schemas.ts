@@ -19,7 +19,7 @@ import { ConnectorTransport, FrameType, MessageRole, TargetKind } from '../conne
 import { AttachmentMode } from '../history/values.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import { z } from 'zod';
-import { sessionChangesSchema } from './file-changes.js';
+import { sessionChangesSchema, sessionFileQuerySchema, sessionFileSchema } from './file-changes.js';
 import { sessionActivitySchema, toolActivitySchema } from './activity.js';
 import { historyReadSchema, historyDoneSchema } from '../history/history-window.js';
 import { subagentSchema } from './subagents.js';
@@ -319,6 +319,14 @@ export const deviceFrameSchema = z.discriminatedUnion('type', [
   }),
   historyDoneSchema,
   z.strictObject({
+    type: z.literal(FrameType.FileResult),
+    requestId: z.uuid(),
+    reply: z.discriminatedUnion('ok', [
+      z.strictObject({ ok: z.literal(true), file: sessionFileSchema }),
+      z.strictObject({ ok: z.literal(false), code: z.enum(ErrorCode) }),
+    ]),
+  }),
+  z.strictObject({
     type: z.literal(FrameType.HistoryItem),
     requestId: id,
     sessionId: id,
@@ -382,6 +390,12 @@ export const serverFrameSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal(FrameType.Ack), cursor: cursorSchema }),
   handoffSeedAdmissionFrameSchema,
   continuityRequestFrameSchema,
+  z.strictObject({
+    type: z.literal(FrameType.FileRequest),
+    requestId: z.uuid(),
+    sessionId: id,
+    ...sessionFileQuerySchema.shape,
+  }),
 ]);
 export type Target = z.infer<typeof targetSchema>;
 export type CmuxTarget = Extract<Target, { kind: typeof TargetKind.Cmux }>;

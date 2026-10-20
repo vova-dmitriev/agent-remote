@@ -152,14 +152,13 @@ export class LocalController {
         );
       case LocalOperation.Devices:
         return [{ id: this.options.deviceId, last_seen_at: new Date().toISOString() }];
-      case LocalOperation.Select:
-        return null;
       case LocalOperation.PreferencesGet:
       case LocalOperation.PreferencesSave:
       case LocalOperation.ReadingGet:
       case LocalOperation.ReadingSave:
       case LocalOperation.Rename:
       case LocalOperation.Pin:
+      case LocalOperation.File:
         return documentOperation(this.options, principal, action);
       case LocalOperation.History:
         return localHistory(this.options, action);
@@ -181,6 +180,7 @@ export class LocalController {
 
       case LocalOperation.Receipt:
         return store.receipt(action.commandId);
+      case LocalOperation.Select:
       case LocalOperation.Logout:
         return null;
       default:

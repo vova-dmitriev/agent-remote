@@ -5,6 +5,7 @@ import {
   HttpRequestMethod,
   accountPreferencesSchema,
   readingPositionResponseSchema,
+  sessionFileSchema,
   type PreferencePatch,
   type ReadingPosition,
 } from "@protocol"
@@ -57,6 +58,12 @@ export abstract class RelayOperations extends RelayCommandOperations implements 
       method: "PUT",
       body: JSON.stringify({ pinned, generation }),
     })
+  }
+
+  async readSessionFile(sessionId: string, _generation: string, path: string) {
+    const query = new URLSearchParams({ path })
+
+    return sessionFileSchema.parse(await this.request("/sessions/" + encodeURIComponent(sessionId) + "/file?" + query))
   }
 
   devices() {

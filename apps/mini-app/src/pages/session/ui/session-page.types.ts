@@ -20,4 +20,6 @@ export interface SessionPageProps {
   controller: CommandController
   /** Opens a subagent's read-only view; the caller passes it only where the session's source can read subagent transcripts. */
   onOpenSubagent?: ((agentId: string) => void) | undefined
+  /** Opens a changed file as it is now on the Mac. */
+  onOpenFile?: ((path: string) => void) | undefined
 }

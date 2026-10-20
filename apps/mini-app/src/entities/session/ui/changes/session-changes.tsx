@@ -8,7 +8,7 @@ import { FileChange } from "./file-change/file-change"
 import { summaryClass } from "./summary-class"
 import type { SessionChangesProps } from "./session-changes.types"
 
-export function SessionChanges({ changes }: SessionChangesProps) {
+export function SessionChanges({ changes, onOpen }: SessionChangesProps) {
   const { t } = useTranslation()
 
   return (
@@ -31,7 +31,7 @@ export function SessionChanges({ changes }: SessionChangesProps) {
           </p>
         ) : null}
         {changes?.files.map((file) => (
-          <FileChange key={file.id} file={file} />
+          <FileChange key={file.id} file={file} onOpen={onOpen} />
         ))}
       </div>
     </details>

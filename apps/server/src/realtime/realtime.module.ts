@@ -9,6 +9,7 @@ import { DeviceService } from '../devices/service.js';
 import { HistoryRepository } from '../history/repository.js';
 import { SourceHistory } from '../history/source.js';
 import { ProfileProxy } from '../profiles/transport/proxy.js';
+import { SessionFiles } from '../sessions/files.js';
 import { AppSocket } from './app-socket.js';
 import { DeviceSocket } from './device-socket.js';
 import { MaintenanceService } from './maintenance.service.js';
@@ -39,11 +40,16 @@ import { RelayHub } from './relay-hub.js';
       inject: [DeviceService, RelayHub],
       useFactory: (devices: DeviceService, hub: RelayHub) => new ContinuityProxy(devices, hub.live, hub.send),
     },
+    {
+      provide: SessionFiles,
+      inject: [RelayHub],
+      useFactory: (hub: RelayHub) => new SessionFiles(hub.send),
+    },
     AppSocket,
     DeviceSocket,
     MaintenanceService,
   ],
-  exports: [RelayHub, SourceHistory, ProfileProxy, ContinuityProxy],
+  exports: [RelayHub, SourceHistory, ProfileProxy, ContinuityProxy, SessionFiles],
 })
 export class RealtimeModule implements OnApplicationBootstrap {
   constructor(

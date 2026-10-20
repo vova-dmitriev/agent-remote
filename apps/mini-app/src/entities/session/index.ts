@@ -21,6 +21,7 @@ export type { QueuedPrompt } from "./model/store/outbox/types"
 export type { SessionStoreState } from "./model/store/types"
 export { PROMPT_RECEIPT_POLL_MS } from "./model/store/outbox/constants"
 export { SessionChanges } from "./ui/changes/session-changes"
+export { patchMarkdown } from "./lib/changes/patch"
 
 export { SessionTab, AgentName, ProviderFilterValue, HistoryPageOutcome, SessionStatusTone } from "./config/session-values"
 export { historyPageOutcome } from "./lib/history-page"

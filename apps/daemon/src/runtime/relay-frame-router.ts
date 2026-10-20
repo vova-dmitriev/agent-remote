@@ -1,4 +1,4 @@
-import { type DeviceFrame, ErrorCode, FrameType, hasErrorCode, type ServerFrame } from '@protocol';
+import { type DeviceFrame, ErrorCode, errorCode, FrameType, hasErrorCode, type ServerFrame } from '@protocol';
 import type { Monitor } from '../monitor/monitor.js';
 import type { EventReplay } from '../monitor/replay.js';
 import type { TranscriptSources } from '../monitor/history.js';
@@ -7,6 +7,7 @@ import type { Dispatcher } from '../commands/dispatcher.js';
 import type { RuntimeProfileRelay } from '../profiles/runtime/router/relay.js';
 import type { SessionNamesPort } from '../domain/ports/session-names.js';
 import { logDebug } from '../diagnostics/log.js';
+import { readSessionFile } from '../files/session-files.js';
 
 export type RelayFrameRouterDeps = {
   relay: { send(frame: DeviceFrame): boolean };
@@ -18,6 +19,10 @@ export type RelayFrameRouterDeps = {
   dispatcher: Dispatcher;
   names: SessionNamesPort;
 };
+
+/** A reply's error code: the protocol's own, else a generic failure (daemon-only codes stay on the Mac). */
+const codeOf = (error: unknown) =>
+  Object.values(ErrorCode).find((code) => code === errorCode(error)) ?? ErrorCode.REQUEST_FAILED;
 
 export class RelayFrameRouter {
   constructor(private readonly deps: RelayFrameRouterDeps) {}
@@ -44,6 +49,14 @@ export class RelayFrameRouter {
       await this.deps.names.rename(frame.sessionId, frame.title).catch((error: unknown) => {
         logDebug('runtime/relay-frame-router', error);
       });
+    } else if (frame.type === FrameType.FileRequest) {
+      // The relay asks only for its owner's sessions on this device; the reader allows only the session's own files.
+      const reply = await readSessionFile(monitor, frame.sessionId, frame.path).then(
+        (file) => ({ ok: true as const, file }),
+        (error: unknown) => ({ ok: false as const, code: codeOf(error) }),
+      );
+
+      relay.send({ type: FrameType.FileResult, requestId: frame.requestId, reply });
     } else if (frame.type === FrameType.Command) {
       const result = await dispatcher.dispatch(frame.command);
 

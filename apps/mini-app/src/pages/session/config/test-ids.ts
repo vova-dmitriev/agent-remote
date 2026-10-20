@@ -92,3 +92,14 @@ export const TOOL_ACTIVITY_IDS = {
   detail: "tool-activity-detail",
   phase: "tool-activity-phase",
 } as const
+
+export const FILE_VIEW_IDS = {
+  root: "file-view",
+  back: "file-view-back",
+  path: "file-view-path",
+  content: "file-view-content",
+  loading: "file-view-loading",
+  error: "file-view-error",
+  retry: "file-view-retry",
+  truncated: "file-view-truncated",
+} as const

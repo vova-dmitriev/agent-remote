@@ -1,11 +1,14 @@
 import { ConnectionStatus, DeviceStatus, HistoryStatus } from "@protocol"
 import { AccountsPage } from "@/pages/accounts"
 import { SignInPage } from "@/pages/sign-in"
-import { SessionLoading, SessionPage, SubagentPage } from "@/pages/session"
+import { useState } from "react"
+import { SessionFilePage, SessionLoading, SessionPage, SubagentPage } from "@/pages/session"
 import type { ApplicationContentProps } from "./application-content.types"
 
 export function ApplicationContent({ model, accounts, subagent, back, closeAccounts, home, sessionBack = true }: ApplicationContentProps) {
   const { state, selected, selection, commands } = model
+  // The open file belongs to one session; switching sessions closes it.
+  const [file, setFile] = useState<{ sessionId: string; path: string } | null>(null)
 
   if (state.connection === ConnectionStatus.Expired) return <SignInPage />
   if (accounts && state.deviceId)
@@ -28,6 +31,9 @@ export function ApplicationContent({ model, accounts, subagent, back, closeAccou
       />
     )
 
+  if (file?.sessionId === selected.id)
+    return <SessionFilePage key={selected.id + ":" + file.path} session={selected} path={file.path} onBack={() => setFile(null)} />
+
   return (
     <SessionPage
       session={selected}
@@ -43,6 +49,7 @@ export function ApplicationContent({ model, accounts, subagent, back, closeAccou
       rename={model.rename}
       controller={commands}
       onOpenSubagent={subagent.readable ? (agentId) => subagent.open(selected.id, agentId) : undefined}
+      onOpenFile={(path) => setFile({ sessionId: selected.id, path })}
     />
   )
 }

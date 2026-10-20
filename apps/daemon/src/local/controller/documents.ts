@@ -1,3 +1,4 @@
+import { readSessionFile } from '../../files/session-files.js';
 import { accountPreferencesSchema, CodedError, ErrorCode, type LocalAction, LocalOperation } from '@protocol';
 import { RuntimeEvent } from '../../domain/runtime.js';
 import { LocalDocumentKind } from '../state/values.js';
@@ -64,6 +65,14 @@ export function documentOperation(
       options.monitor.setPinned(action.sessionId, action.pinned);
 
       return null;
+
+    // A changed file's text is the device owner's, like the session's transcript.
+    case LocalOperation.File:
+      if (principal.ownerId !== options.ownerId) {
+        throw new CodedError(ErrorCode.ACCESS_DENIED);
+      }
+
+      return readSessionFile(options.monitor, action.sessionId, action.path);
 
     default:
       throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);

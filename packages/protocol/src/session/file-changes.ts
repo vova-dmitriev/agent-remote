@@ -16,3 +16,17 @@ export const sessionChangesSchema = z.strictObject({
 
 export type SessionFileChange = z.infer<typeof sessionFileChangeSchema>;
 export type SessionChanges = z.infer<typeof sessionChangesSchema>;
+
+/** The most of a changed file the app's file view shows; the frame that carries it stays well under the relay cap. */
+export const MAX_SESSION_FILE_BYTES = 200 * 1024;
+
+/** A file a session changed, read on the Mac for the app's file view. */
+export const sessionFileSchema = z.strictObject({
+  path: z.string().min(1).max(4096),
+  content: z.string().max(MAX_SESSION_FILE_BYTES),
+  truncated: z.boolean(),
+});
+
+export const sessionFileQuerySchema = z.strictObject({ path: z.string().min(1).max(4096) });
+
+export type SessionFile = z.infer<typeof sessionFileSchema>;

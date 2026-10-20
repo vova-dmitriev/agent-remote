@@ -4,6 +4,7 @@ import {
   LocalOperation,
   accountPreferencesSchema,
   readingPositionSchema,
+  sessionFileSchema,
   type PreferencePatch,
   type ReadingPosition,
 } from "@protocol"
@@ -31,6 +32,10 @@ export class DesktopOperations {
 
   pinSession(sessionId: string, generation: string, pinned: boolean) {
     return this.connection.request({ operation: LocalOperation.Pin, sessionId, generation, pinned })
+  }
+
+  async readSessionFile(sessionId: string, generation: string, path: string) {
+    return sessionFileSchema.parse(await this.connection.request({ operation: LocalOperation.File, sessionId, generation, path }))
   }
 
   async getReadingPosition(sessionId: string) {

@@ -1,4 +1,6 @@
-import { ChevronRight } from "lucide-react"
+import { ChevronRight, FileText } from "lucide-react"
+import { FileChangeKind } from "@protocol"
+import { Button } from "@/shared/ui/button"
 import ReactMarkdown, { type Options } from "react-markdown"
 import rehypeHighlight from "rehype-highlight"
 import { useTranslation } from "@/shared/lib/hooks"
@@ -14,7 +16,7 @@ import { patchClass } from "./patch-class"
 const plugins: Options["rehypePlugins"] = [[rehypeHighlight, { detect: false }], highlightDiffLines]
 const kindKeys = { add: "changeAdded", delete: "changeDeleted", update: "changeUpdated" } as const
 
-export function FileChange({ file }: FileChangeProps) {
+export function FileChange({ file, onOpen }: FileChangeProps) {
   const { t } = useTranslation()
   const stats = patchStats(file.patch)
 
@@ -38,6 +40,12 @@ export function FileChange({ file }: FileChangeProps) {
           <p className={cn(noticeVariants(), "mt-[0.75rem] mb-0 session:mb-0")} data-testid={IDS.notice}>
             {t("changesLimited")}
           </p>
+        ) : null}
+        {onOpen && file.kind !== FileChangeKind.Delete ? (
+          <Button variant="outline" size="sm" className="mt-[0.75rem]" data-testid={IDS.open} onClick={() => onOpen(file.path)}>
+            <FileText aria-hidden="true" size={14} />
+            {t("openFile")}
+          </Button>
         ) : null}
       </div>
     </details>

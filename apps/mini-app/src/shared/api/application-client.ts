@@ -12,6 +12,7 @@ import type {
   ExecutionProfileAccess,
   ContinuityAccess,
   ProfileRoutingAccess,
+  SessionFile,
 } from "@protocol"
 import type { AttachmentAccess } from "./attachment-access"
 import type { Device, HistoryPageSkip } from "./types"
@@ -22,6 +23,8 @@ export interface ApplicationOperations {
   renameSession(sessionId: string, title: string, generation: string): Promise<unknown>
   /** Pins or unpins a session on its device; the device's next snapshot shows the result. */
   pinSession(sessionId: string, generation: string, pinned: boolean): Promise<unknown>
+  /** The text of a file the session changed, read on its device. */
+  readSessionFile(sessionId: string, generation: string, path: string): Promise<SessionFile>
   claimDevice(code: string): Promise<unknown>
   revokeDevice(deviceId: string): Promise<unknown>
   getReadingPosition(sessionId: string): Promise<ReadingPositionResponse>
