@@ -7,6 +7,7 @@ import type { LocalDocuments } from '../state/documents.js';
 import type { LocalGrants } from '../grants/service.js';
 import type { LocalPrincipal } from '../grants/types.js';
 import type { RuntimeProfilesPort } from '../../domain/ports/runtime-profiles.js';
+import type { SessionNamesPort } from '../../domain/ports/session-names.js';
 
 export interface LocalControllerOptions {
   ownerId: string;
@@ -18,6 +19,8 @@ export interface LocalControllerOptions {
   documents: LocalDocuments;
   grants: LocalGrants;
   profiles?: RuntimeProfilesPort;
+  /** Renames sessions in their agents; without it a rename stays a local label. */
+  names?: SessionNamesPort;
   history?: (
     request: HistoryRead,
   ) => Promise<{ messages: HistoryMessage[]; before: string | null; after: string | null } | null>;

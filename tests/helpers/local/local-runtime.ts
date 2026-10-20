@@ -15,7 +15,11 @@ import { LocalDocuments } from '@daemon/local/state/documents.js';
 
 export const localTestOrigin = 'chrome-extension://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/';
 
-export function localFixture(directory?: string, profiles?: LocalControllerOptions['profiles']) {
+export function localFixture(
+  directory?: string,
+  profiles?: LocalControllerOptions['profiles'],
+  names?: LocalControllerOptions['names'],
+) {
   const store = new LocalStore(':memory:', 'device-local');
   const database = new LocalDatabase(':memory:');
   const permissions = new PermissionBroker();
@@ -88,6 +92,7 @@ export function localFixture(directory?: string, profiles?: LocalControllerOptio
   const controller = new LocalController({
     ...(media ? { media } : {}),
     ...(profiles ? { profiles } : {}),
+    ...(names ? { names } : {}),
     ownerId: 'owner-local',
     deviceId: 'device-local',
     monitor,

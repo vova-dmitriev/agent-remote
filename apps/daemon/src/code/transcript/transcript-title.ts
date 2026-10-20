@@ -1,8 +1,9 @@
 import { ClaudeRecordType } from '../../domain/claude.js';
 import { ASCII_CONTROL_CHARACTERS } from '../../validation/control-characters.js';
 import { type FileHandle } from 'node:fs/promises';
+import { openTranscript } from './transcript-file.js';
 import { createHash } from 'node:crypto';
-import { truncateUtf8 } from '@protocol';
+import { CodedError, ErrorCode, truncateUtf8 } from '@protocol';
 
 const tailBytes = 262_144;
 
@@ -180,5 +181,37 @@ export class TranscriptTitle {
     } catch {
       return;
     }
+  }
+}
+
+/**
+ * Names a Claude Code session the way `/rename` does: a `custom-title` record appended to its transcript. The
+ * transcript must end with a whole line, so the record never joins a line Claude is still writing.
+ */
+export async function appendCustomTitle(path: string, allowedRoot: string, sessionId: string, title: string) {
+  const opened = await openTranscript(path, allowedRoot, { refuseSymlinks: true, append: true });
+
+  if (!opened) {
+    throw new CodedError(ErrorCode.TRANSCRIPT_UNAVAILABLE);
+  }
+
+  const { file, info } = opened;
+
+  try {
+    if (info.size) {
+      const last = Buffer.alloc(1);
+
+      await file.read(last, 0, 1, info.size - 1);
+
+      if (last[0] !== 10) {
+        throw new CodedError(ErrorCode.TRANSCRIPT_UNAVAILABLE);
+      }
+    }
+
+    await file.appendFile(
+      JSON.stringify({ type: ClaudeRecordType.CustomTitle, customTitle: title, sessionId }) + '\n',
+    );
+  } finally {
+    await file.close();
   }
 }

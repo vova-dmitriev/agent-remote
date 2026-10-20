@@ -1,6 +1,7 @@
 import type { ErrorCode } from '@protocol';
 import { RuntimeEvent } from './domain/runtime.js';
 import { NativeProcesses } from './sessions/native-process.js';
+import { SessionNames } from './sessions/session-names.js';
 import { CodexManager } from './runtime/services/codex-manager.js';
 import { BridgeClient } from './desktop/bridge-client.js';
 import { join } from 'node:path';
@@ -105,6 +106,8 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
     attachments,
   });
 
+  const names = new SessionNames({ monitor, readers, codex: () => codex });
+
   const hookServer = await startHookWiring({
     path: socketPath(),
     token,
@@ -130,6 +133,7 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
     adapters,
     dispatcher: localDispatcher,
     readers,
+    names,
   }).catch(async (error: unknown) => {
     await hookServer.close();
     throw error;
@@ -155,6 +159,7 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
     desktopBindings,
     inputEnabled,
     nativeProcesses,
+    names,
   });
 
   sourcePoller.start();

@@ -4,6 +4,7 @@ import { type BackfilledSubagent } from '../activity/subagents.js';
 import { TranscriptActivity } from '../code/transcript-activity.js';
 import { TranscriptPages } from '../code/transcript/transcript-pages.js';
 import { TranscriptReader } from '../code/transcript/transcript-reader.js';
+import { appendCustomTitle } from '../code/transcript/transcript-title.js';
 import {
   listSubagentFiles,
   subagentDirectory,
@@ -66,6 +67,18 @@ export class TranscriptSources {
     private initialWindow = 100,
     private subagents?: SubagentListing,
   ) {}
+  /** Names a Claude Code session in its own transcript; false when this session has no Claude transcript. */
+  async appendTitle(sessionId: string, title: string): Promise<boolean> {
+    const source = this.sources.get(sessionId);
+
+    if (!source?.claudeSessionId) {
+      return false;
+    }
+
+    await appendCustomTitle(source.path, this.allowedRoot, source.claudeSessionId, title);
+
+    return true;
+  }
   open(sessionId: string, generation: string, path: string, claudeSessionId?: string) {
     const current = this.sources.get(sessionId);
 

@@ -89,6 +89,7 @@ export const CodexMethod = {
   ItemFileChangeRequestApproval: 'item/fileChange/requestApproval',
   ThreadStatusChanged: 'thread/status/changed',
   ThreadNameUpdated: 'thread/name/updated',
+  ThreadNameSet: 'thread/name/set',
   ThreadModelUpdated: 'thread/model/updated',
   ModelRerouted: 'model/rerouted',
   ServerRequestResolved: 'serverRequest/resolved',

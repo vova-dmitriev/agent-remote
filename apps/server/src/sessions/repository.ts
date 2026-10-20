@@ -79,6 +79,18 @@ export class SessionRepository {
       });
   }
 
+  async deleteLabel(tx: PoolClient, ownerId: string, deviceId: string, sourceKey: string) {
+    await ormOn(tx)
+      .delete(sessionLabels)
+      .where(
+        and(
+          eq(sessionLabels.ownerId, ownerId),
+          eq(sessionLabels.deviceId, deviceId),
+          eq(sessionLabels.sourceKey, sourceKey),
+        ),
+      );
+  }
+
   async setTitle(tx: PoolClient, ownerId: string, deviceId: string, sessionId: string, title: string) {
     await ormOn(tx)
       .update(sessions)

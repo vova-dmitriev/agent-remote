@@ -39,7 +39,16 @@ export class SessionLabels {
       })
       .sort((a, b) => (b.lastMessageAt ?? 0) - (a.lastMessageAt ?? 0));
   }
-  async rename(principal: Principal, sessionId: string, input: unknown) {
+  /**
+   * Renames an owned session of the current generation. When `native` says its device will rename it in the agent,
+   * the relay's label is dropped so the agent's name (and later renames there) show; otherwise the label holds it.
+   */
+  async rename(
+    principal: Principal,
+    sessionId: string,
+    input: unknown,
+    native: (deviceId: string) => boolean = () => false,
+  ) {
     const body = renameSchema.parse(input);
 
     return this.repository.transaction(async (tx) => {
@@ -53,10 +62,17 @@ export class SessionLabels {
         throw new Fault(ErrorCode.STALE_SESSION);
       }
 
-      await this.repository.saveLabel(tx, principal.userId, row.device_id, sourceKey(row.data), body.title);
+      const inAgent = native(row.device_id);
+
+      if (inAgent) {
+        await this.repository.deleteLabel(tx, principal.userId, row.device_id, sourceKey(row.data));
+      } else {
+        await this.repository.saveLabel(tx, principal.userId, row.device_id, sourceKey(row.data), body.title);
+      }
+
       await this.repository.setTitle(tx, principal.userId, row.device_id, sessionId, body.title);
 
-      return { title: body.title, deviceId: row.device_id };
+      return { title: body.title, deviceId: row.device_id, inAgent };
     });
   }
 }

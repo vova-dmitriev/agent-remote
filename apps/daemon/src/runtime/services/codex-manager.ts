@@ -272,6 +272,23 @@ export class CodexManager {
       throw new CodedError(ErrorCode.UNKNOWN_AFTER_WRITE);
     });
   }
+  /**
+   * Names a thread through the app-server that serves it (`thread/name/set`); its `thread/name/updated` notification
+   * then renames the session. False when no app-server serves the thread (a Codex desktop thread, or none bound).
+   */
+  async renameThread(threadId: string, name: string): Promise<boolean> {
+    const entry = [...this.connections.values()].find(
+      (item) => item.rpc && !item.ipc && item.bindings.has(threadId),
+    );
+
+    if (!entry?.rpc) {
+      return false;
+    }
+
+    await entry.rpc.request(CodexMethod.ThreadNameSet, { threadId, name });
+
+    return true;
+  }
   async close() {
     this.closed = true;
     clearInterval(this.timer);

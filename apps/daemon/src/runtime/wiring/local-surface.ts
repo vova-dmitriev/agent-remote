@@ -9,7 +9,10 @@ import { startLocalServer } from '../../local/server/server.js';
 
 type RuntimeConfiguration = Awaited<ReturnType<typeof runtimeConfiguration>>;
 
-type LocalSurfaceDeps = Pick<LocalControllerOptions, 'monitor' | 'store' | 'adapters' | 'dispatcher'> & {
+type LocalSurfaceDeps = Pick<
+  LocalControllerOptions,
+  'monitor' | 'store' | 'adapters' | 'dispatcher' | 'names'
+> & {
   config: RuntimeConfiguration;
   stateDirectory: string;
   localServices: LocalServices;
@@ -27,6 +30,7 @@ export async function startLocalSurface(deps: LocalSurfaceDeps) {
     store: deps.store,
     adapters: deps.adapters,
     dispatcher: deps.dispatcher,
+    ...(deps.names ? { names: deps.names } : {}),
     history: (request) => (readers.has(request.sessionId) ? readers.page(request) : Promise.resolve(null)),
   });
 

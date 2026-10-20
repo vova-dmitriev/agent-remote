@@ -371,6 +371,11 @@ export const serverFrameSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal(FrameType.Error), code: id }),
   z.strictObject({ type: z.literal(FrameType.Select), sessionId: id.nullable() }),
   z.strictObject({ type: z.literal(FrameType.SessionPin), sessionId: id, pinned: z.boolean() }),
+  z.strictObject({
+    type: z.literal(FrameType.SessionRename),
+    sessionId: id,
+    title: z.string().trim().min(1).max(512),
+  }),
   z.strictObject({ type: z.literal(FrameType.Command), command: commandSchema }),
   z.strictObject({ type: z.literal(FrameType.Ack), cursor: cursorSchema }),
   handoffSeedAdmissionFrameSchema,

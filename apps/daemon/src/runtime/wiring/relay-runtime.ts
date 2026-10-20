@@ -6,12 +6,14 @@ import { NativeRestartPoller } from '../native-restart-poller.js';
 import { RelayFrameRouter } from '../relay-frame-router.js';
 import { RelayLink, type RelayLinkDeps } from '../relay-link.js';
 import { SourcePoller, type DesktopBindingEntry } from '../source-poller.js';
+import type { SessionNamesPort } from '../../domain/ports/session-names.js';
 
 type RelayRuntimeDeps = RelayLinkDeps & {
   desktopBridge: BridgeClient;
   desktopBindings: Map<string, DesktopBindingEntry>;
   inputEnabled: boolean;
   nativeProcesses: NativeProcesses;
+  names: SessionNamesPort;
 };
 
 /** Builds the relay link, frame router and pollers; the caller starts the pollers and connects the relay. */
@@ -27,6 +29,7 @@ export function createRelayRuntime(deps: RelayRuntimeDeps) {
     monitor,
     adapters,
     dispatcher,
+    names: deps.names,
   });
 
   relay.on(RuntimeEvent.Frame, (frame: ServerFrame) => void router.route(frame));

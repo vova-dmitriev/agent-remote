@@ -51,14 +51,8 @@ export function documentOperation(
       return { revision: saved.revision, position: saved.value };
     }
 
-    case LocalOperation.Rename: {
-      const previous = documents.get(owner, action.sessionId, LocalDocumentKind.Title);
-
-      documents.save(owner, action.sessionId, LocalDocumentKind.Title, previous.revision, action.title);
-      options.monitor.emit(RuntimeEvent.Snapshot);
-
-      return null;
-    }
+    case LocalOperation.Rename:
+      return rename(options, owner, action.sessionId, action.title);
 
     // `execute` already checked the session and its generation.
     case LocalOperation.Pin:
@@ -74,4 +68,22 @@ export function documentOperation(
     default:
       throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
   }
+}
+
+/**
+ * Renames in the agent when it keeps names, and then drops any local label so later renames in the agent show; an
+ * agent that keeps no names gets the local label as before.
+ */
+async function rename(options: LocalControllerOptions, owner: string, sessionId: string, title: string) {
+  const { documents } = options;
+  const native = (await options.names?.rename(sessionId, title)) ?? false;
+  const previous = documents.get(owner, sessionId, LocalDocumentKind.Title);
+
+  if (!native || previous.value !== null) {
+    documents.save(owner, sessionId, LocalDocumentKind.Title, previous.revision, native ? null : title);
+  }
+
+  options.monitor.emit(RuntimeEvent.Snapshot);
+
+  return null;
 }

@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { ErrorCode, LocalOperation, ProfileRequestKind } from '@protocol';
+import { ErrorCode, LocalOperation, ProfileRequestKind, type AppSnapshot } from '@protocol';
 import { localFixture } from '../../helpers/local/local-runtime.js';
 
 const fixtures: ReturnType<typeof localFixture>[] = [];
@@ -174,4 +174,43 @@ it("pins only the device owner's current session and shows the pin in the snapsh
   expect(pinned()).toBe(true);
   await f.controller.execute(f.principal, { ...pin, pinned: false });
   expect(pinned()).toBeUndefined();
+});
+
+it('renames in the agent and drops the local label, keeping a label only when the agent cannot take the name', async () => {
+  let native = true;
+  const renamed: string[] = [];
+
+  const f = localFixture(undefined, undefined, {
+    rename: async (_sessionId, title) => {
+      renamed.push(title);
+
+      return native;
+    },
+  });
+
+  fixtures.push(f);
+
+  const rename = (title: string) =>
+    f.controller.execute(f.principal, {
+      operation: LocalOperation.Rename,
+      sessionId: f.session.id,
+      generation: f.session.generation,
+      title,
+    });
+
+  const title = () =>
+    (f.controller.snapshot(f.principal) as { snapshot: AppSnapshot }).snapshot.sessions.find(
+      (session) => session.id === f.session.id,
+    )?.title;
+
+  native = false;
+  await rename('Local label');
+  expect(title()).toBe('Local label');
+
+  native = true;
+  await rename('Agent name');
+  expect(renamed).toEqual(['Local label', 'Agent name']);
+  // No label left to mask what the agent reports from now on.
+  f.monitor.setSessionTitle(f.session.id, 'Renamed in the agent');
+  expect(title()).toBe('Renamed in the agent');
 });

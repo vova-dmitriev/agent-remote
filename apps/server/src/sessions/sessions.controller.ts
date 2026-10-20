@@ -79,8 +79,34 @@ export class SessionsController {
       throw new Fault(ErrorCode.NOT_FOUND);
     }
 
+    // A live device that speaks renames names the session in its agent; its next snapshot carries the name back.
+    const renamer = (device: string) => {
+      const connection = this.hub.live.get(device);
+
+      return connection?.device.owner_id === p.userId &&
+        connection.protocolVersion >= RelayProtocolFeature.SessionRename
+        ? connection
+        : undefined;
+    };
+
     return fence.run(deviceId, async () => {
-      const result = await labels.rename(p, id, input);
+      let result = await labels.rename(p, id, input, (device) => renamer(device) !== undefined);
+      const connection = result.inAgent ? renamer(result.deviceId) : undefined;
+
+      if (
+        result.inAgent &&
+        !(
+          connection &&
+          this.hub.send(connection.socket, {
+            type: FrameType.SessionRename,
+            sessionId: id,
+            title: result.title,
+          })
+        )
+      ) {
+        // The device went away after the check: keep the name as the relay's label instead.
+        result = await labels.rename(p, id, input);
+      }
 
       fanout(p.userId, deviceId, await snapshot(p, deviceId));
 

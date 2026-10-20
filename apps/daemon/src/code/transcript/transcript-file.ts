@@ -12,6 +12,8 @@ export interface TranscriptOpenOptions {
    * symlink swapped into its place after the check is not followed.
    */
   rootResolved?: boolean;
+  /** Also open for appending (reads still work at any position; every write lands at the end). */
+  append?: boolean;
 }
 
 /** Opens a regular transcript file whose real path stays inside `allowedRoot`; `undefined` when it is missing. */
@@ -45,7 +47,8 @@ export async function openTranscript(path: string, allowedRoot: string, options:
     throw new CodedError(DaemonErrorCode.TRANSCRIPT_OUTSIDE_ROOT);
   }
 
-  const file = await open(resolved, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+  const access = options.append ? constants.O_RDWR | constants.O_APPEND : constants.O_RDONLY;
+  const file = await open(resolved, access | constants.O_NOFOLLOW | constants.O_NONBLOCK);
 
   try {
     const info = await file.stat();

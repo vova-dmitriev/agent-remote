@@ -184,3 +184,45 @@ describe('Claude transcript title metadata', () => {
     },
   );
 });
+
+describe('naming a Claude session in its transcript', () => {
+  it('appends the record /rename writes, which the reader then shows over any generated title', async () => {
+    const { appendCustomTitle } = await import('@daemon/code/transcript/transcript-title.js');
+    const { readFile } = await import('node:fs/promises');
+
+    await writeFile(path, metadata('ai-title', 'Generated title'));
+    const source = reader();
+
+    await source.readNext();
+    await appendCustomTitle(path, root, 'session-a', 'Named in the app');
+
+    expect((await readFile(path, 'utf8')).split('\n').at(-2)).toBe(
+      JSON.stringify({ type: 'custom-title', customTitle: 'Named in the app', sessionId: 'session-a' }),
+    );
+
+    await source.readNext();
+    expect(source.title).toBe('Named in the app');
+  });
+
+  it('never joins a line Claude is still writing, and never writes outside the transcript root', async () => {
+    const { appendCustomTitle } = await import('@daemon/code/transcript/transcript-title.js');
+
+    await writeFile(path, metadata('ai-title', 'Generated title') + '{"type":"assist');
+
+    await expect(appendCustomTitle(path, root, 'session-a', 'Name')).rejects.toThrow(
+      'TRANSCRIPT_UNAVAILABLE',
+    );
+
+    const outside = await mkdtemp(join(tmpdir(), 'transcript-outside-'));
+
+    try {
+      await writeFile(join(outside, 'other.jsonl'), '');
+
+      await expect(
+        appendCustomTitle(join(outside, 'other.jsonl'), root, 'session-a', 'Name'),
+      ).rejects.toThrow();
+    } finally {
+      await rm(outside, { recursive: true, force: true });
+    }
+  });
+});

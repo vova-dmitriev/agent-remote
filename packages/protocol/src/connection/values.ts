@@ -46,6 +46,7 @@ export const FrameType = {
   Error: 'error',
   Select: 'select',
   SessionPin: 'session_pin',
+  SessionRename: 'session_rename',
   Ack: 'ack',
 } as const;
 
