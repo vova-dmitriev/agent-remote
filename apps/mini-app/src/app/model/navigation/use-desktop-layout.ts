@@ -1,6 +1,4 @@
 import { useSyncExternalStore } from "react"
-import { HostKind } from "@protocol"
-import { useHost } from "@/shared/lib/host"
 import { DESKTOP_SIDEBAR_QUERY } from "./values"
 
 function subscribe(onChange: () => void) {
@@ -13,10 +11,10 @@ function subscribe(onChange: () => void) {
 
 const wide = () => window.matchMedia(DESKTOP_SIDEBAR_QUERY).matches
 
-/** The sidebar layout belongs to the desktop host at ≥ 960 px; narrower windows and the Mini App keep list/page navigation. */
+/**
+ * The sidebar layout applies at ≥ 960 px on every host (desktop app, Telegram Mini App, browser); narrower windows keep
+ * list/page navigation. Only the desktop host also keeps the selection in the URL hash (Telegram owns its hash).
+ */
 export function useDesktopLayout() {
-  const host = useHost()
-  const matches = useSyncExternalStore(subscribe, wide, () => false)
-
-  return host.kind === HostKind.Desktop && matches
+  return useSyncExternalStore(subscribe, wide, () => false)
 }
