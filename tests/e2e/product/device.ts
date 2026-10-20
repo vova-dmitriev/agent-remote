@@ -2,6 +2,7 @@ import { expect } from '@playwright/test';
 import { WebSocket } from 'ws';
 import type { AppSnapshot, ConnectorDescriptor } from '@protocol';
 import { delivered, deviceFixture } from '../support/relay-fixture.js';
+import { relaySocketOrigin } from '../runtime/app-origin.js';
 
 export async function currentSnapshot(): Promise<AppSnapshot> {
   const { relay, deviceId } = deviceFixture();
@@ -39,7 +40,7 @@ export async function dropDevice() {
 
 export async function restoreDevice() {
   const { sockets, deviceToken } = deviceFixture();
-  const socket = new WebSocket('ws://127.0.0.1:3000/ws/device');
+  const socket = new WebSocket(`${relaySocketOrigin}/ws/device`);
 
   sockets[0] = socket;
 

@@ -4,13 +4,14 @@ import { WebSocket } from 'ws';
 import type { AppSnapshot } from '@protocol';
 import { PAIR_DEVICE_IDS } from '../../../apps/mini-app/src/features/pair-device/config/test-ids.js';
 import { deviceFixture, delivered } from '../support/relay-fixture.js';
+import { relayOrigin, relaySocketOrigin } from '../runtime/app-origin.js';
 
 export async function pairReplacementDevice(page: Page, snapshot: AppSnapshot) {
   const code = randomBytes(16).toString('hex');
   const proof = randomBytes(32).toString('hex');
   const hash = (value: string) => createHash('sha256').update(value).digest('hex');
 
-  const start = await page.request.post('http://127.0.0.1:3000/device/pair/start', {
+  const start = await page.request.post(`${relayOrigin}/device/pair/start`, {
     data: { codeHash: hash(code), proofHash: hash(proof) },
   });
 
@@ -19,18 +20,18 @@ export async function pairReplacementDevice(page: Page, snapshot: AppSnapshot) {
   await page.getByTestId(PAIR_DEVICE_IDS.code).fill(code);
   await page.getByTestId(PAIR_DEVICE_IDS.submit).click();
   await expect(page.getByTestId(PAIR_DEVICE_IDS.code)).toHaveValue('');
-  const status = await page.request.post('http://127.0.0.1:3000/device/pair/status', { data: { proof } });
+  const status = await page.request.post(`${relayOrigin}/device/pair/status`, { data: { proof } });
   const claim = (await status.json()) as { claimId: string };
 
   expect(claim.claimId).toBeTruthy();
 
-  const confirmation = await page.request.post('http://127.0.0.1:3000/device/pair/confirm', {
+  const confirmation = await page.request.post(`${relayOrigin}/device/pair/confirm`, {
     data: { proof, claimId: claim.claimId, approved: true },
   });
 
   const device = (await confirmation.json()) as { deviceId: string; token: string };
   const { relay, sockets } = deviceFixture();
-  const socket = new WebSocket('ws://127.0.0.1:3000/ws/device');
+  const socket = new WebSocket(`${relaySocketOrigin}/ws/device`);
 
   expect(confirmation.ok()).toBe(true);
   sockets[0] = socket;

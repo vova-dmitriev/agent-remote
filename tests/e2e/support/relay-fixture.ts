@@ -6,7 +6,7 @@ import { initData } from '../../helpers/telegram.js';
 import type { ClientCommand, HistoryMessage } from '@protocol';
 import { sessionSnapshot } from './session-fixtures.js';
 import { commandOutcome, setCommandOutcome } from '../runtime/command-outcome.js';
-import { appOrigin } from '../runtime/app-origin.js';
+import { appOrigin, relaySocketOrigin, relayPort } from '../runtime/app-origin.js';
 import { startRelayProcess, type RemoteRelay } from './relay-process.js';
 
 export { setCommandOutcome } from '../runtime/command-outcome.js';
@@ -47,7 +47,7 @@ async function startRelay() {
     databaseUrl: url,
     schema,
     publicOrigin: appOrigin,
-    port: 3000,
+    port: relayPort,
     inputEnabled: true,
     permissionsEnabled: true,
   });
@@ -63,7 +63,7 @@ async function startRelay() {
 
   deviceId = device.deviceId;
   deviceToken = device.token;
-  const ws = new WebSocket('ws://127.0.0.1:3000/ws/device');
+  const ws = new WebSocket(`${relaySocketOrigin}/ws/device`);
 
   sockets.push(ws);
 

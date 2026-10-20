@@ -3,6 +3,9 @@ import react from "@vitejs/plugin-react"
 import tailwindcss from "@tailwindcss/vite"
 import { fileURLToPath } from "node:url"
 
+// Dev proxy target; the e2e harness overrides it (E2E_RELAY_PORT) through this variable.
+const relayOrigin = process.env.DEV_RELAY_ORIGIN ?? "http://127.0.0.1:3000"
+
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   optimizeDeps: { entries: ["index.html"], include: ["libsodium-wrappers"] },
@@ -24,13 +27,13 @@ export default defineConfig({
     host: "127.0.0.1",
     port: 4173,
     proxy: {
-      "/auth": "http://127.0.0.1:3000",
-      "/pair": "http://127.0.0.1:3000",
-      "/devices": "http://127.0.0.1:3000",
-      "/sessions": "http://127.0.0.1:3000",
-      "/commands": "http://127.0.0.1:3000",
-      "/preferences": "http://127.0.0.1:3000",
-      "/ws": { target: "ws://127.0.0.1:3000", ws: true },
+      "/auth": relayOrigin,
+      "/pair": relayOrigin,
+      "/devices": relayOrigin,
+      "/sessions": relayOrigin,
+      "/commands": relayOrigin,
+      "/preferences": relayOrigin,
+      "/ws": { target: relayOrigin.replace("http:", "ws:"), ws: true },
     },
   },
 })

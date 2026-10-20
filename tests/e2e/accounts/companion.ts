@@ -8,6 +8,7 @@ import { FrameType, serverFrameSchema, type ProfileRequest } from '@protocol';
 import { deviceFixture, liveEpoch, rememberEpoch } from '../support/relay-fixture.js';
 import { WebSocket } from 'ws';
 import { sessionSnapshot } from '../support/session-fixtures.js';
+import { relaySocketOrigin } from '../runtime/app-origin.js';
 
 interface ProfileCompanionOptions { beforeApi?: () => Promise<void> }
 
@@ -60,7 +61,7 @@ export async function profileCompanion(options: ProfileCompanionOptions = {}) {
 
   return { runtime, directory, database, requests, cancelledRequests, idle: () => Promise.all([...tasks]), pin: recipient.data.recipientKeyId,
     reconnect: async () => {
-      const socket = new WebSocket('ws://127.0.0.1:3000/ws/device');
+      const socket = new WebSocket(`${relaySocketOrigin}/ws/device`);
 
       sockets[0] = socket;
       socket.on('message', receive);

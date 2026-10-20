@@ -5,6 +5,7 @@ import { identity } from './support/identity.js';
 import { PAIR_DEVICE_IDS } from '../../apps/mini-app/src/features/pair-device/config/test-ids.js';
 import { COMMAND_IDS } from '../../apps/mini-app/src/features/send-command/config/test-ids.js';
 import { SHELL_IDS } from '../../apps/mini-app/src/widgets/application-shell/config/test-ids.js';
+import { relayOrigin } from './runtime/app-origin.js';
 
 test('an unavailable pairing code explains recovery and a fresh code clears the error', async ({ page }) => {
   await identity(page, '802', 'ru');
@@ -23,7 +24,7 @@ test('an unavailable pairing code explains recovery and a fresh code clears the 
   const code = randomBytes(16).toString('hex');
   const hash = (value: string) => createHash('sha256').update(value).digest('hex');
 
-  const registration = await page.request.post('http://127.0.0.1:3000/device/pair/start', {
+  const registration = await page.request.post(`${relayOrigin}/device/pair/start`, {
     data: { codeHash: hash(code), proofHash: hash(randomBytes(32).toString('hex')) },
   });
 
