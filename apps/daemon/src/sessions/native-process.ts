@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { installationRoot } from '../desktop/bridge-client.js';
 import { launchContextSchema, restartArguments } from './launch/launch-context.js';
 import { logDebug } from '../diagnostics/log.js';
+import { cmuxSurfaceSchema } from '../cmux/context.js';
 
 const execute = promisify(execFile);
 
@@ -63,7 +64,7 @@ async function processIdentity(pid: number) {
 
 export class NativeProcesses {
   constructor(private configDirectory: string) {}
-  private async matches(sessionId: string, cwd?: string): Promise<NativeProcess[]> {
+  private async matches(sessionId?: string, cwd?: string): Promise<NativeProcess[]> {
     const matches: NativeProcess[] = [];
     let names: string[];
     const executables = new Set<string>();
@@ -114,7 +115,7 @@ export class NativeProcesses {
         if (
           !parsed.success ||
           parsed.data.pid !== pid ||
-          parsed.data.sessionId !== sessionId ||
+          (sessionId !== undefined && parsed.data.sessionId !== sessionId) ||
           (cwd && parsed.data.cwd !== cwd)
         ) {
           continue;
@@ -129,6 +130,52 @@ export class NativeProcesses {
     }
 
     return matches;
+  }
+  /** Every interactive Claude process of this user that runs now, with the conversation it runs. */
+  live(): Promise<NativeProcess[]> {
+    return this.matches();
+  }
+  /** The cmux surface a Claude process runs in, from its own environment; undefined outside cmux. */
+  async cmuxSurface(pid: number) {
+    try {
+      const { stdout } = await execute('/bin/ps', ['eww', '-p', String(pid), '-o', 'command='], {
+        timeout: 1500,
+        maxBuffer: 1048576,
+      });
+
+      const value = (name: string) =>
+        stdout.match(new RegExp(`(?:^|\\s)${name}=([0-9A-Fa-f-]{36})(?:\\s|$)`))?.[1];
+
+      const surface = cmuxSurfaceSchema.safeParse({
+        workspaceId: value('CMUX_WORKSPACE_ID'),
+        surfaceId: value('CMUX_SURFACE_ID'),
+      });
+
+      return surface.success ? surface.data : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+  /** A conversation's transcript under the Claude projects directory. */
+  async transcript(sessionId: string) {
+    if (!/^[\w-]+$/.test(sessionId)) {
+      return undefined;
+    }
+
+    for (const project of await readdir(join(this.configDirectory, 'projects')).catch(() => [])) {
+      const path = join(this.configDirectory, 'projects', project, sessionId + '.jsonl');
+
+      if (
+        await lstat(path).then(
+          (info) => info.isFile(),
+          () => false,
+        )
+      ) {
+        return path;
+      }
+    }
+
+    return undefined;
   }
   async inspect(sessionId: string, cwd?: string): Promise<NativeProcessInspection> {
     const found = await this.matches(sessionId, cwd);

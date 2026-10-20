@@ -17,7 +17,7 @@ import type { DesktopBindingEntry } from '../source-poller.js';
 import type { LocalStore } from '../../monitor/store.js';
 import type { NativeProcesses } from '../../sessions/native-process.js';
 import { cmuxAttacher } from '../../cmux/attach.js';
-import { restoreCmuxSessions } from '../../cmux/restore.js';
+import { discoverCmuxSessions, restoreCmuxSessions } from '../../cmux/restore.js';
 import { NativeRestartState } from '@protocol';
 import { logDebug } from '../../diagnostics/log.js';
 
@@ -36,7 +36,7 @@ type HookWiringDeps = {
   readers: TranscriptSources;
   legacyClaudeHooks: boolean;
   store: Pick<LocalStore, 'cmuxSessions'>;
-  nativeProcesses: Pick<NativeProcesses, 'inspect'>;
+  nativeProcesses: NativeProcesses;
 };
 
 export async function startHookWiring(deps: HookWiringDeps) {
@@ -105,14 +105,29 @@ export async function startHookWiring(deps: HookWiringDeps) {
 
   const primary = await listenPrimary();
 
-  // In the background: each surface is confirmed through the cmux CLI.
+  // In the background: each surface is confirmed through the cmux CLI. Saved sessions keep their ids and titles;
+  // the rest of the Claude processes running in cmux are found after them.
+  const processes = deps.nativeProcesses;
+
   void restoreCmuxSessions({
     saved: deps.store.cmuxSessions(),
     attach: attachCmux,
-    running: async (id) => (await deps.nativeProcesses.inspect(id)).state === NativeRestartState.Available,
+    running: async (id) => (await processes.inspect(id)).state === NativeRestartState.Available,
     monitor,
     onTranscript,
-  }).catch((error: unknown) => logDebug('runtime/wiring/hook-wiring', error));
+  })
+    .then(() =>
+      discoverCmuxSessions({
+        deviceId: deps.deviceId,
+        live: () => processes.live(),
+        surface: (pid) => processes.cmuxSurface(pid),
+        transcript: (id) => processes.transcript(id),
+        attach: attachCmux,
+        monitor,
+        onTranscript,
+      }),
+    )
+    .catch((error: unknown) => logDebug('runtime/wiring/hook-wiring', error));
 
   // Desktop companion only: the CLI daemon owns the legacy path itself.
   // While the CLI daemon holds the legacy path, `remote hook` also delivers to this companion's own socket.

@@ -5,7 +5,7 @@ import { Monitor } from '@daemon/monitor/monitor.js';
 import { AdapterRegistry } from '@daemon/adapters/registry.js';
 import { PermissionBroker } from '@daemon/commands/permission-broker.js';
 import { cmuxAttacher } from '@daemon/cmux/attach.js';
-import { restoreCmuxSessions } from '@daemon/cmux/restore.js';
+import { discoverCmuxSessions, restoreCmuxSessions } from '@daemon/cmux/restore.js';
 import { registerNativeAdapter } from '@daemon/runtime/wiring/native-adapter.js';
 import type { CmuxSurface } from '@daemon/cmux/context.js';
 
@@ -70,6 +70,43 @@ it('brings back idle cmux sessions after a restart while their Claude process st
     expect(sessions[0]!.target.kind).toBe(TargetKind.Cmux);
     expect(sessions[0]!.capabilities.prompt).toBe(true);
     expect(onTranscript).toHaveBeenCalledWith(sessions[0]!.id, '/synthetic/live.jsonl');
+  } finally {
+    permissions.close();
+    store.close();
+  }
+});
+
+it('finds live Claude processes in cmux that this daemon never saw, without a turn-end event', async () => {
+  const store = new LocalStore(':memory:', 'device'),
+    permissions = new PermissionBroker();
+
+  try {
+    const { attach, monitor } = daemon(store, permissions);
+    const onTranscript = vi.fn();
+    const events: string[] = [];
+
+    monitor.on('event', (event: { type: string }) => events.push(event.type));
+
+    await discoverCmuxSessions({
+      deviceId: 'device',
+      live: async () => [
+        { pid: 1, sessionId: 'in-cmux', cwd: '/synthetic/project' },
+        { pid: 2, sessionId: 'plain-terminal', cwd: '/synthetic/project' },
+      ],
+      surface: async (pid) => (pid === 1 ? { workspaceId: WORKSPACE, surfaceId: LIVE } : undefined),
+      transcript: async (id) => `/synthetic/${id}.jsonl`,
+      attach,
+      monitor,
+      onTranscript,
+    });
+
+    const sessions = monitor.snapshot().sessions;
+
+    expect(sessions.map((session) => session.claudeSessionId)).toEqual(['in-cmux']);
+    expect(sessions[0]!.target.kind).toBe(TargetKind.Cmux);
+    expect(sessions[0]!.cwd).toBe('/synthetic/project');
+    expect(onTranscript).toHaveBeenCalledWith(sessions[0]!.id, '/synthetic/in-cmux.jsonl');
+    expect(events).not.toContain('turn_end');
   } finally {
     permissions.close();
     store.close();

@@ -123,7 +123,7 @@ async function cliDaemon() {
     readers: {} as never,
     legacyClaudeHooks: false,
     store: { cmuxSessions: () => [] },
-    nativeProcesses: {} as never,
+    nativeProcesses: { live: async () => [] } as never,
   });
 
   cleanups.push(() => wiring.close());
@@ -498,7 +498,7 @@ it.each([
       readers: {} as never,
       legacyClaudeHooks,
       store: { cmuxSessions: () => [] },
-      nativeProcesses: {} as never,
+      nativeProcesses: { live: async () => [] } as never,
     });
 
     try {
@@ -533,7 +533,7 @@ it('delivers `remote hook` to both the CLI daemon and a desktop companion that y
     readers: {} as never,
     legacyClaudeHooks: true,
     store: { cmuxSessions: () => [] },
-    nativeProcesses: {} as never,
+    nativeProcesses: { live: async () => [] } as never,
   });
 
   try {
