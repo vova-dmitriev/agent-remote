@@ -65,10 +65,10 @@ pnpm test
 pnpm typecheck
 pnpm build
 pnpm test-storybook
-E2E_APP_PORT=4175 pnpm test:e2e
+E2E_APP_PORT=4175 E2E_RELAY_PORT=3175 pnpm test:e2e
 ```
 
-The test stack binds PostgreSQL to loopback port **55432** and Redis to **56380**, with disposable test data. Tests use these defaults; overrides are `TEST_DATABASE_URL` and `TEST_REDIS_URL`. Browser tests own relay port **3000** and the selected `E2E_APP_PORT`; run one browser suite at a time and select free ports without stopping unrelated services. Never point tests at a personal or production database.
+The test stack binds PostgreSQL to loopback port **55432** and Redis to **56380**, with disposable test data. Tests use these defaults; overrides are `TEST_DATABASE_URL` and `TEST_REDIS_URL`. Browser tests own the relay port (`E2E_RELAY_PORT`, default **3000**) and the app port (`E2E_APP_PORT`, default 4173); run one browser suite at a time and select free ports without stopping unrelated services. Never point tests at a personal or production database.
 
 `pnpm build` runs the source quality gates before building. `E2E_APP_PORT=4175 pnpm check:frontend` runs typechecking, the guarded build, Storybook browser tests and mobile E2E together. Storybook `play` functions contain interactions only; assertions belong in test/spec files.
 

@@ -8,6 +8,7 @@ import { SHELL_IDS } from '../../apps/mini-app/src/widgets/application-shell/con
 import { initData } from '../helpers/telegram.js';
 import { identity } from './support/identity.js';
 import { test } from './support/relay-fixture.js';
+import { relayOrigin } from './runtime/app-origin.js';
 
 for (const scenario of ['invalid signature', 'expired signature'] as const) {
   test(`Telegram ${scenario} is rejected by the real HTTP authentication boundary`, async ({ page }) => {
@@ -53,7 +54,7 @@ test('manual pairing requires local approval and a denied claim cannot be reused
   const proof = randomBytes(32).toString('hex');
   const hash = (value: string) => createHash('sha256').update(value).digest('hex');
 
-  const registration = await page.request.post('http://127.0.0.1:3000/device/pair/start', {
+  const registration = await page.request.post(`${relayOrigin}/device/pair/start`, {
     data: { codeHash: hash(code), proofHash: hash(proof) },
   });
 
@@ -66,12 +67,12 @@ test('manual pairing requires local approval and a denied claim cannot be reused
   await expect(page.getByTestId(SHELL_IDS.receipt)).toHaveText('Confirm the connection locally on your Mac');
   await expect(page.getByTestId(PAIR_DEVICE_IDS.root)).toBeVisible();
   await expect(page.getByTestId(SESSION_CARD_IDS.root)).toHaveCount(0);
-  const status = await page.request.post('http://127.0.0.1:3000/device/pair/status', { data: { proof } });
+  const status = await page.request.post(`${relayOrigin}/device/pair/status`, { data: { proof } });
   const claim = (await status.json()) as { claimId: string; telegramId: string };
 
   expect(claim.telegramId).toBe('802');
 
-  const denied = await page.request.post('http://127.0.0.1:3000/device/pair/confirm', {
+  const denied = await page.request.post(`${relayOrigin}/device/pair/confirm`, {
     data: { proof, claimId: claim.claimId, approved: false },
   });
 
@@ -85,7 +86,7 @@ test('manual pairing requires local approval and a denied claim cannot be reused
 
   await expect(page.getByTestId(PAIR_DEVICE_IDS.root)).toBeVisible();
 
-  const reused = await page.request.post('http://127.0.0.1:3000/device/pair/confirm', {
+  const reused = await page.request.post(`${relayOrigin}/device/pair/confirm`, {
     data: { proof, claimId: claim.claimId, approved: true },
   });
 

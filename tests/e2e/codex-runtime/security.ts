@@ -8,6 +8,7 @@ import { SHELL_IDS } from '../../../apps/mini-app/src/widgets/application-shell/
 import { SESSION_PAGE_IDS } from '../../../apps/mini-app/src/pages/session/config/test-ids.js';
 import { setSessionLanguage } from '../support/session-language.js';
 import type { Runtime } from './runtime.js';
+import { relayOrigin } from '../runtime/app-origin.js';
 
 export async function verifyNotification(runtime: Runtime) {
   const { relay, principal } = runtime;
@@ -91,7 +92,7 @@ export async function verifySecurity(page: Page, runtime: Runtime) {
   expect(provider.model.starts).toHaveLength(1);
   expect(await runtime.audit()).toHaveLength(1);
 
-  const revoke = await page.request.delete('http://127.0.0.1:3000/devices/' + runtime.device.deviceId, {
+  const revoke = await page.request.delete(`${relayOrigin}/devices/` + runtime.device.deviceId, {
     headers: { Authorization: 'Bearer ' + runtime.login.token },
   });
 

@@ -11,7 +11,7 @@ import type { ClientCommand } from '@protocol';
 import { cliProvider } from './cli.js';
 import { desktopProvider } from './desktop.js';
 import type { Kind, Provider } from './model.js';
-import { appOrigin } from '../runtime/app-origin.js';
+import { appOrigin, relayOrigin, relayPort } from '../runtime/app-origin.js';
 import { startRelayProcess, type RemoteRelay } from '../support/relay-process.js';
 
 const environmentNames = [
@@ -77,7 +77,7 @@ export async function runtimeFixture(kind: Kind) {
       databaseUrl: url,
       schema,
       publicOrigin: appOrigin,
-      port: 3000,
+      port: relayPort,
       inputEnabled: true,
       permissionsEnabled: true,
     });
@@ -92,7 +92,7 @@ export async function runtimeFixture(kind: Kind) {
     const device = (await relay.devices.confirm(proof, claim.claimId, true))!;
 
     await saveConfig({
-      relayUrl: 'http://127.0.0.1:3000',
+      relayUrl: relayOrigin,
       deviceId: device.deviceId,
       deviceToken: device.token,
     });

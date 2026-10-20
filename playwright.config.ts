@@ -1,5 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
-import { appOrigin, appPort } from './tests/e2e/runtime/app-origin.js';
+import { E2E_RELAY_ORIGIN_ENV, appOrigin, appPort, relayOrigin } from './tests/e2e/runtime/app-origin.js';
 
 export default defineConfig({
   testDir: 'tests/e2e',
@@ -12,5 +12,6 @@ export default defineConfig({
     command: `npm run dev:app -- --strictPort --port ${appPort}`,
     url: appOrigin,
     reuseExistingServer: false,
+    env: { [E2E_RELAY_ORIGIN_ENV]: relayOrigin },
   },
 });
