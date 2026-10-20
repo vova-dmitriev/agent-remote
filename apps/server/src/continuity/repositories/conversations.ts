@@ -1,24 +1,36 @@
 import type { PoolClient } from 'pg';
 import { executionLinkSchema, type Conversation } from '@protocol';
+import { and, asc, eq, sql } from 'drizzle-orm';
+import { ormOn } from '../../db/database.js';
+import { continuityConversations, devices, executionLinks } from '../../db/schema/index.js';
 import { Fault } from '../../http/errors/fault.js';
 import { ContinuityError, type InitialExecution } from '../types.js';
-import { asConversation, asExecution, type ContinuityRow } from './mapping.js';
+import { asConversation, asExecution } from './mapping.js';
 
 export interface DeviceState {
   generation: string;
   snapshot: unknown;
 }
 
+const conversationOf = (ownerId: string, deviceId: string, id: string) =>
+  and(
+    eq(continuityConversations.ownerId, ownerId),
+    eq(continuityConversations.deviceId, deviceId),
+    eq(continuityConversations.id, id),
+  );
+
+const executionsOf = (ownerId: string, deviceId: string) =>
+  and(eq(executionLinks.ownerId, ownerId), eq(executionLinks.deviceId, deviceId));
+
 export class ConversationRepository {
   async device(tx: PoolClient, ownerId: string, deviceId: string, generation: string): Promise<DeviceState> {
-    const row = (
-      await tx.query<{ generation: string; revoked_at: string | null; snapshot: unknown }>(
-        'SELECT generation,revoked_at,snapshot FROM devices WHERE owner_id=$1 AND id=$2 FOR UPDATE',
-        [ownerId, deviceId],
-      )
-    ).rows[0];
+    const [row] = await ormOn(tx)
+      .select({ generation: devices.generation, revokedAt: devices.revokedAt, snapshot: devices.snapshot })
+      .from(devices)
+      .where(and(eq(devices.ownerId, ownerId), eq(devices.id, deviceId)))
+      .for('update');
 
-    if (!row || row.revoked_at !== null) {
+    if (!row || row.revokedAt !== null) {
       throw new Fault(ContinuityError.NotFound);
     }
 
@@ -30,38 +42,37 @@ export class ConversationRepository {
   }
 
   async conversation(tx: PoolClient, ownerId: string, deviceId: string, id: string, lock = false) {
-    const row = (
-      await tx.query<ContinuityRow>(
-        `SELECT id,owner_id,device_id,active_execution_id,version,updated_at FROM continuity_conversations WHERE owner_id=$1 AND device_id=$2 AND id=$3${lock ? ' FOR UPDATE' : ''}`,
-        [ownerId, deviceId, id],
-      )
-    ).rows[0];
+    const conversation = await this.findConversation(tx, ownerId, deviceId, id, lock);
 
-    if (!row) {
+    if (!conversation) {
       throw new Fault(ContinuityError.NotFound);
     }
 
-    return asConversation(row);
+    return conversation;
   }
 
   async findConversation(tx: PoolClient, ownerId: string, deviceId: string, id: string, lock = false) {
-    const row = (
-      await tx.query<ContinuityRow>(
-        `SELECT id,owner_id,device_id,active_execution_id,version,updated_at FROM continuity_conversations WHERE owner_id=$1 AND device_id=$2 AND id=$3${lock ? ' FOR UPDATE' : ''}`,
-        [ownerId, deviceId, id],
-      )
-    ).rows[0];
+    const query = ormOn(tx)
+      .select()
+      .from(continuityConversations)
+      .where(conversationOf(ownerId, deviceId, id));
+
+    const [row] = lock ? await query.for('update') : await query;
 
     return row ? asConversation(row) : null;
   }
 
   async execution(tx: PoolClient, ownerId: string, deviceId: string, conversationId: string, id: string) {
-    const row = (
-      await tx.query<ContinuityRow>(
-        'SELECT * FROM execution_links WHERE owner_id=$1 AND device_id=$2 AND conversation_id=$3 AND id=$4',
-        [ownerId, deviceId, conversationId, id],
-      )
-    ).rows[0];
+    const [row] = await ormOn(tx)
+      .select()
+      .from(executionLinks)
+      .where(
+        and(
+          executionsOf(ownerId, deviceId),
+          eq(executionLinks.conversationId, conversationId),
+          eq(executionLinks.id, id),
+        ),
+      );
 
     if (!row) {
       throw new Fault(ContinuityError.NotFound);
@@ -71,12 +82,14 @@ export class ConversationRepository {
   }
 
   async executions(tx: PoolClient, ownerId: string, deviceId: string, conversationId: string) {
-    const rows = await tx.query<ContinuityRow>(
-      'SELECT * FROM execution_links WHERE owner_id=$1 AND device_id=$2 AND conversation_id=$3 ORDER BY created_at,id LIMIT 100',
-      [ownerId, deviceId, conversationId],
-    );
+    const rows = await ormOn(tx)
+      .select()
+      .from(executionLinks)
+      .where(and(executionsOf(ownerId, deviceId), eq(executionLinks.conversationId, conversationId)))
+      .orderBy(asc(executionLinks.createdAt), asc(executionLinks.id))
+      .limit(100);
 
-    return rows.rows.map(asExecution);
+    return rows.map(asExecution);
   }
 
   async executionForSession(
@@ -86,21 +99,30 @@ export class ConversationRepository {
     nativeSessionId: string,
     generation: string,
   ) {
-    const row = (
-      await tx.query<ContinuityRow>(
-        'SELECT * FROM execution_links WHERE owner_id=$1 AND device_id=$2 AND native_session_id=$3 AND generation=$4 LIMIT 1',
-        [ownerId, deviceId, nativeSessionId, generation],
+    const [row] = await ormOn(tx)
+      .select()
+      .from(executionLinks)
+      .where(
+        and(
+          executionsOf(ownerId, deviceId),
+          eq(executionLinks.nativeSessionId, nativeSessionId),
+          eq(executionLinks.generation, generation),
+        ),
       )
-    ).rows[0];
+      .limit(1);
 
     return row ? asExecution(row) : null;
   }
 
   async insertConversation(tx: PoolClient, value: Conversation) {
-    await tx.query(
-      'INSERT INTO continuity_conversations(id,owner_id,device_id,active_execution_id,version,updated_at) VALUES($1,$2,$3,NULL,$4,$5)',
-      [value.id, value.ownerId, value.deviceId, value.version, value.updatedAt],
-    );
+    await ormOn(tx).insert(continuityConversations).values({
+      id: value.id,
+      ownerId: value.ownerId,
+      deviceId: value.deviceId,
+      activeExecutionId: null,
+      version: value.version,
+      updatedAt: value.updatedAt,
+    });
   }
 
   async insertExecution(
@@ -110,21 +132,7 @@ export class ConversationRepository {
   ) {
     const link = executionLinkSchema.parse({ ...value, createdAt: now });
 
-    await tx.query(
-      'INSERT INTO execution_links(id,conversation_id,owner_id,device_id,provider,profile_id,mode,native_session_id,generation,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',
-      [
-        link.id,
-        link.conversationId,
-        link.ownerId,
-        link.deviceId,
-        link.provider,
-        link.profileId,
-        link.mode,
-        link.nativeSessionId,
-        link.generation,
-        link.createdAt,
-      ],
-    );
+    await ormOn(tx).insert(executionLinks).values(link);
 
     return link;
   }
@@ -136,10 +144,10 @@ export class ConversationRepository {
     conversationId: string,
     executionId: string,
   ) {
-    await tx.query(
-      'UPDATE continuity_conversations SET active_execution_id=$4 WHERE owner_id=$1 AND device_id=$2 AND id=$3',
-      [ownerId, deviceId, conversationId, executionId],
-    );
+    await ormOn(tx)
+      .update(continuityConversations)
+      .set({ activeExecutionId: executionId })
+      .where(conversationOf(ownerId, deviceId, conversationId));
   }
 
   async setActiveExecution(
@@ -151,16 +159,9 @@ export class ConversationRepository {
     expectedVersion: number,
     now: number,
   ) {
-    const result = await tx.query(
-      'UPDATE continuity_conversations SET active_execution_id=$4,version=version+1,updated_at=$6 WHERE owner_id=$1 AND device_id=$2 AND id=$3 AND version=$5 RETURNING id,owner_id,device_id,active_execution_id,version,updated_at',
-      [ownerId, deviceId, conversationId, executionId, expectedVersion, now],
-    );
-
-    if (!result.rowCount) {
-      throw new Fault(ContinuityError.VersionConflict);
-    }
-
-    return asConversation(result.rows[0] as ContinuityRow);
+    return this.bump(tx, ownerId, deviceId, conversationId, expectedVersion, now, {
+      activeExecutionId: executionId,
+    });
   }
 
   async bumpConversation(
@@ -171,15 +172,29 @@ export class ConversationRepository {
     expectedVersion: number,
     now: number,
   ) {
-    const result = await tx.query(
-      'UPDATE continuity_conversations SET version=version+1,updated_at=$5 WHERE owner_id=$1 AND device_id=$2 AND id=$3 AND version=$4 RETURNING id,owner_id,device_id,active_execution_id,version,updated_at',
-      [ownerId, deviceId, id, expectedVersion, now],
-    );
+    return this.bump(tx, ownerId, deviceId, id, expectedVersion, now, {});
+  }
 
-    if (!result.rowCount) {
+  /** Advances a conversation at the expected version; a concurrent change is a conflict. */
+  private async bump(
+    tx: PoolClient,
+    ownerId: string,
+    deviceId: string,
+    id: string,
+    expectedVersion: number,
+    now: number,
+    change: { activeExecutionId?: string },
+  ) {
+    const [row] = await ormOn(tx)
+      .update(continuityConversations)
+      .set({ ...change, version: sql`${continuityConversations.version}+1`, updatedAt: now })
+      .where(and(conversationOf(ownerId, deviceId, id), eq(continuityConversations.version, expectedVersion)))
+      .returning();
+
+    if (!row) {
       throw new Fault(ContinuityError.VersionConflict);
     }
 
-    return asConversation(result.rows[0] as ContinuityRow);
+    return asConversation(row);
   }
 }

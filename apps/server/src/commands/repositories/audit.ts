@@ -6,8 +6,10 @@ import {
   IntegrationState,
   type CommandResult,
 } from '@protocol';
+import { and, eq, inArray, lt, sql } from 'drizzle-orm';
 import type { PoolClient } from 'pg';
-import type { Database } from '../../db/database.js';
+import { ormOn, type Database } from '../../db/database.js';
+import { commandAudit, handoffOperations, sessions } from '../../db/schema/index.js';
 
 export interface CommandAuditInput {
   ownerId: string;
@@ -19,7 +21,7 @@ export interface CommandAuditInput {
   createdAt: number;
   status: CommandResult['status'];
   createSelection: unknown;
-  createExpectedProfileVersion: unknown;
+  createExpectedProfileVersion: number | null;
 }
 
 export interface CommandResultInput {
@@ -31,6 +33,9 @@ export interface CommandResultInput {
   sessionId: string | null;
 }
 
+const owned = (ownerId: string, commandId: string) =>
+  and(eq(commandAudit.ownerId, ownerId), eq(commandAudit.commandId, commandId));
+
 /** The command audit: what each owner's commands were and how they ended. */
 export class CommandRepository {
   constructor(private readonly db: Database) {}
@@ -41,66 +46,67 @@ export class CommandRepository {
 
   /** The public status of an owned command. */
   async status(ownerId: string, commandId: string) {
-    return (
-      await this.db.pool.query(
-        'SELECT command_id AS "commandId",status,code,result_session_id AS "sessionId" FROM command_audit WHERE owner_id=$1 AND command_id=$2',
-        [ownerId, commandId],
-      )
-    ).rows[0];
+    const [row] = await this.db.orm
+      .select({
+        commandId: commandAudit.commandId,
+        status: commandAudit.status,
+        code: commandAudit.code,
+        sessionId: commandAudit.resultSessionId,
+      })
+      .from(commandAudit)
+      .where(owned(ownerId, commandId));
+
+    return row;
   }
 
   async find(ownerId: string, commandId: string) {
-    return (
-      await this.db.pool.query<{
-        fingerprint: string;
-        status: CommandResult['status'];
-        code: string | null;
-        result_session_id: string | null;
-      }>(
-        'SELECT fingerprint,status,code,result_session_id FROM command_audit WHERE owner_id=$1 AND command_id=$2',
-        [ownerId, commandId],
-      )
-    ).rows[0];
+    const [row] = await this.db.orm
+      .select({
+        fingerprint: commandAudit.fingerprint,
+        status: sql<CommandResult['status']>`${commandAudit.status}`,
+        code: commandAudit.code,
+        result_session_id: commandAudit.resultSessionId,
+      })
+      .from(commandAudit)
+      .where(owned(ownerId, commandId));
+
+    return row;
   }
 
   /** The device of an owned handoff operation. */
   async handoffDevice(ownerId: string, operationId: string): Promise<string | undefined> {
-    return (
-      await this.db.pool.query<{ device_id: string }>(
-        'SELECT device_id FROM handoff_operations WHERE owner_id=$1 AND id=$2',
-        [ownerId, operationId],
-      )
-    ).rows[0]?.device_id;
+    const [row] = await this.db.orm
+      .select({ deviceId: handoffOperations.deviceId })
+      .from(handoffOperations)
+      .where(and(eq(handoffOperations.ownerId, ownerId), eq(handoffOperations.id, operationId)));
+
+    return row?.deviceId;
   }
 
   /** Records a command once; returns whether this call recorded it. */
   async insert(tx: PoolClient, input: CommandAuditInput): Promise<boolean> {
-    return Boolean(
-      (
-        await tx.query(
-          'INSERT INTO command_audit(owner_id,command_id,device_id,session_id,action,fingerprint,status,created_at,create_selection,create_expected_profile_version) VALUES($1,$2,$3,$4,$5,$6,$8,$7,$9,$10) ON CONFLICT DO NOTHING RETURNING command_id',
-          [
-            input.ownerId,
-            input.commandId,
-            input.deviceId,
-            input.sessionId,
-            input.action,
-            input.fingerprint,
-            input.createdAt,
-            input.status,
-            input.createSelection,
-            input.createExpectedProfileVersion,
-          ],
-        )
-      ).rowCount,
-    );
+    const rows = await ormOn(tx)
+      .insert(commandAudit)
+      .values({
+        ownerId: input.ownerId,
+        commandId: input.commandId,
+        deviceId: input.deviceId,
+        sessionId: input.sessionId,
+        action: input.action,
+        fingerprint: input.fingerprint,
+        status: input.status,
+        createdAt: input.createdAt,
+        createSelection: input.createSelection,
+        createExpectedProfileVersion: input.createExpectedProfileVersion,
+      })
+      .onConflictDoNothing()
+      .returning({ commandId: commandAudit.commandId });
+
+    return rows.length > 0;
   }
 
   async setOutcome(ownerId: string, commandId: string, status: string, code: string) {
-    await this.db.pool.query(
-      'UPDATE command_audit SET status=$3,code=$4 WHERE owner_id=$1 AND command_id=$2',
-      [ownerId, commandId, status, code],
-    );
+    await this.db.orm.update(commandAudit).set({ status, code }).where(owned(ownerId, commandId));
   }
 
   /** Whether a device's verified, ready session was created by one of its create or restart commands. */
@@ -110,64 +116,60 @@ export class CommandRepository {
     sessionId: string,
     commandId: string,
   ): Promise<boolean> {
-    return Boolean(
-      (
-        await this.db.pool.query(
-          "SELECT s.id FROM sessions s JOIN command_audit c ON c.owner_id=s.owner_id AND c.device_id=s.device_id WHERE s.owner_id=$1 AND s.device_id=$2 AND s.id=$3 AND c.command_id=$4 AND c.action IN ($5,$6) AND s.data->>'binding'=$7 AND s.data->>'integrationState'=$8",
-          [
-            ownerId,
-            deviceId,
-            sessionId,
-            commandId,
-            CommandActionType.CreateSession,
-            CommandActionType.RestartSession,
-            BindingState.Verified,
-            IntegrationState.Ready,
-          ],
-        )
-      ).rowCount,
-    );
+    const rows = await this.db.orm
+      .select({ id: sessions.id })
+      .from(sessions)
+      .innerJoin(
+        commandAudit,
+        and(eq(commandAudit.ownerId, sessions.ownerId), eq(commandAudit.deviceId, sessions.deviceId)),
+      )
+      .where(
+        and(
+          eq(sessions.ownerId, ownerId),
+          eq(sessions.deviceId, deviceId),
+          eq(sessions.id, sessionId),
+          eq(commandAudit.commandId, commandId),
+          inArray(commandAudit.action, [CommandActionType.CreateSession, CommandActionType.RestartSession]),
+          sql`${sessions.data}->>'binding'=${BindingState.Verified}`,
+          sql`${sessions.data}->>'integrationState'=${IntegrationState.Ready}`,
+        ),
+      );
+
+    return rows.length > 0;
   }
 
   /** Records a device's result for one of its still accepted commands; returns whether it did. */
   async recordResult(input: CommandResultInput): Promise<boolean> {
-    return Boolean(
-      (
-        await this.db.pool.query(
-          'UPDATE command_audit SET status=$1,code=$2,result_session_id=$6 WHERE owner_id=$3 AND device_id=$4 AND command_id=$5 AND status=$7 RETURNING command_id',
-          [
-            input.status,
-            input.code,
-            input.ownerId,
-            input.deviceId,
-            input.commandId,
-            input.sessionId,
-            CommandStatus.Accepted,
-          ],
-        )
-      ).rowCount,
-    );
+    const rows = await this.db.orm
+      .update(commandAudit)
+      .set({ status: input.status, code: input.code, resultSessionId: input.sessionId })
+      .where(
+        and(
+          eq(commandAudit.ownerId, input.ownerId),
+          eq(commandAudit.deviceId, input.deviceId),
+          eq(commandAudit.commandId, input.commandId),
+          eq(commandAudit.status, CommandStatus.Accepted),
+        ),
+      )
+      .returning({ commandId: commandAudit.commandId });
+
+    return rows.length > 0;
   }
 
   /** Marks every owner's commands accepted before `before` and never acknowledged as unknown. */
   async expireUnacknowledged(before: number) {
-    await this.db.pool.query('UPDATE command_audit SET status=$2,code=$3 WHERE status=$4 AND created_at<$1', [
-      before,
-      CommandStatus.Unknown,
-      ErrorCode.ACK_TIMEOUT,
-      CommandStatus.Accepted,
-    ]);
+    await this.db.orm
+      .update(commandAudit)
+      .set({ status: CommandStatus.Unknown, code: ErrorCode.ACK_TIMEOUT })
+      .where(and(eq(commandAudit.status, CommandStatus.Accepted), lt(commandAudit.createdAt, before)));
   }
 
   /** Drops up to `limit` of every owner's commands created before `before`; returns how many. */
   async pruneBatch(before: number, limit: number): Promise<number> {
-    return (
-      (
-        await this.db.pool.query(
-          'DELETE FROM command_audit WHERE ctid IN (SELECT ctid FROM command_audit WHERE created_at<$1 LIMIT $2)',
-          [before, limit],
-        )
-      ).rowCount ?? 0
+    const result = await this.db.orm.execute(
+      sql`DELETE FROM ${commandAudit} WHERE ctid IN (SELECT ctid FROM ${commandAudit} WHERE ${commandAudit.createdAt}<${before} LIMIT ${limit})`,
     );
+
+    return result.rowCount ?? 0;
   }
 }

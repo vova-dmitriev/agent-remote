@@ -40,13 +40,7 @@ function mayQuery(path) {
  * Repositories still on raw SQL while the move to Drizzle is in progress (Tasks 38–39). The list only shrinks:
  * a file leaves it when it is migrated, and Task 40 empties it.
  */
-export const RAW_SQL_PENDING = new Set([
-  'apps/server/src/commands/repositories/audit.ts',
-  'apps/server/src/commands/repositories/claims.ts',
-  'apps/server/src/continuity/repositories/conversations.ts',
-  'apps/server/src/continuity/repositories/handoffs.ts',
-  'apps/server/src/profiles/routing/repository.ts',
-]);
+export const RAW_SQL_PENDING = new Set([]);
 
 /** Raw SQL entry points: every `<receiver>.query(...)` call, every `sql.raw(...)` and every value import of `pg`. */
 function rawSql(file) {

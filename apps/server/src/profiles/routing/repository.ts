@@ -12,15 +12,39 @@ import {
   ProfileStatus,
   AgentProvider,
 } from '@protocol';
+import { and, desc, eq, isNull, sql } from 'drizzle-orm';
 import { Fault } from '../../http/errors/fault.js';
-import type { Database } from '../../db/database.js';
+import { ormOn, type Database, type Orm } from '../../db/database.js';
+import {
+  devices,
+  executionProfileMetadata,
+  profileQuotaObservations,
+  profileRoutingSettings,
+} from '../../db/schema/index.js';
 import { ProfileRoutingStorage } from './values.js';
 
-interface DeviceRow {
-  generation: string;
-  routing: unknown;
-  metadata: unknown;
-}
+const sameDevice = (table: typeof profileRoutingSettings | typeof executionProfileMetadata) =>
+  and(eq(table.ownerId, devices.ownerId), eq(table.deviceId, devices.id));
+
+/** A live owned device with its routing settings and profile metadata, if any. */
+const liveDevice = (orm: Orm, ownerId: string, deviceId: string, generation?: string) =>
+  orm
+    .select({
+      generation: devices.generation,
+      routing: profileRoutingSettings.data,
+      metadata: executionProfileMetadata.data,
+    })
+    .from(devices)
+    .leftJoin(profileRoutingSettings, sameDevice(profileRoutingSettings))
+    .leftJoin(executionProfileMetadata, sameDevice(executionProfileMetadata))
+    .where(
+      and(
+        eq(devices.ownerId, ownerId),
+        eq(devices.id, deviceId),
+        isNull(devices.revokedAt),
+        generation === undefined ? undefined : eq(devices.generation, generation),
+      ),
+    );
 
 function empty(ownerId: string, deviceId: string): ProfileRoutingSettings {
   return profileRoutingSettingsSchema.parse({
@@ -40,14 +64,18 @@ export class ProfileRoutingRepository {
     const row = await this.device(ownerId, deviceId);
     const settings = row.routing ? profileRoutingSettingsSchema.parse(row.routing) : empty(ownerId, deviceId);
 
-    const observations = await this.database.pool.query<{ data: unknown }>(
-      'SELECT data FROM profile_quota_observations WHERE owner_id=$1 AND device_id=$2 ORDER BY observed_at DESC LIMIT $3',
-      [ownerId, deviceId, ProfileRoutingStorage.ObservationLimit],
-    );
+    const observations = await this.database.orm
+      .select({ data: profileQuotaObservations.data })
+      .from(profileQuotaObservations)
+      .where(
+        and(eq(profileQuotaObservations.ownerId, ownerId), eq(profileQuotaObservations.deviceId, deviceId)),
+      )
+      .orderBy(desc(profileQuotaObservations.observedAt))
+      .limit(ProfileRoutingStorage.ObservationLimit);
 
     return {
       settings,
-      observations: observations.rows.map((item) => profileQuotaObservationSchema.parse(item.data)),
+      observations: observations.map((item) => profileQuotaObservationSchema.parse(item.data)),
     };
   }
 
@@ -55,12 +83,8 @@ export class ProfileRoutingRepository {
     const input = saveProfileRoutingSchema.parse(raw);
 
     return this.database.transaction(async (tx) => {
-      const row = await tx.query<DeviceRow>(
-        'SELECT d.generation,r.data AS routing,p.data AS metadata FROM devices d LEFT JOIN profile_routing_settings r ON r.owner_id=d.owner_id AND r.device_id=d.id LEFT JOIN execution_profile_metadata p ON p.owner_id=d.owner_id AND p.device_id=d.id WHERE d.owner_id=$1 AND d.id=$2 AND d.generation=$3 AND d.revoked_at IS NULL FOR UPDATE OF d',
-        [ownerId, deviceId, generation],
-      );
-
-      const current = row.rows[0];
+      const orm = ormOn(tx);
+      const [current] = await liveDevice(orm, ownerId, deviceId, generation).for('update', { of: devices });
 
       if (!current) {
         throw new Fault(ErrorCode.NOT_FOUND);
@@ -85,10 +109,17 @@ export class ProfileRoutingRepository {
         overrides: input.overrides,
       });
 
-      await tx.query(
-        'INSERT INTO profile_routing_settings(owner_id,device_id,version,data,updated_at) VALUES($1,$2,$3,$4,$5) ON CONFLICT(owner_id,device_id) DO UPDATE SET version=EXCLUDED.version,data=EXCLUDED.data,updated_at=EXCLUDED.updated_at',
-        [ownerId, deviceId, next.version, JSON.stringify(next), Date.now()],
-      );
+      await orm
+        .insert(profileRoutingSettings)
+        .values({ ownerId, deviceId, version: next.version, data: next, updatedAt: Date.now() })
+        .onConflictDoUpdate({
+          target: [profileRoutingSettings.ownerId, profileRoutingSettings.deviceId],
+          set: {
+            version: sql`excluded.version`,
+            data: sql`excluded.data`,
+            updatedAt: sql`excluded.updated_at`,
+          },
+        });
 
       return next;
     });
@@ -111,16 +142,14 @@ export class ProfileRoutingRepository {
       .digest('hex');
 
     await this.database.transaction(async (tx) => {
-      const row = await tx.query<DeviceRow>(
-        'SELECT d.generation,p.data AS metadata FROM devices d LEFT JOIN execution_profile_metadata p ON p.owner_id=d.owner_id AND p.device_id=d.id WHERE d.owner_id=$1 AND d.id=$2 AND d.generation=$3 AND d.revoked_at IS NULL FOR UPDATE OF d',
-        [ownerId, deviceId, generation],
-      );
+      const orm = ormOn(tx);
+      const [current] = await liveDevice(orm, ownerId, deviceId, generation).for('update', { of: devices });
 
-      if (!row.rows[0]) {
+      if (!current) {
         throw new Fault(ErrorCode.NOT_FOUND);
       }
 
-      const profile = this.profiles(row.rows[0].metadata).find((item) => item.id === observation.profileId);
+      const profile = this.profiles(current.metadata).find((item) => item.id === observation.profileId);
 
       if (
         !profile ||
@@ -135,31 +164,38 @@ export class ProfileRoutingRepository {
         throw new Fault(ErrorCode.LOCAL_REVISION_CONFLICT);
       }
 
-      await tx.query(
-        'INSERT INTO profile_quota_observations(owner_id,device_id,profile_id,scope_key,observed_at,data) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(owner_id,device_id,profile_id,scope_key) DO UPDATE SET observed_at=EXCLUDED.observed_at,data=EXCLUDED.data WHERE profile_quota_observations.observed_at<=EXCLUDED.observed_at',
-        [
+      await orm
+        .insert(profileQuotaObservations)
+        .values({
           ownerId,
           deviceId,
-          observation.profileId,
+          profileId: observation.profileId,
           scopeKey,
-          observation.observedAt,
-          JSON.stringify(observation),
-        ],
-      );
+          observedAt: observation.observedAt,
+          data: observation,
+        })
+        .onConflictDoUpdate({
+          target: [
+            profileQuotaObservations.ownerId,
+            profileQuotaObservations.deviceId,
+            profileQuotaObservations.profileId,
+            profileQuotaObservations.scopeKey,
+          ],
+          set: { observedAt: sql`excluded.observed_at`, data: sql`excluded.data` },
+          // An older observation never replaces a newer one.
+          setWhere: sql`${profileQuotaObservations.observedAt}<=excluded.observed_at`,
+        });
     });
   }
 
-  private async device(ownerId: string, deviceId: string, generation?: string): Promise<DeviceRow> {
-    const result = await this.database.pool.query<DeviceRow>(
-      'SELECT d.generation,r.data AS routing,p.data AS metadata FROM devices d LEFT JOIN profile_routing_settings r ON r.owner_id=d.owner_id AND r.device_id=d.id LEFT JOIN execution_profile_metadata p ON p.owner_id=d.owner_id AND p.device_id=d.id WHERE d.owner_id=$1 AND d.id=$2 AND d.revoked_at IS NULL AND ($3::text IS NULL OR d.generation=$3)',
-      [ownerId, deviceId, generation ?? null],
-    );
+  private async device(ownerId: string, deviceId: string) {
+    const [row] = await liveDevice(this.database.orm, ownerId, deviceId);
 
-    if (!result.rows[0]) {
+    if (!row) {
       throw new Fault(ErrorCode.NOT_FOUND);
     }
 
-    return result.rows[0];
+    return row;
   }
 
   private validateDestinations(input: SaveProfileRouting, rawMetadata: unknown) {

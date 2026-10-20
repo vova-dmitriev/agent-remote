@@ -30,10 +30,8 @@ export class CommandsController {
       throw new Fault(ErrorCode.NOT_FOUND);
     }
 
-    if (row.sessionId === null) {
-      delete row.sessionId;
-    }
+    const { sessionId, ...status } = row;
 
-    return row;
+    return sessionId === null ? status : { ...status, sessionId };
   }
 }

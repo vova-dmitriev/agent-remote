@@ -6,52 +6,41 @@ import {
   type ExecutionLink,
   type HandoffOperation,
 } from '@protocol';
+import type { continuityConversations, executionLinks, handoffOperations } from '../../db/schema/index.js';
 
-export type ContinuityRow = Record<string, unknown>;
-export const asConversation = (row: ContinuityRow): Conversation =>
+export const asConversation = (row: typeof continuityConversations.$inferSelect): Conversation =>
   conversationSchema.parse({
     id: row.id,
-    ownerId: row.owner_id,
-    deviceId: row.device_id,
-    activeExecutionId: row.active_execution_id,
-    version: Number(row.version),
-    updatedAt: Number(row.updated_at),
+    ownerId: row.ownerId,
+    deviceId: row.deviceId,
+    activeExecutionId: row.activeExecutionId,
+    version: row.version,
+    updatedAt: row.updatedAt,
   });
-export const asExecution = (row: ContinuityRow): ExecutionLink =>
-  executionLinkSchema.parse({
-    id: row.id,
-    conversationId: row.conversation_id,
-    ownerId: row.owner_id,
-    deviceId: row.device_id,
-    provider: row.provider,
-    profileId: row.profile_id,
-    mode: row.mode,
-    nativeSessionId: row.native_session_id,
-    generation: row.generation,
-    createdAt: Number(row.created_at),
-  });
-export const asOperation = (row: ContinuityRow): HandoffOperation =>
+export const asExecution = (row: typeof executionLinks.$inferSelect): ExecutionLink =>
+  executionLinkSchema.parse(row);
+export const asOperation = (row: typeof handoffOperations.$inferSelect): HandoffOperation =>
   handoffOperationSchema.parse({
     id: row.id,
-    ownerId: row.owner_id,
-    deviceId: row.device_id,
-    conversationId: row.conversation_id,
-    expectedConversationVersion: Number(row.expected_conversation_version),
-    sourceExecutionId: row.source_execution_id,
-    sourceGeneration: row.source_generation,
-    checkpointId: row.checkpoint_id,
-    checkpointDigest: String(row.checkpoint_digest).trim(),
-    expectedProfileVersion: Number(row.expected_profile_version),
+    ownerId: row.ownerId,
+    deviceId: row.deviceId,
+    conversationId: row.conversationId,
+    expectedConversationVersion: row.expectedConversationVersion,
+    sourceExecutionId: row.sourceExecutionId,
+    sourceGeneration: row.sourceGeneration,
+    checkpointId: row.checkpointId,
+    checkpointDigest: row.checkpointDigest.trim(),
+    expectedProfileVersion: row.expectedProfileVersion,
     selection: {
-      provider: row.target_provider,
-      profileId: row.target_profile_id,
-      model: row.target_model,
-      ...(row.target_effort ? { effort: row.target_effort } : {}),
+      provider: row.targetProvider,
+      profileId: row.targetProfileId,
+      model: row.targetModel,
+      ...(row.targetEffort ? { effort: row.targetEffort } : {}),
     },
     phase: row.phase,
-    targetExecutionId: row.target_execution_id,
-    createCommandId: row.create_command_id,
-    seedCommandId: row.seed_command_id,
-    updatedAt: Number(row.updated_at),
+    targetExecutionId: row.targetExecutionId,
+    createCommandId: row.createCommandId,
+    seedCommandId: row.seedCommandId,
+    updatedAt: row.updatedAt,
     ...(row.code ? { code: row.code } : {}),
   });
