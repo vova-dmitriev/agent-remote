@@ -103,6 +103,20 @@ it('delivers paragraphs, ordered list items and supported Markdown as Telegram H
   );
 });
 
+// Telegram has no tables: raw pipes wrap into an unreadable wall, so each row becomes its own line.
+it('renders Markdown tables as one readable line per row', async () => {
+  const { body } = await deliver(
+    '| Step | Result |\n|---|---|\n| Build | passed `npm run build` |\n| **Tests** | 90 ✅ |\n\n' +
+      '| Step | State | Note |\n|---|---|---|\n| Gates | running | full |',
+  );
+
+  expect(body.text).toContain(
+    '<b>Build</b> — passed <code>npm run build</code>\n<b>Tests</b> — 90 ✅\n\n<b>Gates</b>\nState: running\nNote: full',
+  );
+
+  expect(body.text).not.toContain('|');
+});
+
 it('escapes untrusted session titles and raw HTML without creating Telegram tags', async () => {
   const { body } = await deliver('<b>Fake</b> & <script>alert(1)</script>\n\n`a < b && c > d`', {
     title: '<a href="tg://user?id=1">owner</a> & **literal**',

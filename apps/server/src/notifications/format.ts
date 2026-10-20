@@ -1,5 +1,7 @@
 import { MarkdownNodeType } from '../domain/markdown.js';
 import { fromMarkdown } from 'mdast-util-from-markdown';
+import { gfmTableFromMarkdown } from 'mdast-util-gfm-table';
+import { gfmTable } from 'micromark-extension-gfm-table';
 
 // Only generated tags reach Telegram. Raw Markdown HTML is always literal text.
 const escapeHtml = (value: string) =>
@@ -129,7 +131,7 @@ function safeLink(value: string | undefined): string | undefined {
 /** Render CommonMark into the subset supported by Telegram sendMessage HTML. */
 export function notificationPreview(markdown: string): string {
   const source = unicodePrefix(markdown, 100_000);
-  const ast = fromMarkdown(source);
+  const ast = fromMarkdown(source, { extensions: [gfmTable()], mdastExtensions: [gfmTableFromMarkdown()] });
   const definitions = new Map<string, string>();
 
   for (const node of ast.children) {
@@ -139,6 +141,55 @@ export function notificationPreview(markdown: string): string {
   }
 
   const output = new TelegramHtml();
+  // A bold cell inside a bold row label adds nothing.
+  let bold = 0;
+
+  const strong = (node: MarkdownNode, content: () => void) => {
+    if (bold || containsCode(node)) {
+      content();
+
+      return;
+    }
+
+    bold++;
+    output.wrap('b', content);
+    bold--;
+  };
+
+  // Telegram has no tables. A two-column row reads "label — value"; a wider row puts each further cell on its
+  // own line after its header.
+  function table(node: MarkdownNode, depth: number) {
+    const [head, ...rows] = node.children ?? [];
+    const headers = head?.children ?? [];
+
+    for (const [index, row] of rows.entries()) {
+      if (output.stopped) {
+        break;
+      }
+
+      const [label, ...cells] = row.children ?? [];
+
+      if (index) {
+        output.text(headers.length > 2 ? '\n\n' : '\n');
+      }
+
+      if (label) {
+        strong(label, () => children(label, '', depth));
+      }
+
+      for (const [column, cell] of cells.entries()) {
+        if (headers.length > 2) {
+          output.text('\n');
+          children(headers[column + 1] ?? cell, '', depth);
+          output.text(': ');
+        } else {
+          output.text(' — ');
+        }
+
+        children(cell, '', depth);
+      }
+    }
+  }
 
   function children(node: MarkdownNode, separator = '', depth = 0) {
     for (const [index, child] of (node.children ?? []).entries()) {
@@ -182,12 +233,10 @@ export function notificationPreview(markdown: string): string {
         break;
       case MarkdownNodeType.Heading:
       case MarkdownNodeType.Strong:
-        if (containsCode(node)) {
-          content();
-        } else {
-          output.wrap('b', content);
-        }
-
+        strong(node, content);
+        break;
+      case MarkdownNodeType.Table:
+        table(node, depth);
         break;
       case MarkdownNodeType.Emphasis:
         if (containsCode(node)) {

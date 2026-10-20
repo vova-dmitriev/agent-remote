@@ -16,6 +16,7 @@ export const MarkdownNodeType = {
   Link: 'link',
   LinkReference: 'linkReference',
   List: 'list',
+  Table: 'table',
 } as const;
 
 export type MarkdownNodeType = (typeof MarkdownNodeType)[keyof typeof MarkdownNodeType];

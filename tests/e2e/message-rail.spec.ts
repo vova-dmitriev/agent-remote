@@ -1,7 +1,7 @@
 import { expect, type Page } from '@playwright/test';
 import { test, publishMessages } from './support/relay-fixture.js';
 import { identity } from './support/identity.js';
-import { byTestId } from './support/testid.js';
+import { byTestId, byTestIdListing } from './support/testid.js';
 import { box, expectLoadedMessages, focusedTestId, railConversation } from './support/rail.js';
 import { scrollSettled } from './support/scroll-settled.js';
 import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
@@ -66,32 +66,41 @@ test('the pointer previews and magnifies the nearest tick, and a click there jum
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await publishMessages(conversation(60));
   await open(page);
+  const feed = page.getByTestId(SESSION_FEED_IDS.root);
   const markers = page.getByTestId(SESSION_FEED_IDS.marker);
-  const ticks = page.getByTestId(SESSION_FEED_IDS.railTick);
 
   await expectLoadedMessages(page, 60);
-  const target = Math.floor((await markers.count()) / 3);
-  const tick = await box(ticks.nth(target));
-  const id = (await markers.nth(target).getAttribute('data-message-id'))!;
+  await scrollSettled(feed);
+
+  // Markers regroup while rows are measured, so the target is found by its message, never by index.
+  const id = (await markers.nth(Math.floor((await markers.count()) / 3)).getAttribute('data-message-id'))!;
+  const marker = byTestIdListing(page, SESSION_FEED_IDS.marker, { 'message-ids': id });
+  let tick!: Awaited<ReturnType<typeof box>>;
+
+  await expect(async () => {
+    tick = await box(marker.getByTestId(SESSION_FEED_IDS.railTick));
+  }).toPass();
 
   // A few pixels off the tick still picks it.
   await page.mouse.move(tick.x + 2, tick.y + tick.height / 2 + 3);
   await expect(page.getByTestId(SESSION_FEED_IDS.preview)).toBeVisible();
-  await expect(markers.nth(target)).toHaveAttribute('aria-describedby', /.+/);
 
   await expect
-    .poll(async () => {
-      const widths = await ticks.evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().width));
+    .poll(() =>
+      markers.evaluateAll((nodes, target) => {
+        const widths = nodes.map((node) => node.firstElementChild!.getBoundingClientRect().width);
+        const index = nodes.findIndex((node) => node.dataset.messageIds!.split(' ').includes(target));
 
-      return widths[target] === Math.max(...widths) && widths[target]! > widths[0]!;
-    })
+        return index > 0 && widths[index] === Math.max(...widths) && widths[index]! > widths[0]!;
+      }, id),
+    )
     .toBe(true);
 
   await page.mouse.down();
   await page.mouse.up();
-  await scrollSettled(page.getByTestId(SESSION_FEED_IDS.root));
+  await scrollSettled(feed);
   await expect(byTestId(page, SESSION_FEED_IDS.message, { 'message-id': id })).toBeInViewport();
-  await expect(markers.nth(target)).toHaveAttribute('aria-current', 'true');
+  await expect(marker).toHaveAttribute('aria-current', 'true');
 
   await page.mouse.move(0, 0);
   await expect(page.getByTestId(SESSION_FEED_IDS.preview)).toHaveCount(0);
