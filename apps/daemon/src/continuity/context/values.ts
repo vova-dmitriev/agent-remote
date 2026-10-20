@@ -1,6 +1,6 @@
 import type { CheckpointMessage, ContextCheckpointDraft, SourceFence } from './types.js';
-import { CodedError } from '@protocol';
-import { CheckpointCoverage, CheckpointVisibleRole } from '../../domain/continuity/checkpoint.js';
+import { CheckpointCoverage, CodedError } from '@protocol';
+import { CheckpointVisibleRole } from '../../domain/continuity/checkpoint.js';
 
 export const CheckpointLimits = {
   MaxMessages: 500,

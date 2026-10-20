@@ -62,7 +62,7 @@ test('loading an earlier page from the cap keeps the reading position', async ({
   expect(Math.abs((await row.evaluate((node) => node.getBoundingClientRect().top)) - before)).toBeLessThan(3);
 });
 
-test('with history beyond both ends, a busy later page never marks the later edge exhausted', async ({ page }) => {
+test('with history beyond both ends, a later page loads while an earlier one is in flight', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
 
   await page.setViewportSize({ width: 390, height: 1400 });
@@ -96,7 +96,7 @@ test('with history beyond both ends, a busy later page never marks the later edg
   await expect(later(page)).toBeVisible();
   await page.screenshot({ path: 'artifacts/chat-rail-caps-mobile.png' });
 
-  // An earlier page in flight makes the later request busy; that must not prove the later edge exhausted.
+  // Each direction pages on its own: a held earlier page never blocks the later one.
   let release!: () => void;
   const held = new Promise<void>((resolve) => (release = resolve));
 
@@ -106,10 +106,11 @@ test('with history beyond both ends, a busy later page never marks the later edg
   });
 
   const earlierPage = page.waitForResponse((response) => response.url().includes('/events?before='));
+  const laterPage = page.waitForResponse((response) => response.url().includes('/events?after='));
 
   await earlier(page).click();
   await later(page).click();
+  expect((await laterPage).ok()).toBe(true);
   release();
-  await earlierPage;
-  await expect(later(page)).toBeVisible();
+  expect((await earlierPage).ok()).toBe(true);
 });

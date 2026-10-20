@@ -46,7 +46,7 @@ const statusNames = "/^(status|statusCode|error_code)$/"
 
 export const numericValueRules = [
   `NewExpression[callee.name='Fault'] ${httpStatusLiteral}`,
-  `CallExpression[callee.property.name=/^(status|sendStatus)$/] ${httpStatusLiteral}`,
+  `CallExpression[callee.property.name=/^(status|sendStatus|writeHead)$/] ${httpStatusLiteral}`,
   `AssignmentExpression[left.property.name=/^(status|statusCode)$/] ${httpStatusLiteral}`,
   `BinaryExpression[operator=/^([!=]==?|[<>]=?)$/]:has(MemberExpression[property.name=${statusNames}]) > ${httpStatusLiteral}`,
   `Property[key.name=/^(status|statusCode)$/] ${httpStatusLiteral}`,

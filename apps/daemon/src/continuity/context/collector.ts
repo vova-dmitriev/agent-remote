@@ -1,9 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import {
-  CheckpointAttachmentStatus,
-  type CheckpointCoverage,
-  CheckpointVisibleRole,
-} from '../../domain/continuity/checkpoint.js';
+import type { CheckpointCoverage } from '@protocol';
+import { CheckpointAttachmentStatus, CheckpointVisibleRole } from '../../domain/continuity/checkpoint.js';
 import { CheckpointLimits, CheckpointError, checkpointFailure } from './values.js';
 import type {
   CheckpointMessage,

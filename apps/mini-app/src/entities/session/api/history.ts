@@ -68,13 +68,21 @@ async function restoreSessionHistory(
   }
 }
 
+/** What the latest snapshot says about history identity: its event stream and each session's generation. */
 export class HistoryStream {
   private snapshot: { deviceId: string; streamId: string } | null = null
+  private generations = new Map<string, string>()
 
+  generation(sessionId: string) {
+    return this.generations.get(sessionId)
+  }
+
+  /** Records the snapshot and reports whether the device's event stream changed since the previous one. */
   changed(frame: Extract<ServerFrame, { type: typeof FrameType.Snapshot }>) {
     const previous = this.snapshot
 
     this.snapshot = { deviceId: frame.deviceId, streamId: frame.snapshot.cursor.streamId }
+    for (const session of frame.snapshot.sessions) this.generations.set(session.id, session.generation)
 
     return previous !== null && previous.deviceId === frame.deviceId && previous.streamId !== this.snapshot.streamId
   }

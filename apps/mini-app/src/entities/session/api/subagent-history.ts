@@ -1,4 +1,5 @@
 import { HistoryDirection, HistoryQueryKey, type EventEnvelope, type HistoryNavigationDirection } from "@protocol"
+import type { HistoryStream } from "./history"
 import { HistoryWindow } from "./history-window"
 
 type HistoryRequest = (path: string, observe: (response: Response) => void) => Promise<EventEnvelope[]>
@@ -7,13 +8,17 @@ type HistoryRequest = (path: string, observe: (response: Response) => void) => P
 const SUBAGENT_WINDOW_LIMIT = 8
 
 /**
- * Paging state of each subagent transcript on the relay transport, apart from the parent session's window.
- * A view of a new session generation starts with a Latest read, which resets that subagent's cursors.
+ * Paging state of each subagent transcript on the relay transport, apart from the parent session's window. A window
+ * belongs to one session generation, as on the desktop transport: a restarted session's subagent starts empty until
+ * its Latest read, and a page answered for the old generation never moves the new window's cursors.
  */
 export class SubagentHistory {
   private windows = new Map<string, HistoryWindow>()
 
-  constructor(private readonly request: HistoryRequest) {}
+  constructor(
+    private readonly request: HistoryRequest,
+    private readonly stream: Pick<HistoryStream, "generation">,
+  ) {}
 
   reset() {
     this.windows.clear()
@@ -38,7 +43,7 @@ export class SubagentHistory {
   }
 
   private window(sessionId: string, agentId: string) {
-    const key = sessionId + "\u0000" + agentId
+    const key = [sessionId, agentId, this.stream.generation(sessionId) ?? ""].join("\u0000")
     const existing = this.windows.get(key)
 
     if (existing) return existing

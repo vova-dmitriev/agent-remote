@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest"
 import { FrameType } from "@protocol"
 import { AppTransport } from "../src/app/api/transport/app-transport"
-import { RECONNECT_BACKOFF, ReconnectBackoff } from "../src/app/api/transport/reconnect-backoff"
+import { RECONNECT_BACKOFF } from "../src/app/api/transport/reconnect-policy"
 
 const ABNORMAL_CLOSE = 1006
 
@@ -96,15 +96,4 @@ it("never reconnects sooner than half the ceiling", async () => {
 
   expect(await reconnectDelay(current)).toBe(RECONNECT_BACKOFF.BaseMs / 2)
   expect(await reconnectDelay(current)).toBe(RECONNECT_BACKOFF.BaseMs)
-})
-
-it("caps the delay and starts again from the base after a reset", () => {
-  const backoff = new ReconnectBackoff(() => 0.999_999)
-  const delays = Array.from({ length: 12 }, () => backoff.next())
-
-  expect(Math.max(...delays)).toBeLessThan(RECONNECT_BACKOFF.MaxMs)
-  expect(delays.at(-1)).toBe(RECONNECT_BACKOFF.MaxMs - 1)
-
-  backoff.reset()
-  expect(backoff.next()).toBe(RECONNECT_BACKOFF.BaseMs - 1)
 })

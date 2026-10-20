@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
-import { CheckpointApprovalKind, CheckpointCoverage, contextCheckpointSummarySchema } from '@protocol';
+import { CheckpointApprovalKind, contextCheckpointSummarySchema } from '@protocol';
 import type { CheckpointManualDecision } from './values.js';
 import {
   assertCurrent,
@@ -58,8 +58,7 @@ export function approvedSummary(checkpoint: LocalContextCheckpoint) {
     historyWatermark: checkpoint.source.historyWatermark,
     digest: checkpoint.digest,
     createdAt: checkpoint.createdAt,
-    coverage:
-      checkpoint.coverage === 'complete' ? CheckpointCoverage.Complete : CheckpointCoverage.RecentWindow,
+    coverage: checkpoint.coverage,
     messageCount: checkpoint.body.messages.length,
     attachmentCount: checkpoint.body.messages.reduce(
       (total, message) => total + message.attachments.length,

@@ -30,7 +30,7 @@ export function transcriptRowItems(
   return Number(visibleTranscriptRow(row, sessionId)) + tools;
 }
 
-export function visibleTranscriptRow(row: Record<string, unknown>, sessionId?: string): boolean {
+function visibleTranscriptRow(row: Record<string, unknown>, sessionId?: string): boolean {
   if ((sessionId && row.sessionId !== undefined && row.sessionId !== sessionId) || row.isMeta === true) {
     return false;
   }

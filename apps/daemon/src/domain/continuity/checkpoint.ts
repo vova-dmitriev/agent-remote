@@ -12,9 +12,6 @@ export const CheckpointVisibleRole = {
 } as const;
 export type CheckpointVisibleRole = (typeof CheckpointVisibleRole)[keyof typeof CheckpointVisibleRole];
 
-export const CheckpointCoverage = { Complete: 'complete', RecentWindow: 'recent_window' } as const;
-export type CheckpointCoverage = (typeof CheckpointCoverage)[keyof typeof CheckpointCoverage];
-
 export const CheckpointAttachmentStatus = { Available: 'available', Missing: 'missing' } as const;
 export type CheckpointAttachmentStatus =
   (typeof CheckpointAttachmentStatus)[keyof typeof CheckpointAttachmentStatus];
