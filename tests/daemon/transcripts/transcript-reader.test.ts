@@ -137,4 +137,31 @@ describe('TranscriptReader', () => {
 
     expect((await reader.readNext())[0]?.text).toBe('👋');
   });
+
+  it('shows a prompt sent while Claude was working, which Claude records as a queued command', async () => {
+    const queued = (uuid: string, origin: object, prompt: unknown) =>
+      JSON.stringify({
+        type: 'attachment',
+        uuid,
+        timestamp: '2026-10-16T12:00:00Z',
+        attachment: { type: 'queued_command', commandMode: 'prompt', origin, prompt },
+      }) + '\n';
+
+    await writeFile(
+      file,
+      queued('typed', { kind: 'human' }, 'Sent now') +
+        queued('pasted', { kind: 'human' }, [
+          { type: 'text', text: 'With an image' },
+          { type: 'image', source: {} },
+        ]) +
+        queued('task', { kind: 'task-notification', producer: 'session-task' }, '<task-notification/>'),
+    );
+
+    const reader = new TranscriptReader({ path: file, allowedRoot: allowed });
+
+    expect(await reader.readNext()).toEqual([
+      { id: 'typed', role: 'user', text: 'Sent now', occurredAt: 1_792_152_000_000 },
+      { id: 'pasted', role: 'user', text: 'With an image', occurredAt: 1_792_152_000_000 },
+    ]);
+  });
 });

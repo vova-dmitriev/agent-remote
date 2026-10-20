@@ -1,4 +1,9 @@
-import { ClaudeRecordType, ClaudeContentType } from '../../domain/claude.js';
+import {
+  ClaudeAttachmentType,
+  ClaudeContentType,
+  ClaudeQueueOrigin,
+  ClaudeRecordType,
+} from '../../domain/claude.js';
 import {
   TRANSCRIPT_DEFAULT_MAX_READ_BYTES,
   TRANSCRIPT_DEFAULT_MAX_LINE_BYTES,
@@ -49,6 +54,37 @@ interface ReaderOptions {
 }
 
 /** Incremental reader for an exact hook-provided path; never searches other sessions. */
+/**
+ * A prompt sent while Claude was working: Claude records it as a `queued_command` attachment, not a user message.
+ * Commands Claude Code queues itself (task notifications) are not the user's and stay hidden.
+ */
+function queuedPrompt(row: Record<string, unknown>): string | undefined {
+  const attachment = row.attachment as
+    { type?: unknown; origin?: { kind?: unknown }; prompt?: unknown } | undefined;
+
+  if (
+    row.type !== ClaudeRecordType.Attachment ||
+    attachment?.type !== ClaudeAttachmentType.QueuedCommand ||
+    attachment.origin?.kind !== ClaudeQueueOrigin.Human
+  ) {
+    return undefined;
+  }
+
+  if (typeof attachment.prompt === 'string') {
+    return attachment.prompt;
+  }
+
+  return Array.isArray(attachment.prompt)
+    ? attachment.prompt
+        .filter(
+          (block): block is { type: typeof ClaudeContentType.Text; text: string } =>
+            block?.type === ClaudeContentType.Text && typeof block.text === 'string',
+        )
+        .map((block) => block.text)
+        .join('\n')
+    : undefined;
+}
+
 export class TranscriptReader {
   private offset = 0;
   private identity = '';
@@ -284,11 +320,9 @@ export class TranscriptReader {
 
     if (
       !row ||
-      ![
-        ClaudeRecordType.User,
-        ClaudeRecordType.Assistant,
-        ...(this.options.transform ? ['attachment'] : []),
-      ].some((candidateValue) => candidateValue === String(row.type)) ||
+      ![ClaudeRecordType.User, ClaudeRecordType.Assistant, ClaudeRecordType.Attachment].some(
+        (candidateValue) => candidateValue === String(row.type),
+      ) ||
       row.isMeta === true
     ) {
       return [];
@@ -297,7 +331,7 @@ export class TranscriptReader {
     const message = row.message as { content?: unknown } | undefined;
     const content = message?.content;
 
-    let text = typeof content === 'string' ? content : '';
+    let text = typeof content === 'string' ? content : (queuedPrompt(row) ?? '');
 
     if (Array.isArray(content)) {
       text = content

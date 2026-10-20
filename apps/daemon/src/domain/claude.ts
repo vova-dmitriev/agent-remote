@@ -24,6 +24,12 @@ export const ClaudeRecordType = {
 
 export type ClaudeRecordType = (typeof ClaudeRecordType)[keyof typeof ClaudeRecordType];
 
+/** An attachment record Claude writes for a prompt typed while it was working. */
+export const ClaudeAttachmentType = { QueuedCommand: 'queued_command' } as const;
+
+/** Who queued a command: a person, or Claude Code itself (task notifications). */
+export const ClaudeQueueOrigin = { Human: 'human' } as const;
+
 export const ClaudeContentType = {
   Text: 'text',
   Image: 'image',
