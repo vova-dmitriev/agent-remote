@@ -7,6 +7,7 @@ import {
   DeviceStatus,
   ErrorCode,
   type EventEnvelope,
+  type SessionChanges,
   EventType,
   historySchema,
   IntegrationState,
@@ -666,6 +667,17 @@ export class Monitor extends EventEmitter implements MonitorPort {
     this.emit(RuntimeEvent.Snapshot);
 
     return true;
+  }
+  /** The files a Claude session edited, from its transcript; Codex threads report theirs through their binding. */
+  setSessionChanges(id: string, changes: SessionChanges | undefined) {
+    const session = this.sessions.get(id);
+
+    if (!session || !changes || JSON.stringify(session.changes) === JSON.stringify(changes)) {
+      return;
+    }
+
+    session.changes = changes;
+    this.emit(RuntimeEvent.Snapshot);
   }
   setSubagents(id: string, agents: Session['subagents']) {
     const session = this.sessions.get(id);

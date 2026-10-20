@@ -93,6 +93,7 @@ export class TranscriptSources {
     const reader = new TranscriptReader({
       path,
       initialWindow: this.initialWindow,
+      editsTail: true,
       ...(this.initialWindow === 0 ? { maxReadBytes: 32 * 1024 * 1024 } : {}),
       ...(this.transform
         ? {

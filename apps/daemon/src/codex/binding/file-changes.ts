@@ -5,18 +5,14 @@ import {
   type Session,
   type SessionChanges,
   type SessionFileChange,
-  truncateUtf8,
 } from '@protocol';
 import { object } from '../events.js';
+import { changeBytes, FileChangeLog } from '../../activity/file-changes.js';
 
-const SESSION_BUDGET = 16384;
-const bytes = (value: unknown) => Buffer.byteLength(JSON.stringify(value));
+const bytes = changeBytes;
 
 /** These patches come only from the bound native thread; paths are display metadata, never file reads. */
-export class CodexFileChanges {
-  private files = new Map<string, SessionFileChange>();
-  private truncated = false;
-
+export class CodexFileChanges extends FileChangeLog {
   ingest(raw: unknown, turnId: string, historical = false) {
     const item = object(raw);
 
@@ -32,50 +28,29 @@ export class CodexFileChanges {
     for (const rawChange of item.changes.slice(0, 40)) {
       const change = object(rawChange);
       const kind = object(change.kind).type;
-      const id = `${turnId}:${item.id}:${change.path}`;
 
       if (
         typeof change.path !== 'string' ||
-        !change.path ||
-        change.path.length > 4096 ||
         typeof change.diff !== 'string' ||
         ![FileChangeKind.Add, FileChangeKind.Delete, FileChangeKind.Update].some(
           (candidateValue) => candidateValue === String(kind),
-        ) ||
-        id.length > 2048 ||
-        (historical && this.files.has(id))
+        )
       ) {
         continue;
       }
 
-      let patch = truncateUtf8(change.diff, 12000);
-
-      const file: SessionFileChange = {
-        id,
-        path: change.path,
-        kind: kind as SessionFileChange['kind'],
-        patch,
-        truncated: patch !== change.diff,
-      };
-
-      while (bytes(file) > 14000 && patch) {
-        patch = patch.slice(0, Math.floor(patch.length * 0.8));
-        file.patch = patch;
-        file.truncated = true;
-      }
-
-      this.files.set(id, file);
-      this.truncated ||= file.truncated || item.changes.length > 40;
-
-      while (this.files.size > 40 || bytes(this.value()) > SESSION_BUDGET) {
-        this.files.delete(this.files.keys().next().value!);
-        this.truncated = true;
-      }
+      this.add(
+        {
+          id: `${turnId}:${item.id}:${change.path}`,
+          path: change.path,
+          kind: kind as SessionFileChange['kind'],
+          diff: change.diff,
+        },
+        historical,
+      );
     }
-  }
 
-  value(): SessionChanges {
-    return { files: [...this.files.values()], truncated: this.truncated };
+    this.truncated ||= item.changes.length > 40;
   }
 }
 
@@ -115,7 +90,8 @@ export function boundSnapshotChanges(snapshot: AppSnapshot): AppSnapshot {
     ),
   };
 
-  const budget = Math.max(0, Math.min(24000, 114688 - bytes(baseline)));
+  // Under the 512 KiB device frame the relay accepts.
+  const budget = Math.max(0, Math.min(24000, 458752 - bytes(baseline)));
 
   return { ...snapshot, sessions: boundChangeSnapshots(snapshot.sessions, budget) };
 }

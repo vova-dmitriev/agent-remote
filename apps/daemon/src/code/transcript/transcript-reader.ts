@@ -17,6 +17,8 @@ import { openTranscript, type TranscriptOpenOptions } from './transcript-file.js
 import { createHash } from 'node:crypto';
 import { positiveInteger, truncateUtf8, type HistoryMessage } from '@protocol';
 import { TranscriptTitle } from './transcript-title.js';
+import { FileChangeLog } from '../../activity/file-changes.js';
+import { claudeFileEdit, readEditsTail } from '../../activity/claude-changes.js';
 import { transcriptWindow } from './transcript-window.js';
 import { transcriptToolItems } from './transcript-tools.js';
 import { logDebug } from '../../diagnostics/log.js';
@@ -35,6 +37,8 @@ interface ReaderOptions {
   withPosition?: boolean;
   onPosition?: (id: string, offset: number) => void;
   initialWindow?: number;
+  /** A live session's reader: also lists the files edited before it attached (a history page does not). */
+  editsTail?: boolean;
   startAt?: number;
   endAt?: number;
   maxLineBytes?: number;
@@ -61,6 +65,7 @@ export class TranscriptReader {
   private readonly maxReadBytes: number;
   private readonly maxSeenIds: number;
   private readonly titles: TranscriptTitle;
+  private readonly edits = new FileChangeLog();
 
   constructor(private readonly options: ReaderOptions) {
     this.titles = new TranscriptTitle(options.sessionId);
@@ -79,6 +84,11 @@ export class TranscriptReader {
     );
 
     this.maxSeenIds = positiveInteger(options.maxSeenIds ?? TRANSCRIPT_MAX_SEEN_IDS, 'MAX_SEEN_IDS');
+  }
+
+  /** The files this session's Edit and Write calls changed; undefined while there are none. */
+  get changes() {
+    return this.edits.size ? this.edits.value() : undefined;
   }
 
   get title(): string | undefined {
@@ -131,6 +141,11 @@ export class TranscriptReader {
 
       if (reset) {
         this.titles.reset();
+        this.edits.reset();
+
+        if (this.options.editsTail) {
+          await readEditsTail(file, info.size, this.options.sessionId, this.edits);
+        }
 
         let initialOffset = this.options.startAt;
 
@@ -255,6 +270,12 @@ export class TranscriptReader {
 
     if (row && typeof row === 'object') {
       this.titles.observe(row, position, line);
+
+      const edit = claudeFileEdit(row, this.options.sessionId);
+
+      if (edit) {
+        this.edits.add(edit, true);
+      }
     }
 
     if (this.options.sessionId && row.sessionId !== undefined && row.sessionId !== this.options.sessionId) {

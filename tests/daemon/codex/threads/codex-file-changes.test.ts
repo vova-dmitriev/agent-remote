@@ -61,7 +61,7 @@ it('does not add diff payload when other snapshot content uses the transport bud
     deviceStatus: 'online' as const,
     cursor: { streamId: 'synthetic', seq: 0 },
     permissions: [],
-    terminal: { sessionId: 'session', generation: 'g', text: '\n'.repeat(60000), capturedAt: 0 },
+    terminal: { sessionId: 'session', generation: 'g', text: '\n'.repeat(240000), capturedAt: 0 },
   };
 
   const bounded = boundSnapshotChanges(snapshot);

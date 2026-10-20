@@ -197,6 +197,7 @@ export class SourcePoller {
         }
 
         monitor.setSessionTitle(sessionId, reader.title);
+        monitor.setSessionChanges(sessionId, reader.changes);
         monitor.setSessionModel(sessionId, reader.model, ModelOrigin.Transcript, modelRevision);
       } catch {
         if (
