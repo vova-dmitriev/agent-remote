@@ -59,8 +59,8 @@
     "package:extension": "npm run check:extension:source && node scripts/extension/package.mjs",
     "build:desktop": "node scripts/desktop/build.mjs",
     "package:desktop": "npm --prefix apps/desktop run package",
-    "test:desktop": "vitest run tests/desktop-*.test.ts",
-    "test:extension": "vitest run tests/extension tests/native tests/local tests/application-client-contract.test.ts tests/host-runtime-lifecycle.test.ts tests/browser-cli.test.ts",
+    "test:desktop": "vitest run /desktop-",
+    "test:extension": "vitest run tests/extension/ tests/daemon/browser/ tests/daemon/local/local- tests/daemon/local/queue/ tests/tooling/extension-build tests/tooling/quality/extension-quality tests/daemon/monitor/native-restart-handoff tests/daemon/sessions/native-process-restart tests/mini-app/app/application-client-contract tests/mini-app/app/host-runtime-lifecycle tests/mini-app/features/extension- tests/protocol/local-client-protocol tests/server/relay/native-restart-relay tests/transport/native-message-fragments",
     "test:extension:e2e": "npm run build:extension && playwright test --config playwright.extension.config.ts"
   },
   "dependencies": {

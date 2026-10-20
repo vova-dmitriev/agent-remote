@@ -16,7 +16,7 @@ export async function localProfileFixture(local: ReturnType<typeof localFixture>
     baseEnvironment: {},
     native: {
       executable: process.execPath,
-      prefixArguments: [resolve('tests/profiles/native-peer.mjs'), settings],
+      prefixArguments: [resolve('tests/daemon/profiles/fixtures/native-peer.mjs'), settings],
       apiFetch: async () => Response.json({ data: [{ id: 'synthetic-model' }] }),
     },
   });

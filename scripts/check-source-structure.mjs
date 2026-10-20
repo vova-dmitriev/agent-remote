@@ -3,14 +3,21 @@ import { join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const MAX_FILES_PER_DIRECTORY = 6;
+const MAX_TEST_FILES_PER_DIRECTORY = 12;
 
 const sourceRoots = [
-  'apps/daemon/src',
-  'apps/server/src',
-  'apps/desktop/src',
-  'apps/chrome-extension/src',
-  'packages/protocol/src',
-  'packages/transport/src',
+  { path: 'apps/daemon/src', max: MAX_FILES_PER_DIRECTORY },
+  { path: 'apps/server/src', max: MAX_FILES_PER_DIRECTORY },
+  { path: 'apps/desktop/src', max: MAX_FILES_PER_DIRECTORY },
+  { path: 'apps/chrome-extension/src', max: MAX_FILES_PER_DIRECTORY },
+  { path: 'packages/protocol/src', max: MAX_FILES_PER_DIRECTORY },
+  { path: 'packages/transport/src', max: MAX_FILES_PER_DIRECTORY },
+  // The mirrored test tree. The browser suites and the shared helper pool keep their own layout.
+  {
+    path: 'tests',
+    max: MAX_TEST_FILES_PER_DIRECTORY,
+    skip: ['tests/e2e', 'tests/extension-e2e', 'tests/desktop-e2e', 'tests/helpers'],
+  },
 ];
 
 const isCounted = (name) => /\.(ts|mjs)$/.test(name) && name !== 'index.ts' && !name.endsWith('.d.ts');
@@ -18,7 +25,13 @@ const isCounted = (name) => /\.(ts|mjs)$/.test(name) && name !== 'index.ts' && !
 export function checkSourceStructure(root) {
   const issues = [];
 
-  const visit = (directory) => {
+  const visit = (directory, limits) => {
+    const { max, skip = [] } = limits;
+
+    if (skip.includes(relative(root, directory))) {
+      return;
+    }
+
     let entries;
 
     try {
@@ -29,21 +42,21 @@ export function checkSourceStructure(root) {
 
     const count = entries.filter((entry) => entry.isFile() && isCounted(entry.name)).length;
 
-    if (count > MAX_FILES_PER_DIRECTORY) {
+    if (count > max) {
       issues.push(
-        `${relative(root, directory)}: ${count} files, more than ${MAX_FILES_PER_DIRECTORY} files; group them into subdirectories by responsibility.`,
+        `${relative(root, directory)}: ${count} files, more than ${max} files; group them into subdirectories by responsibility.`,
       );
     }
 
     for (const entry of entries) {
       if (entry.isDirectory() && entry.name !== 'node_modules') {
-        visit(join(directory, entry.name));
+        visit(join(directory, entry.name), limits);
       }
     }
   };
 
-  for (const sourceRoot of sourceRoots) {
-    visit(join(root, sourceRoot));
+  for (const { path, ...limits } of sourceRoots) {
+    visit(join(root, path), limits);
   }
 
   return issues;

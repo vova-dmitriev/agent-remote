@@ -22,7 +22,7 @@ export async function profileCompanion(options: ProfileCompanionOptions = {}) {
 
   const runtime = new RuntimeProfiles({ database, directory, scope: { ownerId: 'synthetic-local-owner', deviceId }, inputEnabled: true,
     baseEnvironment: {}, native: { executable: process.execPath,
-      prefixArguments: [resolve('tests/profiles/native-peer.mjs'), settings],
+      prefixArguments: [resolve('tests/daemon/profiles/fixtures/native-peer.mjs'), settings],
       apiFetch: async () => { await options.beforeApi?.();
 
  return Response.json({ data: [{ id: 'synthetic-model' }] }); },
