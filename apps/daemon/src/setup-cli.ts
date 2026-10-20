@@ -4,7 +4,7 @@ import { IpcMessageType } from './domain/ipc.js';
 import { ClaudeHookEvent } from './domain/claude.js';
 import { DesktopMode } from './domain/desktop.js';
 import { ASCII_CONTROL_CHARACTERS } from './validation/control-characters.js';
-import { cmuxContext } from './cmux/context.js';
+import { cmuxContext, hookCmuxSurface } from './cmux/context.js';
 import { homedir } from 'node:os';
 import { join, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -255,7 +255,7 @@ export async function runCli(argv = process.argv.slice(2)) {
           payload,
           ...(process.env.CLAUDE_REMOTE_WRAPPER_ID
             ? { wrapperId: process.env.CLAUDE_REMOTE_WRAPPER_ID }
-            : {}),
+            : hookCmuxSurface(process.env)),
         },
         payload.hook_event_name === ClaudeHookEvent.PermissionRequest ? 50000 : 1500,
       );

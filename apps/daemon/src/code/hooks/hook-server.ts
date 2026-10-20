@@ -16,7 +16,8 @@ import { RuntimeEvent, SourceVersion } from '../../domain/runtime.js';
 import { ClaudeHookEvent } from '../../domain/claude.js';
 import { attachmentPrompt } from '../../attachments/content/input.js';
 import { codexConnectionSchema, type CodexConnection } from '../../domain/codex/connection.js';
-import { cmuxContextSchema, type CmuxContext } from '../../cmux/context.js';
+import { cmuxContextSchema, cmuxSurfaceSchema, type CmuxContext } from '../../cmux/context.js';
+import { cmuxAttacher } from '../../cmux/attach.js';
 import { createServer, type Socket } from 'node:net';
 import { randomUUID, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
@@ -45,6 +46,8 @@ interface Options extends HookSocketOptions {
   inputEnabled: boolean;
   permissionsEnabled: boolean;
   onTranscript?: (sessionId: string, path: string) => void;
+  /** Attaches hooks from cmux-started sessions to their surface; defaults to the cmux CLI. */
+  attachCmux?: ReturnType<typeof cmuxAttacher>;
   onCodexConnect?: (selection: CodexConnection) => Promise<unknown>;
   onDesktopBind?: (mode: DesktopMode) => Promise<unknown>;
 }
@@ -60,6 +63,7 @@ const authenticated = z.object({
   ]),
   wrapperId: z.string().uuid().optional(),
   cmux: cmuxContextSchema.optional(),
+  cmuxSurface: cmuxSurfaceSchema.optional(),
   sourceVersion: z.string().max(128).optional(),
   mode: z.enum([DesktopMode.Chat, DesktopMode.Code]).optional(),
   payload: z.unknown().optional(),
@@ -74,6 +78,15 @@ const RejectionReply: Partial<Record<string, IpcMessageType>> = {
 
 export async function startHookServer(options: Options) {
   const allowedTypes: readonly IpcMessageType[] = options.allowedTypes ?? PrimaryHookMessageTypes;
+
+  const attachCmux =
+    options.attachCmux ??
+    cmuxAttacher({
+      adapters: options.adapters,
+      inputEnabled: options.inputEnabled,
+      permissionsEnabled: options.permissionsEnabled,
+    });
+
   let closing = false;
   const sockets = new Set<Socket>();
 
@@ -330,10 +343,18 @@ export async function startHookServer(options: Options) {
 
         const hook = hookSchema.parse(message.payload);
 
-        const connector =
-          message.wrapperId && wrappers.has(message.wrapperId) ? message.wrapperId : ConnectorId.Native;
+        const deviceId =
+          options.monitor.snapshot().sessions[0]?.target.deviceId ?? options.adapters.deviceIdentity();
 
-        if (hook.hook_event_name === ClaudeHookEvent.SessionStart && connector !== ConnectorId.Native) {
+        const attached =
+          !(message.wrapperId && wrappers.has(message.wrapperId)) && message.cmuxSurface
+            ? await attachCmux(message.cmuxSurface, deviceId)
+            : undefined;
+
+        const wrapped = message.wrapperId && wrappers.has(message.wrapperId) ? message.wrapperId : undefined;
+        const connector = attached?.connectorId ?? wrapped ?? ConnectorId.Native;
+
+        if (hook.hook_event_name === ClaudeHookEvent.SessionStart && wrappers.has(connector)) {
           wrappers.get(connector)!.claudeSessionId = hook.session_id;
           const bound = await call(connector, { type: WrapperActionType.Bind, sessionId: hook.session_id });
 
@@ -347,16 +368,10 @@ export async function startHookServer(options: Options) {
         options.monitor.ingestHook(
           hook,
           connector,
-          cmux
-            ? {
-                kind: TargetKind.Cmux,
-                deviceId:
-                  options.monitor.snapshot().sessions[0]?.target.deviceId ??
-                  options.adapters.deviceIdentity(),
-                connectorId: connector,
-                ...cmux,
-              }
-            : undefined,
+          attached ??
+            (cmux ? { kind: TargetKind.Cmux, deviceId, connectorId: connector, ...cmux } : undefined),
+          // The hook runs as a child of the Claude process, so its surface is that session's terminal.
+          attached ? { verifiedTerminal: true } : undefined,
         );
 
         const session = options.monitor.findClaude(connector, hook.session_id)!;

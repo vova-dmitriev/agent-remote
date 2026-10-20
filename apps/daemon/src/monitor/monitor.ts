@@ -105,7 +105,12 @@ export class Monitor extends EventEmitter implements MonitorPort {
       this.restored.add(session.id);
     }
   }
-  ingestHook(raw: HookEnvelope, connectorId: string, targetOverride?: Target): EventEnvelope[] {
+  ingestHook(
+    raw: HookEnvelope,
+    connectorId: string,
+    targetOverride?: Target,
+    options: { verifiedTerminal?: boolean } = {},
+  ): EventEnvelope[] {
     const hook = hookSchema.parse(raw),
       adapter = this.options.adapters.get(connectorId);
 
@@ -142,19 +147,25 @@ export class Monitor extends EventEmitter implements MonitorPort {
     const key = JSON.stringify(target);
     let session = [...this.sessions.values()].find((s) => JSON.stringify(s.target) === key);
 
-    if (
-      !session &&
-      hook.hook_event_name === ClaudeHookEvent.SessionStart &&
-      [ConnectorTransport.Pty, ConnectorTransport.Cmux].some(
-        (candidateValue) => candidateValue === descriptor.transport,
-      )
-    ) {
+    const started = hook.hook_event_name === ClaudeHookEvent.SessionStart;
+    // A hook from a confirmed terminal proves which session runs there, like a SessionStart seen live.
+    const terminal = options.verifiedTerminal === true;
+
+    const managed = [ConnectorTransport.Pty, ConnectorTransport.Cmux].some(
+      (candidateValue) => candidateValue === descriptor.transport,
+    );
+
+    let attachedNative: Session | undefined;
+
+    if (!session && (started || terminal) && managed) {
       session = [...this.sessions.values()].find(
         (s) =>
           s.target.connectorId === ConnectorId.Native &&
           s.claudeSessionId === hook.session_id &&
-          s.status === SessionStatus.Ended,
+          (terminal || s.status === SessionStatus.Ended),
       );
+
+      attachedNative = terminal && !started ? session : undefined;
 
       if (session) {
         const previous = this.options.adapters.get(ConnectorId.Native);
@@ -173,7 +184,7 @@ export class Monitor extends EventEmitter implements MonitorPort {
       }
     }
 
-    if (!session || hook.hook_event_name === ClaudeHookEvent.SessionStart) {
+    if (!session || started || attachedNative) {
       if (session) {
         this.options.permissions.cancelSession(session.id, session.generation);
         this.options.userInputs?.cancelSession(session.id, session.generation);
@@ -183,7 +194,7 @@ export class Monitor extends EventEmitter implements MonitorPort {
         this.makeRoom();
       }
 
-      const verified = hook.hook_event_name === ClaudeHookEvent.SessionStart;
+      const verified = started || terminal;
 
       session = {
         id: session?.id ?? randomUUID(),
@@ -196,13 +207,8 @@ export class Monitor extends EventEmitter implements MonitorPort {
           : {}),
         claudeSessionId: hook.session_id,
         generation: randomUUID(),
-        status:
-          verified &&
-          [ConnectorTransport.Pty, ConnectorTransport.Cmux].some(
-            (candidateValue) => candidateValue === descriptor.transport,
-          )
-            ? SessionStatus.Idle
-            : SessionStatus.Unknown,
+        // Attached mid-session: keep what the observed session showed; the next hooks correct it.
+        status: attachedNative?.status ?? (started && managed ? SessionStatus.Idle : SessionStatus.Unknown),
         binding: verified ? BindingState.Verified : BindingState.Unverified,
         lastEventAt: Date.now(),
         capabilities: {

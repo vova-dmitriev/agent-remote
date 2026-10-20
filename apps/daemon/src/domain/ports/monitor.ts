@@ -33,7 +33,12 @@ export interface MonitorPort extends EventEmitter {
   binding(id: string): Binding | undefined;
   snapshot(): AppSnapshot;
   publish(sessionId: string | null, type: string, payload: unknown, occurredAt?: number): EventEnvelope;
-  ingestHook(raw: HookEnvelope, connectorId: string, targetOverride?: Target): EventEnvelope[];
+  ingestHook(
+    raw: HookEnvelope,
+    connectorId: string,
+    targetOverride?: Target,
+    options?: { verifiedTerminal?: boolean },
+  ): EventEnvelope[];
   managedRegistration(
     connectorId: string,
     cmux?: { windowId: string; workspaceId: string; surfaceId: string },
