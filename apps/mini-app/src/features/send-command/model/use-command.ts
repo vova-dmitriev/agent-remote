@@ -42,7 +42,9 @@ export function useCommand() {
     submitting.current = true
 
     try {
-      if (drafts.prompt.trim() || !attachments.items.length) validatePrompt(drafts.prompt)
+      const text = drafts.current()
+
+      if (text.trim() || !attachments.items.length) validatePrompt(text)
       const descriptors = attachments.items.flatMap((item) => (item.descriptor ? [item.descriptor] : []))
 
       const command: ClientCommand = {
@@ -50,7 +52,7 @@ export function useCommand() {
         target: source.target,
         sessionId: source.id,
         generation: source.generation,
-        action: { type: CommandActionType.Prompt, text: drafts.prompt, ...(descriptors.length ? { attachments: descriptors } : {}) },
+        action: { type: CommandActionType.Prompt, text, ...(descriptors.length ? { attachments: descriptors } : {}) },
       }
 
       const intent = {
@@ -71,7 +73,7 @@ export function useCommand() {
 
       if (lease.client.persistence) await persisted.refresh()
       if (!state.runtime.isCurrent(lease)) return
-      drafts.clear(source.id, drafts.prompt)
+      drafts.clear(source.id, text)
 
       attachments.complete(
         source.id,
@@ -96,7 +98,8 @@ export function useCommand() {
 
   return {
     ...controls,
-    prompt: drafts.prompt,
+    /** Draft texts; the composer subscribes to its session's (`useDraftText`). */
+    drafts: drafts.texts,
     setPrompt: drafts.setPrompt,
     attachments: {
       ...composerAttachments,

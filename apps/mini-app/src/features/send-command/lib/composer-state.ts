@@ -4,7 +4,13 @@ import type { MessageKey } from "@/shared/lib/i18n"
 import type { Connection } from "@/shared/api"
 import type { CommandController } from "../model/use-command"
 
-export function composerState(controller: CommandController, session: Session, connection: Connection, device: DeviceStatus) {
+export function composerState(
+  controller: CommandController,
+  prompt: string,
+  session: Session,
+  connection: Connection,
+  device: DeviceStatus,
+) {
   const promptDisabled = !canQueuePrompt(connection, device, session) || controller.attachments.restoring === true
 
   const attachments = controller.attachments
@@ -14,7 +20,7 @@ export function composerState(controller: CommandController, session: Session, c
     promptDisabled,
     attachmentDisabled: promptDisabled,
     acceptsAttachments: !!session.capabilities.attachments && !promptDisabled,
-    sendDisabled: promptDisabled || !attachments.ready || (!controller.prompt.trim() && !hasAttachments),
+    sendDisabled: promptDisabled || !attachments.ready || (!prompt.trim() && !hasAttachments),
     showNativeHint: !session.capabilities.prompt && session.target.kind === TargetKind.ClaudeCodeCli,
     unavailableHint: unavailableHint(session, connection, device),
   }

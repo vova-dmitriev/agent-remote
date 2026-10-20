@@ -22,12 +22,12 @@ export function usePersistedDraft(
   const client = runtime.client
   const connection = useSessionStore((value) => value.session.connection)
 
-  const contents = JSON.stringify({
-    text: drafts.prompt,
-    attachments: attachments.items.flatMap((item) => ((item.descriptor ?? item.reference) ? [item.descriptor ?? item.reference!] : [])),
-  })
+  // The text is read from the draft store when needed, so typing never re-renders this hook's owner.
+  const attachmentContents = JSON.stringify(
+    attachments.items.flatMap((item) => ((item.descriptor ?? item.reference) ? [item.descriptor ?? item.reference!] : [])),
+  )
 
-  const latest = useEffectEvent(() => contents)
+  const latest = useEffectEvent(() => JSON.stringify([drafts.current(), attachmentContents]))
 
   const restore = useEffectEvent(async (controller: AbortController) => {
     if (!selected || !client?.persistence) return
@@ -78,20 +78,34 @@ export function usePersistedDraft(
     })
   }, [connection, client, store, runtime])
 
+  const { texts, current } = drafts
+  const text = useEffectEvent(current)
+
   useEffect(() => {
     if (!ready || !client?.persistence) return
-    const value = JSON.parse(contents) as { text: string; attachments: Parameters<DraftState["update"]>[1] }
+    const files = JSON.parse(attachmentContents) as Parameters<DraftState["update"]>[1]
+    let timer: ReturnType<typeof setTimeout> | undefined
 
-    state.current?.update(value.text, value.attachments)
+    // Saves the draft as it is now, then again after each change once typing pauses.
+    const save = () => {
+      state.current?.update(text(), files)
+      clearTimeout(timer)
 
-    const timer = setTimeout(() => {
-      void state.current
-        ?.flush()
-        .catch((error: unknown) => store.getState().setError(error instanceof Error ? error.message : ErrorCode.REQUEST_FAILED))
-    }, PERSISTENCE_SAVE_DELAY_MS)
+      timer = setTimeout(() => {
+        void state.current
+          ?.flush()
+          .catch((error: unknown) => store.getState().setError(error instanceof Error ? error.message : ErrorCode.REQUEST_FAILED))
+      }, PERSISTENCE_SAVE_DELAY_MS)
+    }
 
-    return () => clearTimeout(timer)
-  }, [contents, ready, client, store])
+    save()
+    const unsubscribe = texts.subscribe(save)
+
+    return () => {
+      unsubscribe()
+      clearTimeout(timer)
+    }
+  }, [attachmentContents, ready, client, store, texts])
 
   return {
     ready: !client?.persistence || ready,

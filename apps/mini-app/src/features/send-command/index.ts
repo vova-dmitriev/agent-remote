@@ -1,5 +1,6 @@
 export { useCommand } from "./model/use-command"
 export type { CommandController } from "./model/use-command"
+export { DraftTexts } from "./model/use-session-drafts"
 export { SessionComposer } from "./ui/session-composer"
 export { SessionActions } from "./ui/session-actions/session-actions"
 export { CommandNotice } from "./ui/command-notice"

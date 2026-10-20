@@ -8,6 +8,7 @@ import { cn } from "@/shared/lib/utils"
 import { mutedTextClass } from "@/shared/ui/text"
 import { NativeInputHelp } from "./native-input/native-input-help"
 import { composerState } from "../lib/composer-state"
+import { useDraftText } from "../model/use-session-drafts"
 import { COMMAND_IDS } from "../config/test-ids"
 import { useComposerAttachments } from "../model/use-composer-attachments"
 import { AttachmentPicker } from "./attachments/attachment-picker"
@@ -16,7 +17,8 @@ import { PromptQueue } from "./outbox/prompt-queue"
 
 export function SessionComposer({ controller, session, connection, deviceStatus }: SessionComposerProps) {
   const { t } = useTranslation()
-  const state = composerState(controller, session, connection, deviceStatus)
+  const prompt = useDraftText(controller.drafts, session.id)
+  const state = composerState(controller, prompt, session, connection, deviceStatus)
   const attachmentEvents = useComposerAttachments(controller, state.acceptsAttachments)
 
   return (
@@ -37,7 +39,7 @@ export function SessionComposer({ controller, session, connection, deviceStatus 
             id="prompt"
             className={cn(promptClass, session.capabilities.attachments && promptWithAttachmentsClass)}
             data-testid={COMMAND_IDS.prompt}
-            value={controller.prompt}
+            value={prompt}
             onChange={(event) => controller.setPrompt(event.target.value)}
             placeholder={t(state.promptDisabled ? "composerUnavailable" : "composerPlaceholder")}
             disabled={state.promptDisabled}

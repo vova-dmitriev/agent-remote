@@ -1,13 +1,23 @@
 import { useState } from "react"
-import type { CommandController } from "@/features/send-command"
+import { DraftTexts, type CommandController } from "@/features/send-command"
+
+/** One draft for whichever session the story shows. */
+class StoryDrafts extends DraftTexts {
+  override get() {
+    return super.get(STORY_DRAFT)
+  }
+}
+
+const STORY_DRAFT = "story"
 
 export function useCommandFixture(): CommandController {
-  const [prompt, setPrompt] = useState("")
+  const [drafts] = useState(() => new StoryDrafts())
+  const setPrompt = (text: string) => drafts.set(STORY_DRAFT, text)
 
   return {
     createdSessionId: null,
     consumeCreatedSession: () => {},
-    prompt,
+    drafts,
     setPrompt,
     busy: false,
     uncertain: false,
