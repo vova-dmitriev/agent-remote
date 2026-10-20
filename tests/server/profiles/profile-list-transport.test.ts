@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { expect, it } from 'vitest';
-import { RuntimeProfiles } from '../../../apps/daemon/src/runtime/services/runtime-profiles.js';
-import { RuntimeProfileRelay } from '../../../apps/daemon/src/profiles/runtime/router/relay.js';
+import { RuntimeProfiles } from '@daemon/runtime/services/runtime-profiles.js';
+import { RuntimeProfileRelay } from '@daemon/profiles/runtime/router/relay.js';
 import { BoundedSender } from '@transport/bounded-sender.js';
 import {
   ErrorCode,
@@ -13,7 +13,7 @@ import {
 } from '@protocol';
 import { profileServiceFixture } from '../../daemon/profiles/fixtures/service.fixture.js';
 import { codexSubscription, verifiedAccount } from '../../daemon/profiles/fixtures/registry.fixture.js';
-import { readProfilePages } from '../../../apps/server/src/profiles/transport/list.js';
+import { readProfilePages } from '@server/profiles/transport/list.js';
 
 it('reads a maximum valid registry in bounded pages and rejects oversized legacy replies without closing the device socket', async () => {
   const { options, service } = profileServiceFixture();

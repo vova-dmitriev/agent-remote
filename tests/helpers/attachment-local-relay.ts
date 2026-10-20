@@ -2,8 +2,8 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { LocalMediaRepository } from '../../apps/daemon/src/local/media/repository.js';
-import { AttachmentService } from '../../apps/daemon/src/attachments/service.js';
+import { LocalMediaRepository } from '@daemon/local/media/repository.js';
+import { AttachmentService } from '@daemon/attachments/service.js';
 import { localFixture } from './local-runtime.js';
 import { LocalOperation, type AttachmentDescriptor, HttpStatus } from '@protocol';
 

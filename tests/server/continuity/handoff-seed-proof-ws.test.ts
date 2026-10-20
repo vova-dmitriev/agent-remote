@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { ContinuityService } from '../../../apps/server/src/continuity/service.js';
+import { ContinuityService } from '@server/continuity/service.js';
 import {
   rejectProofs,
   startHandoffProofFixture,

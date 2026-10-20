@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
 import { databaseFixture } from '../../helpers/database.js';
-import { persistEvent } from '../../../apps/server/src/history/events.js';
-import { HistoryRepository } from '../../../apps/server/src/history/repository.js';
+import { persistEvent } from '@server/history/events.js';
+import { HistoryRepository } from '@server/history/repository.js';
 import type { EventEnvelope } from '@protocol';
 
 it('rolls back the event and revision if notification intent cannot be persisted, then retries once', async () => {

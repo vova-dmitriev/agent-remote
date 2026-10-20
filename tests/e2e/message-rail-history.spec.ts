@@ -5,9 +5,9 @@ import { identity } from './support/identity.js';
 import { byTestId } from './support/testid.js';
 import { box, expectLoadedMessages, jumpNear, railConversation } from './support/rail.js';
 import { scrollSettled } from './support/scroll-settled.js';
-import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
-import { SESSION_FEED_IDS, SESSION_PAGE_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
-import { RAIL_BAND_MIN_SIZE, RAIL_HIT_SIZE } from '../../apps/mini-app/src/pages/session/config/message-navigation.js';
+import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
+import { SESSION_FEED_IDS, SESSION_PAGE_IDS } from '@/pages/session/config/test-ids.js';
+import { RAIL_BAND_MIN_SIZE, RAIL_HIT_SIZE } from '@/pages/session/config/message-navigation.js';
 
 const earlier = (page: Page) => byTestId(page, SESSION_FEED_IDS.railCap, { direction: HistoryDirection.Before });
 const later = (page: Page) => byTestId(page, SESSION_FEED_IDS.railCap, { direction: HistoryDirection.After });

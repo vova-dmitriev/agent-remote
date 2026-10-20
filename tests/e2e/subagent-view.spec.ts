@@ -18,9 +18,9 @@ import {
   SUBAGENT_IDS,
   SUBAGENT_VIEW_IDS,
   TOOL_ACTIVITY_IDS,
-} from '../../apps/mini-app/src/pages/session/config/test-ids.js';
-import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
-import { SUBAGENT_POLL_INTERVAL_MS } from '../../apps/mini-app/src/pages/session/config/subagent.js';
+} from '@/pages/session/config/test-ids.js';
+import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
+import { SUBAGENT_POLL_INTERVAL_MS } from '@/pages/session/config/subagent.js';
 
 test('opens a running subagent with its tool calls in the session layout, updates it live and returns to the parent', async ({
   page,

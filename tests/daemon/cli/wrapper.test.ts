@@ -4,7 +4,7 @@ import { PassThrough, Writable } from 'node:stream';
 import { mkdtemp, writeFile, chmod, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { startClaude } from '../../../apps/daemon/src/cli/wrapper.js';
+import { startClaude } from '@daemon/cli/wrapper.js';
 
 describe('local wrapper startup', () => {
   it('registers the local control channel before starting a child that emits SessionStart', async () => {

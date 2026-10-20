@@ -1,17 +1,17 @@
 import { chooseLanguage } from './support/preferences.js';
 import { expect } from '@playwright/test';
 import type { ServerFrame } from '@protocol';
-import { COMMAND_IDS } from '../../apps/mini-app/src/features/send-command/config/test-ids.js';
-import { DEVICE_ACCESS_IDS } from '../../apps/mini-app/src/features/device-access/config/test-ids.js';
-import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
-import { SHELL_IDS } from '../../apps/mini-app/src/widgets/application-shell/config/test-ids.js';
-import { en } from '../../apps/mini-app/src/shared/lib/i18n/dictionaries/en.js';
-import { ru } from '../../apps/mini-app/src/shared/lib/i18n/dictionaries/ru.js';
+import { COMMAND_IDS } from '@/features/send-command/config/test-ids.js';
+import { DEVICE_ACCESS_IDS } from '@/features/device-access/config/test-ids.js';
+import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
+import { SHELL_IDS } from '@/widgets/application-shell/config/test-ids.js';
+import { en } from '@/shared/lib/i18n/dictionaries/en.js';
+import { ru } from '@/shared/lib/i18n/dictionaries/ru.js';
 import { identity } from './support/identity.js';
 import { test } from './support/relay-fixture.js';
 import { byTestId } from './support/testid.js';
 import { setSessionLanguage } from './support/session-language.js';
-import { SESSION_PAGE_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
+import { SESSION_PAGE_IDS } from '@/pages/session/config/test-ids.js';
 
 test('authentication errors explain recovery in both languages', async ({ page }) => {
   await identity(page, '801');

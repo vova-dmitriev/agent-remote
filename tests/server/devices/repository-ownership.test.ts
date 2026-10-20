@@ -1,10 +1,10 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { DeviceRepository } from '../../../apps/server/src/devices/repositories/devices.js';
-import { PairingRepository } from '../../../apps/server/src/devices/repositories/pairings.js';
-import { HistoryRepository } from '../../../apps/server/src/history/repository.js';
-import { PreferenceRepository } from '../../../apps/server/src/preferences/repository.js';
-import { ReadingPositionRepository } from '../../../apps/server/src/reading-position/repository.js';
-import { SessionRepository } from '../../../apps/server/src/sessions/repository.js';
+import { DeviceRepository } from '@server/devices/repositories/devices.js';
+import { PairingRepository } from '@server/devices/repositories/pairings.js';
+import { HistoryRepository } from '@server/history/repository.js';
+import { PreferenceRepository } from '@server/preferences/repository.js';
+import { ReadingPositionRepository } from '@server/reading-position/repository.js';
+import { SessionRepository } from '@server/sessions/repository.js';
 import { PgErrorCode, ownershipFixture } from '../../helpers/ownership-fixture.js';
 
 // Every owner-scoped repository method, called as owner B with owner A's ids, returns nothing and changes nothing.

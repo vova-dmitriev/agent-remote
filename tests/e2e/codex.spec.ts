@@ -4,10 +4,10 @@ import { test, delivered } from './support/relay-fixture.js';
 import { byTestId } from './support/testid.js';
 import { identity } from './support/identity.js';
 import { interruptSession } from './support/session-actions.js';
-import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
-import { SESSION_PAGE_IDS, PERMISSION_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
-import { COMMAND_IDS } from '../../apps/mini-app/src/features/send-command/config/test-ids.js';
-import { SHELL_IDS } from '../../apps/mini-app/src/widgets/application-shell/config/test-ids.js';
+import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
+import { SESSION_PAGE_IDS, PERMISSION_IDS } from '@/pages/session/config/test-ids.js';
+import { COMMAND_IDS } from '@/features/send-command/config/test-ids.js';
+import { SHELL_IDS } from '@/widgets/application-shell/config/test-ids.js';
 
 for (const kind of ['codex-cli', 'codex-desktop'] as const) {
   test(`${kind} uses its own identity and routes commands through the relay`, async ({ page }) => {

@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { prepareCmuxContext, launchInCmux } from '../../../apps/daemon/src/cmux/launch.js';
+import { prepareCmuxContext, launchInCmux } from '@daemon/cmux/launch.js';
 
 const context = {
   windowId: '11111111-1111-4111-8111-111111111111',

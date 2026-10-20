@@ -2,8 +2,8 @@ import { expect } from '@playwright/test';
 import { test, deviceFixture, delivered, setCommandOutcome } from './support/relay-fixture.js';
 import { sessionSnapshot } from './support/session-fixtures.js';
 import { identity } from './support/identity.js';
-import { SESSION_CREATE_IDS } from '../../apps/mini-app/src/features/create-session/config/test-ids.js';
-import { SESSION_PAGE_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
+import { SESSION_CREATE_IDS } from '@/features/create-session/config/test-ids.js';
+import { SESSION_PAGE_IDS } from '@/pages/session/config/test-ids.js';
 
 for (const provider of ['claude', 'codex'] as const) {
   test(`creates a ${provider} session once and opens the authoritative new session`, async ({ page }) => {

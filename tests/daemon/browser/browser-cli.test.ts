@@ -9,9 +9,9 @@ import {
   cleanupBrowserFixture,
   pendingGrant,
 } from '../../helpers/browser-cli-fixture.js';
-import { runBrowserCli } from '../../../apps/daemon/src/cli/browser/index.js';
+import { runBrowserCli } from '@daemon/cli/browser/index.js';
 import { LocalOrigin } from '@protocol';
-import { CompanionEnvironment } from '../../../apps/daemon/src/local/supervisor/values.js';
+import { CompanionEnvironment } from '@daemon/local/supervisor/values.js';
 
 const run = promisify(execFile);
 const extensionId = 'abcdefghijklmnopabcdefghijklmnop';

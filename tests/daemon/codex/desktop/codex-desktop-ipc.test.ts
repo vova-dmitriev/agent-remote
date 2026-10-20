@@ -3,8 +3,8 @@ import { createServer, type Socket } from 'node:net';
 import { mkdtemp, chmod, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { DesktopIpcClient } from '../../../../apps/daemon/src/codex/desktop/desktop-ipc.js';
-import { RuntimeEvent } from '../../../../apps/daemon/src/domain/runtime.js';
+import { DesktopIpcClient } from '@daemon/codex/desktop/desktop-ipc.js';
+import { RuntimeEvent } from '@daemon/domain/runtime.js';
 
 const FRAME_CAP = 32 * 1024 * 1024;
 

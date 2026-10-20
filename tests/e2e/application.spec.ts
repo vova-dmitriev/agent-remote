@@ -3,17 +3,17 @@ import { setSessionLanguage } from './support/session-language.js';
 import { expect } from '@playwright/test';
 import { test, delivered } from './support/relay-fixture.js';
 import { identity } from './support/identity.js';
-import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
-import { SESSIONS_PAGE_IDS } from '../../apps/mini-app/src/pages/sessions/config/test-ids.js';
+import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
+import { SESSIONS_PAGE_IDS } from '@/pages/sessions/config/test-ids.js';
 import {
   SESSION_PAGE_IDS,
   SESSION_FEED_IDS,
   PERMISSION_IDS,
-} from '../../apps/mini-app/src/pages/session/config/test-ids.js';
-import { SIGN_IN_IDS } from '../../apps/mini-app/src/pages/sign-in/config/test-ids.js';
-import { COMMAND_IDS } from '../../apps/mini-app/src/features/send-command/config/test-ids.js';
-import { PAIR_DEVICE_IDS } from '../../apps/mini-app/src/features/pair-device/config/test-ids.js';
-import { SHELL_IDS } from '../../apps/mini-app/src/widgets/application-shell/config/test-ids.js';
+} from '@/pages/session/config/test-ids.js';
+import { SIGN_IN_IDS } from '@/pages/sign-in/config/test-ids.js';
+import { COMMAND_IDS } from '@/features/send-command/config/test-ids.js';
+import { PAIR_DEVICE_IDS } from '@/features/pair-device/config/test-ids.js';
+import { SHELL_IDS } from '@/widgets/application-shell/config/test-ids.js';
 
 test('mobile app preserves context, renders terminal literally and dispatches prompt/permission', async ({
   page,

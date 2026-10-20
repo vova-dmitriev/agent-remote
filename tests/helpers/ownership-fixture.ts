@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { ContinuityService } from '../../apps/server/src/continuity/service.js';
+import { ContinuityService } from '@server/continuity/service.js';
 import { databaseFixture } from './database.js';
 
 /** PostgreSQL SQLSTATE codes the ownership tests expect. */

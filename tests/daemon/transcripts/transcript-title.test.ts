@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { appendFile, mkdtemp, rename, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { TranscriptReader } from '../../../apps/daemon/src/code/transcript/transcript-reader.js';
+import { TranscriptReader } from '@daemon/code/transcript/transcript-reader.js';
 
 let root: string;
 let path: string;

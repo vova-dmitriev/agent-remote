@@ -2,11 +2,11 @@ import { createHash, randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { expect, it } from 'vitest';
 import { encryptEnrollment } from '@transport/credentials/sealed-box.js';
-import { managedCodexSocketExited } from '../../../../apps/daemon/src/codex/launcher.js';
-import { ProfileExecutionOwnership } from '../../../../apps/daemon/src/profiles/runtime/execution/execution-ownership.js';
-import { ExecutionChildState } from '../../../../apps/daemon/src/profiles/runtime/execution/execution-values.js';
-import { ProfileService } from '../../../../apps/daemon/src/profiles/service.js';
-import { RuntimeProfiles } from '../../../../apps/daemon/src/runtime/services/runtime-profiles.js';
+import { managedCodexSocketExited } from '@daemon/codex/launcher.js';
+import { ProfileExecutionOwnership } from '@daemon/profiles/runtime/execution/execution-ownership.js';
+import { ExecutionChildState } from '@daemon/profiles/runtime/execution/execution-values.js';
+import { ProfileService } from '@daemon/profiles/service.js';
+import { RuntimeProfiles } from '@daemon/runtime/services/runtime-profiles.js';
 import { profileServiceFixture } from '../fixtures/service.fixture.js';
 import { codexSubscription, verifiedAccount } from '../fixtures/registry.fixture.js';
 

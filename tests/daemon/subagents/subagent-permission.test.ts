@@ -3,12 +3,12 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { noCapabilities } from '@protocol';
-import { Monitor } from '../../../apps/daemon/src/monitor/monitor.js';
-import { LocalStore } from '../../../apps/daemon/src/monitor/store.js';
-import { AdapterRegistry, SourceAdapter } from '../../../apps/daemon/src/adapters/registry.js';
-import { PermissionBroker } from '../../../apps/daemon/src/commands/permission-broker.js';
-import { startHookServer } from '../../../apps/daemon/src/code/hooks/hook-server.js';
-import { requestLocal } from '../../../apps/daemon/src/code/hooks/ipc.js';
+import { Monitor } from '@daemon/monitor/monitor.js';
+import { LocalStore } from '@daemon/monitor/store.js';
+import { AdapterRegistry, SourceAdapter } from '@daemon/adapters/registry.js';
+import { PermissionBroker } from '@daemon/commands/permission-broker.js';
+import { startHookServer } from '@daemon/code/hooks/hook-server.js';
+import { requestLocal } from '@daemon/code/hooks/ipc.js';
 
 const cleanup: Array<() => void | Promise<void>> = [];
 

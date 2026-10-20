@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { expect } from 'vitest';
 import { CommandStatus, type HandoffOperation, HttpStatus } from '@protocol';
-import type { ContinuityService } from '../../apps/server/src/continuity/service.js';
-import type { ContinuityReadScope, InitialExecution } from '../../apps/server/src/continuity/types.js';
+import type { ContinuityService } from '@server/continuity/service.js';
+import type { ContinuityReadScope, InitialExecution } from '@server/continuity/types.js';
 import { readyTargetSnapshot, waitFrame, type HandoffProofFixture } from './handoff-proof-fixture.js';
 
 export async function dispatchAndCheckCreateEvidence(input: {

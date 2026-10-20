@@ -2,15 +2,15 @@ import { mkdtemp, writeFile, mkdir } from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { ensureManagedCodexSocket } from '../apps/daemon/src/codex/launcher.js';
-import { connectCodexSocket } from '../apps/daemon/src/codex/rpc/transport.js';
-import { bindCodex } from '../apps/daemon/src/codex/binding/binding.js';
-import { object } from '../apps/daemon/src/codex/events.js';
-import { LocalStore } from '../apps/daemon/src/monitor/store.js';
-import { Monitor } from '../apps/daemon/src/monitor/monitor.js';
-import { AdapterRegistry } from '../apps/daemon/src/adapters/registry.js';
-import { PermissionBroker } from '../apps/daemon/src/commands/permission-broker.js';
-import { Dispatcher } from '../apps/daemon/src/commands/dispatcher.js';
+import { ensureManagedCodexSocket } from '@daemon/codex/launcher.js';
+import { connectCodexSocket } from '@daemon/codex/rpc/transport.js';
+import { bindCodex } from '@daemon/codex/binding/binding.js';
+import { object } from '@daemon/codex/events.js';
+import { LocalStore } from '@daemon/monitor/store.js';
+import { Monitor } from '@daemon/monitor/monitor.js';
+import { AdapterRegistry } from '@daemon/adapters/registry.js';
+import { PermissionBroker } from '@daemon/commands/permission-broker.js';
+import { Dispatcher } from '@daemon/commands/dispatcher.js';
 import type { Command } from '@protocol';
 
 // Opt-in compatibility probe: creates a new disposable thread; never resumes a user thread.

@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { promisify } from 'node:util';
 import { afterEach, expect, it } from 'vitest';
 import { ErrorCode, LocalOperation } from '@protocol';
-import { createDesktopCompanionConnector } from '../../apps/desktop/src/runtime/connector.js';
+import { createDesktopCompanionConnector } from '@desktop/runtime/connector.js';
 import { desktopRuntimeFixture } from '../helpers/desktop-runtime-fixture.js';
 import { guardRuntimeProcesses, trackRuntimeChild } from '../helpers/runtime-processes.js';
 

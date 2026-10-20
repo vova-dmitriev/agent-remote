@@ -1,6 +1,10 @@
 import js from '@eslint/js';
 import globals from 'globals';
 import ts from 'typescript-eslint';
+import {
+  crossBoundaryImportPatterns,
+  crossBoundaryImportSyntax,
+} from '../../eslint/cross-boundary-imports.mjs';
 import domain from '../../eslint/domain-values.mjs';
 import { readabilityRules } from '../mini-app/eslint/readability.mjs';
 import { numericValueRules } from '../mini-app/eslint/rules.mjs';
@@ -47,10 +51,16 @@ export function nodeSourceConfig(files, ignores = [], restrictedSyntax = []) {
               group: ['**/packages/*/src/**'],
               message: 'Import through @protocol, @protocol/private or @transport/*.',
             },
+            ...crossBoundaryImportPatterns,
           ],
         },
       ],
-      'no-restricted-syntax': ['error', ...numericValueRules, ...restrictedSyntax],
+      'no-restricted-syntax': [
+        'error',
+        ...numericValueRules,
+        ...crossBoundaryImportSyntax,
+        ...restrictedSyntax,
+      ],
       'no-nested-ternary': 'error',
       'max-statements-per-line': ['error', { max: 1 }],
       curly: ['error', 'all'],

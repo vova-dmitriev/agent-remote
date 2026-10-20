@@ -3,10 +3,10 @@
 import { createServer, type IncomingMessage } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import type { ClientCommand } from '@protocol';
-import { NotificationDelivery } from '../../../apps/server/src/notifications/delivery.js';
-import { NotificationRepository } from '../../../apps/server/src/notifications/repositories/notifications.js';
-import { NotificationWorker } from '../../../apps/server/src/notifications/worker.js';
-import { createRelay } from '../../../apps/server/src/app/create-relay.js';
+import { NotificationDelivery } from '@server/notifications/delivery.js';
+import { NotificationRepository } from '@server/notifications/repositories/notifications.js';
+import { NotificationWorker } from '@server/notifications/worker.js';
+import { createRelay } from '@server/app/create-relay.js';
 import { testBotToken } from '../../helpers/telegram.js';
 import {
   CONTROL_TOKEN_HEADER,

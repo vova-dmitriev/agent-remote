@@ -1,11 +1,11 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { EventEmitter } from 'node:events';
-import { bindCodex } from '../../../apps/daemon/src/codex/binding/binding.js';
-import { LocalStore } from '../../../apps/daemon/src/monitor/store.js';
-import { Monitor } from '../../../apps/daemon/src/monitor/monitor.js';
-import { PermissionBroker } from '../../../apps/daemon/src/commands/permission-broker.js';
-import { AdapterRegistry } from '../../../apps/daemon/src/adapters/registry.js';
-import type { AttachmentService } from '../../../apps/daemon/src/attachments/service.js';
+import { bindCodex } from '@daemon/codex/binding/binding.js';
+import { LocalStore } from '@daemon/monitor/store.js';
+import { Monitor } from '@daemon/monitor/monitor.js';
+import { PermissionBroker } from '@daemon/commands/permission-broker.js';
+import { AdapterRegistry } from '@daemon/adapters/registry.js';
+import type { AttachmentService } from '@daemon/attachments/service.js';
 import type { HistoryMessage } from '@protocol';
 
 const cleanups: (() => void)[] = [];

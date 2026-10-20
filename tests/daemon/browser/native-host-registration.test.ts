@@ -13,10 +13,7 @@ import {
 } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import {
-  registerNativeHost,
-  unregisterNativeHost,
-} from '../../../apps/daemon/src/browser/registration/index.js';
+import { registerNativeHost, unregisterNativeHost } from '@daemon/browser/registration/index.js';
 import { BrowserKind } from '@protocol';
 
 let homeDirectory: string;

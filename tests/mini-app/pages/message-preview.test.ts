@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { previewText } from '../../../apps/mini-app/src/pages/session/lib/preview-text.js';
+import { previewText } from '@/pages/session/lib/preview-text.js';
 
 it('preserves Markdown paragraphs and code indentation in previews', () => {
   const text = '**Ready**\n\n- Next\n\n```ts\n  const answer = 42;\n```';

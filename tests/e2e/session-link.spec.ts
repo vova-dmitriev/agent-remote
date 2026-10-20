@@ -1,8 +1,8 @@
 import { expect } from '@playwright/test';
 import { test } from './support/relay-fixture.js';
 import { identity } from './support/identity.js';
-import { SESSION_PAGE_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
-import { SESSIONS_PAGE_IDS } from '../../apps/mini-app/src/pages/sessions/config/test-ids.js';
+import { SESSION_PAGE_IDS } from '@/pages/session/config/test-ids.js';
+import { SESSIONS_PAGE_IDS } from '@/pages/sessions/config/test-ids.js';
 
 test('notification link opens only its owned session and back remains in the session list', async ({
   page,

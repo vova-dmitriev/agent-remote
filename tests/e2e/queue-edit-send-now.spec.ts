@@ -1,9 +1,9 @@
 import { expect, type Page } from '@playwright/test';
 import { FrameType, SessionStatus, CommandActionType, AttachmentMode, type SessionStatus as SourceStatus } from '@protocol';
-import { COMMAND_IDS } from '../../apps/mini-app/src/features/send-command/config/test-ids.js';
-import { UPLOAD_IDS } from '../../apps/mini-app/src/features/send-command/ui/attachments/test-ids.js';
-import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
-import { SESSION_PAGE_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
+import { COMMAND_IDS } from '@/features/send-command/config/test-ids.js';
+import { UPLOAD_IDS } from '@/features/send-command/ui/attachments/test-ids.js';
+import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
+import { SESSION_PAGE_IDS } from '@/pages/session/config/test-ids.js';
 import { test, delivered, deviceFixture } from './support/relay-fixture.js';
 import { sessionSnapshot } from './support/session-fixtures.js';
 import { identity } from './support/identity.js';

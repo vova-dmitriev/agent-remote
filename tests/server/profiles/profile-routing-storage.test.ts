@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { databaseFixture } from '../../helpers/database.js';
-import { ProfileRoutingRepository } from '../../../apps/server/src/profiles/routing/repository.js';
+import { ProfileRoutingRepository } from '@server/profiles/routing/repository.js';
 import {
   fallbackPolicySchema,
   profileQuotaObservationSchema,

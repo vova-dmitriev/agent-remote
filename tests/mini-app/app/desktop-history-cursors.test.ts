@@ -15,13 +15,13 @@ import {
   type LocalAction,
   type ServerFrame,
 } from '@protocol';
-import { TranscriptPages } from '../../../apps/daemon/src/code/transcript/transcript-pages.js';
-import { localHistory } from '../../../apps/daemon/src/local/controller/history.js';
-import type { LocalControllerOptions } from '../../../apps/daemon/src/local/controller/types.js';
-import { LocalStore } from '../../../apps/daemon/src/monitor/store.js';
-import { DesktopHistory } from '../../../apps/mini-app/src/app/api/desktop/history.js';
-import { HistoryPageSkip } from '../../../apps/mini-app/src/shared/api/types.js';
-import type { DesktopBridgeConnection } from '../../../apps/mini-app/src/app/api/desktop/desktop-connection.js';
+import { TranscriptPages } from '@daemon/code/transcript/transcript-pages.js';
+import { localHistory } from '@daemon/local/controller/history.js';
+import type { LocalControllerOptions } from '@daemon/local/controller/types.js';
+import { LocalStore } from '@daemon/monitor/store.js';
+import { DesktopHistory } from '@/app/api/desktop/history.js';
+import { HistoryPageSkip } from '@/shared/api/types.js';
+import type { DesktopBridgeConnection } from '@/app/api/desktop/desktop-connection.js';
 import { sessionSnapshot } from '../../e2e/support/session-fixtures.js';
 
 type HistoryAction = Extract<LocalAction, { operation: typeof LocalOperation.History }>;

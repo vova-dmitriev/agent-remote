@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { AttachmentRepository } from '../../../apps/server/src/attachments/repositories/attachments.js';
-import { CommandRepository } from '../../../apps/server/src/commands/repositories/audit.js';
-import { CommandClaimRepository } from '../../../apps/server/src/commands/repositories/claims.js';
-import { NotificationRepository } from '../../../apps/server/src/notifications/repositories/notifications.js';
+import { AttachmentRepository } from '@server/attachments/repositories/attachments.js';
+import { CommandRepository } from '@server/commands/repositories/audit.js';
+import { CommandClaimRepository } from '@server/commands/repositories/claims.js';
+import { NotificationRepository } from '@server/notifications/repositories/notifications.js';
 import { ownershipFixture } from '../../helpers/ownership-fixture.js';
 
 // Attachments, commands and notifications: every owner-scoped repository method, called as owner B with owner A's

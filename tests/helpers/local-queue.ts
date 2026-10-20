@@ -1,5 +1,5 @@
-import { LocalPersistence } from '../../apps/daemon/src/local/controller/persistence.js';
-import { ClaudeHookEvent } from '../../apps/daemon/src/domain/claude.js';
+import { LocalPersistence } from '@daemon/local/controller/persistence.js';
+import { ClaudeHookEvent } from '@daemon/domain/claude.js';
 import { CommandActionType, LocalOperation, PromptDelivery, type ClientCommand } from '@protocol';
 import { localFixture } from './local-runtime.js';
 

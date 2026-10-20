@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { databaseFixture } from '../../helpers/database.js';
-import { ProfileMetadataCache } from '../../../apps/server/src/profiles/repository.js';
+import { ProfileMetadataCache } from '@server/profiles/repository.js';
 
 it('persists only strict safe metadata and fences cached reads by owner, device and revocation', async () => {
   const fixture = await databaseFixture();

@@ -8,7 +8,7 @@ import {
   ReasoningEffort,
   serverFrameSchema,
 } from '@protocol';
-import { SESSION_CREATE_IDS } from '../../apps/mini-app/src/features/create-session/config/test-ids.js';
+import { SESSION_CREATE_IDS } from '@/features/create-session/config/test-ids.js';
 import { identity } from './support/identity.js';
 import { delivered, deviceFixture, setCommandOutcome, test } from './support/relay-fixture.js';
 import { publishSnapshot } from './product/device.js';

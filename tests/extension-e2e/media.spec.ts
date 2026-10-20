@@ -1,11 +1,11 @@
 import { createHash } from 'node:crypto';
 import { expect } from '@playwright/test';
 import { test, selectSession } from './fixture.js';
-import { syntheticImageBytes } from '../../apps/mini-app/.storybook/fixtures/attachment/media.js';
-import { UPLOAD_IDS } from '../../apps/mini-app/src/features/send-command/ui/attachments/test-ids.js';
-import { ATTACHMENT_IDS } from '../../apps/mini-app/src/entities/attachment/config/test-ids.js';
-import { SESSION_PAGE_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
-import { LocalDocumentKind } from '../../apps/daemon/src/local/state/values.js';
+import { syntheticImageBytes } from '@storybook-fixtures/attachment/media.js';
+import { UPLOAD_IDS } from '@/features/send-command/ui/attachments/test-ids.js';
+import { ATTACHMENT_IDS } from '@/entities/attachment/config/test-ids.js';
+import { SESSION_PAGE_IDS } from '@/pages/session/config/test-ids.js';
+import { LocalDocumentKind } from '@daemon/local/state/values.js';
 import { EventType, MessageRole, type AttachmentDescriptor } from '@protocol';
 
 test('restores an acknowledged image draft and opens, zooms and downloads original bytes', async ({

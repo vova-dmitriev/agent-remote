@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test';
-import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
-import { SESSIONS_PAGE_IDS } from '../../apps/mini-app/src/pages/sessions/config/test-ids.js';
-import { SESSION_PAGE_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
+import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
+import { SESSIONS_PAGE_IDS } from '@/pages/sessions/config/test-ids.js';
+import { SESSION_PAGE_IDS } from '@/pages/session/config/test-ids.js';
 import { identity } from './support/identity.js';
 import { test } from './support/relay-fixture.js';
 import { byTestId } from './support/testid.js';

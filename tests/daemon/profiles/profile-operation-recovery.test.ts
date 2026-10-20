@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { expect, it } from 'vitest';
-import { ProfileService } from '../../../apps/daemon/src/profiles/service.js';
+import { ProfileService } from '@daemon/profiles/service.js';
 import { codexSubscription } from './fixtures/registry.fixture.js';
 import { profileServiceFixture as fixture } from './fixtures/service.fixture.js';
 

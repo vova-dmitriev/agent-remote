@@ -1,9 +1,9 @@
 import { vi } from 'vitest';
 import { DesktopBridgeChannel, type LocalAction, type ServerFrame } from '@protocol';
-import { installDesktopIpc, type DesktopInvokeEvent } from '../../apps/desktop/src/main/ipc/ipc.js';
-import type { DesktopCompanionConnector } from '../../apps/desktop/src/main/companion-port.js';
-import { DESKTOP_ASSET_URL } from '../../apps/desktop/src/main/config/links.js';
-import type { DesktopPrivateIpcChannel } from '../../apps/desktop/src/shared/private-ipc.js';
+import { installDesktopIpc, type DesktopInvokeEvent } from '@desktop/main/ipc/ipc.js';
+import type { DesktopCompanionConnector } from '@desktop/main/companion-port.js';
+import { DESKTOP_ASSET_URL } from '@desktop/main/config/links.js';
+import type { DesktopPrivateIpcChannel } from '@desktop/shared/private-ipc.js';
 
 export function createDesktopIpcFixture() {
   const handlers = new Map<

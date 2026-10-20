@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest';
-import { restartClaudeSession } from '../../../apps/daemon/src/sessions/restart-session.js';
+import { restartClaudeSession } from '@daemon/sessions/restart-session.js';
 import { sessionSchema, noCapabilities } from '@protocol';
 
 const session = sessionSchema.parse({

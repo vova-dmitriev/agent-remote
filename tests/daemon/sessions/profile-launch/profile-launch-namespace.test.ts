@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
 import { chmod, lstat, mkdtemp, rm, symlink } from 'node:fs/promises';
 import { join } from 'node:path';
-import { profileExecutionNamespace } from '../../../../apps/daemon/src/sessions/execution/namespace.js';
+import { profileExecutionNamespace } from '@daemon/sessions/execution/namespace.js';
 import { executionProfile } from '../../../helpers/execution-profile.js';
 import { ErrorCode, executionProfileSummarySchema } from '@protocol';
 

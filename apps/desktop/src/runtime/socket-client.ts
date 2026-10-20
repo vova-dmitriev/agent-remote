@@ -14,7 +14,7 @@ import {
   type LocalAction,
   type ServerFrame,
 } from '@protocol';
-import { FramedPeer } from '../../../daemon/src/browser/transport/peer.js';
+import { FramedPeer } from '@daemon/browser/transport/peer.js';
 
 export interface DesktopSocketClient {
   request(action: LocalAction, signal?: AbortSignal): Promise<unknown>;

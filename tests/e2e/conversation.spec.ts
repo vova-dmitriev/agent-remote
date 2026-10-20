@@ -4,11 +4,11 @@ import { conversation } from './support/conversation-fixtures.js';
 import { identity } from './support/identity.js';
 import { byTestId } from './support/testid.js';
 import { expectLoadedMessages, railMarker } from './support/rail.js';
-import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
-import { SESSION_PAGE_IDS, SESSION_FEED_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
-import { MARKDOWN_IDS } from '../../apps/mini-app/src/shared/ui/markdown/test-ids.js';
+import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
+import { SESSION_PAGE_IDS, SESSION_FEED_IDS } from '@/pages/session/config/test-ids.js';
+import { MARKDOWN_IDS } from '@/shared/ui/markdown/test-ids.js';
 import { setSessionLanguage } from './support/session-language.js';
-import { COMMAND_IDS } from '../../apps/mini-app/src/features/send-command/config/test-ids.js';
+import { COMMAND_IDS } from '@/features/send-command/config/test-ids.js';
 
 test('message rail jumps within the feed, preserves reading position and resumes following at bottom', async ({
   page,

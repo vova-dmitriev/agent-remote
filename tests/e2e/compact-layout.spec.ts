@@ -1,14 +1,14 @@
-import { SESSION_AVAILABILITY_IDS } from '../../apps/mini-app/src/entities/session/config/availability-test-ids.js';
+import { SESSION_AVAILABILITY_IDS } from '@/entities/session/config/availability-test-ids.js';
 import { expect } from '@playwright/test';
 import { test, publishMessages } from './support/relay-fixture.js';
 import { identity } from './support/identity.js';
 import { byTestId } from './support/testid.js';
-import { SESSIONS_PAGE_IDS } from '../../apps/mini-app/src/pages/sessions/config/test-ids.js';
-import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
-import { SESSION_PAGE_IDS, SESSION_FEED_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
-import { COMMAND_IDS } from '../../apps/mini-app/src/features/send-command/config/test-ids.js';
-import { SHELL_IDS } from '../../apps/mini-app/src/widgets/application-shell/config/test-ids.js';
-import { LANGUAGE_SWITCHER_IDS } from '../../apps/mini-app/src/shared/ui/test-ids.js';
+import { SESSIONS_PAGE_IDS } from '@/pages/sessions/config/test-ids.js';
+import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
+import { SESSION_PAGE_IDS, SESSION_FEED_IDS } from '@/pages/session/config/test-ids.js';
+import { COMMAND_IDS } from '@/features/send-command/config/test-ids.js';
+import { SHELL_IDS } from '@/widgets/application-shell/config/test-ids.js';
+import { LANGUAGE_SWITCHER_IDS } from '@/shared/ui/test-ids.js';
 
 test('selected chat gives the mobile viewport to history and keeps the composer compact', async ({
   page,

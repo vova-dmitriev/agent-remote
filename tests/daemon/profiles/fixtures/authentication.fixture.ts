@@ -1,7 +1,7 @@
 import { CodedError } from '@protocol';
 import { randomUUID } from 'node:crypto';
 import { vi } from 'vitest';
-import { ProfileAuthentication } from '../../../../apps/daemon/src/profiles/authentication/service.js';
+import { ProfileAuthentication } from '@daemon/profiles/authentication/service.js';
 import { codexSubscription, verifiedAccount } from './registry.fixture.js';
 import { profileServiceFixture } from './service.fixture.js';
 

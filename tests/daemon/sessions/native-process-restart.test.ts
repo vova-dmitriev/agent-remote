@@ -4,7 +4,7 @@ import { promisify } from 'node:util';
 import { mkdtemp, mkdir, writeFile, symlink, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { NativeProcesses } from '../../../apps/daemon/src/sessions/native-process.js';
+import { NativeProcesses } from '@daemon/sessions/native-process.js';
 
 const execute = promisify(execFile);
 

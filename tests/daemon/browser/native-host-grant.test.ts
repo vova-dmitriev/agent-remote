@@ -1,7 +1,7 @@
 import { afterEach, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
-import { LocalDatabase } from '../../../apps/daemon/src/local/state/database.js';
-import { LocalGrants } from '../../../apps/daemon/src/local/grants/service.js';
+import { LocalDatabase } from '@daemon/local/state/database.js';
+import { LocalGrants } from '@daemon/local/grants/service.js';
 
 const origin = 'chrome-extension://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/';
 const databases: LocalDatabase[] = [];

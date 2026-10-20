@@ -1,8 +1,8 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { EventEmitter } from 'node:events';
-import { DesktopCodexClient } from '../../../../apps/daemon/src/codex/desktop/desktop-client.js';
-import type { DesktopIpcClient } from '../../../../apps/daemon/src/codex/desktop/desktop-ipc.js';
-import type { Data } from '../../../../apps/daemon/src/codex/events.js';
+import { DesktopCodexClient } from '@daemon/codex/desktop/desktop-client.js';
+import type { DesktopIpcClient } from '@daemon/codex/desktop/desktop-ipc.js';
+import type { Data } from '@daemon/codex/events.js';
 
 const question = {
   id: 'q',

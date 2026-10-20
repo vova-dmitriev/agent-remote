@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test';
 import { test } from './support/relay-fixture.js';
 import { identity } from './support/identity.js';
-import { LANGUAGE_SWITCHER_IDS, THEME_SWITCHER_IDS } from '../../apps/mini-app/src/shared/ui/test-ids.js';
+import { LANGUAGE_SWITCHER_IDS, THEME_SWITCHER_IDS } from '@/shared/ui/test-ids.js';
 
 for (const language of ['ru', 'en'] as const) {
   test(`styled preference dropdowns support selected items and keyboard navigation in ${language}`, async ({

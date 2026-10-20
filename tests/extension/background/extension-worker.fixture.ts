@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import type { ChromeApi, ChromePort } from '../../../apps/chrome-extension/src/config/chrome-api.js';
+import type { ChromeApi, ChromePort } from '@extension/config/chrome-api.js';
 import { FragmentReader, fragmentValue } from '@transport/native/fragments.js';
 
 export function workerPort(trusted = true) {

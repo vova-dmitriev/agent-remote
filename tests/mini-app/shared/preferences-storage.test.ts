@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { preferenceStorage } from '../../../apps/mini-app/src/shared/lib/preferences/storage.js';
+import { preferenceStorage } from '@/shared/lib/preferences/storage.js';
 
 const identity = (id: number) => new URLSearchParams({ user: JSON.stringify({ id }) }).toString();
 

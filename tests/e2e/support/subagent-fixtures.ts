@@ -3,9 +3,9 @@ import { deviceFixture } from './relay-fixture.js';
 import { sessionSnapshot } from './session-fixtures.js';
 import { identity } from './identity.js';
 import { byTestId } from './testid.js';
-import { SUBAGENT_IDS } from '../../../apps/mini-app/src/pages/session/config/test-ids.js';
-import { SESSION_CARD_IDS } from '../../../apps/mini-app/src/entities/session/config/test-ids.js';
-import { SUBAGENT_POLL_BACKOFF_MAX_MS } from '../../../apps/mini-app/src/pages/session/config/subagent.js';
+import { SUBAGENT_IDS } from '@/pages/session/config/test-ids.js';
+import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
+import { SUBAGENT_POLL_BACKOFF_MAX_MS } from '@/pages/session/config/subagent.js';
 import type { HistoryMessage, HistoryRead } from '@protocol';
 
 const AGENT = 'synthetic-reviewer';

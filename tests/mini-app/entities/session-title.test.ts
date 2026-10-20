@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { sessionSchema } from '@protocol';
-import { sessionTitle } from '../../../apps/mini-app/src/entities/session/lib/labels.js';
+import { sessionTitle } from '@/entities/session/lib/labels.js';
 import { sessionSnapshot } from '../../e2e/support/session-fixtures.js';
 
 describe('session display titles', () => {

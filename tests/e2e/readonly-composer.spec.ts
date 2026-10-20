@@ -3,8 +3,8 @@ import { test } from './support/relay-fixture.js';
 import { identity } from './support/identity.js';
 import { byTestId } from './support/testid.js';
 import { installSource, sourceCases } from './product/sources.js';
-import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
-import { COMMAND_IDS } from '../../apps/mini-app/src/features/send-command/config/test-ids.js';
+import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
+import { COMMAND_IDS } from '@/features/send-command/config/test-ids.js';
 
 test('an unavailable source has a concise placeholder without an internal scrollbar on a small screen', async ({
   page,

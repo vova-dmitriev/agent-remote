@@ -1,7 +1,7 @@
 import { chooseLanguage } from './support/preferences.js';
 import { test, expect } from '@playwright/test';
-import { LANGUAGE_SWITCHER_IDS } from '../../apps/mini-app/src/shared/ui/test-ids.js';
-import { SIGN_IN_IDS } from '../../apps/mini-app/src/pages/sign-in/config/test-ids.js';
+import { LANGUAGE_SWITCHER_IDS } from '@/shared/ui/test-ids.js';
+import { SIGN_IN_IDS } from '@/pages/sign-in/config/test-ids.js';
 
 test('language choice updates signed-out UI and survives a reload', async ({ page }) => {
   await page.route('https://telegram.org/js/telegram-web-app.js**', (route) =>

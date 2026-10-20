@@ -1,5 +1,5 @@
 import { it, expect } from 'vitest';
-import { Limiter } from '../../../apps/server/src/auth/security.js';
+import { Limiter } from '@server/auth/security.js';
 
 it('does not retain a new client key after rejecting a full rate-limit table', () => {
   const limiter = new Limiter();

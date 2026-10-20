@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { AgentProvider, ErrorCode, ReasoningEffort } from '@protocol';
-import { prepareExecutionLaunch } from '../../../../apps/daemon/src/sessions/execution/plan.js';
+import { prepareExecutionLaunch } from '@daemon/sessions/execution/plan.js';
 import { profileServiceFixture } from '../../profiles/fixtures/service.fixture.js';
 import { codexSubscription, verifiedAccount } from '../../profiles/fixtures/registry.fixture.js';
 

@@ -1,8 +1,8 @@
 import { expect } from '@playwright/test';
 import type { ClientCommand } from '@protocol';
 import { test, delivered, setCommandOutcome } from '../support/relay-fixture.js';
-import { COMMAND_IDS } from '../../../apps/mini-app/src/features/send-command/config/test-ids.js';
-import { UPLOAD_IDS } from '../../../apps/mini-app/src/features/send-command/ui/attachments/test-ids.js';
+import { COMMAND_IDS } from '@/features/send-command/config/test-ids.js';
+import { UPLOAD_IDS } from '@/features/send-command/ui/attachments/test-ids.js';
 import { releaseCommandOutcome } from '../runtime/command-outcome.js';
 import { image, openAttachments } from './fixture.js';
 import { interruptSession } from '../support/session-actions.js';

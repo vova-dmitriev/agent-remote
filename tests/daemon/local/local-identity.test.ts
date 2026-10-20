@@ -1,10 +1,10 @@
 import { existsSync } from 'node:fs';
-import { privateFile } from '../../../apps/daemon/src/local/bootstrap/private-file.js';
+import { privateFile } from '@daemon/local/bootstrap/private-file.js';
 import { afterEach, expect, it } from 'vitest';
 import { mkdtemp, rm, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { loadLocalIdentity, localClientSecret } from '../../../apps/daemon/src/local/bootstrap/identity.js';
+import { loadLocalIdentity, localClientSecret } from '@daemon/local/bootstrap/identity.js';
 
 const directories: string[] = [];
 

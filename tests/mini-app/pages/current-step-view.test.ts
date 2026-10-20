@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { activityKey } from '../../../apps/mini-app/src/pages/session/lib/activity.js';
+import { activityKey } from '@/pages/session/lib/activity.js';
 import type { Session } from '@protocol';
 
 it('shows safe active step labels only for an available running source', () => {

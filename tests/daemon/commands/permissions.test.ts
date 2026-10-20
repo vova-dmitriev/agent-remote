@@ -1,8 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import {
-  PermissionBroker,
-  permissionHookOutput,
-} from '../../../apps/daemon/src/commands/permission-broker.js';
+import { PermissionBroker, permissionHookOutput } from '@daemon/commands/permission-broker.js';
 
 const brokers: PermissionBroker[] = [];
 

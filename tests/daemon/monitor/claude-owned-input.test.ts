@@ -3,13 +3,13 @@ import { mkdtemp, writeFile, chmod, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { PassThrough, Writable } from 'node:stream';
-import { startClaude } from '../../../apps/daemon/src/cli/wrapper.js';
-import { startHookServer } from '../../../apps/daemon/src/code/hooks/hook-server.js';
-import { localSecret, socketPath } from '../../../apps/daemon/src/config.js';
-import { LocalStore } from '../../../apps/daemon/src/monitor/store.js';
-import { Monitor } from '../../../apps/daemon/src/monitor/monitor.js';
-import { AdapterRegistry } from '../../../apps/daemon/src/adapters/registry.js';
-import { PermissionBroker } from '../../../apps/daemon/src/commands/permission-broker.js';
+import { startClaude } from '@daemon/cli/wrapper.js';
+import { startHookServer } from '@daemon/code/hooks/hook-server.js';
+import { localSecret, socketPath } from '@daemon/config.js';
+import { LocalStore } from '@daemon/monitor/store.js';
+import { Monitor } from '@daemon/monitor/monitor.js';
+import { AdapterRegistry } from '@daemon/adapters/registry.js';
+import { PermissionBroker } from '@daemon/commands/permission-broker.js';
 
 it('routes a prompt through a registered hook binding into the exact owned PTY child', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'owned-input-'));

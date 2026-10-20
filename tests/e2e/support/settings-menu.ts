@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { SHELL_IDS } from '../../../apps/mini-app/src/widgets/application-shell/config/test-ids.js';
+import { SHELL_IDS } from '@/widgets/application-shell/config/test-ids.js';
 
 /** Opens Accounts & keys through the header settings menu. */
 export async function openAccounts(page: Page) {

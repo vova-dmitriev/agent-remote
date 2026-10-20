@@ -1,9 +1,9 @@
 import { expect, it, vi } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { Redis } from 'ioredis';
-import { RedisCache } from '../../../apps/server/src/infrastructure/redis.js';
-import { ReadingPositionService } from '../../../apps/server/src/reading-position/service.js';
-import { ReadingPositionRepository } from '../../../apps/server/src/reading-position/repository.js';
+import { RedisCache } from '@server/infrastructure/redis.js';
+import { ReadingPositionService } from '@server/reading-position/service.js';
+import { ReadingPositionRepository } from '@server/reading-position/repository.js';
 import { attachmentRelayFixture } from '../../helpers/attachment-relay.js';
 
 it('persists a bounded reading anchor and ignores delayed writes from an older visit', async () => {

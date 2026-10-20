@@ -1,8 +1,8 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { EventEmitter } from 'node:events';
-import { DesktopIpcClient } from '../../../../apps/daemon/src/codex/desktop/desktop-ipc.js';
-import { OversizeFrame } from '../../../../apps/daemon/src/codex/desktop/oversize-frame.js';
-import { RuntimeEvent } from '../../../../apps/daemon/src/domain/runtime.js';
+import { DesktopIpcClient } from '@daemon/codex/desktop/desktop-ipc.js';
+import { OversizeFrame } from '@daemon/codex/desktop/oversize-frame.js';
+import { RuntimeEvent } from '@daemon/domain/runtime.js';
 
 const FRAME_CAP = 32 * 1024 * 1024;
 const RETRY_AFTER_MS = 10 * 60 * 1000;

@@ -1,8 +1,8 @@
 import { appendFile } from 'node:fs/promises';
 import { LocalOperation } from '@protocol';
-import { startDesktopMain } from '../../apps/desktop/src/main/bootstrap.js';
-import { createDesktopCompanionConnector } from '../../apps/desktop/src/runtime/connector.js';
-import type { DesktopCompanionFactory } from '../../apps/desktop/src/main/companion-port.js';
+import { startDesktopMain } from '@desktop/main/bootstrap.js';
+import { createDesktopCompanionConnector } from '@desktop/runtime/connector.js';
+import type { DesktopCompanionFactory } from '@desktop/main/companion-port.js';
 
 const {
   DESKTOP_FIXTURE_ASSET_ROOT: assetRoot,

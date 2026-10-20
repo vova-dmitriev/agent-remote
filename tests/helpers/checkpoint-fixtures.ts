@@ -1,11 +1,7 @@
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type {
-  CheckpointMessage,
-  CheckpointSource,
-  SourceFence,
-} from '../../apps/daemon/src/continuity/context/types.js';
+import type { CheckpointMessage, CheckpointSource, SourceFence } from '@daemon/continuity/context/types.js';
 
 const roots: string[] = [];
 

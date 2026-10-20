@@ -2,8 +2,8 @@ import { expect } from '@playwright/test';
 import { test, delivered, setCommandOutcome } from './support/relay-fixture.js';
 import { identity } from './support/identity.js';
 import { byTestId } from './support/testid.js';
-import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
-import { COMMAND_IDS } from '../../apps/mini-app/src/features/send-command/config/test-ids.js';
+import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
+import { COMMAND_IDS } from '@/features/send-command/config/test-ids.js';
 
 test('Enter sends once; Shift+Enter inserts a line break; composition never submits', async ({ page }) => {
   await identity(page, '801', 'en');

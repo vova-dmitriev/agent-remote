@@ -1,7 +1,7 @@
 import { expect, it, vi } from 'vitest';
 import { ErrorCode, LocalKind, LocalOperation } from '@protocol';
 import { broker } from './extension-client.fixture.js';
-import { ExtensionMedia } from '../../../apps/chrome-extension/src/client/media/transfer.js';
+import { ExtensionMedia } from '@extension/client/media/transfer.js';
 
 it('uploads acknowledged chunks and aborts interrupted media transfers', async () => {
   const viewer = broker();

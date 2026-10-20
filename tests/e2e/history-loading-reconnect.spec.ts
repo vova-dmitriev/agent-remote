@@ -2,9 +2,9 @@ import { expect } from '@playwright/test';
 import { test, publishMessages } from './support/relay-fixture.js';
 import { identity } from './support/identity.js';
 import { byTestId } from './support/testid.js';
-import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
-import { SESSION_FEED_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
-import { SESSION_AVAILABILITY_IDS } from '../../apps/mini-app/src/entities/session/config/availability-test-ids.js';
+import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
+import { SESSION_FEED_IDS } from '@/pages/session/config/test-ids.js';
+import { SESSION_AVAILABILITY_IDS } from '@/entities/session/config/availability-test-ids.js';
 
 test('new-stream reconnect displays skeletons until authoritative history is restored', async ({ page }) => {
   let available = true;

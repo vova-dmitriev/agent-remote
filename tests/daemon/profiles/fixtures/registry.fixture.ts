@@ -2,8 +2,8 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach } from 'vitest';
-import { LocalDatabase } from '../../../../apps/daemon/src/local/state/database.js';
-import { ProfileRegistry } from '../../../../apps/daemon/src/profiles/registry.js';
+import { LocalDatabase } from '@daemon/local/state/database.js';
+import { ProfileRegistry } from '@daemon/profiles/registry.js';
 
 const cleanups: Array<() => void> = [];
 

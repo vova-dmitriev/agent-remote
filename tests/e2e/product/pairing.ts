@@ -2,7 +2,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { expect, type Page } from '@playwright/test';
 import { WebSocket } from 'ws';
 import type { AppSnapshot } from '@protocol';
-import { PAIR_DEVICE_IDS } from '../../../apps/mini-app/src/features/pair-device/config/test-ids.js';
+import { PAIR_DEVICE_IDS } from '@/features/pair-device/config/test-ids.js';
 import { deviceFixture, delivered } from '../support/relay-fixture.js';
 import { relayOrigin, relaySocketOrigin } from '../runtime/app-origin.js';
 

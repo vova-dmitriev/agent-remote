@@ -2,7 +2,7 @@ import { beforeAll, afterAll, it, expect } from 'vitest';
 import { Pool } from 'pg';
 import { WebSocket } from 'ws';
 import { randomUUID, randomBytes, createHash } from 'node:crypto';
-import { createRelay } from '../../../apps/server/src/app/create-relay.js';
+import { createRelay } from '@server/app/create-relay.js';
 import type { EventEnvelope } from '@protocol';
 import { initData, testBotToken } from '../../helpers/telegram.js';
 

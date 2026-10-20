@@ -2,11 +2,11 @@ import { afterEach, expect, it } from 'vitest';
 import { mkdtempSync, rmSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { LocalStore } from '../../../apps/daemon/src/monitor/store.js';
-import { Monitor } from '../../../apps/daemon/src/monitor/monitor.js';
-import { EventReplay } from '../../../apps/daemon/src/monitor/replay.js';
-import { PermissionBroker } from '../../../apps/daemon/src/commands/permission-broker.js';
-import { AdapterRegistry, SourceAdapter } from '../../../apps/daemon/src/adapters/registry.js';
+import { LocalStore } from '@daemon/monitor/store.js';
+import { Monitor } from '@daemon/monitor/monitor.js';
+import { EventReplay } from '@daemon/monitor/replay.js';
+import { PermissionBroker } from '@daemon/commands/permission-broker.js';
+import { AdapterRegistry, SourceAdapter } from '@daemon/adapters/registry.js';
 import type { EventEnvelope } from '@protocol';
 
 const cleanups: Array<() => void> = [];

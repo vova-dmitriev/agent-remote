@@ -1,9 +1,9 @@
 import { expect, it } from 'vitest';
 import type { WebSocket } from 'ws';
 import { databaseFixture } from '../../helpers/database.js';
-import { SourceHistory } from '../../../apps/server/src/history/source.js';
-import { HistoryRepository } from '../../../apps/server/src/history/repository.js';
-import type { Principal } from '../../../apps/server/src/auth/security.js';
+import { SourceHistory } from '@server/history/source.js';
+import { HistoryRepository } from '@server/history/repository.js';
+import type { Principal } from '@server/auth/security.js';
 import type { HistoryRead, ServerFrame } from '@protocol';
 
 it('authorizes native page requests and fences responses by owner, device, epoch, session and generation', async () => {

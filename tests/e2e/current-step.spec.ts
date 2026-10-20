@@ -2,8 +2,8 @@ import { expect } from '@playwright/test';
 import { test, deviceFixture } from './support/relay-fixture.js';
 import { sessionSnapshot } from './support/session-fixtures.js';
 import { identity } from './support/identity.js';
-import { ACTIVITY_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
-import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
+import { ACTIVITY_IDS } from '@/pages/session/config/test-ids.js';
+import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
 import { byTestId } from './support/testid.js';
 
 for (const [sessionId, kind] of [['terminal-session', 'command'], ['codex-cli-session', 'read']] as const) {

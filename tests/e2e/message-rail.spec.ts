@@ -4,9 +4,9 @@ import { identity } from './support/identity.js';
 import { byTestId } from './support/testid.js';
 import { bandEdges, box, expectLoadedMessages, focusedTestId, railConversation } from './support/rail.js';
 import { scrollSettled } from './support/scroll-settled.js';
-import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
-import { SESSION_FEED_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
-import { RAIL_HIT_SIZE } from '../../apps/mini-app/src/pages/session/config/message-navigation.js';
+import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
+import { SESSION_FEED_IDS } from '@/pages/session/config/test-ids.js';
+import { RAIL_HIT_SIZE } from '@/pages/session/config/message-navigation.js';
 
 const conversation = (count: number) => railConversation(count);
 

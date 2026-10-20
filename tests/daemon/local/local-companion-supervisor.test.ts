@@ -12,8 +12,8 @@ import {
   probeAt,
   waitForFixture,
 } from '../../helpers/companion-fixture.js';
-import { ensureCompanion } from '../../../apps/daemon/src/local/supervisor/index.js';
-import { CompanionEnvironment } from '../../../apps/daemon/src/local/supervisor/values.js';
+import { ensureCompanion } from '@daemon/local/supervisor/index.js';
+import { CompanionEnvironment } from '@daemon/local/supervisor/values.js';
 
 const run = promisify(execFile);
 let directory: string;

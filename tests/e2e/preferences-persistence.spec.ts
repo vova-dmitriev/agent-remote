@@ -2,10 +2,10 @@ import { expect } from '@playwright/test';
 import { test, deviceFixture } from './support/relay-fixture.js';
 import { identity } from './support/identity.js';
 import { chooseLanguage, chooseTheme } from './support/preferences.js';
-import { LANGUAGE_SWITCHER_IDS, THEME_SWITCHER_IDS } from '../../apps/mini-app/src/shared/ui/test-ids.js';
-import { STARTUP_IDS } from '../../apps/mini-app/src/app/config/test-ids.js';
-import { COMMAND_IDS } from '../../apps/mini-app/src/features/send-command/config/test-ids.js';
-import { en } from '../../apps/mini-app/src/shared/lib/i18n/dictionaries/en.js';
+import { LANGUAGE_SWITCHER_IDS, THEME_SWITCHER_IDS } from '@/shared/ui/test-ids.js';
+import { STARTUP_IDS } from '@/app/config/test-ids.js';
+import { COMMAND_IDS } from '@/features/send-command/config/test-ids.js';
+import { en } from '@/shared/lib/i18n/dictionaries/en.js';
 import { appOrigin } from './runtime/app-origin.js';
 
 async function saved() {

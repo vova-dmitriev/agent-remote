@@ -3,9 +3,9 @@ import { createHash, randomUUID } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { PassThrough } from 'node:stream';
-import { LocalDatabase } from '../../apps/daemon/src/local/state/database.js';
-import { LocalGrants } from '../../apps/daemon/src/local/grants/service.js';
-import { runtimeConfiguration } from '../../apps/daemon/src/local/bootstrap/configuration.js';
+import { LocalDatabase } from '@daemon/local/state/database.js';
+import { LocalGrants } from '@daemon/local/grants/service.js';
+import { runtimeConfiguration } from '@daemon/local/bootstrap/configuration.js';
 
 const digest = (value: string) => createHash('sha256').update(value).digest('hex');
 

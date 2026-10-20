@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cmuxContext } from '../../../apps/daemon/src/cmux/context.js';
+import { cmuxContext } from '@daemon/cmux/context.js';
 
 const ids = {
   CMUX_WORKSPACE_ID: '22222222-2222-4222-8222-222222222222',

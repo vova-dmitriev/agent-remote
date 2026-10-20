@@ -2,8 +2,8 @@ import { beforeAll, afterAll, describe, it, expect } from 'vitest';
 import { WebSocket } from 'ws';
 import { Pool } from 'pg';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import { createRelay } from '../../../apps/server/src/app/create-relay.js';
-import { NotificationWorker } from '../../../apps/server/src/notifications/worker.js';
+import { createRelay } from '@server/app/create-relay.js';
+import { NotificationWorker } from '@server/notifications/worker.js';
 import { initData, testBotToken } from '../../helpers/telegram.js';
 import {
   SocketCloseCode,

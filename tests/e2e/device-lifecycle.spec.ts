@@ -1,14 +1,14 @@
 import { expect } from '@playwright/test';
-import { COMMAND_IDS } from '../../apps/mini-app/src/features/send-command/config/test-ids.js';
-import { DEVICE_ACCESS_IDS } from '../../apps/mini-app/src/features/device-access/config/test-ids.js';
-import { PAIR_DEVICE_IDS } from '../../apps/mini-app/src/features/pair-device/config/test-ids.js';
-import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
+import { COMMAND_IDS } from '@/features/send-command/config/test-ids.js';
+import { DEVICE_ACCESS_IDS } from '@/features/device-access/config/test-ids.js';
+import { PAIR_DEVICE_IDS } from '@/features/pair-device/config/test-ids.js';
+import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
 import {
   SESSION_PAGE_IDS,
   SESSION_FEED_IDS,
   PERMISSION_IDS,
-} from '../../apps/mini-app/src/pages/session/config/test-ids.js';
-import { SESSION_AVAILABILITY_IDS } from '../../apps/mini-app/src/entities/session/config/availability-test-ids.js';
+} from '@/pages/session/config/test-ids.js';
+import { SESSION_AVAILABILITY_IDS } from '@/entities/session/config/availability-test-ids.js';
 import { identity } from './support/identity.js';
 import { test, publishMessages, delivered } from './support/relay-fixture.js';
 import { byTestId } from './support/testid.js';

@@ -6,9 +6,9 @@ import { connect } from 'node:net';
 import { once } from 'node:events';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { localFixture, localTestOrigin } from '../../helpers/local-runtime.js';
-import { FramedPeer } from '../../../apps/daemon/src/browser/transport/peer.js';
-import { startLocalServer } from '../../../apps/daemon/src/local/server/server.js';
-import { probeCompanion } from '../../../apps/daemon/src/local/bootstrap/probe.js';
+import { FramedPeer } from '@daemon/browser/transport/peer.js';
+import { startLocalServer } from '@daemon/local/server/server.js';
+import { probeCompanion } from '@daemon/local/bootstrap/probe.js';
 
 const cleanups: (() => Promise<unknown>)[] = [];
 

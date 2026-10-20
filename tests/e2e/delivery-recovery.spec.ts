@@ -1,8 +1,8 @@
 import { expect } from '@playwright/test';
 import type { ClientCommand } from '@protocol';
-import { COMMAND_IDS } from '../../apps/mini-app/src/features/send-command/config/test-ids.js';
-import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
-import { SHELL_IDS } from '../../apps/mini-app/src/widgets/application-shell/config/test-ids.js';
+import { COMMAND_IDS } from '@/features/send-command/config/test-ids.js';
+import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
+import { SHELL_IDS } from '@/widgets/application-shell/config/test-ids.js';
 import { setCommandOutcome, releaseCommandOutcome } from './runtime/command-outcome.js';
 import { test, delivered, deviceFixture } from './support/relay-fixture.js';
 import { identity } from './support/identity.js';

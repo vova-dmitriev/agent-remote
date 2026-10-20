@@ -1,8 +1,8 @@
 import { expect, it } from 'vitest';
 import { databaseFixture } from '../../helpers/database.js';
-import { SessionHistory } from '../../../apps/server/src/history/service.js';
-import { HistoryRepository } from '../../../apps/server/src/history/repository.js';
-import type { Principal } from '../../../apps/server/src/auth/security.js';
+import { SessionHistory } from '@server/history/service.js';
+import { HistoryRepository } from '@server/history/repository.js';
+import type { Principal } from '@server/auth/security.js';
 
 it('opens around a saved message and pages in both directions using source time, not import time', async () => {
   const fixture = await databaseFixture();

@@ -10,7 +10,7 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 import { expect, it } from 'vitest';
-import { buildProfileEnvironment } from '../../../apps/daemon/src/profiles/environment.js';
+import { buildProfileEnvironment } from '@daemon/profiles/environment.js';
 import { codexSubscription, profileRegistryFixture, verifiedAccount } from './fixtures/registry.fixture.js';
 
 it('removes inherited credentials and isolates native homes without modifying the parent environment', async () => {

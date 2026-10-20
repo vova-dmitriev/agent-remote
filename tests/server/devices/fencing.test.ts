@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { DeviceFence } from '../../../apps/server/src/devices/fence.js';
+import { DeviceFence } from '@server/devices/fence.js';
 
 describe('per-device operation fence', () => {
   it('finishes in-flight device writes before replacing its epoch while other devices progress', async () => {

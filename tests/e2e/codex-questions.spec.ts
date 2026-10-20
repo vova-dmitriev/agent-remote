@@ -3,8 +3,8 @@ import { test } from './codex-runtime/fixture.js';
 import { identity } from './support/identity.js';
 import { byTestId } from './support/testid.js';
 import { syncQuestion, styleQuestion } from './codex-runtime/questions.js';
-import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
-import { USER_INPUT_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
+import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
+import { USER_INPUT_IDS } from '@/pages/session/config/test-ids.js';
 
 for (const kind of ['codex-cli', 'codex-desktop'] as const) {
   test.describe(kind + ' native questions', () => {

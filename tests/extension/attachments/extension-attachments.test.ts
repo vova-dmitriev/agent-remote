@@ -2,7 +2,7 @@ import { expect, it } from 'vitest';
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { LocalMediaRepository } from '../../../apps/daemon/src/local/media/repository.js';
+import { LocalMediaRepository } from '@daemon/local/media/repository.js';
 import { LocalOperation, ErrorCode, type AttachmentDescriptor } from '@protocol';
 import { fillTransfers } from '../../helpers/extension-media-runtime.js';
 import { fixture, begin, session, cleanup } from '../../helpers/extension-media-runtime.js';

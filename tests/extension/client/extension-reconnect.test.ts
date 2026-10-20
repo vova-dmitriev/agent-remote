@@ -1,8 +1,8 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { CommandActionType, ConnectionStatus, ErrorCode, LocalOperation, serverFrameSchema } from '@protocol';
-import { ExtensionConnection } from '../../../apps/chrome-extension/src/client/connection.js';
-import { ExtensionApplicationClient } from '../../../apps/chrome-extension/src/client/application-client.js';
-import { createSessionStore } from '../../../apps/mini-app/src/entities/session/model/store/create-session-store.js';
+import { ExtensionConnection } from '@extension/client/connection.js';
+import { ExtensionApplicationClient } from '@extension/client/application-client.js';
+import { createSessionStore } from '@/entities/session/model/store/create-session-store.js';
 import { reconnectFixture } from './extension-reconnect.fixture.js';
 import { snapshotFrame } from './extension-client.fixture.js';
 

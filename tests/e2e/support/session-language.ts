@@ -1,7 +1,7 @@
 import { chooseLanguage } from './preferences.js';
 import type { Page } from '@playwright/test';
-import { SESSION_CARD_IDS } from '../../../apps/mini-app/src/entities/session/config/test-ids.js';
-import { SESSION_PAGE_IDS } from '../../../apps/mini-app/src/pages/session/config/test-ids.js';
+import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
+import { SESSION_PAGE_IDS } from '@/pages/session/config/test-ids.js';
 import { byTestId } from './testid.js';
 
 export async function setSessionLanguage(

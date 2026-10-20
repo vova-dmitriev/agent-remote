@@ -1,13 +1,13 @@
 import { afterEach, expect, it } from 'vitest';
 import { EventEmitter } from 'node:events';
-import { UserInputBroker } from '../../../../apps/daemon/src/commands/user-input-broker.js';
-import { PermissionBroker } from '../../../../apps/daemon/src/commands/permission-broker.js';
-import { AdapterRegistry } from '../../../../apps/daemon/src/adapters/registry.js';
-import { LocalStore } from '../../../../apps/daemon/src/monitor/store.js';
-import { Monitor } from '../../../../apps/daemon/src/monitor/monitor.js';
-import { Dispatcher } from '../../../../apps/daemon/src/commands/dispatcher.js';
-import { bindCodex } from '../../../../apps/daemon/src/codex/binding/binding.js';
-import type { RpcFrame } from '../../../../apps/daemon/src/domain/codex/client.js';
+import { UserInputBroker } from '@daemon/commands/user-input-broker.js';
+import { PermissionBroker } from '@daemon/commands/permission-broker.js';
+import { AdapterRegistry } from '@daemon/adapters/registry.js';
+import { LocalStore } from '@daemon/monitor/store.js';
+import { Monitor } from '@daemon/monitor/monitor.js';
+import { Dispatcher } from '@daemon/commands/dispatcher.js';
+import { bindCodex } from '@daemon/codex/binding/binding.js';
+import type { RpcFrame } from '@daemon/domain/codex/client.js';
 
 const question = {
   id: 'q',
@@ -161,7 +161,7 @@ it('rejects obsolete source questions after source invalidation', async () => {
 
 it('CLI question response awaits the writable transport acknowledgement', async () => {
   const { Writable, PassThrough } = await import('node:stream');
-  const { CodexRpcClient } = await import('../../../../apps/daemon/src/codex/rpc/rpc-client.js');
+  const { CodexRpcClient } = await import('@daemon/codex/rpc/rpc-client.js');
   let acknowledge!: (error?: Error | null) => void;
   const sent: string[] = [];
 

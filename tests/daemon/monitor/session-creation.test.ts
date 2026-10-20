@@ -1,10 +1,10 @@
 import { afterEach, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
-import { Monitor } from '../../../apps/daemon/src/monitor/monitor.js';
-import { LocalStore } from '../../../apps/daemon/src/monitor/store.js';
-import { AdapterRegistry, SourceAdapter } from '../../../apps/daemon/src/adapters/registry.js';
-import { PermissionBroker } from '../../../apps/daemon/src/commands/permission-broker.js';
-import { Dispatcher } from '../../../apps/daemon/src/commands/dispatcher.js';
+import { Monitor } from '@daemon/monitor/monitor.js';
+import { LocalStore } from '@daemon/monitor/store.js';
+import { AdapterRegistry, SourceAdapter } from '@daemon/adapters/registry.js';
+import { PermissionBroker } from '@daemon/commands/permission-broker.js';
+import { Dispatcher } from '@daemon/commands/dispatcher.js';
 import { noCapabilities, type Command } from '@protocol';
 
 const cleanup: (() => void)[] = [];

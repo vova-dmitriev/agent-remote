@@ -1,5 +1,5 @@
-import { ProfileService } from '../../../../apps/daemon/src/profiles/service.js';
-import type { ProfileServiceOptions } from '../../../../apps/daemon/src/profiles/lifecycle/types.js';
+import { ProfileService } from '@daemon/profiles/service.js';
+import type { ProfileServiceOptions } from '@daemon/profiles/lifecycle/types.js';
 import { profileRegistryFixture } from './registry.fixture.js';
 
 export function profileServiceFixture(cleanup?: ProfileServiceOptions['cleanup']) {

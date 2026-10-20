@@ -1,10 +1,10 @@
 import { expect } from '@playwright/test';
 import { test } from './fixture.js';
 import { ProfileAuthMode } from '@protocol';
-import { ACCOUNTS_PAGE_IDS } from '../../apps/mini-app/src/pages/accounts/config/test-ids.js';
-import { PROFILE_MANAGE_IDS } from '../../apps/mini-app/src/pages/accounts/config/management/test-ids.js';
-import { PROFILE_ENROLL_IDS } from '../../apps/mini-app/src/pages/accounts/config/enrollment/test-ids.js';
-import { PROFILE_CARD_IDS } from '../../apps/mini-app/src/pages/accounts/config/profile/test-ids.js';
+import { ACCOUNTS_PAGE_IDS } from '@/pages/accounts/config/test-ids.js';
+import { PROFILE_MANAGE_IDS } from '@/pages/accounts/config/management/test-ids.js';
+import { PROFILE_ENROLL_IDS } from '@/pages/accounts/config/enrollment/test-ids.js';
+import { PROFILE_CARD_IDS } from '@/pages/accounts/config/profile/test-ids.js';
 import { openAccounts } from '../e2e/support/settings-menu.js';
 
 interface BrowserStorageScope {

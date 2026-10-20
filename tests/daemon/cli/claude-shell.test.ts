@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { spawn } from 'node-pty';
-import { installClaudeShell } from '../../../apps/daemon/src/cli/shell-integration.js';
+import { installClaudeShell } from '@daemon/cli/shell-integration.js';
 
 const execute = promisify(execFile);
 

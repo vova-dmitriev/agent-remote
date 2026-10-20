@@ -3,16 +3,16 @@ import { EventEmitter } from 'node:events';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { CodexManager } from '../../../apps/daemon/src/runtime/services/codex-manager.js';
-import { codexConnectionSchema } from '../../../apps/daemon/src/domain/codex/connection.js';
-import { LocalStore } from '../../../apps/daemon/src/monitor/store.js';
-import { Monitor } from '../../../apps/daemon/src/monitor/monitor.js';
-import { AdapterRegistry } from '../../../apps/daemon/src/adapters/registry.js';
-import { PermissionBroker } from '../../../apps/daemon/src/commands/permission-broker.js';
+import { CodexManager } from '@daemon/runtime/services/codex-manager.js';
+import { codexConnectionSchema } from '@daemon/domain/codex/connection.js';
+import { LocalStore } from '@daemon/monitor/store.js';
+import { Monitor } from '@daemon/monitor/monitor.js';
+import { AdapterRegistry } from '@daemon/adapters/registry.js';
+import { PermissionBroker } from '@daemon/commands/permission-broker.js';
 
 const connectSocket = vi.hoisted(() => vi.fn());
 
-vi.mock('../../../apps/daemon/src/codex/rpc/transport.js', () => ({ connectCodexSocket: connectSocket }));
+vi.mock('@daemon/codex/rpc/transport.js', () => ({ connectCodexSocket: connectSocket }));
 
 it('accepts local Codex selection and rejects network endpoints and remote process injection', () => {
   expect(

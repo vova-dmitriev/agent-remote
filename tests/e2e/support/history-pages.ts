@@ -1,6 +1,6 @@
 import { expect,type Page } from '@playwright/test';
 import { HistoryDirection } from '@protocol';
-import { SESSION_FEED_IDS } from '../../../apps/mini-app/src/pages/session/config/test-ids.js';
+import { SESSION_FEED_IDS } from '@/pages/session/config/test-ids.js';
 import { byTestId } from './testid.js';
 
 /** Loads earlier pages through the rail's "more history" cap until `total` messages are loaded. */

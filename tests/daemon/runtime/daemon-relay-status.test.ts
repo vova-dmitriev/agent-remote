@@ -5,9 +5,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, expect, it, vi } from 'vitest';
 import { WebSocketServer, type WebSocket } from 'ws';
-import { readRelayStatus, saveRelayStatus } from '../../../apps/daemon/src/diagnostics/relay-status.js';
-import { startDaemon } from '../../../apps/daemon/src/main.js';
-import { runCli } from '../../../apps/daemon/src/setup-cli.js';
+import { readRelayStatus, saveRelayStatus } from '@daemon/diagnostics/relay-status.js';
+import { startDaemon } from '@daemon/main.js';
+import { runCli } from '@daemon/setup-cli.js';
 
 const STATUS_FILE = 'relay-status.json';
 /** A pid no live process uses on the test machine (beyond the default pid range). */

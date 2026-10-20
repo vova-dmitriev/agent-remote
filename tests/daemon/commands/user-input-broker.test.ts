@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { UserInputBroker } from '../../../apps/daemon/src/commands/user-input-broker.js';
+import { UserInputBroker } from '@daemon/commands/user-input-broker.js';
 import type { PendingUserInput } from '@protocol';
 
 const request = (): PendingUserInput => ({

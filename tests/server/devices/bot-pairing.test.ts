@@ -1,11 +1,11 @@
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { databaseFixture } from '../../helpers/database.js';
-import { NotificationWorker } from '../../../apps/server/src/notifications/worker.js';
-import { DeviceRepository } from '../../../apps/server/src/devices/repositories/devices.js';
-import { PairingRepository } from '../../../apps/server/src/devices/repositories/pairings.js';
-import { DeviceService } from '../../../apps/server/src/devices/service.js';
-import { hash } from '../../../apps/server/src/auth/security.js';
+import { NotificationWorker } from '@server/notifications/worker.js';
+import { DeviceRepository } from '@server/devices/repositories/devices.js';
+import { PairingRepository } from '@server/devices/repositories/pairings.js';
+import { DeviceService } from '@server/devices/service.js';
+import { hash } from '@server/auth/security.js';
 
 let fixture: Awaited<ReturnType<typeof databaseFixture>>;
 let devices: DeviceService;

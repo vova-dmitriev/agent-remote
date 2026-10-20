@@ -3,8 +3,8 @@ import { test, deviceFixture, delivered } from './support/relay-fixture.js';
 import { identity } from './support/identity.js';
 import { byTestId } from './support/testid.js';
 import { sessionSnapshot } from './support/session-fixtures.js';
-import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
-import { COMMAND_IDS } from '../../apps/mini-app/src/features/send-command/config/test-ids.js';
+import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
+import { COMMAND_IDS } from '@/features/send-command/config/test-ids.js';
 
 for (const language of ['en', 'ru'] as const) {
   test(`explains duplicate native writers and enables restart only after a unique source remains in ${language}`, async ({ page }) => {

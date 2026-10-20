@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { restartArguments } from '../../../apps/daemon/src/sessions/launch/launch-context.js';
+import { restartArguments } from '@daemon/sessions/launch/launch-context.js';
 
 it('preserves launch configuration including explicit bypass but replaces conversation selectors without replaying the first prompt', () => {
   expect(

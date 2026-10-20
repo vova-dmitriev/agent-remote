@@ -1,17 +1,17 @@
 import { AttachmentMode, CommandStatus, ConnectorTransport, IntegrationState, TargetKind } from '@protocol';
-import { ClaudeHookEvent } from '../../apps/daemon/src/domain/claude.js';
+import { ClaudeHookEvent } from '@daemon/domain/claude.js';
 import { randomUUID } from 'node:crypto';
-import { AdapterRegistry, SourceAdapter } from '../../apps/daemon/src/adapters/registry.js';
-import { Dispatcher } from '../../apps/daemon/src/commands/dispatcher.js';
-import { PermissionBroker } from '../../apps/daemon/src/commands/permission-broker.js';
-import { Monitor } from '../../apps/daemon/src/monitor/monitor.js';
-import { LocalStore } from '../../apps/daemon/src/monitor/store.js';
-import { LocalDatabase } from '../../apps/daemon/src/local/state/database.js';
-import { LocalGrants } from '../../apps/daemon/src/local/grants/service.js';
-import { LocalController } from '../../apps/daemon/src/local/controller/controller.js';
-import type { LocalControllerOptions } from '../../apps/daemon/src/local/controller/types.js';
-import { LocalMediaRepository } from '../../apps/daemon/src/local/media/repository.js';
-import { LocalDocuments } from '../../apps/daemon/src/local/state/documents.js';
+import { AdapterRegistry, SourceAdapter } from '@daemon/adapters/registry.js';
+import { Dispatcher } from '@daemon/commands/dispatcher.js';
+import { PermissionBroker } from '@daemon/commands/permission-broker.js';
+import { Monitor } from '@daemon/monitor/monitor.js';
+import { LocalStore } from '@daemon/monitor/store.js';
+import { LocalDatabase } from '@daemon/local/state/database.js';
+import { LocalGrants } from '@daemon/local/grants/service.js';
+import { LocalController } from '@daemon/local/controller/controller.js';
+import type { LocalControllerOptions } from '@daemon/local/controller/types.js';
+import { LocalMediaRepository } from '@daemon/local/media/repository.js';
+import { LocalDocuments } from '@daemon/local/state/documents.js';
 
 export const localTestOrigin = 'chrome-extension://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/';
 

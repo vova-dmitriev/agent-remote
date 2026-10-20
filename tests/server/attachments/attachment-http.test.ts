@@ -2,8 +2,8 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { databaseFixture } from '../../helpers/database.js';
 import { initData, testBotToken } from '../../helpers/telegram.js';
-import { createRelay } from '../../../apps/server/src/app/create-relay.js';
-import { hash } from '../../../apps/server/src/auth/security.js';
+import { createRelay } from '@server/app/create-relay.js';
+import { hash } from '@server/auth/security.js';
 
 let fixture: Awaited<ReturnType<typeof databaseFixture>>, relay: Awaited<ReturnType<typeof createRelay>>;
 let origin: string, token: string, other: string;

@@ -8,10 +8,10 @@ import {
   type ClientCommand,
   serverFrameSchema,
 } from '@protocol';
-import { createSessionStore } from '../../../apps/mini-app/src/entities/session/model/store/create-session-store.js';
-import type { ApplicationClient } from '../../../apps/mini-app/src/shared/api/application-client.js';
+import { createSessionStore } from '@/entities/session/model/store/create-session-store.js';
+import type { ApplicationClient } from '@/shared/api/application-client.js';
 import { snapshotFrame } from '../../extension/client/extension-client.fixture.js';
-import { ManagedQueue } from '../../../apps/mini-app/src/features/send-command/model/persistence/managed-queue.js';
+import { ManagedQueue } from '@/features/send-command/model/persistence/managed-queue.js';
 
 function fixture() {
   const store = createSessionStore();

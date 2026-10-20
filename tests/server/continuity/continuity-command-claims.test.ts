@@ -2,9 +2,9 @@ import { randomUUID } from 'node:crypto';
 import { HttpStatus } from '@protocol';
 import { Pool } from 'pg';
 import { afterEach, describe, expect, it } from 'vitest';
-import { claimRelayCommandId } from '../../../apps/server/src/commands/command-claims.js';
-import { ContinuityService } from '../../../apps/server/src/continuity/service.js';
-import { Database } from '../../../apps/server/src/db/database.js';
+import { claimRelayCommandId } from '@server/commands/command-claims.js';
+import { ContinuityService } from '@server/continuity/service.js';
+import { Database } from '@server/db/database.js';
 
 const fixtures: { db: Database; admin: Pool; schema: string }[] = [];
 

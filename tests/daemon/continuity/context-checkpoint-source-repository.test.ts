@@ -15,16 +15,13 @@ import {
   type HistoryMessage,
   type Session,
 } from '@protocol';
-import { AttachmentService } from '../../../apps/daemon/src/attachments/service.js';
-import { ContextCheckpointManager } from '../../../apps/daemon/src/continuity/context/checkpoint.js';
-import { createCodexCheckpointSource } from '../../../apps/daemon/src/continuity/source/native.js';
-import { probeRepository } from '../../../apps/daemon/src/continuity/source/repository.js';
-import type { RepositoryWorkingTreeIdentity } from '../../../apps/daemon/src/continuity/source/types.js';
-import {
-  CheckpointSourceError,
-  NativeCheckpointSourceLimits,
-} from '../../../apps/daemon/src/continuity/source/values.js';
-import { LocalStore } from '../../../apps/daemon/src/monitor/store.js';
+import { AttachmentService } from '@daemon/attachments/service.js';
+import { ContextCheckpointManager } from '@daemon/continuity/context/checkpoint.js';
+import { createCodexCheckpointSource } from '@daemon/continuity/source/native.js';
+import { probeRepository } from '@daemon/continuity/source/repository.js';
+import type { RepositoryWorkingTreeIdentity } from '@daemon/continuity/source/types.js';
+import { CheckpointSourceError, NativeCheckpointSourceLimits } from '@daemon/continuity/source/values.js';
+import { LocalStore } from '@daemon/monitor/store.js';
 
 const execFile = promisify(execFileCallback);
 const roots: string[] = [];

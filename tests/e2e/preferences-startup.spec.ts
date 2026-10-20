@@ -1,8 +1,8 @@
 import { expect } from '@playwright/test';
 import { test } from './support/relay-fixture.js';
 import { identity } from './support/identity.js';
-import { STARTUP_IDS } from '../../apps/mini-app/src/app/config/test-ids.js';
-import { SESSIONS_PAGE_IDS } from '../../apps/mini-app/src/pages/sessions/config/test-ids.js';
+import { STARTUP_IDS } from '@/app/config/test-ids.js';
+import { SESSIONS_PAGE_IDS } from '@/pages/sessions/config/test-ids.js';
 
 test('waits for saved preferences before rendering any translated page content', async ({ page }) => {
   await identity(page, '801', 'ru');

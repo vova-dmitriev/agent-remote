@@ -4,7 +4,7 @@ import {
   readPosition,
   subscribePositions,
   writePosition,
-} from '../../../apps/mini-app/src/shared/lib/reading-position/index.js';
+} from '@/shared/lib/reading-position/index.js';
 
 afterEach(() => vi.unstubAllGlobals());
 

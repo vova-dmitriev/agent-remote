@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, it } from 'vitest';
-import { Database } from '../../../apps/server/src/db/database.js';
-import { createRelay } from '../../../apps/server/src/app/create-relay.js';
+import { Database } from '@server/db/database.js';
+import { createRelay } from '@server/app/create-relay.js';
 import { databaseFixture } from '../../helpers/database.js';
 import { initData, testBotToken } from '../../helpers/telegram.js';
 

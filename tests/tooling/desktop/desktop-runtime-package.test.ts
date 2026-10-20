@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readdir, rm, symlink, writeFile } from 'node:fs/promise
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { LOCAL_LIMITS } from '@protocol';
-import { installDesktopRuntime } from '../../../apps/desktop/src/runtime/install-runtime.js';
+import { installDesktopRuntime } from '@desktop/runtime/install-runtime.js';
 import { verifyDesktopRuntime } from '../../../scripts/desktop/verify-runtime-lib.mjs';
 import { desktopRuntimeFixture } from '../../helpers/desktop-runtime-fixture.js';
 import { packagedCompanionFixture } from '../../helpers/packaged-companion.js';

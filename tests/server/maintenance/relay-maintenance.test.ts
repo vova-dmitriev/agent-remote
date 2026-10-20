@@ -2,17 +2,17 @@ import { Logger } from '@nestjs/common';
 import { CommandStatus, ErrorCode, FrameType, SocketCloseCode, type ServerFrame } from '@protocol';
 import { randomUUID } from 'node:crypto';
 import { afterEach, expect, it, vi } from 'vitest';
-import { createRelay } from '../../../apps/server/src/app/create-relay.js';
-import { AuthRepository } from '../../../apps/server/src/auth/repository.js';
-import { ServerErrorCode } from '../../../apps/server/src/error-codes.js';
+import { createRelay } from '@server/app/create-relay.js';
+import { AuthRepository } from '@server/auth/repository.js';
+import { ServerErrorCode } from '@server/error-codes.js';
 import {
   AUTH_RECHECK_CHUNK,
   AUTH_RECHECK_MAX_FAILURES,
   AUTH_RECHECK_MS,
   COMMAND_ACK_SWEEP_MS,
   COMMAND_ACK_TIMEOUT_MS,
-} from '../../../apps/server/src/maintenance/limits.js';
-import { RelayHub, type AppConnection } from '../../../apps/server/src/realtime/relay-hub.js';
+} from '@server/maintenance/limits.js';
+import { RelayHub, type AppConnection } from '@server/realtime/relay-hub.js';
 import { attachmentRelayFixture } from '../../helpers/attachment-relay.js';
 import { databaseFixture } from '../../helpers/database.js';
 import { testBotToken } from '../../helpers/telegram.js';

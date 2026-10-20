@@ -1,9 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { MessageTracker, TranscriptSources } from '../../../apps/daemon/src/monitor/history.js';
-import {
-  initialState,
-  reduceSessionState,
-} from '../../../apps/mini-app/src/entities/session/model/session-state.js';
+import { MessageTracker, TranscriptSources } from '@daemon/monitor/history.js';
+import { initialState, reduceSessionState } from '@/entities/session/model/session-state.js';
 import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';

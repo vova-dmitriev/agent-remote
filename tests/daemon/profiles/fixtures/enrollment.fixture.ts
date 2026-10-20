@@ -2,7 +2,7 @@ import { CodedError } from '@protocol';
 import { createHash, randomUUID } from 'node:crypto';
 import { existsSync, writeFileSync, appendFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { CredentialEnrollmentService } from '../../../../apps/daemon/src/profiles/enrollment/service.js';
+import { CredentialEnrollmentService } from '@daemon/profiles/enrollment/service.js';
 import { encryptEnrollment } from '@transport/credentials/sealed-box.js';
 import { profileServiceFixture } from './service.fixture.js';
 import { codexSubscription, verifiedAccount } from './registry.fixture.js';

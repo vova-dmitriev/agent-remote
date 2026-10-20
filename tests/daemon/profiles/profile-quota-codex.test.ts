@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { readCodexQuota } from '../../../apps/daemon/src/profiles/quota/codex-observation.js';
+import { readCodexQuota } from '@daemon/profiles/quota/codex-observation.js';
 import {
   AgentProvider,
   ProfileAuthMode,

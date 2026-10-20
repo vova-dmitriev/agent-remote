@@ -5,8 +5,8 @@ import { test } from './codex-runtime/fixture.js';
 import type { Data } from './codex-runtime/model.js';
 import { identity } from './support/identity.js';
 import { byTestId } from './support/testid.js';
-import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
-import { ATTACHMENT_IDS } from '../../apps/mini-app/src/entities/attachment/config/test-ids.js';
+import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
+import { ATTACHMENT_IDS } from '@/entities/attachment/config/test-ids.js';
 
 test.use({ kind: 'codex-desktop' });
 

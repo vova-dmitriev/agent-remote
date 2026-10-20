@@ -3,8 +3,8 @@ import { createServer, connect } from 'node:net';
 import { basename, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import * as fs from 'node:fs/promises';
-import { DaemonErrorCode } from '../../../apps/daemon/src/error-codes.js';
-import { bindHookSocket } from '../../../apps/daemon/src/code/hooks/hook-socket.js';
+import { DaemonErrorCode } from '@daemon/error-codes.js';
+import { bindHookSocket } from '@daemon/code/hooks/hook-socket.js';
 
 const failures = vi.hoisted(() => ({
   beforeLink: undefined as ((path: string) => Promise<void>) | undefined,

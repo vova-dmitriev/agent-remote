@@ -2,9 +2,9 @@ import { afterAll, beforeAll, expect, it } from 'vitest';
 import { Redis } from 'ioredis';
 import { randomUUID } from 'node:crypto';
 import { databaseFixture } from '../../helpers/database.js';
-import { createRelay } from '../../../apps/server/src/app/create-relay.js';
-import { persistEvent } from '../../../apps/server/src/history/events.js';
-import { HistoryRepository } from '../../../apps/server/src/history/repository.js';
+import { createRelay } from '@server/app/create-relay.js';
+import { persistEvent } from '@server/history/events.js';
+import { HistoryRepository } from '@server/history/repository.js';
 import { initData, testBotToken } from '../../helpers/telegram.js';
 import type { EventEnvelope } from '@protocol';
 

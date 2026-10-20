@@ -4,14 +4,14 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { connect } from 'node:net';
 import { randomUUID } from 'node:crypto';
-import { LocalStore } from '../../../apps/daemon/src/monitor/store.js';
-import { Monitor } from '../../../apps/daemon/src/monitor/monitor.js';
-import { AdapterRegistry, SourceAdapter } from '../../../apps/daemon/src/adapters/registry.js';
-import { Dispatcher } from '../../../apps/daemon/src/commands/dispatcher.js';
-import { PermissionBroker } from '../../../apps/daemon/src/commands/permission-broker.js';
-import { installHooks } from '../../../apps/daemon/src/code/hooks/install-hooks.js';
-import { createDesktopSource } from '../../../apps/daemon/src/desktop/adapter.js';
-import { BridgeClient } from '../../../apps/daemon/src/desktop/bridge-client.js';
+import { LocalStore } from '@daemon/monitor/store.js';
+import { Monitor } from '@daemon/monitor/monitor.js';
+import { AdapterRegistry, SourceAdapter } from '@daemon/adapters/registry.js';
+import { Dispatcher } from '@daemon/commands/dispatcher.js';
+import { PermissionBroker } from '@daemon/commands/permission-broker.js';
+import { installHooks } from '@daemon/code/hooks/install-hooks.js';
+import { createDesktopSource } from '@daemon/desktop/adapter.js';
+import { BridgeClient } from '@daemon/desktop/bridge-client.js';
 import type { Command } from '@protocol';
 
 const cleanup: Array<() => void | Promise<void>> = [];
@@ -198,8 +198,8 @@ describe('review regressions', () => {
 });
 
 it('records unknown after the wrapper receives a prompt and disconnects before its receipt', async () => {
-  const { startHookServer } = await import('../../../apps/daemon/src/code/hooks/hook-server.js');
-  const { requestLocal, lineReader, writeFrame } = await import('../../../apps/daemon/src/code/hooks/ipc.js');
+  const { startHookServer } = await import('@daemon/code/hooks/hook-server.js');
+  const { requestLocal, lineReader, writeFrame } = await import('@daemon/code/hooks/ipc.js');
   const f = await fixture();
 
   const path = join(f.directory, 'hook.sock'),

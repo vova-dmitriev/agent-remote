@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { expect, type Page } from '@playwright/test';
 import { test, deviceFixture, publishMessages } from '../support/relay-fixture.js';
-import { ATTACHMENT_IDS } from '../../../apps/mini-app/src/entities/attachment/config/test-ids.js';
+import { ATTACHMENT_IDS } from '@/entities/attachment/config/test-ids.js';
 import { openAttachments, image, png } from './fixture.js';
 
 async function openViewer(page: Page, bytes = png) {

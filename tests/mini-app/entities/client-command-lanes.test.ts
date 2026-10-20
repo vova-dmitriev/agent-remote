@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { HttpStatus } from '@protocol';
-import { CommandSubmission } from '../../../apps/mini-app/src/entities/command/api/commands.js';
+import { CommandSubmission } from '@/entities/command/api/commands.js';
 import type { ClientCommand, CommandResult } from '@protocol';
 
 const prompt = (commandId: string, sessionId = 's'): ClientCommand => ({

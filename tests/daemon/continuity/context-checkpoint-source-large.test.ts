@@ -10,9 +10,9 @@ import {
   TargetKind,
   type Session,
 } from '@protocol';
-import { createClaudeCheckpointSource } from '../../../apps/daemon/src/continuity/source/native.js';
-import { TranscriptSources } from '../../../apps/daemon/src/monitor/history.js';
-import { AttachmentService } from '../../../apps/daemon/src/attachments/service.js';
+import { createClaudeCheckpointSource } from '@daemon/continuity/source/native.js';
+import { TranscriptSources } from '@daemon/monitor/history.js';
+import { AttachmentService } from '@daemon/attachments/service.js';
 
 const roots: string[] = [];
 

@@ -4,10 +4,10 @@ import { identity } from './support/identity.js';
 import { byTestId } from './support/testid.js';
 import { jumpNear } from './support/rail.js';
 import { sessionSnapshot } from './support/session-fixtures.js';
-import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
-import { SESSION_FEED_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
-import { SHELL_IDS } from '../../apps/mini-app/src/widgets/application-shell/config/test-ids.js';
-import { COMMAND_IDS } from '../../apps/mini-app/src/features/send-command/config/test-ids.js';
+import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
+import { SESSION_FEED_IDS } from '@/pages/session/config/test-ids.js';
+import { SHELL_IDS } from '@/widgets/application-shell/config/test-ids.js';
+import { COMMAND_IDS } from '@/features/send-command/config/test-ids.js';
 
 test('restarts the original native conversation on Mac and enables its input with one click', async ({ page }) => {
   const f=deviceFixture(),snapshot=sessionSnapshot(f.deviceId),source=snapshot.sessions[0]!;

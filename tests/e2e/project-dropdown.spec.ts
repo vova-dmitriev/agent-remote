@@ -2,7 +2,7 @@ import { expect } from '@playwright/test';
 import { test, deviceFixture } from './support/relay-fixture.js';
 import { sessionSnapshot } from './support/session-fixtures.js';
 import { identity } from './support/identity.js';
-import { SESSION_CREATE_IDS } from '../../apps/mini-app/src/features/create-session/config/test-ids.js';
+import { SESSION_CREATE_IDS } from '@/features/create-session/config/test-ids.js';
 
 for (const width of [320, 390]) {
   test(`long project paths wrap inside the ${width}px viewport`, async ({ page }) => {

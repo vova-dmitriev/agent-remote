@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, expect, it } from 'vitest';
-import { NotificationDelivery } from '../../../apps/server/src/notifications/delivery.js';
-import { NotificationRepository } from '../../../apps/server/src/notifications/repositories/notifications.js';
+import { NotificationDelivery } from '@server/notifications/delivery.js';
+import { NotificationRepository } from '@server/notifications/repositories/notifications.js';
 import { databaseFixture } from '../../helpers/database.js';
 
 let fixture: Awaited<ReturnType<typeof databaseFixture>>;

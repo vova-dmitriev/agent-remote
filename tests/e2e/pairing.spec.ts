@@ -2,9 +2,9 @@ import { createHash, randomBytes } from 'node:crypto';
 import { expect } from '@playwright/test';
 import { test, completeBotPairing } from './support/relay-fixture.js';
 import { identity } from './support/identity.js';
-import { PAIR_DEVICE_IDS } from '../../apps/mini-app/src/features/pair-device/config/test-ids.js';
-import { COMMAND_IDS } from '../../apps/mini-app/src/features/send-command/config/test-ids.js';
-import { SHELL_IDS } from '../../apps/mini-app/src/widgets/application-shell/config/test-ids.js';
+import { PAIR_DEVICE_IDS } from '@/features/pair-device/config/test-ids.js';
+import { COMMAND_IDS } from '@/features/send-command/config/test-ids.js';
+import { SHELL_IDS } from '@/widgets/application-shell/config/test-ids.js';
 import { relayOrigin } from './runtime/app-origin.js';
 
 test('an unavailable pairing code explains recovery and a fresh code clears the error', async ({ page }) => {

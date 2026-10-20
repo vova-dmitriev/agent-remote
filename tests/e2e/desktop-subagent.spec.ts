@@ -1,17 +1,17 @@
 import { expect, test, type Page } from '@playwright/test';
-import { SESSION_SIDEBAR_IDS } from '../../apps/mini-app/src/widgets/session-sidebar/config/test-ids.js';
+import { SESSION_SIDEBAR_IDS } from '@/widgets/session-sidebar/config/test-ids.js';
 import {
   SESSION_PAGE_IDS,
   SUBAGENT_IDS,
   SUBAGENT_VIEW_IDS,
   TOOL_ACTIVITY_IDS,
-} from '../../apps/mini-app/src/pages/session/config/test-ids.js';
-import { sessionRoute, subagentRoute } from '../../apps/mini-app/src/shared/lib/routes/app-route.js';
+} from '@/pages/session/config/test-ids.js';
+import { sessionRoute, subagentRoute } from '@/shared/lib/routes/app-route.js';
 import { byTestId } from './support/testid.js';
 import { installDesktopBridge, subagentReads } from './support/desktop-bridge.js';
 import { sessionSnapshot } from './support/session-fixtures.js';
 import { baseTranscript } from './support/subagent-fixtures.js';
-import { SUBAGENT_POLL_BACKOFF_MAX_MS } from '../../apps/mini-app/src/pages/session/config/subagent.js';
+import { SUBAGENT_POLL_BACKOFF_MAX_MS } from '@/pages/session/config/subagent.js';
 
 const deviceId = 'desktop-e2e-device';
 const DESKTOP_PAGE = '/desktop.html';

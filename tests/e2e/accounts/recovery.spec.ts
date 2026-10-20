@@ -2,10 +2,10 @@ import { expect } from '@playwright/test';
 import { test } from '../support/relay-fixture.js';
 import { identity } from '../support/identity.js';
 import { profileCompanion } from './companion.js';
-import { ACCOUNTS_PAGE_IDS } from '../../../apps/mini-app/src/pages/accounts/config/test-ids.js';
-import { PROFILE_MANAGE_IDS } from '../../../apps/mini-app/src/pages/accounts/config/management/test-ids.js';
-import { PROFILE_ENROLL_IDS } from '../../../apps/mini-app/src/pages/accounts/config/enrollment/test-ids.js';
-import { PROFILE_CARD_IDS } from '../../../apps/mini-app/src/pages/accounts/config/profile/test-ids.js';
+import { ACCOUNTS_PAGE_IDS } from '@/pages/accounts/config/test-ids.js';
+import { PROFILE_MANAGE_IDS } from '@/pages/accounts/config/management/test-ids.js';
+import { PROFILE_ENROLL_IDS } from '@/pages/accounts/config/enrollment/test-ids.js';
+import { PROFILE_CARD_IDS } from '@/pages/accounts/config/profile/test-ids.js';
 import { ProfileRequestKind } from '@protocol';
 import { openAccounts } from '../support/settings-menu.js';
 

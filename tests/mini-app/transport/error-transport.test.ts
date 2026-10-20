@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { HttpStatus } from '@protocol';
-import { AppTransport } from '../../../apps/mini-app/src/app/api/transport/app-transport.js';
+import { AppTransport } from '@/app/api/transport/app-transport.js';
 
 const transport = () =>
   new AppTransport('synthetic-init', { onFrame() {}, onConnection() {} }, 'https://synthetic.invalid');

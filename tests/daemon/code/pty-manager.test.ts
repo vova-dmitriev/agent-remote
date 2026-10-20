@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { spawn as spawnPty } from 'node-pty';
-import { PtySessionManager, type PtyProcess } from '../../../apps/daemon/src/code/pty-session-manager.js';
+import { PtySessionManager, type PtyProcess } from '@daemon/code/pty-session-manager.js';
 
 function fakePty() {
   const writes: string[] = [];

@@ -1,10 +1,10 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { expect } from '@playwright/test';
-import { COMMAND_IDS } from '../../apps/mini-app/src/features/send-command/config/test-ids.js';
-import { PAIR_DEVICE_IDS } from '../../apps/mini-app/src/features/pair-device/config/test-ids.js';
-import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
-import { SIGN_IN_IDS } from '../../apps/mini-app/src/pages/sign-in/config/test-ids.js';
-import { SHELL_IDS } from '../../apps/mini-app/src/widgets/application-shell/config/test-ids.js';
+import { COMMAND_IDS } from '@/features/send-command/config/test-ids.js';
+import { PAIR_DEVICE_IDS } from '@/features/pair-device/config/test-ids.js';
+import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
+import { SIGN_IN_IDS } from '@/pages/sign-in/config/test-ids.js';
+import { SHELL_IDS } from '@/widgets/application-shell/config/test-ids.js';
 import { initData } from '../helpers/telegram.js';
 import { identity } from './support/identity.js';
 import { test } from './support/relay-fixture.js';

@@ -9,9 +9,9 @@ import {
   type ProfileOperation,
 } from '@protocol';
 import { encryptEnrollment } from '@transport/credentials/sealed-box.js';
-import { ProfileJournal } from '../../../../../apps/daemon/src/profiles/lifecycle/journal.js';
-import { CodexProfileNative } from '../../../../../apps/daemon/src/profiles/native/codex.js';
-import { RuntimeProfiles } from '../../../../../apps/daemon/src/runtime/services/runtime-profiles.js';
+import { ProfileJournal } from '@daemon/profiles/lifecycle/journal.js';
+import { CodexProfileNative } from '@daemon/profiles/native/codex.js';
+import { RuntimeProfiles } from '@daemon/runtime/services/runtime-profiles.js';
 import { codexSubscription, verifiedAccount } from '../../fixtures/registry.fixture.js';
 import { profileServiceFixture } from '../../fixtures/service.fixture.js';
 

@@ -1,7 +1,7 @@
 import { createRequire } from 'node:module';
 import { afterEach, expect, it } from 'vitest';
 import { AgentProvider } from '@protocol';
-import { startProfiledCodexRuntime } from '../../../../apps/daemon/src/sessions/execution/start-profiled-codex.js';
+import { startProfiledCodexRuntime } from '@daemon/sessions/execution/start-profiled-codex.js';
 import { cleanupProfileLaunchFixtures, setupPeer } from './profile-session-launch.fixture.js';
 import { stopControlledPeer, writeControlledCodexPeer } from '../../../helpers/profile-codex-peer.js';
 

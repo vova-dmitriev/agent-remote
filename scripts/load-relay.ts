@@ -2,7 +2,7 @@ import { Pool } from 'pg';
 import { WebSocket } from 'ws';
 import { randomBytes, randomUUID, createHash } from 'node:crypto';
 import { writeFile, mkdir } from 'node:fs/promises';
-import { createRelay } from '../apps/server/src/app/create-relay.js';
+import { createRelay } from '@server/app/create-relay.js';
 import { initData, testBotToken } from '../tests/helpers/telegram.js';
 import type { Session, AppSnapshot, ServerFrame } from '@protocol';
 

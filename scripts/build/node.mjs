@@ -14,7 +14,7 @@ import { rewriteAliases } from './rewrite-aliases.mjs';
 
 const emitted = /\.(?:js|d\.ts)$/;
 
-// tsc leaves `@protocol` and `@transport/*` untouched, so plain Node cannot run its output until they are made relative.
+// tsc leaves path aliases (`@protocol`, `@transport/*`, `@daemon/*`, `@server/*`, ...) untouched, so plain Node cannot run its output until they are made relative.
 // Output is staged and moved file by file so concurrent builds never expose un-rewritten files in `dist/`.
 export async function buildNode(root = process.cwd()) {
   const base = resolve(root);

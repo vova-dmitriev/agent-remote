@@ -22,9 +22,9 @@ import {
   desktopBridgeLeaseSchema,
   desktopBridgeRequestSchema,
 } from '@protocol';
-import { DesktopBridgeConnection } from '../../../apps/mini-app/src/app/api/desktop/desktop-connection.js';
-import { DesktopApplicationClient } from '../../../apps/mini-app/src/app/api/desktop/application-client.js';
-import { DesktopMedia } from '../../../apps/mini-app/src/app/api/desktop/media.js';
+import { DesktopBridgeConnection } from '@/app/api/desktop/desktop-connection.js';
+import { DesktopApplicationClient } from '@/app/api/desktop/application-client.js';
+import { DesktopMedia } from '@/app/api/desktop/media.js';
 
 describe('desktop bridge contract', () => {
   it('keeps native grant secrets and principals out of the renderer lease', () => {

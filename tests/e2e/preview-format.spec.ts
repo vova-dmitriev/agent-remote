@@ -3,9 +3,9 @@ import { test, publishMessages } from './support/relay-fixture.js';
 import { identity } from './support/identity.js';
 import { byTestId } from './support/testid.js';
 import { expectLoadedMessages, railMarker } from './support/rail.js';
-import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
-import { SESSION_FEED_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
-import { MARKDOWN_IDS } from '../../apps/mini-app/src/shared/ui/markdown/test-ids.js';
+import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
+import { SESSION_FEED_IDS } from '@/pages/session/config/test-ids.js';
+import { MARKDOWN_IDS } from '@/shared/ui/markdown/test-ids.js';
 
 test('marker previews render Markdown and native envelopes without leaking metadata or moving the feed', async ({ page }) => {
   await publishMessages([

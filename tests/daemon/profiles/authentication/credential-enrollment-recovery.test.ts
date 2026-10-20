@@ -1,6 +1,6 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { expect, it } from 'vitest';
-import { CredentialEnrollmentService } from '../../../../apps/daemon/src/profiles/enrollment/service.js';
+import { CredentialEnrollmentService } from '@daemon/profiles/enrollment/service.js';
 import { CredentialEnrollmentLimits, ErrorCode, ProfileOperationPhase } from '@protocol';
 import { enrollmentFixture } from '../fixtures/enrollment.fixture.js';
 

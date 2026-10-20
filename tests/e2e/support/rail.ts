@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test';
-import { SESSION_FEED_IDS } from '../../../apps/mini-app/src/pages/session/config/test-ids.js';
+import { SESSION_FEED_IDS } from '@/pages/session/config/test-ids.js';
 import { byTestIdListing } from './testid.js';
 
 /** The rail hit target that covers a message; a merged target jumps to its first message. */

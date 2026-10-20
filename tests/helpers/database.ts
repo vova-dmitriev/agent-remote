@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
-import { Database } from '../../apps/server/src/db/database.js';
+import { Database } from '@server/db/database.js';
 
 export async function databaseFixture() {
   const url =

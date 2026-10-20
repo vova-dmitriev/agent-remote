@@ -1,7 +1,7 @@
 import { expect, it, vi, describe } from 'vitest';
 import { ErrorCode, HistoryPageDirection, LocalKind, LocalOperation } from '@protocol';
 import { broker, snapshotFrame } from './extension-client.fixture.js';
-import { ExtensionApplicationClient } from '../../../apps/chrome-extension/src/client/application-client.js';
+import { ExtensionApplicationClient } from '@extension/client/application-client.js';
 
 describe('extension application operations', () => {
   it('reloads bookmark revision conflicts without overwriting the authoritative position', async () => {

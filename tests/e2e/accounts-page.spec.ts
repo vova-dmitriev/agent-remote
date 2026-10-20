@@ -1,16 +1,16 @@
 import { expect } from '@playwright/test';
-import { ACCOUNTS_PAGE_IDS } from '../../apps/mini-app/src/pages/accounts/config/test-ids.js';
-import { SESSIONS_PAGE_IDS } from '../../apps/mini-app/src/pages/sessions/config/test-ids.js';
+import { ACCOUNTS_PAGE_IDS } from '@/pages/accounts/config/test-ids.js';
+import { SESSIONS_PAGE_IDS } from '@/pages/sessions/config/test-ids.js';
 import { byTestId } from './support/testid.js';
 import { identity } from './support/identity.js';
 import { test } from './support/relay-fixture.js';
 import { deviceFixture } from './support/relay-fixture.js';
 import { profileCompanion } from './accounts/companion.js';
-import { PROFILE_MANAGE_IDS } from '../../apps/mini-app/src/pages/accounts/config/management/test-ids.js';
-import { PROFILE_ENROLL_IDS } from '../../apps/mini-app/src/pages/accounts/config/enrollment/test-ids.js';
-import { PROFILE_CARD_IDS } from '../../apps/mini-app/src/pages/accounts/config/profile/test-ids.js';
+import { PROFILE_MANAGE_IDS } from '@/pages/accounts/config/management/test-ids.js';
+import { PROFILE_ENROLL_IDS } from '@/pages/accounts/config/enrollment/test-ids.js';
+import { PROFILE_CARD_IDS } from '@/pages/accounts/config/profile/test-ids.js';
 import { openAccounts } from './support/settings-menu.js';
-import { SHELL_IDS } from '../../apps/mini-app/src/widgets/application-shell/config/test-ids.js';
+import { SHELL_IDS } from '@/widgets/application-shell/config/test-ids.js';
 
 /** The pre-menu "Accounts & keys" button under the session list; it must not come back. */
 const LEGACY_ACCOUNTS_BUTTON = 'accounts-open';

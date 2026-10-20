@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
-import { patchMarkdown, patchStats } from '../../../apps/mini-app/src/entities/session/lib/changes/patch.js';
-import { highlightDiffLines } from '../../../apps/mini-app/src/entities/session/lib/changes/highlight-lines.js';
+import { patchMarkdown, patchStats } from '@/entities/session/lib/changes/patch.js';
+import { highlightDiffLines } from '@/entities/session/lib/changes/highlight-lines.js';
 
 it('keeps untrusted patch text in a literal fenced code block', () => {
   const patch = "+```\n+<script>alert('synthetic')</script>\n-old\n+++ b/file.ts\n--- a/file.ts";

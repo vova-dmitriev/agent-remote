@@ -2,7 +2,7 @@ import { expect, it } from 'vitest';
 import { mkdtemp, writeFile, chmod, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { ensureManagedCodexSocket } from '../../../apps/daemon/src/codex/launcher.js';
+import { ensureManagedCodexSocket } from '@daemon/codex/launcher.js';
 
 it('starts only one private local server and reuses its socket', async () => {
   const root = await mkdtemp(join(tmpdir(), 'codex-launcher-')),

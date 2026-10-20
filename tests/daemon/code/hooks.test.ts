@@ -2,8 +2,8 @@ import { afterEach, describe, it, expect } from 'vitest';
 import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { installHooks, uninstallHooks } from '../../../apps/daemon/src/code/hooks/install-hooks.js';
-import { parseClaudeArgs } from '../../../apps/daemon/src/cli/arguments.js';
+import { installHooks, uninstallHooks } from '@daemon/code/hooks/install-hooks.js';
+import { parseClaudeArgs } from '@daemon/cli/arguments.js';
 
 const dirs: string[] = [];
 

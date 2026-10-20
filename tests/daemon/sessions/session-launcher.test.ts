@@ -2,7 +2,7 @@ import { expect, it } from 'vitest';
 import { mkdtemp, mkdir, readFile, rm, realpath } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { launchClaudeSession, validateProject } from '../../../apps/daemon/src/sessions/launch/launcher.js';
+import { launchClaudeSession, validateProject } from '@daemon/sessions/launch/launcher.js';
 
 it('validates an existing directory and writes a fixed private Terminal launcher with quoted paths', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'remote-launch-'));

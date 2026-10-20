@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { CompanionEnvironment } from '../../apps/daemon/src/local/supervisor/values.js';
+import { CompanionEnvironment } from '@daemon/local/supervisor/values.js';
 
 export const hash = (value: Buffer | string) => createHash('sha256').update(value).digest('hex');
 

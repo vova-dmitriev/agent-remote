@@ -3,8 +3,8 @@ import { test, deviceFixture } from './support/relay-fixture.js';
 import { sessionSnapshot } from './support/session-fixtures.js';
 import { identity } from './support/identity.js';
 import { byTestId } from './support/testid.js';
-import { SESSION_CARD_IDS } from '../../apps/mini-app/src/entities/session/config/test-ids.js';
-import { SESSION_CHANGES_IDS as IDS } from '../../apps/mini-app/src/entities/session/config/change-test-ids.js';
+import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
+import { SESSION_CHANGES_IDS as IDS } from '@/entities/session/config/change-test-ids.js';
 
 for (const language of ['en', 'ru'] as const) {
   test(`owned native file patches expand safely on mobile in ${language}`, async ({ page }) => {
