@@ -13,7 +13,7 @@ function lint(source: string) {
   const result = spawnSync(
     process.execPath,
     [
-      resolve('apps/mini-app/node_modules/eslint/bin/eslint.js'),
+      resolve('node_modules/eslint/bin/eslint.js'),
       '--config',
       resolve('eslint.config.mjs'),
       '--stdin',

@@ -1,13 +1,9 @@
+import js from '@eslint/js';
+import globals from 'globals';
+import ts from 'typescript-eslint';
 import domain from '../../eslint/domain-values.mjs';
-import { createRequire } from 'node:module';
 import { readabilityRules } from '../mini-app/eslint/readability.mjs';
 import { numericValueRules } from '../mini-app/eslint/rules.mjs';
-
-// The workspace already installs the shared ESLint toolchain with the mini app.
-const require = createRequire(new URL('../mini-app/package.json', import.meta.url));
-const js = require('@eslint/js');
-const ts = require('typescript-eslint');
-const globals = require('globals');
 
 export const codedErrorRules = [
   {
