@@ -1,10 +1,21 @@
-import { HistoryPageDirection, HistoryDirection, HistoryQueryKey, type EventEnvelope } from "@protocol"
+import { HistoryCursorPrefix, HistoryDirection, HistoryPageDirection, HistoryQueryKey, type EventEnvelope } from "@protocol"
 import { HistoryPageSkip } from "@/shared/api"
 import type { HistoryCursors } from "./history"
 
+/**
+ * The relay cursor an edge names: a loaded message position is the native source offset the daemon accepts, and a
+ * cached item carries the relay's own cursor. Any other edge pages from the window's cursor.
+ */
+function edgeCursor(edge: string) {
+  if (edge.startsWith(HistoryCursorPrefix.Position)) return HistoryCursorPrefix.Source + edge.slice(HistoryCursorPrefix.Position.length)
+
+  return edge.startsWith(HistoryCursorPrefix.Cache) ? edge.slice(HistoryCursorPrefix.Cache.length) : undefined
+}
+
 export class HistoryWindow {
   private cursors: HistoryCursors = { before: "", after: "" }
-  private busy = false
+  /** Directions with a request in flight: an older page never blocks a newer one. */
+  private busy = new Set<HistoryPageDirection>()
   private exhausted = new Set<string>()
   /** Whether a history load reported this window's cursors; before that a missing cursor proves nothing. */
   private loaded = false
@@ -27,18 +38,14 @@ export class HistoryWindow {
     edge?: string,
     agentId?: string,
   ) {
-    const cursor = edge?.startsWith("position:")
-      ? "source:" + edge.slice(9)
-      : edge?.startsWith("cache:")
-        ? edge.slice(6)
-        : this.cursors[direction]
+    const cursor = (edge === undefined ? undefined : edgeCursor(edge)) ?? this.cursors[direction]
 
     const key = direction + ":" + cursor
 
     if (!current() || (!cursor && !this.loaded)) return HistoryPageSkip.Stale
     if (!cursor || this.exhausted.has(key)) return HistoryPageSkip.Exhausted
-    if (this.busy) return HistoryPageSkip.Busy
-    this.busy = true
+    if (this.busy.has(direction)) return HistoryPageSkip.Busy
+    this.busy.add(direction)
 
     try {
       const subagent = agentId ? "&" + HistoryQueryKey.AgentId + "=" + encodeURIComponent(agentId) : ""
@@ -54,7 +61,7 @@ export class HistoryWindow {
 
       return current() ? events : HistoryPageSkip.Stale
     } finally {
-      this.busy = false
+      this.busy.delete(direction)
     }
   }
 }

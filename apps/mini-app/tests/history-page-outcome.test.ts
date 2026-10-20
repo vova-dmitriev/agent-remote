@@ -59,15 +59,15 @@ describe("history page outcomes", () => {
     await expect(page).resolves.toBe(HistoryPageSkip.Stale)
   })
 
-  it("keeps the later cap while an earlier page is in flight", async () => {
+  it("keeps the edge open while a page for the same edge is in flight", async () => {
     let release!: (events: EventEnvelope[]) => void
     const window = loadedWindow()
     const before = window.page(HistoryDirection.Before, () => new Promise((resolve) => (release = resolve)), current)
-    const after = await window.page(HistoryDirection.After, respond([event]), current)
+    const again = await window.page(HistoryDirection.Before, respond([event]), current)
 
-    expect(after).toBe(HistoryPageSkip.Busy)
+    expect(again).toBe(HistoryPageSkip.Busy)
 
-    expect(settleHistoryEdge({ before: null, after: null }, HistoryDirection.After, "tail", historyPageOutcome(after))).toEqual({
+    expect(settleHistoryEdge({ before: null, after: null }, HistoryDirection.Before, "head", historyPageOutcome(again))).toEqual({
       before: null,
       after: null,
     })

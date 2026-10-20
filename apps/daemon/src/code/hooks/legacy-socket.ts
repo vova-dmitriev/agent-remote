@@ -9,7 +9,7 @@ import { requestLocal } from './ipc.js';
 import { logDebug } from '../../diagnostics/log.js';
 
 /** How often the companion tries to take the legacy path back while the CLI daemon holds it. */
-export const LEGACY_HOOK_RETRY_MS = 30_000;
+const LEGACY_HOOK_RETRY_MS = 30_000;
 
 type HookListener = { close(): Promise<void> };
 

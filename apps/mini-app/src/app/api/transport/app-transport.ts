@@ -34,7 +34,7 @@ export class AppTransport extends RelayOperations implements ApplicationClient {
   private selection = 0
   private historyStream = new HistoryStream()
   private window = new HistoryWindow()
-  private subagents = new SubagentHistory((path, observe) => this.request(path, {}, observe))
+  private subagents = new SubagentHistory((path, observe) => this.request(path, {}, observe), this.historyStream)
   private reading = new ReadingPositions(this)
   private restoreHistory: number | null = null
   private requests = new Set<AbortController>()

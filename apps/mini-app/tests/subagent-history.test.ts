@@ -140,7 +140,7 @@ it("reads a subagent's latest page with its id on the relay route and pages from
     return [event(text("a", 1))]
   })
 
-  const history = new SubagentHistory(request)
+  const history = new SubagentHistory(request, { generation: () => "synthetic-generation" })
 
   await history.page("session/1", "agent-1", HistoryDirection.Latest, () => true)
   await history.page("session/1", "agent-1", HistoryDirection.Before, () => true)
@@ -158,7 +158,7 @@ it("keeps subagent cursors apart and drops a response that is no longer current"
     return [event(text("a", 1))]
   })
 
-  const history = new SubagentHistory(request)
+  const history = new SubagentHistory(request, { generation: () => "synthetic-generation" })
 
   await history.page("session", "first", HistoryDirection.Latest, () => true)
   expect(await history.page("session", "second", HistoryDirection.Before, () => true)).toBe(HistoryPageSkip.Stale)

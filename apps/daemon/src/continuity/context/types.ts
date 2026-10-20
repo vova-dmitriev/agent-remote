@@ -1,7 +1,6 @@
-import type { CheckpointApproval, ContextCheckpointSummary } from '@protocol';
+import type { CheckpointApproval, CheckpointCoverage, ContextCheckpointSummary } from '@protocol';
 import type {
   CheckpointAttachmentStatus,
-  CheckpointCoverage,
   CheckpointMessageRole,
   CheckpointVisibleRole,
 } from '../../domain/continuity/checkpoint.js';

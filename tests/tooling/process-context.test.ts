@@ -1,12 +1,19 @@
 import { execFile, spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { promisify } from 'node:util';
 import { expect, it } from 'vitest';
 
 const execute = promisify(execFile);
+const HELPER = 'artifacts/ClaudeRemoteBridge.app/Contents/MacOS/ClaudeBridge';
 
 it.runIf(process.platform === 'darwin')(
   'reads exact argv and environment from a disposable owned native process without shell parsing',
-  async () => {
+  async (context) => {
+    // A build product: `npm run build:helper` (and `validate:commit`, which builds it first) provides it.
+    if (!existsSync(HELPER)) {
+      context.skip('native helper not built; run npm run build:helper');
+    }
+
     const marker = "space ' quote $()\nnewline";
 
     const child = spawn(
@@ -24,13 +31,7 @@ it.runIf(process.platform === 'darwin')(
 
     try {
       const result = JSON.parse(
-        (
-          await execute(
-            'artifacts/ClaudeRemoteBridge.app/Contents/MacOS/ClaudeBridge',
-            ['--process-context', String(child.pid)],
-            { maxBuffer: 1048576 },
-          )
-        ).stdout,
+        (await execute(HELPER, ['--process-context', String(child.pid)], { maxBuffer: 1048576 })).stdout,
       );
 
       expect(result.args).toEqual([

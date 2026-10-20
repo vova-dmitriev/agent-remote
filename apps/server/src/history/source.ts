@@ -77,7 +77,7 @@ export class SourceHistory {
     // A subagent has no cached history: only its device's transcript reader can answer.
     if (agentId !== undefined) {
       if (!row.data.capabilities?.subagentHistory) {
-        throw new Fault(ErrorCode.TRANSCRIPT_UNAVAILABLE, HttpStatus.ServiceUnavailable);
+        throw new Fault(ErrorCode.TRANSCRIPT_UNAVAILABLE);
       }
 
       if (!connection) {
