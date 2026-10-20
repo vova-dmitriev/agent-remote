@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { exportSnapshot, git } from '../security/snapshot.mjs';
 import { ScanMode } from '../security/policy.mjs';
+import { STAGED_PATHS_ENV } from './security-tests.mjs';
 
 const root = git(['rev-parse', '--show-toplevel'], process.cwd()).toString().trim();
 const temporary = mkdtempSync(join(tmpdir(), 'agent-remote-index-'));
@@ -23,6 +24,8 @@ try {
   }
 
   const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')));
+
+  env[STAGED_PATHS_ENV] = git(['diff', '--cached', '--name-only'], root).toString().trim();
 
   const result = spawnSync('npm', ['run', 'validate:commit'], {
     cwd: temporary,

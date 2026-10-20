@@ -102,3 +102,22 @@ if (requireDesktop('desktop-fixture') !== 'synthetic') throw new Error('Missing 
   assert.equal(result.status, 0, result.stdout + result.stderr);
   assert.equal(execFileSync('git', ['ls-files', '**/node_modules/**'], { cwd: root }).toString(), '');
 });
+
+test('security tests run for a manual validation and for commits that touch the gates, not for others', async () => {
+  const { needsSecurityTests } = await import('./security-tests.mjs');
+
+  assert.equal(needsSecurityTests(undefined), true);
+  assert.equal(needsSecurityTests('apps/mini-app/src/app.tsx\ntests/e2e/x.spec.ts'), false);
+  assert.equal(needsSecurityTests(''), false);
+
+  for (const path of [
+    'scripts/security/check.mjs',
+    '.semgrep/secobserve-high.yml',
+    '.gitleaks.toml',
+    '.githooks/pre-commit',
+    'package.json',
+    'scripts/validation/pre-commit.mjs',
+  ]) {
+    assert.equal(needsSecurityTests('README.md\n' + path), true, path);
+  }
+});

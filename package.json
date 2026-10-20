@@ -50,7 +50,7 @@
     "security:staged": "node scripts/security/check.mjs staged",
     "security:test": "node --test scripts/security/check.test.mjs scripts/validation/pre-commit.test.mjs",
     "security:install-hooks": "git config --local core.hooksPath .githooks",
-    "validate:commit": "npm run security:test && npm run format:repository:check && npm run typecheck && npm run build && npm run build:extension && npm run build:desktop && node scripts/validation/native-helper.mjs && npm test -- --maxWorkers=4",
+    "validate:commit": "node scripts/validation/security-tests.mjs && npm run format:repository:check && npm run typecheck && npm run build && npm run build:extension && npm run build:desktop && node scripts/validation/native-helper.mjs && npm test -- --maxWorkers=4",
     "validate": "npm run security:check && npm run validate:commit",
     "format:repository:check": "prettier --check README.md SECURITY.md package.json .github docs/screenshots docs/chrome-extension.md docs/accounts-and-keys.md docs/desktop.md",
     "check:extension:source": "node scripts/extension/check-source.mjs && eslint --config eslint.config.mjs apps/chrome-extension/src scripts/extension --max-warnings=0 && prettier --check apps/chrome-extension/src scripts/extension",

@@ -1,6 +1,8 @@
 export const DEFAULT_E2E_APP_PORT = 4173;
 export const DEFAULT_E2E_RELAY_PORT = 3000;
 export const E2E_RELAY_ORIGIN_ENV = 'DEV_RELAY_ORIGIN';
+/** Set by the sharded runner after it builds the app: shards serve that build instead of each running a dev server. */
+export const E2E_PREVIEW_ENV = 'E2E_PREVIEW';
 
 function readPort(name: string, fallback: number) {
   const port = Number(process.env[name] ?? fallback);

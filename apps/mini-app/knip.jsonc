@@ -8,6 +8,7 @@
         "desktop.html",
         "src/desktop.tsx",
         "vite.desktop.config.ts",
+        "vite.e2e.config.ts",
         "../../tests/e2e/sessions/session-creation.spec.ts",
         "../../tests/e2e/sessions/project-dropdown.spec.ts",
         "steiger.config.mjs",

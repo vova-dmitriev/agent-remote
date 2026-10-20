@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { availableParallelism } from 'node:os';
 
 /**
@@ -46,6 +46,22 @@ function shard(index) {
 }
 
 const started = Date.now();
+
+// One build for every shard; each shard's `vite preview` serves it behind its own relay proxy.
+const build = spawnSync(
+  'npx',
+  ['vite', 'build', 'apps/mini-app', '--config', 'apps/mini-app/vite.e2e.config.ts', '--logLevel', 'error'],
+  {
+    stdio: 'inherit',
+  },
+);
+
+if (build.status !== 0) {
+  process.exit(build.status ?? 1);
+}
+
+process.env.E2E_PREVIEW = '1';
+
 const results = await Promise.all(Array.from({ length: SHARDS }, (_, index) => shard(index + 1)));
 
 for (const { index, code, output } of results) {
