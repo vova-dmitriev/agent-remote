@@ -5,6 +5,7 @@ export const COMMAND_IDS = {
   availabilityHint: "session-composer-availability-hint",
   label: "session-composer-label",
   prompt: "session-composer-prompt",
+  promptFrame: "session-composer-prompt-frame",
   send: "session-composer-send",
   interrupt: "session-composer-interrupt",
   actions: "session-actions",

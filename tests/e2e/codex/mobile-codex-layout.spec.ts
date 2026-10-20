@@ -55,7 +55,7 @@ for (const language of ['en', 'ru'] as const) {
     await expect(question).toHaveCSS('border-radius', '20px');
     await expect(question).toHaveAttribute('aria-label', language === 'en' ? 'You' : 'Ты');
     expect((await composer.boundingBox())!.height).toBeLessThanOrEqual(105);
-    const promptBox = (await prompt.boundingBox())!;
+    const promptBox = (await page.getByTestId(COMMAND_IDS.promptFrame).boundingBox())!;
     const sendBox = (await page.getByTestId(COMMAND_IDS.send).boundingBox())!;
 
     expect(sendBox.y).toBeGreaterThanOrEqual(promptBox.y);

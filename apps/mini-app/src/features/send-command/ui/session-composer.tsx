@@ -32,7 +32,7 @@ export function SessionComposer({ controller, session, connection, deviceStatus 
       </Label>
       <div className="relative">
         {session.capabilities.attachments ? <AttachmentPicker model={controller.attachments} disabled={state.attachmentDisabled} /> : null}
-        <div className={promptFrameClass}>
+        <div className={promptFrameClass} data-testid={COMMAND_IDS.promptFrame}>
           <Textarea
             id="prompt"
             className={cn(promptClass, session.capabilities.attachments && promptWithAttachmentsClass)}

@@ -60,8 +60,10 @@ test('keeps the paperclip inside the input and adds a row only for pending attac
   await expect(page.getByTestId(COMMAND_IDS.actionsTrigger)).toBeInViewport();
   await page.evaluate(() => document.documentElement.classList.add('dark'));
   const prompt = page.getByTestId(COMMAND_IDS.prompt);
+  // The visible input is the frame; the textarea scrolls inside its padding.
+  const frame = page.getByTestId(COMMAND_IDS.promptFrame);
   const select = page.getByTestId(UPLOAD_IDS.select);
-  const emptyPrompt = await prompt.boundingBox();
+  const emptyPrompt = await frame.boundingBox();
   const emptySelect = await select.boundingBox();
 
   expect(emptySelect!.x).toBeGreaterThanOrEqual(emptyPrompt!.x);
@@ -74,7 +76,7 @@ test('keeps the paperclip inside the input and adds a row only for pending attac
   await page.screenshot({ path: 'artifacts/attachments-empty-dark-short-mobile.png', fullPage: true });
   await page.getByTestId(UPLOAD_IDS.input).setInputFiles([image, file]);
   await expect(page.getByTestId(COMMAND_IDS.send)).toBeEnabled();
-  const filledPrompt = await prompt.boundingBox();
+  const filledPrompt = await frame.boundingBox();
   const pending = await page.getByTestId(UPLOAD_IDS.pending).first().boundingBox();
   const filledSelect = await select.boundingBox();
 
