@@ -12,6 +12,7 @@ import { BoundedSender } from '@transport/bounded-sender.js';
 import { EventEmitter } from 'node:events';
 import { WebSocket } from 'ws';
 import { validateRelayUrl } from './config.js';
+import { PROTOCOL_REPROBE_MS } from './runtime-timings.js';
 import { logDebug } from './diagnostics/log.js';
 
 export class RelayClient extends EventEmitter {
@@ -88,9 +89,14 @@ export class RelayClient extends EventEmitter {
         return;
       }
 
-      // Reconnecting cannot help until one side is upgraded.
+      // Fast reconnects cannot help until one side is upgraded or rolled back: probe again on a long interval.
       if (code === SocketCloseCode.ProtocolUnsupported) {
-        this.stopped = true;
+        this.attempt = 0;
+
+        if (!this.stopped) {
+          this.retry = setTimeout(() => this.connect(), PROTOCOL_REPROBE_MS);
+        }
+
         this.emit(RuntimeEvent.ProtocolUnsupported, ErrorCode.PROTOCOL_UNSUPPORTED);
 
         return;

@@ -7,10 +7,15 @@ import {
   type ServerFrame,
 } from '@protocol';
 import { once } from 'node:events';
-import { afterEach, expect, it } from 'vitest';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, expect, it, vi } from 'vitest';
 import { WebSocket, WebSocketServer } from 'ws';
 import { RelayClient } from '../apps/daemon/src/relay-client.js';
 import { RuntimeEvent } from '../apps/daemon/src/domain/runtime.js';
+import { readRelayStatus, saveRelayStatus } from '../apps/daemon/src/diagnostics/relay-status.js';
+import { PROTOCOL_REPROBE_MS } from '../apps/daemon/src/runtime-timings.js';
 import { attachmentRelayFixture } from './helpers/attachment-relay.js';
 
 const cleanups: Array<() => Promise<unknown> | unknown> = [];
@@ -103,7 +108,7 @@ it('connects the daemon relay client with the current version', async () => {
   expect(f.relay.live.get(f.deviceId)?.protocolVersion).toBe(RELAY_PROTOCOL.Current);
 });
 
-it('stops the daemon relay client from reconnecting after PROTOCOL_UNSUPPORTED and surfaces the code', async () => {
+it('probes again only after the long interval once the relay rejects the protocol version, and surfaces the code', async () => {
   const server = new WebSocketServer({ port: 0, host: '127.0.0.1' });
   const auths: unknown[] = [];
 
@@ -119,16 +124,71 @@ it('stops the daemon relay client from reconnecting after PROTOCOL_UNSUPPORTED a
 
   await once(server, 'listening');
   const { port } = server.address() as { port: number };
+
+  // Only the client's retry timers are fake; sockets run on real I/O.
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+  cleanups.push(() => vi.useRealTimers());
+
   const client = new RelayClient(`http://127.0.0.1:${port}`, 'synthetic-device-token');
+
+  const auth = {
+    type: FrameType.Auth,
+    token: 'synthetic-device-token',
+    protocolVersion: RELAY_PROTOCOL.Current,
+  };
 
   cleanups.push(() => client.close());
   client.connect();
 
   expect(await once(client, RuntimeEvent.ProtocolUnsupported)).toEqual([ErrorCode.PROTOCOL_UNSUPPORTED]);
-  // Longer than the first reconnect delay (at most 1 s): no second attempt follows.
-  await new Promise((resolve) => setTimeout(resolve, 1_500));
 
-  expect(auths).toEqual([
-    { type: FrameType.Auth, token: 'synthetic-device-token', protocolVersion: RELAY_PROTOCOL.Current },
-  ]);
+  // The ordinary reconnect would come within 30 s; none does before the re-probe interval ends.
+  await vi.advanceTimersByTimeAsync(PROTOCOL_REPROBE_MS - 1);
+  expect(auths).toEqual([auth]);
+
+  await vi.advanceTimersByTimeAsync(1);
+  await expect.poll(() => auths.length).toBe(2);
+  expect(auths).toEqual([auth, auth]);
+});
+
+it.each([0, 1.5, '2'])(
+  'rejects malformed protocol version %j as an invalid request before authentication',
+  async (version) => {
+    const f = await relay();
+    const device = await authenticateDevice(f.origin, { token: f.deviceToken, protocolVersion: version });
+
+    expect(await device.closed).toEqual({
+      code: SocketCloseCode.Unauthorized,
+      reason: SocketCloseReason.Unauthorized,
+    });
+
+    expect(device.frames).toEqual([{ type: FrameType.Error, code: ErrorCode.INVALID_REQUEST }]);
+  },
+);
+
+it('authenticates an Auth frame that carries a field this relay does not know', async () => {
+  const f = await relay();
+
+  const device = await authenticateDevice(f.origin, {
+    token: f.deviceToken,
+    protocolVersion: RELAY_PROTOCOL.Current,
+    futureField: { anything: true },
+  });
+
+  expect(await firstFrame(device.frames)).toMatchObject({
+    type: FrameType.Authenticated,
+    protocolVersion: RELAY_PROTOCOL.Current,
+  });
+});
+
+it('records the relay stop reason for remote status and clears it', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'relay-status-'));
+
+  cleanups.push(() => rm(directory, { recursive: true, force: true }));
+
+  expect(await readRelayStatus(directory)).toBeUndefined();
+  await saveRelayStatus(directory, ErrorCode.PROTOCOL_UNSUPPORTED);
+  expect(await readRelayStatus(directory)).toBe(ErrorCode.PROTOCOL_UNSUPPORTED);
+  await saveRelayStatus(directory, null);
+  expect(await readRelayStatus(directory)).toBeUndefined();
 });

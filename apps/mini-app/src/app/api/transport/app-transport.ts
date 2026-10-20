@@ -83,7 +83,7 @@ export class AppTransport extends RelayOperations implements ApplicationClient {
         const frame = serverFrameSchema.parse(JSON.parse(String(event.data)))
 
         if (frame.type === FrameType.Authenticated) {
-          this.backoff.reset()
+          this.backoff.authenticated()
           this.handlers.onConnection(ConnectionStatus.Online)
           if (this.deviceId) this.selectTarget(this.deviceId, this.selectedId)
           this.restoreHistory = this.selectedId ? this.selection : null
@@ -182,6 +182,7 @@ export class AppTransport extends RelayOperations implements ApplicationClient {
   close() {
     this.stopped = true
     clearTimeout(this.retry)
+    this.backoff.reset()
     this.authentication.close()
     this.reading.close()
     this.socket?.close()

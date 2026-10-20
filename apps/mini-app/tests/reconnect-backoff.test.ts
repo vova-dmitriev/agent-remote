@@ -72,7 +72,7 @@ async function reconnectDelay(current: () => FakeSocket) {
   throw new Error("NO_RECONNECT")
 }
 
-it("doubles the reconnect ceiling up to the cap and starts again after a successful authentication", async () => {
+it("doubles the reconnect ceiling and starts again only after a connection stayed authenticated", async () => {
   vi.spyOn(Math, "random").mockReturnValue(0.999_999)
   const current = await connected()
 
@@ -80,23 +80,31 @@ it("doubles the reconnect ceiling up to the cap and starts again after a success
   expect(await reconnectDelay(current)).toBe(RECONNECT_BACKOFF.BaseMs * 2 - 1)
   expect(await reconnectDelay(current)).toBe(RECONNECT_BACKOFF.BaseMs * 4 - 1)
 
+  // Authenticated and dropped at once: still backing off.
   current().authenticate()
+  expect(await reconnectDelay(current)).toBe(RECONNECT_BACKOFF.BaseMs * 8 - 1)
+
+  // Authenticated for the stable minimum: the next drop starts from the base again.
+  current().authenticate()
+  await vi.advanceTimersByTimeAsync(RECONNECT_BACKOFF.StableMs)
   expect(await reconnectDelay(current)).toBe(RECONNECT_BACKOFF.BaseMs - 1)
 })
 
-it("spreads reconnects uniformly below the ceiling", async () => {
-  vi.spyOn(Math, "random").mockReturnValue(0.25)
+it("never reconnects sooner than half the ceiling", async () => {
+  vi.spyOn(Math, "random").mockReturnValue(0)
   const current = await connected()
 
-  expect(await reconnectDelay(current)).toBe(Math.floor(RECONNECT_BACKOFF.BaseMs * 0.25))
-  expect(await reconnectDelay(current)).toBe(Math.floor(RECONNECT_BACKOFF.BaseMs * 2 * 0.25))
+  expect(await reconnectDelay(current)).toBe(RECONNECT_BACKOFF.BaseMs / 2)
+  expect(await reconnectDelay(current)).toBe(RECONNECT_BACKOFF.BaseMs)
 })
 
-it("never waits longer than the cap", () => {
+it("caps the delay and starts again from the base after a reset", () => {
   const backoff = new ReconnectBackoff(() => 0.999_999)
   const delays = Array.from({ length: 12 }, () => backoff.next())
 
   expect(Math.max(...delays)).toBeLessThan(RECONNECT_BACKOFF.MaxMs)
-  expect(delays.at(-1)).toBe(Math.floor(RECONNECT_BACKOFF.MaxMs * 0.999_999))
-  expect(new ReconnectBackoff(() => 0).next()).toBe(0)
+  expect(delays.at(-1)).toBe(RECONNECT_BACKOFF.MaxMs - 1)
+
+  backoff.reset()
+  expect(backoff.next()).toBe(RECONNECT_BACKOFF.BaseMs - 1)
 })

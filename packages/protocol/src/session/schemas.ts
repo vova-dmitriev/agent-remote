@@ -318,7 +318,9 @@ export const deviceFrameSchema = z.discriminatedUnion('type', [
     generation: id,
     message: historySchema,
   }),
-  z.strictObject({
+  // Tolerant on purpose, unlike the other frames: unknown fields are stripped, so a newer daemon's extra `Auth`
+  // field never locks it out of an older relay again. `type`, `token` and `protocolVersion` stay validated.
+  z.object({
     type: z.literal(FrameType.Auth),
     token: id,
     /** Absent from a daemon older than the handshake: version 1. */
