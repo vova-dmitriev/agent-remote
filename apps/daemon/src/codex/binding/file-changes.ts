@@ -55,7 +55,10 @@ export class CodexFileChanges extends FileChangeLog {
 }
 
 /** Share the transport budget across all owned sessions in the snapshot. */
-export function boundChangeSnapshots(sessions: Session[], budget = 24000): Session[] {
+/** All sessions' file changes in one snapshot: about ten sessions' worth at the per-session cap. */
+const SNAPSHOT_CHANGES_BUDGET = 160_000;
+
+export function boundChangeSnapshots(sessions: Session[], budget = SNAPSHOT_CHANGES_BUDGET): Session[] {
   let remaining = budget;
 
   return sessions.map((session) => {
@@ -91,7 +94,7 @@ export function boundSnapshotChanges(snapshot: AppSnapshot): AppSnapshot {
   };
 
   // Under the 512 KiB device frame the relay accepts.
-  const budget = Math.max(0, Math.min(24000, 458752 - bytes(baseline)));
+  const budget = Math.max(0, Math.min(SNAPSHOT_CHANGES_BUDGET, 458752 - bytes(baseline)));
 
   return { ...snapshot, sessions: boundChangeSnapshots(snapshot.sessions, budget) };
 }

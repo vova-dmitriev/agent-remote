@@ -40,13 +40,13 @@ it('bounds escaped/multibyte patches and the shared snapshot payload', () => {
   expect(sessionChangesSchema.safeParse(result).success).toBe(true);
 
   const sessions = Array.from(
-    { length: 10 },
+    { length: 30 },
     (_, index) => ({ id: String(index), changes: result }) as Session,
   );
 
   const bounded = boundChangeSnapshots(sessions);
 
-  expect(Buffer.byteLength(JSON.stringify(bounded.map((session) => session.changes)))).toBeLessThan(25000);
+  expect(Buffer.byteLength(JSON.stringify(bounded.map((session) => session.changes)))).toBeLessThan(161_000);
   expect(bounded.some((session) => !session.changes?.files.length && session.changes?.truncated)).toBe(true);
 });
 
