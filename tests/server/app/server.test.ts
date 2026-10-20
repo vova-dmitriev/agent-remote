@@ -2,8 +2,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { HttpStatus } from '@protocol';
 import { randomBytes, randomUUID, createHash } from 'node:crypto';
 import { Pool } from 'pg';
-import { createRelay } from '../../../apps/server/src/app/create-relay.js';
-import { initData, testBotToken } from '../../helpers/telegram.js';
+import { createRelay } from '@server/app/create-relay.js';
+import { initData, testBotToken } from '../../helpers/relay/telegram.js';
 
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 const schema = 'test_' + randomUUID().replaceAll('-', '');

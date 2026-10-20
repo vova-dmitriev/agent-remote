@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { ConnectionStatus, ErrorCode, FrameType } from '@protocol';
-import { createSessionStore } from '../../../apps/mini-app/src/entities/session/model/store/create-session-store.js';
+import { createSessionStore } from '@/entities/session/model/store/create-session-store.js';
 
 it('keeps the terminal localized error code while clearing expired session state', () => {
   const store = createSessionStore();

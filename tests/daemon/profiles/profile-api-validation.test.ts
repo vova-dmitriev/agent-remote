@@ -2,7 +2,7 @@ import { writeFileSync } from 'node:fs';
 import { HttpStatus } from '@protocol';
 import { join } from 'node:path';
 import { expect, it, vi } from 'vitest';
-import { verifyCodexApiCredential } from '../../../apps/daemon/src/profiles/api/codex.js';
+import { verifyCodexApiCredential } from '@daemon/profiles/api/codex.js';
 import { profileRegistryFixture } from './fixtures/registry.fixture.js';
 
 const secret = 'synthetic-protected-models-key';

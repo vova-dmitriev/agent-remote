@@ -1,34 +1,34 @@
 import { EventEmitter } from 'node:events';
 import { expect, it, vi } from 'vitest';
 import { mkdtemp, rm } from 'node:fs/promises';
-import { CodexManager } from '../../../../apps/daemon/src/runtime/services/codex-manager.js';
-import { LocalStore } from '../../../../apps/daemon/src/monitor/store.js';
-import { Monitor } from '../../../../apps/daemon/src/monitor/monitor.js';
-import { AdapterRegistry } from '../../../../apps/daemon/src/adapters/registry.js';
-import { PermissionBroker } from '../../../../apps/daemon/src/commands/permission-broker.js';
-import { profileExecutionNamespace } from '../../../../apps/daemon/src/sessions/execution/namespace.js';
-import type { ProfiledExecutionLaunch } from '../../../../apps/daemon/src/sessions/execution/types.js';
-import { executionProfile, executionSelection } from '../../../helpers/execution-profile.js';
+import { CodexManager } from '@daemon/runtime/services/codex-manager.js';
+import { LocalStore } from '@daemon/monitor/store.js';
+import { Monitor } from '@daemon/monitor/monitor.js';
+import { AdapterRegistry } from '@daemon/adapters/registry.js';
+import { PermissionBroker } from '@daemon/commands/permission-broker.js';
+import { profileExecutionNamespace } from '@daemon/sessions/execution/namespace.js';
+import type { ProfiledExecutionLaunch } from '@daemon/sessions/execution/types.js';
+import { executionProfile, executionSelection } from '../../../helpers/sessions/execution-profile.js';
 import { executionProfileSummarySchema } from '@protocol';
-import { ManagedCodexLaunchEvidenceType } from '../../../../apps/daemon/src/codex/launch/types.js';
+import { ManagedCodexLaunchEvidenceType } from '@daemon/codex/launch/types.js';
 
 const connectSocket = vi.hoisted(() => vi.fn());
 const launcher = vi.hoisted(() => ({ ensure: vi.fn(), exited: vi.fn() }));
 const native = vi.hoisted(() => ({ identity: vi.fn(), models: vi.fn() }));
 
-vi.mock('../../../../apps/daemon/src/codex/rpc/transport.js', () => ({ connectCodexSocket: connectSocket }));
+vi.mock('@daemon/codex/rpc/transport.js', () => ({ connectCodexSocket: connectSocket }));
 
-vi.mock('../../../../apps/daemon/src/codex/launcher.js', () => ({
+vi.mock('@daemon/codex/launcher.js', () => ({
   ensureManagedCodexSocket: launcher.ensure,
   managedCodexSocketExited: launcher.exited,
   managedCodexChildState: launcher.exited,
 }));
 
-vi.mock('../../../../apps/daemon/src/profiles/native/metadata.js', () => ({
+vi.mock('@daemon/profiles/native/metadata.js', () => ({
   nativeProfileIdentity: native.identity,
 }));
 
-vi.mock('../../../../apps/daemon/src/profiles/native/models.js', () => ({
+vi.mock('@daemon/profiles/native/models.js', () => ({
   nativeProfileModels: native.models,
 }));
 

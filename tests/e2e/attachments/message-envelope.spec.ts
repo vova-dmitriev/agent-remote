@@ -1,11 +1,11 @@
 import { expect } from '@playwright/test';
-import { test, delivered, publishMessages } from '../support/relay-fixture.js';
-import { byTestId } from '../support/testid.js';
-import { railMarker } from '../support/rail.js';
-import { COMMAND_IDS } from '../../../apps/mini-app/src/features/send-command/config/test-ids.js';
-import { UPLOAD_IDS } from '../../../apps/mini-app/src/features/send-command/ui/attachments/test-ids.js';
-import { ATTACHMENT_IDS } from '../../../apps/mini-app/src/entities/attachment/config/test-ids.js';
-import { SESSION_FEED_IDS } from '../../../apps/mini-app/src/pages/session/config/test-ids.js';
+import { test, delivered, publishMessages } from '../support/relay/relay-fixture.js';
+import { byTestId } from '../support/ui/testid.js';
+import { railMarker } from '../support/ui/rail.js';
+import { COMMAND_IDS } from '@/features/send-command/config/test-ids.js';
+import { UPLOAD_IDS } from '@/features/send-command/ui/attachments/test-ids.js';
+import { ATTACHMENT_IDS } from '@/entities/attachment/config/test-ids.js';
+import { SESSION_FEED_IDS } from '@/pages/session/config/test-ids.js';
 import { openAttachments, image, file } from './fixture.js';
 
 test('renders native file wrappers as ordinary image/file attachments and only the user request', async ({ page }) => {

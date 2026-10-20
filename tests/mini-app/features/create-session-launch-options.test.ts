@@ -11,9 +11,9 @@ import {
   effortOptions,
   modelOptions,
   profileOptions,
-} from '../../../apps/mini-app/src/features/create-session/model/launch-options.js';
-import { SESSION_CREATE_IDS } from '../../../apps/mini-app/src/features/create-session/config/test-ids.js';
-import { sessionControlsEN } from '../../../apps/mini-app/src/shared/lib/i18n/dictionaries/session-controls.js';
+} from '@/features/create-session/model/launch-options.js';
+import { SESSION_CREATE_IDS } from '@/features/create-session/config/test-ids.js';
+import { sessionControlsEN } from '@/shared/lib/i18n/dictionaries/session-controls.js';
 
 const profile: ExecutionProfileSummary = {
   id: '11111111-1111-4111-8111-111111111111',

@@ -2,10 +2,10 @@ import { afterAll, beforeAll, expect, it } from 'vitest';
 import { Redis } from 'ioredis';
 import { Queue } from 'bullmq';
 import { randomUUID } from 'node:crypto';
-import { NotificationQueue } from '../../../apps/server/src/notifications/queue.js';
-import { NotificationRepository } from '../../../apps/server/src/notifications/repositories/notifications.js';
-import { redisClient } from '../../../apps/server/src/infrastructure/redis.js';
-import { databaseFixture } from '../../helpers/database.js';
+import { NotificationQueue } from '@server/notifications/queue.js';
+import { NotificationRepository } from '@server/notifications/repositories/notifications.js';
+import { redisClient } from '@server/infrastructure/redis.js';
+import { databaseFixture } from '../../helpers/relay/database.js';
 
 const url = process.env.TEST_REDIS_URL ?? 'redis://127.0.0.1:56380';
 const client = redisClient(url);

@@ -2,8 +2,8 @@ import { writeFileSync } from 'node:fs';
 import { HttpStatus } from '@protocol';
 import { resolve, join } from 'node:path';
 import { expect, it, vi } from 'vitest';
-import { CodexProfileNative } from '../../../../apps/daemon/src/profiles/native/codex.js';
-import { buildProfileEnvironment } from '../../../../apps/daemon/src/profiles/environment.js';
+import { CodexProfileNative } from '@daemon/profiles/native/codex.js';
+import { buildProfileEnvironment } from '@daemon/profiles/environment.js';
 import { codexSubscription, profileRegistryFixture } from '../fixtures/registry.fixture.js';
 
 async function fixture(

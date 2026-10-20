@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { extensionManifest } from '../../../apps/chrome-extension/src/config/manifest.js';
+import { extensionManifest } from '@extension/config/manifest.js';
 
 it('allows only bundled WebAssembly encryption while keeping JavaScript evaluators and remote scripts blocked', () => {
   const csp = extensionManifest.content_security_policy.extension_pages;

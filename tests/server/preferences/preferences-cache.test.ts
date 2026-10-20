@@ -1,10 +1,10 @@
 import { expect, it, vi } from 'vitest';
 import { Redis } from 'ioredis';
 import { randomUUID } from 'node:crypto';
-import { RedisCache } from '../../../apps/server/src/infrastructure/redis.js';
-import { PreferenceService } from '../../../apps/server/src/preferences/service.js';
-import { PreferenceRepository } from '../../../apps/server/src/preferences/repository.js';
-import { databaseFixture } from '../../helpers/database.js';
+import { RedisCache } from '@server/infrastructure/redis.js';
+import { PreferenceService } from '@server/preferences/service.js';
+import { PreferenceRepository } from '@server/preferences/repository.js';
+import { databaseFixture } from '../../helpers/relay/database.js';
 
 it('serves preferences from Redis, isolates owners, and invalidates stale in-flight fills after changes', async () => {
   const fixture = await databaseFixture(),

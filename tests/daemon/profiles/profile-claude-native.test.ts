@@ -3,13 +3,13 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { expect, it } from 'vitest';
 import { AgentProvider, ProfileAuthMode } from '@protocol';
-import { buildClaudeProfileLaunch } from '../../../apps/daemon/src/profiles/claude/launch.js';
-import { readClaudeApiKey } from '../../../apps/daemon/src/profiles/claude/api-key-helper.js';
-import { verifyClaudeApiKey } from '../../../apps/daemon/src/profiles/claude/api.js';
+import { buildClaudeProfileLaunch } from '@daemon/profiles/claude/launch.js';
+import { readClaudeApiKey } from '@daemon/profiles/claude/api-key-helper.js';
+import { verifyClaudeApiKey } from '@daemon/profiles/claude/api.js';
 import {
   subscriptionSignInBlocker,
   verifyClaudeAuthentication,
-} from '../../../apps/daemon/src/profiles/claude/verification.js';
+} from '@daemon/profiles/claude/verification.js';
 
 const paths = () => {
   const directory = mkdtempSync(join(tmpdir(), 'claude-profile-'));

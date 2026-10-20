@@ -5,7 +5,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/mini-app/package.json apps/mini-app/package.json
 COPY apps/desktop/package.json apps/desktop/package.json
 COPY apps/chrome-extension/package.json apps/chrome-extension/package.json
-COPY scripts/prepare-node-pty.mjs scripts/prepare-node-pty.mjs
+COPY scripts/build/prepare-node-pty.mjs scripts/build/prepare-node-pty.mjs
 RUN npm exec --yes --package=pnpm@10.34.7 -- pnpm install --frozen-lockfile
 COPY tsconfig*.json ./
 COPY packages packages

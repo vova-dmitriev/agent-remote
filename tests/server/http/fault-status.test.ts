@@ -1,8 +1,8 @@
 import { ErrorCode, HttpStatus } from '@protocol';
 import { describe, expect, it } from 'vitest';
-import { AttachmentFaultCode } from '../../../apps/server/src/attachments/errors.js';
-import { ContinuityError } from '../../../apps/server/src/continuity/types.js';
-import { Fault } from '../../../apps/server/src/http/errors/fault.js';
+import { AttachmentFaultCode } from '@server/attachments/errors.js';
+import { ContinuityError } from '@server/continuity/types.js';
+import { Fault } from '@server/http/errors/fault.js';
 
 describe('Fault status', () => {
   it.each([

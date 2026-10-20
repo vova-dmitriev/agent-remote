@@ -6,10 +6,10 @@ import {
   serverFrameSchema,
   type ClientCommand,
 } from '@protocol';
-import type { ApplicationClient } from '../../../apps/mini-app/src/shared/api/application-client.js';
-import { DraftState } from '../../../apps/mini-app/src/features/send-command/model/persistence/draft-state.js';
-import { ManagedQueue } from '../../../apps/mini-app/src/features/send-command/model/persistence/managed-queue.js';
-import { createSessionStore } from '../../../apps/mini-app/src/entities/session/model/store/create-session-store.js';
+import type { ApplicationClient } from '@/shared/api/application-client.js';
+import { DraftState } from '@/features/send-command/model/persistence/draft-state.js';
+import { ManagedQueue } from '@/features/send-command/model/persistence/managed-queue.js';
+import { createSessionStore } from '@/entities/session/model/store/create-session-store.js';
 import { snapshotFrame } from '../../extension/client/extension-client.fixture.js';
 
 function draftFixture() {

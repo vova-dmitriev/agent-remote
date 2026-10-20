@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { ErrorCode, LocalOperation, ProfileRequestKind } from '@protocol';
-import { localFixture } from '../../helpers/local-runtime.js';
+import { localFixture } from '../../helpers/local/local-runtime.js';
 
 const fixtures: ReturnType<typeof localFixture>[] = [];
 

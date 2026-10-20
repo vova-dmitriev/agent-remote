@@ -2,7 +2,7 @@ import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { expect, it } from 'vitest';
-import { packagedCompanionFixture } from '../helpers/packaged-companion.js';
+import { packagedCompanionFixture } from '../helpers/desktop/packaged-companion.js';
 
 it('removes its owned temporary package tree when the fixture compiler fails', async () => {
   const temporaryDirectory = await mkdtemp(join(tmpdir(), 'packaged-companion-failure-'));

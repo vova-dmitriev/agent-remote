@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, expect, it } from 'vitest';
-import { databaseFixture } from '../../helpers/database.js';
-import { AttachmentRepository } from '../../../apps/server/src/attachments/repositories/attachments.js';
-import { AttachmentService } from '../../../apps/server/src/attachments/service.js';
+import { databaseFixture } from '../../helpers/relay/database.js';
+import { AttachmentRepository } from '@server/attachments/repositories/attachments.js';
+import { AttachmentService } from '@server/attachments/service.js';
 import { sessionSchema } from '@protocol';
 
 let fixture: Awaited<ReturnType<typeof databaseFixture>>;

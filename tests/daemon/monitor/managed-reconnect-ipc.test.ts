@@ -4,12 +4,12 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { connect, type Socket } from 'node:net';
 import { randomUUID } from 'node:crypto';
-import { LocalStore } from '../../../apps/daemon/src/monitor/store.js';
-import { Monitor } from '../../../apps/daemon/src/monitor/monitor.js';
-import { AdapterRegistry } from '../../../apps/daemon/src/adapters/registry.js';
-import { PermissionBroker } from '../../../apps/daemon/src/commands/permission-broker.js';
-import { startHookServer } from '../../../apps/daemon/src/code/hooks/hook-server.js';
-import { lineReader, requestLocal, writeFrame } from '../../../apps/daemon/src/code/hooks/ipc.js';
+import { LocalStore } from '@daemon/monitor/store.js';
+import { Monitor } from '@daemon/monitor/monitor.js';
+import { AdapterRegistry } from '@daemon/adapters/registry.js';
+import { PermissionBroker } from '@daemon/commands/permission-broker.js';
+import { startHookServer } from '@daemon/code/hooks/hook-server.js';
+import { lineReader, requestLocal, writeFrame } from '@daemon/code/hooks/ipc.js';
 
 it('rebinds a surviving authenticated wrapper and its transcript after the daemon control server restarts, without a prompt or child restart', async () => {
   const root = await mkdtemp(join(tmpdir(), 'managed-ipc-')),

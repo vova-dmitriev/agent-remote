@@ -3,15 +3,27 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, expect, it } from 'vitest';
 // @ts-expect-error untyped build script
-import { checkSourceStructure } from '../../../scripts/check-source-structure.mjs';
+import { checkSourceStructure, sourceRoots } from '../../../scripts/quality/check-source-structure.mjs';
 
 const roots: string[] = [];
 
-function project(names: string[]): string {
+// A temporary repository with every configured root present.
+function repository(): string {
   const root = mkdtempSync(join(tmpdir(), 'source-structure-'));
-  const directory = join(root, 'apps/daemon/src/area');
 
   roots.push(root);
+
+  for (const { path } of sourceRoots as { path: string }[]) {
+    mkdirSync(join(root, path), { recursive: true });
+  }
+
+  return root;
+}
+
+function project(names: string[]): string {
+  const root = repository();
+  const directory = join(root, 'apps/daemon/src/area');
+
   mkdirSync(directory, { recursive: true });
 
   for (const name of names) {
@@ -33,18 +45,19 @@ it('flags a directory with 7 source files', () => {
   expect(checkSourceStructure(root)).toEqual([expect.stringContaining('more than 6 files')]);
 });
 
-function testsProject(directory: string, count: number): string {
-  const root = mkdtempSync(join(tmpdir(), 'source-structure-'));
+function filesProject(directory: string, count: number, extension = '.test.ts'): string {
+  const root = repository();
 
-  roots.push(root);
-  mkdirSync(join(root, 'tests', directory), { recursive: true });
+  mkdirSync(join(root, directory), { recursive: true });
 
   for (let index = 0; index < count; index += 1) {
-    writeFileSync(join(root, 'tests', directory, `case-${index}.test.ts`), '');
+    writeFileSync(join(root, directory, `case-${index}${extension}`), '');
   }
 
   return root;
 }
+
+const testsProject = (directory: string, count: number) => filesProject(join('tests', directory), count);
 
 it('allows 12 test files in a tests directory and flags 13', () => {
   expect(checkSourceStructure(testsProject('server/area', 12))).toEqual([]);
@@ -54,10 +67,34 @@ it('allows 12 test files in a tests directory and flags 13', () => {
   ]);
 });
 
-it('leaves the browser suites and shared helpers outside the test cap', () => {
-  for (const directory of ['e2e', 'extension-e2e', 'desktop-e2e', 'helpers']) {
-    expect(checkSourceStructure(testsProject(directory, 13))).toEqual([]);
+it('applies the test cap to the browser suites and shared helpers', () => {
+  for (const directory of ['e2e/x', 'e2e/support', 'extension-e2e', 'desktop-e2e', 'helpers']) {
+    expect(checkSourceStructure(testsProject(directory, 12))).toEqual([]);
+
+    expect(checkSourceStructure(testsProject(directory, 13))).toEqual([
+      expect.stringContaining('more than 12 files'),
+    ]);
   }
+});
+
+it('caps scripts at 6 files per directory', () => {
+  expect(checkSourceStructure(filesProject('scripts/area', 6, '.mjs'))).toEqual([]);
+
+  expect(checkSourceStructure(filesProject('scripts/area', 7, '.mjs'))).toEqual([
+    expect.stringContaining('more than 6 files'),
+  ]);
+});
+
+it('fails on a misspelled or missing configured root instead of skipping it', () => {
+  const root = repository();
+
+  expect(checkSourceStructure(root, [{ path: 'apps/deamon/src', max: 6 }])).toEqual([
+    expect.stringContaining('apps/deamon/src: cannot be read (ENOENT)'),
+  ]);
+
+  rmSync(join(root, 'scripts'), { recursive: true });
+
+  expect(checkSourceStructure(root)).toEqual([expect.stringContaining('scripts: cannot be read (ENOENT)')]);
 });
 
 it('ignores index.ts and .d.ts', () => {

@@ -1,8 +1,8 @@
 import { expect, it, vi } from 'vitest';
-import { Monitor } from '../../../apps/daemon/src/monitor/monitor.js';
-import { LocalStore } from '../../../apps/daemon/src/monitor/store.js';
-import { AdapterRegistry, SourceAdapter } from '../../../apps/daemon/src/adapters/registry.js';
-import { PermissionBroker } from '../../../apps/daemon/src/commands/permission-broker.js';
+import { Monitor } from '@daemon/monitor/monitor.js';
+import { LocalStore } from '@daemon/monitor/store.js';
+import { AdapterRegistry, SourceAdapter } from '@daemon/adapters/registry.js';
+import { PermissionBroker } from '@daemon/commands/permission-broker.js';
 import { noCapabilities } from '@protocol';
 
 it('records child hook lifecycle without marking the parent turn finished', () => {

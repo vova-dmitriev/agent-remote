@@ -3,7 +3,7 @@ import { EventType, FrameType, MessageRole, type EventEnvelope, type ServerFrame
 import { ProviderFilterValue } from "../src/entities/session/config/session-values.js"
 import { createSessionStore } from "../src/entities/session/model/store/create-session-store.js"
 import { sessionsAwaitingInput } from "../src/entities/session/lib/selectors.js"
-import { sessionSnapshot } from "../../../tests/e2e/support/session-fixtures.js"
+import { sessionSnapshot } from "../../../tests/e2e/support/fixtures/session-fixtures.js"
 import type * as SidebarGroups from "../src/widgets/session-sidebar/lib/sidebar-groups.js"
 
 const groups = vi.hoisted(() => ({ calls: 0 }))

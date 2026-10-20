@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { DesktopBridgeChannel, DesktopBridgeKind, DesktopBridgeVersion } from '@protocol';
-import { createDesktopPreloadBridge } from '../../apps/desktop/src/preload/bridge.js';
-import type { DesktopIpcRendererPort } from '../../apps/desktop/src/preload/types/bridge.js';
-import type { DesktopPrivateIpcChannel } from '../../apps/desktop/src/shared/private-ipc.js';
+import { createDesktopPreloadBridge } from '@desktop/preload/bridge.js';
+import type { DesktopIpcRendererPort } from '@desktop/preload/types/bridge.js';
+import type { DesktopPrivateIpcChannel } from '@desktop/shared/private-ipc.js';
 
 describe('desktop preload capability', () => {
   it('exposes only the fixed bridge and acknowledges parsed ordered events', async () => {

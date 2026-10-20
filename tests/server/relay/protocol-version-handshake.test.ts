@@ -9,10 +9,10 @@ import {
 import { once } from 'node:events';
 import { afterEach, expect, it, vi } from 'vitest';
 import { WebSocket, WebSocketServer } from 'ws';
-import { RelayClient } from '../../../apps/daemon/src/relay-client.js';
-import { RuntimeEvent } from '../../../apps/daemon/src/domain/runtime.js';
-import { PROTOCOL_REPROBE_MS } from '../../../apps/daemon/src/runtime-timings.js';
-import { attachmentRelayFixture } from '../../helpers/attachment-relay.js';
+import { RelayClient } from '@daemon/relay-client.js';
+import { RuntimeEvent } from '@daemon/domain/runtime.js';
+import { PROTOCOL_REPROBE_MS } from '@daemon/runtime-timings.js';
+import { attachmentRelayFixture } from '../../helpers/relay/attachment-relay.js';
 
 const cleanups: Array<() => Promise<unknown> | unknown> = [];
 

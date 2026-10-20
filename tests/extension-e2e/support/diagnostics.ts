@@ -1,5 +1,5 @@
 import type { TestInfo } from '@playwright/test';
-import { LocalDocumentKind } from '../../../apps/daemon/src/local/state/values.js';
+import { LocalDocumentKind } from '@daemon/local/state/values.js';
 import type { ExtensionHarness } from './types.js';
 
 export async function captureDiagnostics(extension: ExtensionHarness, info: TestInfo) {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createDesktopSource } from '../../../apps/daemon/src/desktop/adapter.js';
+import { createDesktopSource } from '@daemon/desktop/adapter.js';
 
 describe('Desktop bridge adapter', () => {
   it('keeps Chat free of tool permissions and rejects a changed local binding', async () => {

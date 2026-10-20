@@ -13,11 +13,11 @@ import {
   type HistoryMessage,
   type Session,
 } from '@protocol';
-import { AttachmentService } from '../../../apps/daemon/src/attachments/service.js';
-import { ContextCheckpointManager } from '../../../apps/daemon/src/continuity/context/checkpoint.js';
-import { createCodexCheckpointSource } from '../../../apps/daemon/src/continuity/source/native.js';
-import type { RepositoryProbe } from '../../../apps/daemon/src/continuity/source/types.js';
-import { LocalStore } from '../../../apps/daemon/src/monitor/store.js';
+import { AttachmentService } from '@daemon/attachments/service.js';
+import { ContextCheckpointManager } from '@daemon/continuity/context/checkpoint.js';
+import { createCodexCheckpointSource } from '@daemon/continuity/source/native.js';
+import type { RepositoryProbe } from '@daemon/continuity/source/types.js';
+import { LocalStore } from '@daemon/monitor/store.js';
 
 const roots: string[] = [];
 

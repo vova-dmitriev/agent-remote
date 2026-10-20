@@ -1,6 +1,10 @@
 import { expect, it } from 'vitest';
 import * as protocol from '@protocol';
-import { executionProfile, executionSelection, handoffRequest } from '../../helpers/execution-profile.js';
+import {
+  executionProfile,
+  executionSelection,
+  handoffRequest,
+} from '../../helpers/sessions/execution-profile.js';
 
 it('represents two retained OpenAI subscription profiles with independent verified identities', () => {
   const a = executionProfile();

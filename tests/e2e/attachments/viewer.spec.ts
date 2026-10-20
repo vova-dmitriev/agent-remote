@@ -1,15 +1,15 @@
 import { createHash } from 'node:crypto';
 import { expect } from '@playwright/test';
 import type { AttachmentDescriptor } from '@protocol';
-import { test, delivered, publishMessages, deviceFixture } from '../support/relay-fixture.js';
-import { COMMAND_IDS } from '../../../apps/mini-app/src/features/send-command/config/test-ids.js';
-import { UPLOAD_IDS } from '../../../apps/mini-app/src/features/send-command/ui/attachments/test-ids.js';
-import { ATTACHMENT_IDS } from '../../../apps/mini-app/src/entities/attachment/config/test-ids.js';
-import { setSessionLanguage } from '../support/session-language.js';
-import { identity } from '../support/identity.js';
-import { byTestId } from '../support/testid.js';
-import { sessionSnapshot } from '../support/session-fixtures.js';
-import { SESSION_CARD_IDS } from '../../../apps/mini-app/src/entities/session/config/test-ids.js';
+import { test, delivered, publishMessages, deviceFixture } from '../support/relay/relay-fixture.js';
+import { COMMAND_IDS } from '@/features/send-command/config/test-ids.js';
+import { UPLOAD_IDS } from '@/features/send-command/ui/attachments/test-ids.js';
+import { ATTACHMENT_IDS } from '@/entities/attachment/config/test-ids.js';
+import { setSessionLanguage } from '../support/ui/session-language.js';
+import { identity } from '../support/relay/identity.js';
+import { byTestId } from '../support/ui/testid.js';
+import { sessionSnapshot } from '../support/fixtures/session-fixtures.js';
+import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
 import { file, image, openAttachments, png } from './fixture.js';
 
 test('authenticates image preview and file download without exposing bearer credentials in URLs', async ({

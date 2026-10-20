@@ -1,11 +1,11 @@
-import { syntheticImageBytes } from '../../../apps/mini-app/.storybook/fixtures/attachment/media.js';
+import { syntheticImageBytes } from '@storybook-fixtures/attachment/media.js';
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
-import { deviceFixture } from '../support/relay-fixture.js';
-import { sessionSnapshot } from '../support/session-fixtures.js';
-import { identity } from '../support/identity.js';
-import { byTestId } from '../support/testid.js';
-import { SESSION_CARD_IDS } from '../../../apps/mini-app/src/entities/session/config/test-ids.js';
+import { deviceFixture } from '../support/relay/relay-fixture.js';
+import { sessionSnapshot } from '../support/fixtures/session-fixtures.js';
+import { identity } from '../support/relay/identity.js';
+import { byTestId } from '../support/ui/testid.js';
+import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
 
 export const png = Buffer.from(syntheticImageBytes());
 export const image = { name: 'synthetic.png', mimeType: 'image/png', buffer: png };

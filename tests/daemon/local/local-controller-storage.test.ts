@@ -1,6 +1,6 @@
 import { afterEach, expect, it } from 'vitest';
-import { LocalDatabase } from '../../../apps/daemon/src/local/state/database.js';
-import { LocalDocuments } from '../../../apps/daemon/src/local/state/documents.js';
+import { LocalDatabase } from '@daemon/local/state/database.js';
+import { LocalDocuments } from '@daemon/local/state/documents.js';
 
 const databases: LocalDatabase[] = [];
 

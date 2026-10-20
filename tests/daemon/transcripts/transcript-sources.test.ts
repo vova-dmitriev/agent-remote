@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { TranscriptSources } from '../../../apps/daemon/src/monitor/history.js';
+import { TranscriptSources } from '@daemon/monitor/history.js';
 
 it('does not remove a replacement reader when a stale asynchronous read fails', () => {
   const sources = new TranscriptSources('/synthetic');

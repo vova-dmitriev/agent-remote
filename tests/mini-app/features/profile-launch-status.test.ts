@@ -6,11 +6,8 @@ import {
   type ExecutionProfileSummary,
 } from '@protocol';
 import { describe, expect, it } from 'vitest';
-import { resolveSessionProfileStatus } from '../../../apps/mini-app/src/features/create-session/model/profile-status.js';
-import {
-  sessionControlsEN,
-  sessionControlsRU,
-} from '../../../apps/mini-app/src/shared/lib/i18n/dictionaries/session-controls.js';
+import { resolveSessionProfileStatus } from '@/features/create-session/model/profile-status.js';
+import { sessionControlsEN, sessionControlsRU } from '@/shared/lib/i18n/dictionaries/session-controls.js';
 
 const profile = (authMode: ProfileAuthMode): ExecutionProfileSummary => ({
   id: '11111111-1111-4111-8111-111111111111',

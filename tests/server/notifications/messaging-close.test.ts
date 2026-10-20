@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { afterEach, expect, it, vi } from 'vitest';
-import { createMessaging } from '../../../apps/server/src/infrastructure/messaging.js';
-import { RetentionQueue } from '../../../apps/server/src/maintenance/retention-queue.js';
-import { NotificationQueue } from '../../../apps/server/src/notifications/queue.js';
+import { createMessaging } from '@server/infrastructure/messaging.js';
+import { RetentionQueue } from '@server/maintenance/retention-queue.js';
+import { NotificationQueue } from '@server/notifications/queue.js';
 
 afterEach(() => {
   vi.restoreAllMocks();

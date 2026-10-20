@@ -4,14 +4,14 @@ import { NestApplicationContext } from '@nestjs/core';
 import { FrameType } from '@protocol';
 import { afterAll, beforeAll, expect, it, vi } from 'vitest';
 import { WebSocket } from 'ws';
-import { createRelay, type Relay } from '../../../apps/server/src/app/create-relay.js';
-import { Database } from '../../../apps/server/src/db/database.js';
-import { Notifier } from '../../../apps/server/src/notifications/notify.js';
-import { NotificationQueue } from '../../../apps/server/src/notifications/queue.js';
-import { RealtimeModule } from '../../../apps/server/src/realtime/realtime.module.js';
-import { RelayModule } from '../../../apps/server/src/app/relay.module.js';
-import { databaseFixture } from '../../helpers/database.js';
-import { initData, testBotToken } from '../../helpers/telegram.js';
+import { createRelay, type Relay } from '@server/app/create-relay.js';
+import { Database } from '@server/db/database.js';
+import { Notifier } from '@server/notifications/notify.js';
+import { NotificationQueue } from '@server/notifications/queue.js';
+import { RealtimeModule } from '@server/realtime/realtime.module.js';
+import { RelayModule } from '@server/app/relay.module.js';
+import { databaseFixture } from '../../helpers/relay/database.js';
+import { initData, testBotToken } from '../../helpers/relay/telegram.js';
 
 const RELAY_KEYS = [
   'db',

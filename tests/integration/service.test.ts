@@ -5,12 +5,12 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { mkdtemp, rm, mkdir, writeFile, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createRelay } from '../../apps/server/src/app/create-relay.js';
-import { startDaemon } from '../../apps/daemon/src/main.js';
-import { saveConfig, localSecret, socketPath } from '../../apps/daemon/src/config.js';
-import { requestLocal, lineReader, writeFrame } from '../../apps/daemon/src/code/hooks/ipc.js';
+import { createRelay } from '@server/app/create-relay.js';
+import { startDaemon } from '@daemon/main.js';
+import { saveConfig, localSecret, socketPath } from '@daemon/config.js';
+import { requestLocal, lineReader, writeFrame } from '@daemon/code/hooks/ipc.js';
 import type { AppSnapshot } from '@protocol';
-import { initData, testBotToken } from '../helpers/telegram.js';
+import { initData, testBotToken } from '../helpers/relay/telegram.js';
 
 const url =
     process.env.TEST_DATABASE_URL ??

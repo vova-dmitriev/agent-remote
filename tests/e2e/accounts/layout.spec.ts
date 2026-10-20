@@ -1,12 +1,12 @@
 import { expect } from '@playwright/test';
 import { AgentProvider } from '@protocol';
-import { ACCOUNTS_PAGE_IDS as PAGE } from '../../../apps/mini-app/src/pages/accounts/config/test-ids.js';
-import { PROFILE_MANAGE_IDS as FORM } from '../../../apps/mini-app/src/pages/accounts/config/management/test-ids.js';
-import { PROFILE_CARD_IDS as CARD } from '../../../apps/mini-app/src/pages/accounts/config/profile/test-ids.js';
-import { identity } from '../support/identity.js';
-import { test } from '../support/relay-fixture.js';
+import { ACCOUNTS_PAGE_IDS as PAGE } from '@/pages/accounts/config/test-ids.js';
+import { PROFILE_MANAGE_IDS as FORM } from '@/pages/accounts/config/management/test-ids.js';
+import { PROFILE_CARD_IDS as CARD } from '@/pages/accounts/config/profile/test-ids.js';
+import { identity } from '../support/relay/identity.js';
+import { test } from '../support/relay/relay-fixture.js';
 import { profileCompanion } from './companion.js';
-import { openAccounts } from '../support/settings-menu.js';
+import { openAccounts } from '../support/ui/settings-menu.js';
 
 test('offers account creation, explains provider support and keeps collapsed cards compact with a checked-at gap', async ({ page }) => {
   const companion = await profileCompanion();

@@ -1,11 +1,11 @@
 import { expect, it } from 'vitest';
 import { Redis } from 'ioredis';
 import { randomUUID } from 'node:crypto';
-import { databaseFixture } from '../../helpers/database.js';
-import { RedisCache } from '../../../apps/server/src/infrastructure/redis.js';
-import { SessionHistory } from '../../../apps/server/src/history/service.js';
-import { HistoryRepository } from '../../../apps/server/src/history/repository.js';
-import { persistEvent } from '../../../apps/server/src/history/events.js';
+import { databaseFixture } from '../../helpers/relay/database.js';
+import { RedisCache } from '@server/infrastructure/redis.js';
+import { SessionHistory } from '@server/history/service.js';
+import { HistoryRepository } from '@server/history/repository.js';
+import { persistEvent } from '@server/history/events.js';
 import type { EventEnvelope } from '@protocol';
 
 it('cannot let an old in-flight history fill overwrite a newer committed revision', async () => {

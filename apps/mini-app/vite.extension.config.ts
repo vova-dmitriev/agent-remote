@@ -1,7 +1,10 @@
 import { fileURLToPath } from "node:url"
 import { defineConfig, mergeConfig } from "vite"
+// Vite's config loader does not resolve tsconfig paths, so this file reaches the extension config relatively.
+// eslint-disable-next-line no-restricted-imports
 import { extensionManifest } from "../chrome-extension/src/config/manifest.ts"
 import sharedConfig from "./vite.config.ts"
+// eslint-disable-next-line no-restricted-imports
 import { extensionNoEval } from "../chrome-extension/src/config/build.ts"
 
 const config = mergeConfig(

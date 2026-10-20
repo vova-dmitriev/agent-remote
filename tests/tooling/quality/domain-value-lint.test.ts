@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
-import { DaemonErrorCode } from '../../../apps/daemon/src/error-codes.js';
+import { DaemonErrorCode } from '@daemon/error-codes.js';
 import { ErrorCode, knownErrorCode } from '@protocol';
 import { expect, it } from 'vitest';
 

@@ -1,6 +1,6 @@
 import { expect, it, vi } from 'vitest';
 import { CodedError, ErrorCode, FrameType, type ServerFrame } from '@protocol';
-import { RelayFrameRouter } from '../../../apps/daemon/src/runtime/relay-frame-router.js';
+import { RelayFrameRouter } from '@daemon/runtime/relay-frame-router.js';
 
 function harness(page: () => Promise<unknown> = async () => ({ messages: [], before: null, after: null })) {
   const deps = {

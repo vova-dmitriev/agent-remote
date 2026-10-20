@@ -1,6 +1,6 @@
 import { endianness } from 'node:os';
 import { expect, it } from 'vitest';
-import { NativeFrameCodec } from '../../../apps/daemon/src/browser/transport/framing.js';
+import { NativeFrameCodec } from '@daemon/browser/transport/framing.js';
 import { ErrorCode } from '@protocol';
 
 function wire(body: Uint8Array, size = body.length): Buffer {

@@ -1,9 +1,9 @@
 import { request } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { afterEach, beforeEach, expect, it } from 'vitest';
-import { attachmentRelayFixture } from '../../helpers/attachment-relay.js';
+import { attachmentRelayFixture } from '../../helpers/relay/attachment-relay.js';
 import { MAX_ATTACHMENT_BYTES, type AttachmentDescriptor, type Session } from '@protocol';
-import { AttachmentRepository } from '../../../apps/server/src/attachments/repositories/attachments.js';
+import { AttachmentRepository } from '@server/attachments/repositories/attachments.js';
 
 let fixture: Awaited<ReturnType<typeof attachmentRelayFixture>>;
 

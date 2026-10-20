@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { is } from 'drizzle-orm';
 import { getTableConfig, PgTable } from 'drizzle-orm/pg-core';
-import * as schema from '../../../apps/server/src/db/schema/index.js';
-import { databaseFixture } from '../../helpers/database.js';
+import * as schema from '@server/db/schema/index.js';
+import { databaseFixture } from '../../helpers/relay/database.js';
 
 const JOURNAL = 'server_schema_migrations';
 const tables = Object.values(schema).filter((value) => is(value, PgTable)) as unknown as PgTable[];

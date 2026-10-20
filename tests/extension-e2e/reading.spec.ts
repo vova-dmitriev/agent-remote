@@ -1,10 +1,10 @@
 import { expect } from '@playwright/test';
 import { test, selectSession } from './fixture.js';
-import { byTestId } from '../e2e/support/testid.js';
-import { jumpNear, railMarker } from '../e2e/support/rail.js';
-import { SESSION_PAGE_IDS, SESSION_FEED_IDS } from '../../apps/mini-app/src/pages/session/config/test-ids.js';
+import { byTestId } from '../e2e/support/ui/testid.js';
+import { jumpNear, railMarker } from '../e2e/support/ui/rail.js';
+import { SESSION_PAGE_IDS, SESSION_FEED_IDS } from '@/pages/session/config/test-ids.js';
 import { EventType, MessageRole } from '@protocol';
-import { LocalDocumentKind } from '../../apps/daemon/src/local/state/values.js';
+import { LocalDocumentKind } from '@daemon/local/state/values.js';
 
 test('restores a middle message and active marker in a new extension viewer', async ({ extension }) => {
   for (let i = 0; i < 80; i++) {

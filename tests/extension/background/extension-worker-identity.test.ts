@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { attachViewer } from '../../../apps/chrome-extension/src/background/broker.js';
-import { ViewerRegistry } from '../../../apps/chrome-extension/src/background/registry.js';
+import { attachViewer } from '@extension/background/broker.js';
+import { ViewerRegistry } from '@extension/background/registry.js';
 import { ErrorCode, LocalKind, LocalOperation } from '@protocol';
 import { nativeValue, workerFixture, workerPort } from './extension-worker.fixture.js';
 

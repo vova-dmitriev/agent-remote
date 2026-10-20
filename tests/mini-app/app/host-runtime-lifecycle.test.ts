@@ -1,10 +1,10 @@
 import { expect, it, vi } from 'vitest';
 import { ConnectionStatus } from '@protocol';
-import { AppTransport } from '../../../apps/mini-app/src/app/api/transport/app-transport.js';
-import { TransportRuntime } from '../../../apps/mini-app/src/shared/lib/runtime/transport-runtime.js';
-import { connectHost } from '../../../apps/mini-app/src/shared/lib/host/connection.js';
-import { createSessionStore } from '../../../apps/mini-app/src/entities/session/model/store/create-session-store.js';
-import type { HostAdapter } from '../../../apps/mini-app/src/shared/lib/host/types.js';
+import { AppTransport } from '@/app/api/transport/app-transport.js';
+import { TransportRuntime } from '@/shared/lib/runtime/transport-runtime.js';
+import { connectHost } from '@/shared/lib/host/connection.js';
+import { createSessionStore } from '@/entities/session/model/store/create-session-store.js';
+import type { HostAdapter } from '@/shared/lib/host/types.js';
 
 it('connects an injected host without Telegram and suppresses callbacks after replacement', async () => {
   const runtime = new TransportRuntime();

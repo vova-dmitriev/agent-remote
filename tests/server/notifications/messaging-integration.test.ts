@@ -1,10 +1,10 @@
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { Redis } from 'ioredis';
-import { createRelay } from '../../../apps/server/src/app/create-relay.js';
-import { NotificationWorker } from '../../../apps/server/src/notifications/worker.js';
-import { databaseFixture } from '../../helpers/database.js';
-import { redisProxy } from '../../helpers/redis-proxy.js';
-import { testBotToken, initData } from '../../helpers/telegram.js';
+import { createRelay } from '@server/app/create-relay.js';
+import { NotificationWorker } from '@server/notifications/worker.js';
+import { databaseFixture } from '../../helpers/relay/database.js';
+import { redisProxy } from '../../helpers/relay/redis-proxy.js';
+import { testBotToken, initData } from '../../helpers/relay/telegram.js';
 
 let fixture: Awaited<ReturnType<typeof databaseFixture>>;
 let proxy: Awaited<ReturnType<typeof redisProxy>>;

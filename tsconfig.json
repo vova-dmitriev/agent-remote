@@ -18,7 +18,10 @@
       "@storybook-fixtures/*": ["./apps/mini-app/.storybook/fixtures/*"],
       "@storybook-components/*": ["./apps/mini-app/.storybook/components/*"],
       "@extension/*": ["./apps/chrome-extension/src/*"],
-      "@transport/*": ["./packages/transport/src/*"]
+      "@transport/*": ["./packages/transport/src/*"],
+      "@daemon/*": ["./apps/daemon/src/*"],
+      "@server/*": ["./apps/server/src/*"],
+      "@desktop/*": ["./apps/desktop/src/*"]
     },
     "rewriteRelativeImportExtensions": true
   },

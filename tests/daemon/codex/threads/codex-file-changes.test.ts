@@ -1,8 +1,5 @@
 import { expect, it } from 'vitest';
-import {
-  CodexFileChanges,
-  boundChangeSnapshots,
-} from '../../../../apps/daemon/src/codex/binding/file-changes.js';
+import { CodexFileChanges, boundChangeSnapshots } from '@daemon/codex/binding/file-changes.js';
 import { sessionChangesSchema, type Session } from '@protocol';
 
 const item = (id: string, path = 'src/app.ts', diff = '@@ -1 +1 @@\n-old\n+const value = 2;') => ({
@@ -54,7 +51,7 @@ it('bounds escaped/multibyte patches and the shared snapshot payload', () => {
 });
 
 it('does not add diff payload when other snapshot content uses the transport budget', async () => {
-  const { boundSnapshotChanges } = await import('../../../../apps/daemon/src/codex/binding/file-changes.js');
+  const { boundSnapshotChanges } = await import('@daemon/codex/binding/file-changes.js');
   const changes = new CodexFileChanges();
 
   changes.ingest(item('edit'), 'turn');

@@ -1,9 +1,5 @@
 import { expect, it } from 'vitest';
-import {
-  connectMac,
-  ensureMacConnected,
-  type PairingDependencies,
-} from '../../../../apps/daemon/src/cli/pairing/connect.js';
+import { connectMac, ensureMacConnected, type PairingDependencies } from '@daemon/cli/pairing/connect.js';
 
 const config = { relayUrl: 'http://127.0.0.1:3040', deviceId: 'existing', deviceToken: 'fixture' };
 

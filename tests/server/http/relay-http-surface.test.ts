@@ -1,9 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ErrorCode, HttpStatus } from '@protocol';
-import { HealthStatus } from '../../../apps/server/src/domain/infrastructure.js';
-import { createRelay } from '../../../apps/server/src/app/create-relay.js';
-import { databaseFixture } from '../../helpers/database.js';
-import { initData, testBotToken } from '../../helpers/telegram.js';
+import { HealthStatus } from '@server/domain/infrastructure.js';
+import { createRelay } from '@server/app/create-relay.js';
+import { databaseFixture } from '../../helpers/relay/database.js';
+import { initData, testBotToken } from '../../helpers/relay/telegram.js';
 
 const RouteMethod = {
   Get: 'get',

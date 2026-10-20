@@ -1,9 +1,9 @@
 import { expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:net';
-import { databaseFixture } from '../../helpers/database.js';
-import { createRelay } from '../../../apps/server/src/app/create-relay.js';
-import { testBotToken } from '../../helpers/telegram.js';
+import { databaseFixture } from '../../helpers/relay/database.js';
+import { createRelay } from '@server/app/create-relay.js';
+import { testBotToken } from '../../helpers/relay/telegram.js';
 
 it('closes its PostgreSQL connections when Redis initialization fails', async () => {
   const fixture = await databaseFixture();

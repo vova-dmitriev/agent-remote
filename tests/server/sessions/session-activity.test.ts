@@ -1,9 +1,9 @@
 import { expect, it } from 'vitest';
-import { attachmentRelayFixture } from '../../helpers/attachment-relay.js';
-import { persistEvent } from '../../../apps/server/src/history/events.js';
-import { HistoryRepository } from '../../../apps/server/src/history/repository.js';
-import { SessionLabels } from '../../../apps/server/src/sessions/labels.js';
-import { SessionRepository } from '../../../apps/server/src/sessions/repository.js';
+import { attachmentRelayFixture } from '../../helpers/relay/attachment-relay.js';
+import { persistEvent } from '@server/history/events.js';
+import { HistoryRepository } from '@server/history/repository.js';
+import { SessionLabels } from '@server/sessions/labels.js';
+import { SessionRepository } from '@server/sessions/repository.js';
 
 it('uses native message time, ignores status polling and preserves the newest message after late history', async () => {
   const f = await attachmentRelayFixture();

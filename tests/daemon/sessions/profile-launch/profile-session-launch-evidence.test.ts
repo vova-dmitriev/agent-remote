@@ -1,13 +1,13 @@
 import { expect, it, vi } from 'vitest';
-import type { ProfiledExecutionLaunch } from '../../../../apps/daemon/src/sessions/execution/types.js';
-import { executionProfile, executionSelection } from '../../../helpers/execution-profile.js';
+import type { ProfiledExecutionLaunch } from '@daemon/sessions/execution/types.js';
+import { executionProfile, executionSelection } from '../../../helpers/sessions/execution-profile.js';
 import { executionProfileSummarySchema } from '@protocol';
-import { startProfiledCodexRuntime } from '../../../../apps/daemon/src/sessions/execution/start-profiled-codex.js';
-import { ManagedCodexLaunchEvidenceType } from '../../../../apps/daemon/src/codex/launch/types.js';
+import { startProfiledCodexRuntime } from '@daemon/sessions/execution/start-profiled-codex.js';
+import { ManagedCodexLaunchEvidenceType } from '@daemon/codex/launch/types.js';
 
 const launcher = vi.hoisted(() => ({ ensure: vi.fn() }));
 
-vi.mock('../../../../apps/daemon/src/codex/launcher.js', () => ({
+vi.mock('@daemon/codex/launcher.js', () => ({
   ensureManagedCodexSocket: launcher.ensure,
 }));
 

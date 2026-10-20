@@ -1,12 +1,12 @@
 import { ConsoleLogger } from '@nestjs/common';
 import { ErrorCode, HttpStatus } from '@protocol';
 import { afterAll, afterEach, beforeAll, expect, it, vi } from 'vitest';
-import { logDebug } from '../../../apps/daemon/src/diagnostics/log.js';
-import { createRelay } from '../../../apps/server/src/app/create-relay.js';
-import { PreferenceService } from '../../../apps/server/src/preferences/service.js';
+import { logDebug } from '@daemon/diagnostics/log.js';
+import { createRelay } from '@server/app/create-relay.js';
+import { PreferenceService } from '@server/preferences/service.js';
 import { redactError } from '@transport/diagnostics/redact-error.js';
-import { databaseFixture } from '../../helpers/database.js';
-import { initData, testBotToken } from '../../helpers/telegram.js';
+import { databaseFixture } from '../../helpers/relay/database.js';
+import { initData, testBotToken } from '../../helpers/relay/telegram.js';
 
 let fixture: Awaited<ReturnType<typeof databaseFixture>>;
 let relay: Awaited<ReturnType<typeof createRelay>>;

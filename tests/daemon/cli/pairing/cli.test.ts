@@ -2,8 +2,8 @@ import { beforeEach, expect, it, vi } from 'vitest';
 
 const pairing = vi.hoisted(() => ({ connectMac: vi.fn(), ensureMacConnected: vi.fn() }));
 
-vi.mock('../../../../apps/daemon/src/cli/pairing/connect.js', () => pairing);
-import { runCli } from '../../../../apps/daemon/src/setup-cli.js';
+vi.mock('@daemon/cli/pairing/connect.js', () => pairing);
+import { runCli } from '@daemon/setup-cli.js';
 
 beforeEach(() => {
   vi.clearAllMocks();

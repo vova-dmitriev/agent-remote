@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
-import { attachmentRelayFixture } from '../../helpers/attachment-relay.js';
-import { SessionLabels } from '../../../apps/server/src/sessions/labels.js';
-import { SessionRepository } from '../../../apps/server/src/sessions/repository.js';
+import { attachmentRelayFixture } from '../../helpers/relay/attachment-relay.js';
+import { SessionLabels } from '@server/sessions/labels.js';
+import { SessionRepository } from '@server/sessions/repository.js';
 
 it('persists an owned label across native snapshots and rejects another owner or an obsolete generation', async () => {
   const f = await attachmentRelayFixture();

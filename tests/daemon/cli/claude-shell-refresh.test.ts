@@ -15,7 +15,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { ErrorCode } from '@protocol';
-import { DaemonErrorCode } from '../../../apps/daemon/src/error-codes.js';
+import { DaemonErrorCode } from '@daemon/error-codes.js';
 
 const filesystem = vi.hoisted(() => ({ failRename: false }));
 
@@ -38,7 +38,7 @@ import {
   claudeShellDirectory,
   installClaudeShell,
   refreshClaudeShellEntry,
-} from '../../../apps/daemon/src/cli/shell-integration.js';
+} from '@daemon/cli/shell-integration.js';
 
 let home: string;
 let source: string;

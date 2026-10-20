@@ -3,7 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { expect, it } from 'vitest';
-import { terminateRuntimeProcesses } from '../../helpers/runtime-processes.js';
+import { terminateRuntimeProcesses } from '../../helpers/desktop/runtime-processes.js';
 
 const itOnPosix = it.skipIf(process.platform === 'win32');
 

@@ -1,22 +1,22 @@
 import { EventEmitter } from 'node:events';
 import { beforeEach, expect, it, vi } from 'vitest';
-import { runCodex } from '../../../apps/daemon/src/cli/codex.js';
+import { runCodex } from '@daemon/cli/codex.js';
 
 const spawned = vi.hoisted(() => vi.fn());
 
 vi.mock('node:child_process', () => ({ spawn: spawned }));
 
-vi.mock('../../../apps/daemon/src/code/hooks/ipc.js', () => ({
+vi.mock('@daemon/code/hooks/ipc.js', () => ({
   requestLocal: async () => ({ type: 'codex_result', result: { connected: 0 } }),
 }));
 
-vi.mock('../../../apps/daemon/src/config.js', () => ({
+vi.mock('@daemon/config.js', () => ({
   localSecret: async () => 'synthetic',
   socketPath: () => '/private/hooks.sock',
   stateDirectory: () => '/private/state',
 }));
 
-vi.mock('../../../apps/daemon/src/codex/launcher.js', () => ({
+vi.mock('@daemon/codex/launcher.js', () => ({
   ensureManagedCodexSocket: async () => '/private/managed.sock',
 }));
 

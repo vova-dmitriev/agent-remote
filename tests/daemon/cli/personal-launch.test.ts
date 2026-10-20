@@ -3,11 +3,8 @@ import { HttpStatus } from '@protocol';
 import { mkdtemp, writeFile, readFile, stat, chmod, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import {
-  ensurePersonalEnv,
-  startQuickTunnel,
-} from '../../../apps/daemon/src/cli/personal/personal-runtime.js';
-import { personalBot } from '../../../apps/daemon/src/cli/personal/personal-bot.js';
+import { ensurePersonalEnv, startQuickTunnel } from '@daemon/cli/personal/personal-runtime.js';
+import { personalBot } from '@daemon/cli/personal/personal-bot.js';
 
 it('creates private local settings and preserves an existing bot token', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'personal-env-'));

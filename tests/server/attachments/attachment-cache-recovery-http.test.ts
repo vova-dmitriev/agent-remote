@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { expect, it } from 'vitest';
-import { attachmentRelayFixture } from '../../helpers/attachment-relay.js';
+import { attachmentRelayFixture } from '../../helpers/relay/attachment-relay.js';
 
 it('rebuilds an evicted native attachment through an authenticated single-message read, preserving its URL', async () => {
   const f = await attachmentRelayFixture();

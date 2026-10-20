@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { sessionSchema } from '@protocol';
-import { sessionSnapshot } from '../e2e/support/session-fixtures.js';
+import { sessionSnapshot } from '../e2e/support/fixtures/session-fixtures.js';
 
 describe('session model contract', () => {
   it('accepts bounded explicit per-session models and legacy sessions', () => {

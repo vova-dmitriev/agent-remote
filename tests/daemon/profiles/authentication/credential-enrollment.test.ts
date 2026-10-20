@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { expect, it } from 'vitest';
-import { CredentialEnrollmentService } from '../../../../apps/daemon/src/profiles/enrollment/service.js';
+import { CredentialEnrollmentService } from '@daemon/profiles/enrollment/service.js';
 import { encryptEnrollment } from '@transport/credentials/sealed-box.js';
 import { enrollmentFixture } from '../fixtures/enrollment.fixture.js';
 

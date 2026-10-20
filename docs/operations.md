@@ -28,7 +28,7 @@ Test DB — отдельный порт 55432, случайные schemas для
 
 События и dedup ограничены 24 часами/10 000 событий на device; есть периодическая очистка. Device snapshot содержит текущую историю состояния/permissions и может включать видимый текст выбранного источника. Оператор сервера имеет доступ к этим данным; TLS не является E2EE. Логи содержат только коды/операционные сообщения.
 
-Backup: отдельное хранилище с доступом только оператора; срок хранения ≤7 дней. Скрипт `scripts/backup-db.sh` использует pg_dump внутри выбранного compose project (`COMPOSE_FILE`), имя базы задаётся `BACKUP_DATABASE` (по умолчанию `claude_remote`), а `scripts/restore-db.sh` восстанавливает только указанную чистую test/staging database. Не восстанавливай поверх production без отдельного решения.
+Backup: отдельное хранилище с доступом только оператора; срок хранения ≤7 дней. Скрипт `scripts/server/backup-db.sh` использует pg_dump внутри выбранного compose project (`COMPOSE_FILE`), имя базы задаётся `BACKUP_DATABASE` (по умолчанию `claude_remote`), а `scripts/server/restore-db.sh` восстанавливает только указанную чистую test/staging database. Не восстанавливай поверх production без отдельного решения.
 
 Attachment bytes are private PostgreSQL data and are included in database backups. Live relay retention is 24 hours with a 50 MiB owner quota; backups retain their separately configured lifetime. The companion keeps verified private inputs for at most 24 hours and prunes them periodically. See [attachment storage and source boundaries](attachments.md).
 

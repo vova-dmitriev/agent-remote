@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { Pool } from 'pg';
 import { afterEach, describe, expect, it } from 'vitest';
-import { Database } from '../../../apps/server/src/db/database.js';
+import { Database } from '@server/db/database.js';
 
 const fixtures: { db: Database; admin: Pool; schema: string }[] = [];
 

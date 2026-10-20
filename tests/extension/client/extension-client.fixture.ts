@@ -9,8 +9,8 @@ import {
   TargetKind,
   LocalKind,
 } from '@protocol';
-import type { ChromeApi, ChromePort } from '../../../apps/chrome-extension/src/config/chrome-api.js';
-import { ExtensionConnection } from '../../../apps/chrome-extension/src/client/connection.js';
+import type { ChromeApi, ChromePort } from '@extension/config/chrome-api.js';
+import { ExtensionConnection } from '@extension/client/connection.js';
 
 export function broker() {
   const messages = new Set<(message: unknown, port: ChromePort) => void>();

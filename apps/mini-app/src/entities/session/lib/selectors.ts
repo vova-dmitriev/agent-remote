@@ -38,7 +38,7 @@ export function filterByProvider(sessions: Session[], provider: ProviderFilterVa
 
 /**
  * The time every session list orders by: the last message. Status events (`lastEventAt`) never reorder a list, so a
- * session without messages has no recency and sorts last (pinned by tests/e2e/session-labels-order.spec.ts).
+ * session without messages has no recency and sorts last (pinned by tests/e2e/sessions/session-labels-order.spec.ts).
  */
 export function sessionRecency(session: Session) {
   return session.lastMessageAt ?? NO_RECENCY

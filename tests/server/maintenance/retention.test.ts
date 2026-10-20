@@ -3,10 +3,10 @@ import { Queue } from 'bullmq';
 import { Redis } from 'ioredis';
 import { randomUUID } from 'node:crypto';
 import { afterEach, expect, it, vi } from 'vitest';
-import { createRelay } from '../../../apps/server/src/app/create-relay.js';
-import { AttachmentRepository } from '../../../apps/server/src/attachments/repositories/attachments.js';
-import { CommandRepository } from '../../../apps/server/src/commands/repositories/audit.js';
-import { HistoryRepository } from '../../../apps/server/src/history/repository.js';
+import { createRelay } from '@server/app/create-relay.js';
+import { AttachmentRepository } from '@server/attachments/repositories/attachments.js';
+import { CommandRepository } from '@server/commands/repositories/audit.js';
+import { HistoryRepository } from '@server/history/repository.js';
 import {
   COMMAND_ACK_TIMEOUT_MS,
   EVENT_RETENTION_MS,
@@ -15,10 +15,10 @@ import {
   RETENTION_INTERVAL_MS,
   RETENTION_JOB_ID,
   RETENTION_QUEUE,
-} from '../../../apps/server/src/maintenance/limits.js';
-import { Retention } from '../../../apps/server/src/maintenance/retention.js';
-import { databaseFixture } from '../../helpers/database.js';
-import { testBotToken } from '../../helpers/telegram.js';
+} from '@server/maintenance/limits.js';
+import { Retention } from '@server/maintenance/retention.js';
+import { databaseFixture } from '../../helpers/relay/database.js';
+import { testBotToken } from '../../helpers/relay/telegram.js';
 
 const cleanups: Array<() => Promise<unknown>> = [];
 

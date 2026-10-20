@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { ContextCheckpointManager } from '../../../apps/daemon/src/continuity/context/checkpoint.js';
-import { CheckpointLimits } from '../../../apps/daemon/src/continuity/context/values.js';
-import { checkpointRoot, checkpointSource, cleanCheckpointRoots } from '../../helpers/checkpoint-fixtures.js';
+import { ContextCheckpointManager } from '@daemon/continuity/context/checkpoint.js';
+import { CheckpointLimits } from '@daemon/continuity/context/values.js';
+import {
+  checkpointRoot,
+  checkpointSource,
+  cleanCheckpointRoots,
+} from '../../helpers/sessions/checkpoint-fixtures.js';
 
 afterEach(cleanCheckpointRoots);
 

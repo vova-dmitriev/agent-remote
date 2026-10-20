@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { expect, it } from 'vitest';
-import { openCodexProfileProcess } from '../../../apps/daemon/src/profiles/native/process.js';
+import { openCodexProfileProcess } from '@daemon/profiles/native/process.js';
 import { profileRegistryFixture } from './fixtures/registry.fixture.js';
 
 it('waits for its own authentication child to exit before credential cleanup can be acknowledged', async () => {

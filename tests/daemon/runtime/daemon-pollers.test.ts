@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { NativeRestartState, SessionStatus, TargetKind, ConnectorId } from '@protocol';
-import { SourcePoller } from '../../../apps/daemon/src/runtime/source-poller.js';
-import { NativeRestartPoller } from '../../../apps/daemon/src/runtime/native-restart-poller.js';
+import { SourcePoller } from '@daemon/runtime/source-poller.js';
+import { NativeRestartPoller } from '@daemon/runtime/native-restart-poller.js';
 import {
   NATIVE_PROCESS_POLL_INTERVAL_MS,
   SESSION_ACTIVITY_POLL_INTERVAL_MS,
   SOURCE_POLL_INTERVAL_MS,
-} from '../../../apps/daemon/src/runtime-timings.js';
+} from '@daemon/runtime-timings.js';
 
 beforeEach(() => {
   vi.useFakeTimers();

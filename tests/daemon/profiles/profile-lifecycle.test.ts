@@ -4,8 +4,8 @@ import { writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, it } from 'vitest';
 import { profileServiceFixture as fixture } from './fixtures/service.fixture.js';
-import { ProfileService } from '../../../apps/daemon/src/profiles/service.js';
-import { buildProfileEnvironment } from '../../../apps/daemon/src/profiles/environment.js';
+import { ProfileService } from '@daemon/profiles/service.js';
+import { buildProfileEnvironment } from '@daemon/profiles/environment.js';
 import { codexSubscription, verifiedAccount } from './fixtures/registry.fixture.js';
 
 it('reconciles a lost create acknowledgment by its original ID across service restart', async () => {

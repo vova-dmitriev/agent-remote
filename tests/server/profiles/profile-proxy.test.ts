@@ -1,8 +1,8 @@
 import { expect, it } from 'vitest';
 import { HttpStatus, ErrorCode } from '@protocol';
 import type { WebSocket } from 'ws';
-import { ProfileProxy } from '../../../apps/server/src/profiles/transport/proxy.js';
-import { Fault } from '../../../apps/server/src/http/errors/fault.js';
+import { ProfileProxy } from '@server/profiles/transport/proxy.js';
+import { Fault } from '@server/http/errors/fault.js';
 import type { ServerFrame } from '@protocol';
 
 function fixture() {

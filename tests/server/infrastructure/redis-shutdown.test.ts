@@ -1,8 +1,8 @@
 import { expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { Redis } from 'ioredis';
-import { NotificationQueue } from '../../../apps/server/src/notifications/queue.js';
-import { redisProxy } from '../../helpers/redis-proxy.js';
+import { NotificationQueue } from '@server/notifications/queue.js';
+import { redisProxy } from '../../helpers/relay/redis-proxy.js';
 
 it('stops an active consumer when Redis disconnects after shutdown begins', async () => {
   const proxy = await redisProxy();

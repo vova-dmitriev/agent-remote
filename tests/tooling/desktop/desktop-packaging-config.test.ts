@@ -69,8 +69,8 @@ describe('desktop packaging configuration', () => {
 
   it('runs the root build from the repository before desktop packaging', () => {
     expect(desktopPackage.scripts.package).toMatch(/^npm --prefix \.\.\/\.\. run build && /);
-    expect(desktopPackage.scripts.package).toContain('node ../../scripts/desktop/build.mjs');
-    expect(desktopPackage.scripts.package).toContain('node ../../scripts/desktop/package.mjs');
+    expect(desktopPackage.scripts.package).toContain('node ../../scripts/desktop/app/build.mjs');
+    expect(desktopPackage.scripts.package).toContain('node ../../scripts/desktop/app/package.mjs');
     expect(rootPackage.scripts['package:desktop']).toBe('npm --prefix apps/desktop run package');
     expect(rootPackage.scripts['validate:commit']).toContain('npm run build:desktop');
   });

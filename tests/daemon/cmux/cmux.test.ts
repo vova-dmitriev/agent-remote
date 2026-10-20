@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { CmuxClient } from '../../../apps/daemon/src/cmux/client.js';
+import { CmuxClient } from '@daemon/cmux/client.js';
 import type { CmuxTarget } from '@protocol';
 
 const target: CmuxTarget = {

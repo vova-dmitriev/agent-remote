@@ -7,7 +7,7 @@ import {
   ProfileRequestKind,
   ProfileStatus,
 } from '@protocol';
-import type { RuntimeProfiles } from '../../../apps/daemon/src/runtime/services/runtime-profiles.js';
+import type { RuntimeProfiles } from '@daemon/runtime/services/runtime-profiles.js';
 
 export async function readyLaunchProfile(runtime: RuntimeProfiles, label: string) {
   const created = await runtime.request({

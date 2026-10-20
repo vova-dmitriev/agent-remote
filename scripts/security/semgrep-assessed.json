@@ -13,7 +13,7 @@
   },
   {
     "ruleId": "rules_lgpl_javascript_ssrf_rule-node-ssrf",
-    "path": "scripts/smoke-image.ts",
+    "path": "scripts/server/smoke-image.ts",
     "fingerprint": "da9fecb8b7f344df",
     "reason": "Developer smoke script requesting a loopback container port it started itself."
   }

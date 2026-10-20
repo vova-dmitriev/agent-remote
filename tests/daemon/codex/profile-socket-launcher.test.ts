@@ -2,8 +2,8 @@ import { expect, it, vi } from 'vitest';
 import { mkdtemp, writeFile, chmod, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { ensureManagedCodexSocket } from '../../../apps/daemon/src/codex/launcher.js';
-import { ManagedCodexLaunchEvidenceType } from '../../../apps/daemon/src/codex/launch/types.js';
+import { ensureManagedCodexSocket } from '@daemon/codex/launcher.js';
+import { ManagedCodexLaunchEvidenceType } from '@daemon/codex/launch/types.js';
 
 it('starts a profile socket server with only its explicit environment and fixed native configuration', async () => {
   const root = await mkdtemp(join(tmpdir(), 'profile-socket-'));

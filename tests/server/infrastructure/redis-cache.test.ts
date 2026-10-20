@@ -2,7 +2,7 @@ import { afterAll, beforeAll, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { Redis } from 'ioredis';
 import { z } from 'zod';
-import { RedisCache } from '../../../apps/server/src/infrastructure/redis.js';
+import { RedisCache } from '@server/infrastructure/redis.js';
 
 const url = process.env.TEST_REDIS_URL ?? 'redis://127.0.0.1:56380';
 const client = new Redis(url, { lazyConnect: true, maxRetriesPerRequest: 1, enableOfflineQueue: false });

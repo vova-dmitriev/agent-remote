@@ -4,27 +4,27 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { BindingState, CodedError, ErrorCode, IntegrationState, TargetKind } from '@protocol';
-import { RuntimeEvent } from '../../../../apps/daemon/src/domain/runtime.js';
-import { CodexMethod, CodexRuntimeStatus } from '../../../../apps/daemon/src/domain/codex/codex.js';
-import { CodexManager } from '../../../../apps/daemon/src/runtime/services/codex-manager.js';
-import { LocalStore } from '../../../../apps/daemon/src/monitor/store.js';
-import { Monitor } from '../../../../apps/daemon/src/monitor/monitor.js';
-import { AdapterRegistry } from '../../../../apps/daemon/src/adapters/registry.js';
-import { PermissionBroker } from '../../../../apps/daemon/src/commands/permission-broker.js';
+import { RuntimeEvent } from '@daemon/domain/runtime.js';
+import { CodexMethod, CodexRuntimeStatus } from '@daemon/domain/codex/codex.js';
+import { CodexManager } from '@daemon/runtime/services/codex-manager.js';
+import { LocalStore } from '@daemon/monitor/store.js';
+import { Monitor } from '@daemon/monitor/monitor.js';
+import { AdapterRegistry } from '@daemon/adapters/registry.js';
+import { PermissionBroker } from '@daemon/commands/permission-broker.js';
 
 const native = vi.hoisted(() => ({ connect: vi.fn(), attach: vi.fn() }));
 
-vi.mock('../../../../apps/daemon/src/codex/rpc/transport.js', () => ({
+vi.mock('@daemon/codex/rpc/transport.js', () => ({
   connectCodexSocket: async () => {
     throw new Error('Synthetic unavailable endpoint');
   },
 }));
 
-vi.mock('../../../../apps/daemon/src/codex/desktop/desktop-ipc.js', () => ({
+vi.mock('@daemon/codex/desktop/desktop-ipc.js', () => ({
   DesktopIpcClient: { connect: native.connect },
 }));
 
-vi.mock('../../../../apps/daemon/src/codex/desktop/desktop-client.js', () => ({
+vi.mock('@daemon/codex/desktop/desktop-client.js', () => ({
   DesktopCodexClient: { attach: native.attach },
 }));
 

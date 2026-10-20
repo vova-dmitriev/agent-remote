@@ -9,7 +9,7 @@ import {
   type ProfileRequest,
   type ProfileResponse,
 } from '@protocol';
-import { ProfileOperationJournal } from '../../../apps/mini-app/src/pages/accounts/lib/management/operation-journal.js';
+import { ProfileOperationJournal } from '@/pages/accounts/lib/management/operation-journal.js';
 import { profileServiceFixture } from '../../daemon/profiles/fixtures/service.fixture.js';
 
 function memoryStorage(): Storage {

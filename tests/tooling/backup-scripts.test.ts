@@ -14,7 +14,7 @@ it('backs up the explicitly selected database and keeps private archive permissi
     await chmod(bin, 0o700);
     const args = join(dir, 'args');
 
-    const result = execFileSync('/bin/sh', [resolve('scripts/backup-db.sh'), join(dir, 'out')], {
+    const result = execFileSync('/bin/sh', [resolve('scripts/server/backup-db.sh'), join(dir, 'out')], {
       encoding: 'utf8',
       env: {
         ...process.env,

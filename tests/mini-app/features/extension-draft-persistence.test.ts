@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
 import { ErrorCode } from '@protocol';
-import type { ApplicationClient } from '../../../apps/mini-app/src/shared/api/application-client.js';
-import { DraftState } from '../../../apps/mini-app/src/features/send-command/model/persistence/draft-state.js';
+import type { ApplicationClient } from '@/shared/api/application-client.js';
+import { DraftState } from '@/features/send-command/model/persistence/draft-state.js';
 
 it('flushes the latest text with the acknowledged revision and blocks blind conflict retries', async () => {
   let saved = { revision: 3, text: 'existing', attachments: [] };
@@ -43,7 +43,7 @@ it('flushes the latest text with the acknowledged revision and blocks blind conf
 
 it('retains a staged attachment reference when download fails so the user can retry or remove it', async () => {
   const { restoreAttachments } =
-    await import('../../../apps/mini-app/src/features/send-command/model/persistence/restore-attachments.js');
+    await import('@/features/send-command/model/persistence/restore-attachments.js');
 
   const descriptor = {
     id: '12345678-1234-4234-8234-123456789abc',

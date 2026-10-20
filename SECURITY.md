@@ -43,7 +43,7 @@ Current entries, all `rules_lgpl_javascript_ssrf_rule-node-ssrf`:
 
 - `apps/daemon/src/cli/pairing/connect.ts`: the relay origin passes `validateRelayUrl` before use, which the rule cannot see.
 - `apps/mini-app/src/shared/api/request-error.ts`: a browser `fetch` to the app's own API origin, not a server-side request.
-- `scripts/smoke-image.ts`: developer script requesting the loopback port of a container it started.
+- `scripts/server/smoke-image.ts`: developer script requesting the loopback port of a container it started.
 
 Do not bypass failed checks or hide findings with broad exclusions. Replace sensitive examples with unmistakable fixture values, and inspect binary media manually. Hooks and scanners cannot guarantee detection of every secret or private message. Enable the hosting provider's secret scanning and push protection before publication, and require the repository safety workflow for protected branches.
 

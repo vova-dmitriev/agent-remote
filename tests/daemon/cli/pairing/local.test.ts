@@ -19,7 +19,7 @@ vi.mock('node:readline/promises', () => ({
   createInterface: () => ({ question: fake.question, close: fake.close }),
 }));
 
-import { confirmOnMac, openTelegram } from '../../../../apps/daemon/src/cli/pairing/local.js';
+import { confirmOnMac, openTelegram } from '@daemon/cli/pairing/local.js';
 
 const originalPlatform = Object.getOwnPropertyDescriptor(process, 'platform')!;
 const originalTTY = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY');

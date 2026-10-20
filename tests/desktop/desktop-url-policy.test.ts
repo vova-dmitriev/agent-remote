@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DESKTOP_ASSET_URL, isTrustedDesktopUrl } from '../../apps/desktop/src/main/config/links.js';
+import { DESKTOP_ASSET_URL, isTrustedDesktopUrl } from '@desktop/main/config/links.js';
 
 describe('trusted desktop origin', () => {
   it('accepts the fixed asset URL with any in-app fragment', () => {

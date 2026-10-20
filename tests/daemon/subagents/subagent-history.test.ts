@@ -11,17 +11,17 @@ import {
   ToolActivityPhase,
   type HistoryRead,
 } from '@protocol';
-import { Monitor } from '../../../apps/daemon/src/monitor/monitor.js';
-import { LocalStore } from '../../../apps/daemon/src/monitor/store.js';
-import { TranscriptSources } from '../../../apps/daemon/src/monitor/history.js';
-import { AdapterRegistry, SourceAdapter } from '../../../apps/daemon/src/adapters/registry.js';
-import { PermissionBroker } from '../../../apps/daemon/src/commands/permission-broker.js';
+import { Monitor } from '@daemon/monitor/monitor.js';
+import { LocalStore } from '@daemon/monitor/store.js';
+import { TranscriptSources } from '@daemon/monitor/history.js';
+import { AdapterRegistry, SourceAdapter } from '@daemon/adapters/registry.js';
+import { PermissionBroker } from '@daemon/commands/permission-broker.js';
 
 /** Runs between the per-read directory check and the transcript open, to race a swap into that window. */
 const race = vi.hoisted(() => ({ afterDirectoryCheck: async () => {} }));
 
-vi.mock('../../../apps/daemon/src/code/subagents/subagent-files.js', async (original) => {
-  const actual = await original<typeof import('../../../apps/daemon/src/code/subagents/subagent-files.js')>();
+vi.mock('@daemon/code/subagents/subagent-files.js', async (original) => {
+  const actual = await original<typeof import('@daemon/code/subagents/subagent-files.js')>();
 
   return {
     ...actual,

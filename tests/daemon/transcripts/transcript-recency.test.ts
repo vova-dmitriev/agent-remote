@@ -2,7 +2,7 @@ import { expect, it } from 'vitest';
 import { mkdtemp, writeFile, rm, appendFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { TranscriptSources } from '../../../apps/daemon/src/monitor/history.js';
+import { TranscriptSources } from '@daemon/monitor/history.js';
 
 const row = (id: string, time: number, type = 'assistant', extra = {}) =>
   JSON.stringify({

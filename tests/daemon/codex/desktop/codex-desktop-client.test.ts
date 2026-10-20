@@ -1,13 +1,13 @@
 import { expect, it } from 'vitest';
 import { EventEmitter } from 'node:events';
-import { DesktopCodexClient } from '../../../../apps/daemon/src/codex/desktop/desktop-client.js';
-import type { DesktopIpcClient } from '../../../../apps/daemon/src/codex/desktop/desktop-ipc.js';
-import type { Data } from '../../../../apps/daemon/src/codex/events.js';
-import { bindCodex } from '../../../../apps/daemon/src/codex/binding/binding.js';
-import { LocalStore } from '../../../../apps/daemon/src/monitor/store.js';
-import { Monitor } from '../../../../apps/daemon/src/monitor/monitor.js';
-import { AdapterRegistry } from '../../../../apps/daemon/src/adapters/registry.js';
-import { PermissionBroker } from '../../../../apps/daemon/src/commands/permission-broker.js';
+import { DesktopCodexClient } from '@daemon/codex/desktop/desktop-client.js';
+import type { DesktopIpcClient } from '@daemon/codex/desktop/desktop-ipc.js';
+import type { Data } from '@daemon/codex/events.js';
+import { bindCodex } from '@daemon/codex/binding/binding.js';
+import { LocalStore } from '@daemon/monitor/store.js';
+import { Monitor } from '@daemon/monitor/monitor.js';
+import { AdapterRegistry } from '@daemon/adapters/registry.js';
+import { PermissionBroker } from '@daemon/commands/permission-broker.js';
 
 class Ipc extends EventEmitter {
   follows = 0;

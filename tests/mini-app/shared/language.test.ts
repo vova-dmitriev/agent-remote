@@ -1,9 +1,5 @@
 import { it, expect } from 'vitest';
-import {
-  createLanguageInstance,
-  resolveLanguage,
-  type Translate,
-} from '../../../apps/mini-app/src/shared/lib/i18n/index.js';
+import { createLanguageInstance, resolveLanguage, type Translate } from '@/shared/lib/i18n/index.js';
 
 it.each([
   ['en', 'ru', 'ru-RU', 'en'],
@@ -40,7 +36,7 @@ it('changes language through i18next without leaking it into another provider in
 });
 
 it('keeps stored status codes translatable after a language switch and handles unknown codes safely', async () => {
-  const { feedbackText } = await import('../../../apps/mini-app/src/shared/lib/i18n/index.js');
+  const { feedbackText } = await import('@/shared/lib/i18n/index.js');
   const englishInstance = createLanguageInstance('en');
   const russianInstance = createLanguageInstance('ru');
   const english: Translate = (key, parameters = {}) => englishInstance.t(key, parameters);
@@ -62,7 +58,7 @@ it.each([
     'The pairing code expired, was already entered or was not found. Run the pairing command on your Mac again and enter the new code.',
   ],
 ] as const)('explains unavailable pairing codes with a recovery action in %s', async (language, expected) => {
-  const { feedbackText } = await import('../../../apps/mini-app/src/shared/lib/i18n/index.js');
+  const { feedbackText } = await import('@/shared/lib/i18n/index.js');
   const instance = createLanguageInstance(language);
 
   expect(feedbackText('PAIRING_UNAVAILABLE', (key, parameters = {}) => instance.t(key, parameters))).toBe(

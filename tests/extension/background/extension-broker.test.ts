@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
-import { attachViewer } from '../../../apps/chrome-extension/src/background/broker.js';
-import type { ChromeApi, ChromePort } from '../../../apps/chrome-extension/src/config/chrome-api.js';
+import { attachViewer } from '@extension/background/broker.js';
+import type { ChromeApi, ChromePort } from '@extension/config/chrome-api.js';
 
 function port(sender?: ChromePort['sender']) {
   const listeners = new Set<(message: unknown, port: ChromePort) => void>();

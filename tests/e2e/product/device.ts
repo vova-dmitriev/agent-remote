@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test';
 import { WebSocket } from 'ws';
 import type { AppSnapshot, ConnectorDescriptor } from '@protocol';
-import { delivered, deviceFixture } from '../support/relay-fixture.js';
+import { delivered, deviceFixture } from '../support/relay/relay-fixture.js';
 import { relaySocketOrigin } from '../runtime/app-origin.js';
 
 export async function currentSnapshot(): Promise<AppSnapshot> {

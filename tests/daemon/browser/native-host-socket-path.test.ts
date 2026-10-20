@@ -3,10 +3,7 @@ import { Socket, connect } from 'node:net';
 import type { Stats } from 'node:fs';
 import { lstat, unlink } from 'node:fs/promises';
 import { ErrorCode } from '@protocol';
-import {
-  LOCAL_SOCKET_LIMITS,
-  prepareLocalSocket,
-} from '../../../apps/daemon/src/local/server/socket-path.js';
+import { LOCAL_SOCKET_LIMITS, prepareLocalSocket } from '@daemon/local/server/socket-path.js';
 
 vi.mock('node:net', async (original) => ({
   ...(await original<typeof import('node:net')>()),

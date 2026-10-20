@@ -2,11 +2,11 @@ import { afterEach, describe, it, expect } from 'vitest';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { LocalStore } from '../../../apps/daemon/src/monitor/store.js';
-import { Monitor } from '../../../apps/daemon/src/monitor/monitor.js';
-import { Dispatcher } from '../../../apps/daemon/src/commands/dispatcher.js';
-import { PermissionBroker } from '../../../apps/daemon/src/commands/permission-broker.js';
-import { SourceAdapter, AdapterRegistry } from '../../../apps/daemon/src/adapters/registry.js';
+import { LocalStore } from '@daemon/monitor/store.js';
+import { Monitor } from '@daemon/monitor/monitor.js';
+import { Dispatcher } from '@daemon/commands/dispatcher.js';
+import { PermissionBroker } from '@daemon/commands/permission-broker.js';
+import { SourceAdapter, AdapterRegistry } from '@daemon/adapters/registry.js';
 import type { Command } from '@protocol';
 
 const cleanups: Array<() => void> = [];

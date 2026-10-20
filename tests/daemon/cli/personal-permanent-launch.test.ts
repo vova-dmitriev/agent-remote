@@ -25,8 +25,8 @@ vi.mock('node:child_process', async (importOriginal) => ({
   },
 }));
 
-vi.mock('../../../apps/daemon/src/cli/personal/personal-tunnel.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../../../apps/daemon/src/cli/personal/personal-tunnel.js')>()),
+vi.mock('@daemon/cli/personal/personal-tunnel.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@daemon/cli/personal/personal-tunnel.js')>()),
   startNamedTunnel: async (_port: number, config: unknown) => {
     state.events.push('named-tunnel');
     state.tunnelConfig = config;
@@ -44,7 +44,7 @@ vi.mock('../../../apps/daemon/src/cli/personal/personal-tunnel.js', async (impor
   },
 }));
 
-vi.mock('../../../apps/server/src/app/create-relay.js', () => ({
+vi.mock('@server/app/create-relay.js', () => ({
   createRelay: async (config: { publicOrigin: string }) => {
     state.events.push('relay:' + config.publicOrigin);
 
@@ -60,7 +60,7 @@ vi.mock('../../../apps/server/src/app/create-relay.js', () => ({
   },
 }));
 
-vi.mock('../../../apps/server/src/notifications/worker.js', () => ({
+vi.mock('@server/notifications/worker.js', () => ({
   NotificationWorker: class {
     async start() {
       state.events.push('worker');
@@ -80,7 +80,7 @@ vi.mock('../../../apps/server/src/notifications/worker.js', () => ({
   },
 }));
 
-vi.mock('../../../apps/daemon/src/cli/personal/personal-bot.js', () => ({
+vi.mock('@daemon/cli/personal/personal-bot.js', () => ({
   personalBot: () => ({
     check: async () => {
       state.events.push('bot-check');
@@ -96,25 +96,25 @@ vi.mock('../../../apps/daemon/src/cli/personal/personal-bot.js', () => ({
   }),
 }));
 
-vi.mock('../../../apps/daemon/src/config.js', () => ({
+vi.mock('@daemon/config.js', () => ({
   loadConfig: async () => ({ relayUrl: 'https://other.example.com' }),
 }));
 
-vi.mock('../../../apps/daemon/src/main.js', () => ({
+vi.mock('@daemon/main.js', () => ({
   startDaemon: async () => {
     throw new Error('UNEXPECTED_DAEMON_START');
   },
 }));
 
-vi.mock('../../../apps/daemon/src/desktop/bridge-client.js', () => ({ installationRoot: () => '/unused' }));
+vi.mock('@daemon/desktop/bridge-client.js', () => ({ installationRoot: () => '/unused' }));
 
-vi.mock('../../../apps/daemon/src/cli/pairing/connect.js', () => ({
+vi.mock('@daemon/cli/pairing/connect.js', () => ({
   ensureMacConnected: async () => {
     throw new Error('UNEXPECTED_PAIRING');
   },
 }));
 
-import { startPersonal } from '../../../apps/daemon/src/cli/personal/personal.js';
+import { startPersonal } from '@daemon/cli/personal/personal.js';
 
 let root: string;
 const tunnelId = '00000000-0000-4000-8000-000000000001';

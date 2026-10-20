@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { expect, it } from 'vitest';
-import { attachmentRelayFixture } from '../../helpers/attachment-relay.js';
+import { attachmentRelayFixture } from '../../helpers/relay/attachment-relay.js';
 
 it('fences creation by owner and project, then retains the owned new session result for recovery', async () => {
   const f = await attachmentRelayFixture();

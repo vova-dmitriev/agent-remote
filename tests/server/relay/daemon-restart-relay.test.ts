@@ -4,14 +4,14 @@ import { createHash, randomBytes } from 'node:crypto';
 import { mkdtemp, writeFile, appendFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { createRelay } from '../../../apps/server/src/app/create-relay.js';
-import { startDaemon } from '../../../apps/daemon/src/main.js';
-import { LocalStore } from '../../../apps/daemon/src/monitor/store.js';
-import { Monitor } from '../../../apps/daemon/src/monitor/monitor.js';
-import { AdapterRegistry, SourceAdapter } from '../../../apps/daemon/src/adapters/registry.js';
-import { PermissionBroker } from '../../../apps/daemon/src/commands/permission-broker.js';
-import { databaseFixture } from '../../helpers/database.js';
-import { initData, testBotToken } from '../../helpers/telegram.js';
+import { createRelay } from '@server/app/create-relay.js';
+import { startDaemon } from '@daemon/main.js';
+import { LocalStore } from '@daemon/monitor/store.js';
+import { Monitor } from '@daemon/monitor/monitor.js';
+import { AdapterRegistry, SourceAdapter } from '@daemon/adapters/registry.js';
+import { PermissionBroker } from '@daemon/commands/permission-broker.js';
+import { databaseFixture } from '../../helpers/relay/database.js';
+import { initData, testBotToken } from '../../helpers/relay/telegram.js';
 
 it('restores registered native history through the actual relay despite a retired queue head and another daemon restart', async () => {
   const fixture = await databaseFixture();

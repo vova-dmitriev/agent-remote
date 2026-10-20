@@ -5,10 +5,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { ErrorCode, LocalFeature, LOCAL_LIMITS } from '@protocol';
-import { FramedPeer } from '../../../../apps/daemon/src/browser/transport/peer.js';
-import { probeCompanion } from '../../../../apps/daemon/src/local/bootstrap/probe.js';
-import { startLocalServer } from '../../../../apps/daemon/src/local/server/server.js';
-import { localFixture } from '../../../helpers/local-runtime.js';
+import { FramedPeer } from '@daemon/browser/transport/peer.js';
+import { probeCompanion } from '@daemon/local/bootstrap/probe.js';
+import { startLocalServer } from '@daemon/local/server/server.js';
+import { localFixture } from '../../../helpers/local/local-runtime.js';
 
 const cleanups: (() => Promise<unknown>)[] = [];
 

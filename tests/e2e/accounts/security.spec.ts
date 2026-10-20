@@ -1,14 +1,14 @@
 import { expect } from '@playwright/test';
-import { test } from '../support/relay-fixture.js';
-import { identity } from '../support/identity.js';
+import { test } from '../support/relay/relay-fixture.js';
+import { identity } from '../support/relay/identity.js';
 import { profileCompanion } from './companion.js';
-import { ACCOUNTS_PAGE_IDS } from '../../../apps/mini-app/src/pages/accounts/config/test-ids.js';
-import { PROFILE_MANAGE_IDS } from '../../../apps/mini-app/src/pages/accounts/config/management/test-ids.js';
-import { PROFILE_ENROLL_IDS } from '../../../apps/mini-app/src/pages/accounts/config/enrollment/test-ids.js';
-import { PROFILE_CARD_IDS } from '../../../apps/mini-app/src/pages/accounts/config/profile/test-ids.js';
-import { SHELL_IDS } from '../../../apps/mini-app/src/widgets/application-shell/config/test-ids.js';
-import { SIGN_IN_IDS } from '../../../apps/mini-app/src/pages/sign-in/config/test-ids.js';
-import { openAccounts } from '../support/settings-menu.js';
+import { ACCOUNTS_PAGE_IDS } from '@/pages/accounts/config/test-ids.js';
+import { PROFILE_MANAGE_IDS } from '@/pages/accounts/config/management/test-ids.js';
+import { PROFILE_ENROLL_IDS } from '@/pages/accounts/config/enrollment/test-ids.js';
+import { PROFILE_CARD_IDS } from '@/pages/accounts/config/profile/test-ids.js';
+import { SHELL_IDS } from '@/widgets/application-shell/config/test-ids.js';
+import { SIGN_IN_IDS } from '@/pages/sign-in/config/test-ids.js';
+import { openAccounts } from '../support/ui/settings-menu.js';
 
 test('refuses an untrusted Mac fingerprint before any key reaches native enrollment', async ({ page }) => {
   const companion = await profileCompanion();

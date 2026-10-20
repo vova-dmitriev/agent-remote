@@ -1,8 +1,8 @@
 import { afterEach, expect, it } from 'vitest';
 import Sqlite from 'better-sqlite3';
-import { localCommand } from '../../../apps/daemon/src/monitor/local/local-command.js';
+import { localCommand } from '@daemon/monitor/local/local-command.js';
 import { CommandActionType, ErrorCode, LOCAL_LIMITS, type ClientCommand } from '@protocol';
-import { localFixture } from '../../helpers/local-runtime.js';
+import { localFixture } from '../../helpers/local/local-runtime.js';
 
 const database = new Sqlite(':memory:');
 

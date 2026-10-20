@@ -7,7 +7,7 @@ import {
   type LocalAction,
   type CommandResult,
 } from '@protocol';
-import { ViewerRegistry } from '../../../apps/chrome-extension/src/background/registry.js';
+import { ViewerRegistry } from '@extension/background/registry.js';
 import { workerFixture, workerPort } from '../background/extension-worker.fixture.js';
 import { snapshotFrame } from './extension-client.fixture.js';
 

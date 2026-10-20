@@ -8,8 +8,11 @@ import {
   assertPinnedDesktopNode,
   desktopNodeTarget,
   DESKTOP_NODE_RELEASE,
-} from '../../../scripts/desktop/runtime-pin.mjs';
-import { prepareDesktopNode, verifyPreparedRuntime } from '../../../scripts/desktop/prepare-runtime.mjs';
+} from '../../../scripts/desktop/runtime/runtime-pin.mjs';
+import {
+  prepareDesktopNode,
+  verifyPreparedRuntime,
+} from '../../../scripts/desktop/runtime/prepare-runtime.mjs';
 
 const temporaryDirectories: string[] = [];
 

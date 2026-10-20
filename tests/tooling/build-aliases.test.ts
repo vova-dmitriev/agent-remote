@@ -29,6 +29,24 @@ describe('rewriteAliases', () => {
     expect(out).toContain("'../../../packages/transport/src/native/fragments.js'");
   });
 
+  it('rewrites cross-app @daemon, @server, @desktop and @extension subpaths', () => {
+    const out = rewriteAliases(
+      [
+        "import { createRelay } from '@server/app/create-relay.js';",
+        "import { probe } from '@daemon/local/bootstrap/probe';",
+        "export { connect } from '@desktop/runtime/connector.js';",
+        "import { limits } from '@extension/config/values.js';",
+      ].join('\n'),
+      '/repo/dist/apps/daemon/src/cli/personal/personal.js',
+      dist,
+    );
+
+    expect(out).toContain("'../../../../server/src/app/create-relay.js'");
+    expect(out).toContain("'../../local/bootstrap/probe.js'");
+    expect(out).toContain("'../../../../desktop/src/runtime/connector.js'");
+    expect(out).toContain("'../../../../chrome-extension/src/config/values.js'");
+  });
+
   it('rewrites dynamic and type-position imports', () => {
     expect(rewriteAliases("const m = await import('@protocol');", '/repo/dist/x.js', dist)).toBe(
       "const m = await import('./packages/protocol/src/index.js');",
@@ -54,7 +72,9 @@ describe('buildNode', () => {
       readdirSync(directory, { recursive: true, encoding: 'utf8' })
         .filter((entry) => /\.(?:js|d\.ts)$/.test(entry) && !entry.split(sep).includes('mini-app'))
         .filter((entry) =>
-          /['"]@(?:protocol|transport\/)/.test(readFileSync(join(directory, entry), 'utf8')),
+          /['"]@(?:protocol|(?:transport|daemon|server|desktop|extension)\/)/.test(
+            readFileSync(join(directory, entry), 'utf8'),
+          ),
         ),
     );
 

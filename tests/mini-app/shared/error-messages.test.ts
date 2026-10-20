@@ -4,8 +4,8 @@ import {
   feedbackText,
   type Language,
   type Translate,
-} from '../../../apps/mini-app/src/shared/lib/i18n/index.js';
-import { isUncertainCommand } from '../../../apps/mini-app/src/features/send-command/lib/notice.js';
+} from '@/shared/lib/i18n/index.js';
+import { isUncertainCommand } from '@/features/send-command/lib/notice.js';
 
 function translator(language: Language): Translate {
   const instance = createLanguageInstance(language);

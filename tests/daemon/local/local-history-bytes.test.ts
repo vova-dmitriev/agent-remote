@@ -15,7 +15,7 @@ import {
   nativeSetup,
   setup,
   type Page,
-} from '../../helpers/local-history.js';
+} from '../../helpers/local/local-history.js';
 
 afterEach(closeHistoryFixtures);
 

@@ -2,7 +2,7 @@ import { expect, it } from 'vitest';
 import { appendFile, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { TranscriptReader } from '../../../apps/daemon/src/code/transcript/transcript-reader.js';
+import { TranscriptReader } from '@daemon/code/transcript/transcript-reader.js';
 
 it('starts at recent messages without replaying the backlog, including after resume', async () => {
   const root = await mkdtemp(join(tmpdir(), 'recent-window-'));

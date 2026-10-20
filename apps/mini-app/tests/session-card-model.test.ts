@@ -18,7 +18,7 @@ import { SessionCard } from "../src/entities/session/ui/session-card.js"
 import { SESSION_CARD_IDS } from "../src/entities/session/config/test-ids.js"
 import { initialState } from "../src/entities/session/model/session-state.js"
 import { sessionObserved } from "../src/pages/session/lib/session-availability.js"
-import { sessionSnapshot } from "../../../tests/e2e/support/session-fixtures.js"
+import { sessionSnapshot } from "../../../tests/e2e/support/fixtures/session-fixtures.js"
 
 function render(session: Session, language: Language) {
   return renderToStaticMarkup(

@@ -4,15 +4,15 @@ import { tmpdir } from 'node:os';
 import { rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { EventEmitter } from 'node:events';
-import { AdapterRegistry } from '../../../../apps/daemon/src/adapters/registry.js';
-import { PermissionBroker } from '../../../../apps/daemon/src/commands/permission-broker.js';
-import { LocalStore } from '../../../../apps/daemon/src/monitor/store.js';
-import { Monitor } from '../../../../apps/daemon/src/monitor/monitor.js';
-import { Dispatcher } from '../../../../apps/daemon/src/commands/dispatcher.js';
-import { CodexModelReader } from '../../../../apps/daemon/src/codex/history/model-reader.js';
-import { bindCodex } from '../../../../apps/daemon/src/codex/binding/binding.js';
-import { CodexApprovals } from '../../../../apps/daemon/src/codex/binding/approvals.js';
-import type { RpcFrame } from '../../../../apps/daemon/src/domain/codex/client.js';
+import { AdapterRegistry } from '@daemon/adapters/registry.js';
+import { PermissionBroker } from '@daemon/commands/permission-broker.js';
+import { LocalStore } from '@daemon/monitor/store.js';
+import { Monitor } from '@daemon/monitor/monitor.js';
+import { Dispatcher } from '@daemon/commands/dispatcher.js';
+import { CodexModelReader } from '@daemon/codex/history/model-reader.js';
+import { bindCodex } from '@daemon/codex/binding/binding.js';
+import { CodexApprovals } from '@daemon/codex/binding/approvals.js';
+import type { RpcFrame } from '@daemon/domain/codex/client.js';
 
 class Rpc extends EventEmitter {
   calls: { method: string; params: unknown }[] = [];

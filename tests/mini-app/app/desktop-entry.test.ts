@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DesktopBridgeError, HostKind } from '@protocol';
-import { createDesktopHost } from '../../../apps/mini-app/src/app/host/desktop-host.js';
+import { createDesktopHost } from '@/app/host/desktop-host.js';
 
 describe('desktop shared UI entry', () => {
   afterEach(() => vi.unstubAllGlobals());

@@ -3,9 +3,10 @@ import ts from "typescript-eslint"
 import globals from "globals"
 import { readabilityRules } from "./eslint/readability.mjs"
 import { selectorRules } from "./eslint/rules.mjs"
+import { crossBoundaryImportPatterns, crossBoundaryImportSyntax } from "../../eslint/cross-boundary-imports.mjs"
 
 export default ts.config(
-  { ignores: ["tests/e2e/support/testid.ts"] },
+  { ignores: ["tests/e2e/support/ui/testid.ts"] },
   {
     files: ["tests/{e2e,extension-e2e}/**/*.ts"],
     extends: [js.configs.recommended, ...ts.configs.recommended],
@@ -15,7 +16,8 @@ export default ts.config(
       "max-lines": ["error", { max: 200 }],
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
-      "no-restricted-syntax": ["error", ...selectorRules],
+      "no-restricted-imports": ["error", { patterns: crossBoundaryImportPatterns }],
+      "no-restricted-syntax": ["error", ...selectorRules, ...crossBoundaryImportSyntax],
     },
   },
 )

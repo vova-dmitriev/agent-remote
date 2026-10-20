@@ -1,7 +1,7 @@
 import { afterEach, expect, it } from 'vitest';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
-import { RelayOperations } from '../../../apps/mini-app/src/app/api/transport/relay-operations.js';
+import { RelayOperations } from '@/app/api/transport/relay-operations.js';
 
 const servers: ReturnType<typeof createServer>[] = [];
 

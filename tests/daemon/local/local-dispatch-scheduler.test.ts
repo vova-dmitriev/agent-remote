@@ -1,9 +1,9 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { CommandActionType, CommandStatus } from '@protocol';
-import { Dispatcher } from '../../../apps/daemon/src/commands/dispatcher.js';
-import { DispatchScheduler } from '../../../apps/daemon/src/commands/scheduling/index.js';
-import { PermissionBroker } from '../../../apps/daemon/src/commands/permission-broker.js';
-import { localFixture } from '../../helpers/local-runtime.js';
+import { Dispatcher } from '@daemon/commands/dispatcher.js';
+import { DispatchScheduler } from '@daemon/commands/scheduling/index.js';
+import { PermissionBroker } from '@daemon/commands/permission-broker.js';
+import { localFixture } from '../../helpers/local/local-runtime.js';
 
 const cleanups: (() => Promise<void>)[] = [];
 

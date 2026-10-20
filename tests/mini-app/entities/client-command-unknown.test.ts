@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CommandSubmission } from '../../../apps/mini-app/src/entities/command/api/commands.js';
+import { CommandSubmission } from '@/entities/command/api/commands.js';
 import type { ClientCommand } from '@protocol';
 
 const command: ClientCommand = {

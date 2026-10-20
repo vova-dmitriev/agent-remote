@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { ProfileAuthentication } from '../../../../apps/daemon/src/profiles/authentication/service.js';
+import { ProfileAuthentication } from '@daemon/profiles/authentication/service.js';
 import { codexSubscription, verifiedAccount } from '../fixtures/registry.fixture.js';
 import { authenticationFixture as fixture } from '../fixtures/authentication.fixture.js';
 

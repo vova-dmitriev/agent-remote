@@ -1,13 +1,13 @@
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { LocalDatabase } from '../../../apps/daemon/src/local/state/database.js';
-import { RuntimeProfiles } from '../../../apps/daemon/src/runtime/services/runtime-profiles.js';
-import { RuntimeProfileRelay } from '../../../apps/daemon/src/profiles/runtime/router/relay.js';
+import { LocalDatabase } from '@daemon/local/state/database.js';
+import { RuntimeProfiles } from '@daemon/runtime/services/runtime-profiles.js';
+import { RuntimeProfileRelay } from '@daemon/profiles/runtime/router/relay.js';
 import { FrameType, serverFrameSchema, type ProfileRequest } from '@protocol';
-import { deviceFixture, liveEpoch, rememberEpoch } from '../support/relay-fixture.js';
+import { deviceFixture, liveEpoch, rememberEpoch } from '../support/relay/relay-fixture.js';
 import { WebSocket } from 'ws';
-import { sessionSnapshot } from '../support/session-fixtures.js';
+import { sessionSnapshot } from '../support/fixtures/session-fixtures.js';
 import { relaySocketOrigin } from '../runtime/app-origin.js';
 
 interface ProfileCompanionOptions { beforeApi?: () => Promise<void> }

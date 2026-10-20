@@ -1,11 +1,11 @@
 import { expect } from '@playwright/test';
 import type { ClientCommand } from '@protocol';
-import { test, delivered, setCommandOutcome } from '../support/relay-fixture.js';
-import { COMMAND_IDS } from '../../../apps/mini-app/src/features/send-command/config/test-ids.js';
-import { UPLOAD_IDS } from '../../../apps/mini-app/src/features/send-command/ui/attachments/test-ids.js';
+import { test, delivered, setCommandOutcome } from '../support/relay/relay-fixture.js';
+import { COMMAND_IDS } from '@/features/send-command/config/test-ids.js';
+import { UPLOAD_IDS } from '@/features/send-command/ui/attachments/test-ids.js';
 import { releaseCommandOutcome } from '../runtime/command-outcome.js';
 import { image, openAttachments } from './fixture.js';
-import { interruptSession } from '../support/session-actions.js';
+import { interruptSession } from '../support/ui/session-actions.js';
 
 test('retries an upload with its original ID after an ambiguous response', async ({ page }) => {
   const ids: string[] = [];

@@ -1,3 +1,4 @@
+import { crossBoundaryImportPatterns, crossBoundaryImportSyntax } from "../../eslint/cross-boundary-imports.mjs"
 import domain from "../../eslint/domain-values.mjs"
 import js from "@eslint/js"
 import ts from "typescript-eslint"
@@ -26,9 +27,13 @@ export default ts.config(
       "no-restricted-imports": [
         "error",
         {
-          patterns: [{ group: ["**/packages/*/src/**"], message: "Import through @protocol, @protocol/private or @transport/*." }],
+          patterns: [
+            { group: ["**/packages/*/src/**"], message: "Import through @protocol, @protocol/private or @transport/*." },
+            ...crossBoundaryImportPatterns,
+          ],
         },
       ],
+      "no-restricted-syntax": ["error", ...crossBoundaryImportSyntax],
     },
   },
   {
@@ -39,7 +44,7 @@ export default ts.config(
       "domain/no-inline-error-codes": "error",
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "error",
-      "no-restricted-syntax": ["error", ...testIdRules, ...numericValueRules],
+      "no-restricted-syntax": ["error", ...testIdRules, ...numericValueRules, ...crossBoundaryImportSyntax],
     },
   },
   {
@@ -50,7 +55,19 @@ export default ts.config(
   },
   {
     files: ["src/**/*.stories.tsx"],
-    rules: { "no-restricted-syntax": ["error", ...testIdRules, ...selectorRules, ...storyRules, ...numericValueRules] },
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        ...testIdRules,
+        ...selectorRules,
+        ...storyRules,
+        ...numericValueRules,
+        ...crossBoundaryImportSyntax,
+      ],
+    },
   },
-  { files: [".storybook/**/*.ts", "tests/**/*.{ts,tsx}"], rules: { "no-restricted-syntax": ["error", ...numericValueRules] } },
+  {
+    files: [".storybook/**/*.ts", "tests/**/*.{ts,tsx}"],
+    rules: { "no-restricted-syntax": ["error", ...numericValueRules, ...crossBoundaryImportSyntax] },
+  },
 )

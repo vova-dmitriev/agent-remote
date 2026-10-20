@@ -1,11 +1,11 @@
 import { expect } from '@playwright/test';
-import { test, delivered, deviceFixture } from '../support/relay-fixture.js';
-import { sessionSnapshot } from '../support/session-fixtures.js';
-import { identity } from '../support/identity.js';
-import { byTestId } from '../support/testid.js';
-import { SESSION_CARD_IDS } from '../../../apps/mini-app/src/entities/session/config/test-ids.js';
-import { COMMAND_IDS } from '../../../apps/mini-app/src/features/send-command/config/test-ids.js';
-import { UPLOAD_IDS } from '../../../apps/mini-app/src/features/send-command/ui/attachments/test-ids.js';
+import { test, delivered, deviceFixture } from '../support/relay/relay-fixture.js';
+import { sessionSnapshot } from '../support/fixtures/session-fixtures.js';
+import { identity } from '../support/relay/identity.js';
+import { byTestId } from '../support/ui/testid.js';
+import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
+import { COMMAND_IDS } from '@/features/send-command/config/test-ids.js';
+import { UPLOAD_IDS } from '@/features/send-command/ui/attachments/test-ids.js';
 
 const png = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jF1kAAAAASUVORK5CYII=',

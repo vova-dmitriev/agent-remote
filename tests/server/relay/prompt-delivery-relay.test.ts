@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { expect, it } from 'vitest';
-import { attachmentRelayFixture } from '../../helpers/attachment-relay.js';
+import { attachmentRelayFixture } from '../../helpers/relay/attachment-relay.js';
 
 it('accepts only owned explicit immediate busy prompts at the relay and forwards delivery unchanged', async () => {
   const f = await attachmentRelayFixture();
