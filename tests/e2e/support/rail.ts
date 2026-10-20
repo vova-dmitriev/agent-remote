@@ -12,6 +12,34 @@ export async function expectLoadedMessages(page: Page, count: number) {
   await expect(page.getByTestId(SESSION_FEED_IDS.rail)).toHaveAttribute('data-message-count', String(count));
 }
 
+/**
+ * Waits until the rail's markers keep the same groups and positions across two animation frames.
+ * Markers regroup while rows are measured, so a marker read before this settles may no longer exist.
+ */
+export async function expectSettledRail(page: Page) {
+  const markers = page.getByTestId(SESSION_FEED_IDS.marker);
+  let previous = '';
+
+  await expect
+    .poll(async () => {
+      const layout = await markers.evaluateAll(
+        (nodes: HTMLElement[]) =>
+          new Promise<string>((resolve) => {
+            requestAnimationFrame(() =>
+              requestAnimationFrame(() => resolve(nodes.map((node) => node.dataset.messageIds + '@' + node.style.top).join('|'))),
+            );
+          }),
+      );
+
+      const settled = layout !== '' && layout === previous;
+
+      previous = layout;
+
+      return settled;
+    })
+    .toBe(true);
+}
+
 /** The message the rail marks as current; its marker may cover neighbours too. */
 export async function expectActiveMessage(page: Page, messageId: string) {
   await expect(page.getByTestId(SESSION_FEED_IDS.rail)).toHaveAttribute('data-active-message-id', messageId);

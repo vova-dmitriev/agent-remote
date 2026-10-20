@@ -64,7 +64,11 @@ export const Failed: Story = {
       ],
     },
   },
-  play: SelectedImage.play!,
+  // The upload must settle in this story: a request still in flight when the next story installs its handlers would consume them.
+  play: async (context) => {
+    await SelectedImage.play!(context)
+    await context.canvas.findByTestId(UPLOAD_IDS.retry)
+  },
 }
 export const Retry: Story = {
   parameters: {
