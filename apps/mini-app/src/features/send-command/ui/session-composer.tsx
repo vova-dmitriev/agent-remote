@@ -32,21 +32,23 @@ export function SessionComposer({ controller, session, connection, deviceStatus 
       </Label>
       <div className="relative">
         {session.capabilities.attachments ? <AttachmentPicker model={controller.attachments} disabled={state.attachmentDisabled} /> : null}
-        <Textarea
-          id="prompt"
-          className={cn(promptClass, session.capabilities.attachments && promptWithAttachmentsClass)}
-          data-testid={COMMAND_IDS.prompt}
-          value={controller.prompt}
-          onChange={(event) => controller.setPrompt(event.target.value)}
-          placeholder={t(state.promptDisabled ? "composerUnavailable" : "composerPlaceholder")}
-          disabled={state.promptDisabled}
-          onKeyDown={(event) => {
-            if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing || event.keyCode === 229) return
-            event.preventDefault()
-            if (!event.repeat && !state.sendDisabled) event.currentTarget.form?.requestSubmit()
-          }}
-          rows={1}
-        />
+        <div className={promptFrameClass}>
+          <Textarea
+            id="prompt"
+            className={cn(promptClass, session.capabilities.attachments && promptWithAttachmentsClass)}
+            data-testid={COMMAND_IDS.prompt}
+            value={controller.prompt}
+            onChange={(event) => controller.setPrompt(event.target.value)}
+            placeholder={t(state.promptDisabled ? "composerUnavailable" : "composerPlaceholder")}
+            disabled={state.promptDisabled}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing || event.keyCode === 229) return
+              event.preventDefault()
+              if (!event.repeat && !state.sendDisabled) event.currentTarget.form?.requestSubmit()
+            }}
+            rows={1}
+          />
+        </div>
         <Button
           type="submit"
           size="icon"
@@ -85,7 +87,11 @@ const labelClass = cn(
   "session:absolute session:size-px session:overflow-hidden session:whitespace-nowrap session:[clip-path:inset(50%)]",
 )
 
+// The frame carries the border and the vertical padding, so scrolled text stops short of the border.
+const promptFrameClass =
+  "rounded-[24px] border border-input bg-surface py-[10px] shadow-xs transition-[color,box-shadow] focus-within:ring-[3px] focus-within:ring-ring/50 short:py-[6px]"
+
 const promptClass =
-  "max-h-[88px] min-h-[46px] resize-none overflow-y-auto rounded-[24px] py-[10px] pr-[50px] pl-[15px] text-[16px] leading-[24px] disabled:overflow-hidden short:max-h-[50px] short:min-h-[34px] short:py-[6px] short:pr-[48px] short:pl-[13px] short:leading-[20px]"
+  "max-h-[66px] min-h-[24px] resize-none overflow-y-auto rounded-none border-0 bg-transparent p-0 pr-[50px] pl-[15px] text-[16px] leading-[24px] shadow-none focus-visible:ring-0 disabled:overflow-hidden short:max-h-[36px] short:min-h-[20px] short:pr-[48px] short:pl-[13px] short:leading-[20px]"
 
 const promptWithAttachmentsClass = "pl-[46px] short:pl-[40px]"
