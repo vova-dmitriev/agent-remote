@@ -9,7 +9,7 @@ import { DeviceState } from '../devices/device-state.js';
 import { DeviceService } from '../devices/service.js';
 import { ServerErrorCode } from '../error-codes.js';
 import { logWarning, reportFault } from '../http/errors/error-log.js';
-import { Fault, toFault } from '../http/errors/fault.js';
+import { Fault, parseClientJson, toFault } from '../http/errors/fault.js';
 import { ProfileProxy } from '../profiles/transport/proxy.js';
 import { RelayHub, type AppConnection } from './relay-hub.js';
 
@@ -85,7 +85,7 @@ export class AppSocket implements OnModuleInit, OnModuleDestroy {
             return;
           }
 
-          const frame = appFrameSchema.parse(JSON.parse(raw.toString()));
+          const frame = appFrameSchema.parse(parseClientJson(raw.toString()));
 
           if (!client) {
             if (frame.type !== FrameType.Auth) {

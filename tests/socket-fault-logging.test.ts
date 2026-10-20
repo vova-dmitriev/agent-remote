@@ -1,7 +1,7 @@
 import { ConsoleLogger } from '@nestjs/common';
 import { ErrorCode, FrameType, type ServerFrame } from '@protocol';
 import { once } from 'node:events';
-import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { WebSocket } from 'ws';
 import { DeviceRepository } from '../apps/server/src/devices/repositories/devices.js';
 import { DeviceService } from '../apps/server/src/devices/service.js';
@@ -78,4 +78,56 @@ it('does not log a client fault on a socket', async () => {
 
   expect(await app.next(FrameType.Error)).toEqual({ type: FrameType.Error, code: ErrorCode.NOT_FOUND });
   expect(logged).not.toHaveBeenCalled();
+});
+
+/** A raw socket that records frames; it authenticates first when given a token. */
+async function rawSocket(path: string, token?: string) {
+  const socket = new WebSocket(f.origin.replace('http:', 'ws:') + path, { origin: 'http://localhost' });
+  const frames: ServerFrame[] = [];
+
+  socket.on('message', (raw) => frames.push(JSON.parse(String(raw)) as ServerFrame));
+  await once(socket, 'open');
+
+  if (token) {
+    socket.send(JSON.stringify({ type: FrameType.Auth, token }));
+    await expect.poll(() => frames.some((frame) => frame.type === FrameType.Authenticated)).toBe(true);
+  }
+
+  return { socket, frames };
+}
+
+describe.each([
+  ['app', '/ws/app', () => f.token],
+  ['device', '/ws/device', () => f.deviceToken],
+])('a malformed %s frame', (_kind, path, token) => {
+  it.each([
+    ['before authentication', false],
+    ['after authentication', true],
+  ])('%s is a client fault and is not logged', async (_moment, authenticated) => {
+    const { socket, frames } = await rawSocket(path, authenticated ? token() : undefined);
+    const errors = vi.spyOn(ConsoleLogger.prototype, 'error').mockImplementation(() => {});
+    const warnings = vi.spyOn(ConsoleLogger.prototype, 'warn').mockImplementation(() => {});
+
+    socket.send('not json {');
+
+    await expect
+      .poll(() => frames.find((frame) => frame.type === FrameType.Error))
+      .toEqual({ type: FrameType.Error, code: ErrorCode.INVALID_FRAME });
+
+    if (authenticated) {
+      // A JSON value that is not a frame fails the frame schema: an invalid request, also not logged.
+      socket.send('42');
+
+      await expect.poll(() => frames.filter((frame) => frame.type === FrameType.Error).length).toBe(2);
+
+      expect(frames.filter((frame) => frame.type === FrameType.Error).at(-1)).toEqual({
+        type: FrameType.Error,
+        code: ErrorCode.INVALID_REQUEST,
+      });
+    }
+
+    expect(errors).not.toHaveBeenCalled();
+    expect(warnings).not.toHaveBeenCalled();
+    socket.terminate();
+  });
 });

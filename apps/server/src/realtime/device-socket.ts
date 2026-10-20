@@ -26,7 +26,7 @@ import { persistEvent, eventNotificationId } from '../history/events.js';
 import { HistoryRepository } from '../history/repository.js';
 import { SourceHistory } from '../history/source.js';
 import { logWarning, reportFault } from '../http/errors/error-log.js';
-import { Fault, toFault } from '../http/errors/fault.js';
+import { Fault, parseClientJson, toFault } from '../http/errors/fault.js';
 import type { Messaging } from '../infrastructure/messaging.js';
 import { ProfileProxy } from '../profiles/transport/proxy.js';
 import { SessionLabels } from '../sessions/labels.js';
@@ -103,7 +103,7 @@ export class DeviceSocket {
             return;
           }
 
-          const frame = deviceFrameSchema.parse(JSON.parse(raw.toString()));
+          const frame = deviceFrameSchema.parse(parseClientJson(raw.toString()));
 
           if (!connection) {
             if (frame.type !== FrameType.Auth) {
