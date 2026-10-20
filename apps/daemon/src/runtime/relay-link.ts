@@ -31,6 +31,8 @@ export type RelayLinkDeps = {
   retryAttachmentExports: () => Promise<void>;
 };
 
+const SNAPSHOT_INTERVAL_MS = 1000;
+
 /** Owns the relay connection state (online/stopping) and the snapshot, replay and lifecycle plumbing. */
 export class RelayLink {
   online = false;
@@ -39,6 +41,7 @@ export class RelayLink {
   readonly replay: EventReplay;
   private epoch: string | undefined;
   private pendingSnapshot = false;
+  private lastSnapshotAt = 0;
 
   constructor(private readonly deps: RelayLinkDeps) {
     const { relay, monitor, store, profiles } = deps;
@@ -71,8 +74,9 @@ export class RelayLink {
 
     this.pendingSnapshot = true;
 
-    setImmediate(() => {
+    const send = () => {
       this.pendingSnapshot = false;
+      this.lastSnapshotAt = Date.now();
 
       if (this.online) {
         const current = monitor.snapshot();
@@ -94,7 +98,17 @@ export class RelayLink {
           connectors: adapters.list(current.sessions),
         });
       }
-    });
+    };
+
+    // A busy Mac changes some session many times a second and every snapshot is the whole list, so the relay gets
+    // at most one a second; the latest state always goes out.
+    const wait = this.lastSnapshotAt + SNAPSHOT_INTERVAL_MS - Date.now();
+
+    if (wait > 0) {
+      setTimeout(send, wait).unref();
+    } else {
+      setImmediate(send);
+    }
   };
 
   readonly flush = () => {
