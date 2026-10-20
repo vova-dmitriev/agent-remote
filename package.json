@@ -16,7 +16,7 @@
     "dev:app": "vite apps/mini-app --config apps/mini-app/vite.config.ts",
     "dev:server": "node --env-file-if-exists=.env --import tsx apps/server/src/main.ts",
     "start:server": "node --env-file-if-exists=.env dist/apps/server/src/main.js",
-    "test:e2e": "playwright test",
+    "test:e2e": "node scripts/quality/e2e-shards.mjs",
     "build:helper": "tsx scripts/build/build-macos-helper.ts",
     "package:daemon": "tsx scripts/daemon/package-daemon.ts",
     "load:relay": "tsx scripts/server/load-relay.ts",
