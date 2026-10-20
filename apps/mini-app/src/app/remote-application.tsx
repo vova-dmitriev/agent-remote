@@ -1,6 +1,7 @@
 import { ConnectionStatus, HostKind, type Session } from "@protocol"
 import { AttachmentProvider } from "@/entities/attachment"
 import { useApplicationView } from "./model/navigation/use-application-view"
+import { useSubagentView } from "./model/navigation/use-subagent-view"
 import { ApplicationShell } from "@/widgets/application-shell"
 import { CommandNotice } from "@/features/send-command"
 import { StartupSkeleton } from "./startup-skeleton"
@@ -18,9 +19,11 @@ export function RemoteApplication() {
   const desktop = useDesktopLayout()
   const host = useHost()
   const { state, selected, selection, commands } = model
+  const subagent = useSubagentView(selected, host.kind === HostKind.Desktop)
 
   const back = () => {
     view.closeAccounts()
+    subagent.clear()
     selection.back(state.deviceId)
   }
 
@@ -49,7 +52,7 @@ export function RemoteApplication() {
   if (desktop && state.connection !== ConnectionStatus.Expired) {
     return (
       <AttachmentProvider access={model.attachments}>
-        <DesktopLayout model={model} view={view} back={back} logout={logout} open={open} />
+        <DesktopLayout model={model} view={view} subagent={subagent} back={back} logout={logout} open={open} />
       </AttachmentProvider>
     )
   }
@@ -68,6 +71,7 @@ export function RemoteApplication() {
         <ApplicationContent
           model={model}
           accounts={view.accounts}
+          subagent={subagent}
           back={back}
           closeAccounts={view.closeAccounts}
           home={<HomeView model={model} />}

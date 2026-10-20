@@ -3,7 +3,7 @@ import { http, HttpResponse } from "msw"
 import { attachment, attachmentAccess, attachmentUrl } from "@storybook-fixtures/attachment/access"
 import { syntheticImageBytes } from "@storybook-fixtures/attachment/media"
 import { AgentName } from "@/entities/session"
-import { MessageRole } from "@protocol"
+import { ActivityKind, MessageRole, ToolActivityPhase } from "@protocol"
 import { AttachmentProvider } from "@/entities/attachment"
 import { MessageBubble } from "./message-bubble"
 
@@ -23,6 +23,15 @@ const meta = {
 export default meta
 export const Assistant: StoryObj<typeof meta> = {}
 export const User: StoryObj<typeof meta> = { args: { message: { ...meta.args.message, role: MessageRole.User } } }
+export const ToolCall: StoryObj<typeof meta> = {
+  args: {
+    message: {
+      ...meta.args.message,
+      text: "npm test -- parser",
+      tool: { id: "synthetic-tool", phase: ToolActivityPhase.Started, name: "Bash", kind: ActivityKind.Command },
+    },
+  },
+}
 
 export const NativeImage: StoryObj<typeof meta> = {
   decorators: [

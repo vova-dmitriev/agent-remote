@@ -1,10 +1,10 @@
 import { ConnectionStatus, DeviceStatus, HistoryStatus } from "@protocol"
 import { AccountsPage } from "@/pages/accounts"
 import { SignInPage } from "@/pages/sign-in"
-import { SessionPage } from "@/pages/session"
+import { SessionPage, SubagentPage } from "@/pages/session"
 import type { ApplicationContentProps } from "./application-content.types"
 
-export function ApplicationContent({ model, accounts, back, closeAccounts, home, sessionBack = true }: ApplicationContentProps) {
+export function ApplicationContent({ model, accounts, subagent, back, closeAccounts, home, sessionBack = true }: ApplicationContentProps) {
   const { state, selected, selection, commands } = model
 
   if (state.connection === ConnectionStatus.Expired) return <SignInPage />
@@ -17,6 +17,16 @@ export function ApplicationContent({ model, accounts, back, closeAccounts, home,
       />
     )
   if (!selected) return home
+  if (subagent.agentId)
+    return (
+      <SubagentPage
+        key={[selected.id, subagent.agentId, selected.generation].join(":")}
+        session={selected}
+        state={state}
+        agentId={subagent.agentId}
+        onBack={subagent.close}
+      />
+    )
 
   return (
     <SessionPage
@@ -32,6 +42,7 @@ export function ApplicationContent({ model, accounts, back, closeAccounts, home,
       showBack={sessionBack}
       rename={model.rename}
       controller={commands}
+      onOpenSubagent={subagent.readable ? (agentId) => subagent.open(selected.id, agentId) : undefined}
     />
   )
 }

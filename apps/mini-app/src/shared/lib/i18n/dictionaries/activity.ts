@@ -6,6 +6,17 @@ export const activityEN = {
   activityWeb: "Searching the web…",
   activityTool: "Using a tool…",
   activityWorking: "Working…",
+  toolCall: "Tool",
+  toolRunning: "Running",
+  toolCompleted: "Completed",
+  toolFailed: "Failed",
+  subagentOpen: "Open subagent {{name}}",
+  subagentBack: "Back to session",
+  subagentStatus: "Subagent: {{status}}",
+  subagentRetry: "Retry",
+  subagentReadOnly: "Read-only view of this subagent's work",
+  subagentTranscriptUnavailable: "Transcript unavailable",
+  subagentTranscriptUnavailableHint: "This subagent has no readable transcript on your Mac yet.",
 } as const
 
 export const activityRU = {
@@ -16,4 +27,15 @@ export const activityRU = {
   activityWeb: "Ищет в интернете…",
   activityTool: "Использует инструмент…",
   activityWorking: "Работает…",
+  toolCall: "Инструмент",
+  toolRunning: "Выполняется",
+  toolCompleted: "Готово",
+  toolFailed: "Ошибка",
+  subagentOpen: "Открыть субагента {{name}}",
+  subagentBack: "Назад к сессии",
+  subagentStatus: "Субагент: {{status}}",
+  subagentRetry: "Повторить",
+  subagentReadOnly: "Просмотр работы субагента без управления",
+  subagentTranscriptUnavailable: "Журнал недоступен",
+  subagentTranscriptUnavailableHint: "У этого субагента пока нет доступного журнала на Mac.",
 } as const

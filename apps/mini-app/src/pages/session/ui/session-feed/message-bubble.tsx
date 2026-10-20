@@ -7,9 +7,14 @@ import { cn } from "@/shared/lib/utils"
 import { displayMessage } from "@/pages/session/lib/message-content"
 import { SESSION_FEED_IDS } from "@/pages/session/config/test-ids"
 import type { MessageBubbleProps } from "@/pages/session/model/types/message-bubble.types"
+import { ToolActivityLine } from "./tool/tool-activity-line"
 
 export const MessageBubble = memo(function MessageBubble({ message, agent, sessionId = "" }: MessageBubbleProps) {
   const { t } = useTranslation()
+
+  // Tool calls of a subagent transcript render as compact activity lines, not as messages.
+  if (message.tool)
+    return <ToolActivityLine id={message.id} tool={message.tool} detail={message.tool.name === message.text ? "" : message.text} />
   const content = displayMessage(message)
 
   return (

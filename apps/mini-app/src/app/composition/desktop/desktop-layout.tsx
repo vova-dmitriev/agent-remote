@@ -10,7 +10,7 @@ import { DesktopSidebar } from "./desktop-sidebar"
 import type { DesktopLayoutProps } from "./desktop-layout.types"
 
 /** Desktop host at ≥ 960 px: app bar, session sidebar and the selected session (or a placeholder) in the main pane. */
-export function DesktopLayout({ model, view, back, logout, open }: DesktopLayoutProps) {
+export function DesktopLayout({ model, view, subagent, back, logout, open }: DesktopLayoutProps) {
   const { state, selected, commands } = model
   const sidebar = useSidebarCollapsed()
   const onAccounts = model.devices.length ? view.openAccounts : undefined
@@ -53,6 +53,7 @@ export function DesktopLayout({ model, view, back, logout, open }: DesktopLayout
             <ApplicationContent
               model={model}
               accounts={view.accounts}
+              subagent={subagent}
               back={back}
               closeAccounts={view.closeAccounts}
               sessionBack={false}

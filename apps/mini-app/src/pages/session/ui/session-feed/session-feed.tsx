@@ -9,6 +9,7 @@ import { useFollowMessages } from "@/pages/session/model/use-follow-messages"
 import { useHistoryEdges } from "@/pages/session/model/history/use-history-edges"
 import { useRailMap } from "@/pages/session/model/rail/use-rail-map"
 import { navigationScrollBehavior } from "@/pages/session/lib/message-navigation"
+import { railActiveId, railEntries } from "@/pages/session/lib/history/subagent-history"
 import type { SessionFeedProps } from "@/pages/session/model/types/session-feed.types"
 import { MessageRail } from "./rail/message-rail"
 import { HistorySkeleton } from "./loading/history-skeleton"
@@ -72,9 +73,9 @@ export function SessionFeed({
       ) : null}
       {showMessages && settled ? (
         <MessageRail
-          messages={messages}
           {...map}
-          activeId={activeId}
+          {...railEntries(messages, map.starts)}
+          activeId={railActiveId(messages, activeId)}
           jump={jump}
           seek={seek}
           older={edges.older}

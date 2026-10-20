@@ -10,6 +10,8 @@ interface TelegramApp {
   onEvent(name: string, callback: () => void): void
   offEvent(name: string, callback: () => void): void
   HapticFeedback?: { impactOccurred(style: string): void }
+  BackButton?: { show(): void; hide(): void; onClick(callback: () => void): void; offClick(callback: () => void): void }
+  isVersionAtLeast?(version: string): boolean
 }
 declare global {
   interface Window {
