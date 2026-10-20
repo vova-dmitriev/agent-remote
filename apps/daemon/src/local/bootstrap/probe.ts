@@ -7,6 +7,8 @@ const healthSchema = z.strictObject({
   protocolVersion: z.number().int(),
   instanceId: z.string().min(1).max(512),
   features: z.array(z.string()).optional(),
+  pid: z.number().int().positive().optional(),
+  entry: z.string().max(4096).optional(),
 });
 
 export function probeCompanion(

@@ -32,10 +32,45 @@ async function compatible(options: EnsureCompanionOptions, timeoutMs: number): P
       throw new CodedError(ErrorCode.LOCAL_COMPANION_MISMATCH);
     }
 
+    // A companion that names no entry script (started inline) cannot be told apart, so it is kept; so is one in this
+    // very process.
+    if (
+      options.replaceOtherBuild &&
+      health.pid !== undefined &&
+      health.pid !== process.pid &&
+      health.entry &&
+      health.entry !== options.runtime.entryPath
+    ) {
+      await stopOtherBuild(options, health.pid, timeoutMs);
+
+      return false;
+    }
+
     return true;
   } finally {
     clearTimeout(timer);
   }
+}
+
+/** Stops a companion of another build and waits until its socket stops answering. */
+async function stopOtherBuild(options: EnsureCompanionOptions, pid: number, timeoutMs: number) {
+  try {
+    process.kill(pid, 'SIGTERM');
+  } catch {} // ignore: it already exited.
+
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    const health = await options.probe().catch(() => null); // ignore: a failed probe means it is gone.
+
+    if (health === null) {
+      return;
+    }
+
+    await pause(CompanionStartup.pollMs);
+  }
+
+  throw new CodedError(ErrorCode.LOCAL_COMPANION_MISMATCH);
 }
 
 async function launch(options: EnsureCompanionOptions): Promise<void> {

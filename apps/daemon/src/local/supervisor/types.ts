@@ -7,6 +7,9 @@ export interface CompanionRuntime {
 export interface CompanionHealth {
   protocolVersion: number;
   instanceId: string;
+  /** Reported by companions that know it; older ones omit both. */
+  pid?: number | undefined;
+  entry?: string | undefined;
 }
 export interface EnsureCompanionOptions {
   directory: string;
@@ -15,4 +18,9 @@ export interface EnsureCompanionOptions {
   timeoutMs?: number;
   /** Desktop companion only: also accept Claude hooks on the CLI default socket. */
   legacyClaudeHooks?: boolean;
+  /**
+   * Desktop companion only, whose directory belongs to one app: a companion running from another runtime (an older
+   * build) is stopped and replaced instead of reused.
+   */
+  replaceOtherBuild?: boolean;
 }

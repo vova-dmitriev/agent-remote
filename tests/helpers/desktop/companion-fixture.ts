@@ -5,11 +5,13 @@ import { CompanionEnvironment } from '@daemon/local/supervisor/values.js';
 
 export const hash = (value: Buffer | string) => createHash('sha256').update(value).digest('hex');
 
-export const fixture = `import {appendFileSync,existsSync,writeFileSync} from 'node:fs';
+export const fixture = `import {appendFileSync,existsSync,rmSync,writeFileSync} from 'node:fs';
 import {join} from 'node:path';
 const home=process.env.CLAUDE_REMOTE_HOME;
 appendFileSync(join(home,'starts'),JSON.stringify(process.argv.slice(2))+'\\n');
 writeFileSync(join(home,'legacy-claude-hooks'),process.env.${CompanionEnvironment.LegacyClaudeHooks}??'');
+writeFileSync(join(home,'identity'),JSON.stringify({pid:process.pid,entry:process.argv[1]}));
+process.on('SIGTERM',()=>{rmSync(join(home,'ready'),{force:true});process.exit(0);});
 writeFileSync(join(home,'ready'),'synthetic');
 const timer=setInterval(()=>{
 writeFileSync(join(home,'pulse'),String(Date.now()));
@@ -95,7 +97,12 @@ export async function probeAt(directory: string) {
   try {
     await readFile(join(directory, 'ready'));
 
-    return { protocolVersion: 1, instanceId: 'synthetic' };
+    const identity = JSON.parse(await readFile(join(directory, 'identity'), 'utf8')) as {
+      pid: number;
+      entry: string;
+    };
+
+    return { protocolVersion: 1, instanceId: 'synthetic', ...identity };
   } catch {
     return null;
   }

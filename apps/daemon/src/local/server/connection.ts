@@ -52,6 +52,9 @@ export function acceptLocalPeer(socket: Socket, options: LocalServerOptions) {
           await peer.send({
             protocolVersion: LOCAL_LIMITS.protocolVersion,
             instanceId: options.instanceId ?? options.path,
+            // Which build answers: a desktop app replaces a companion started from another runtime.
+            pid: process.pid,
+            entry: process.argv[1] ?? '',
             ...(probe.data.featureRequest ? { features: [LocalFeature.DesktopGrants] } : {}),
           });
 

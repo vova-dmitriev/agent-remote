@@ -82,6 +82,30 @@ it('attaches to a compatible companion without launching or validating absent ru
   await expect(readFile(join(directory, 'starts'))).rejects.toMatchObject({ code: 'ENOENT' });
 });
 
+it('replaces a companion started from another build only when asked to', async () => {
+  await ensureCompanion(options());
+  const first = JSON.parse(await readFile(join(directory, 'identity'), 'utf8')) as { pid: number };
+  const rebuilt = { ...runtime(), entryPath: join(directory, 'rebuilt entry.mjs') };
+  const starts = async () => (await readFile(join(directory, 'starts'), 'utf8')).trim().split('\n').length;
+
+  await writeFile(rebuilt.entryPath, fixture, { mode: 0o600 });
+
+  await ensureCompanion({ ...options(), runtime: rebuilt });
+  expect(await starts()).toBe(1);
+
+  await ensureCompanion({ ...options(), runtime: rebuilt, replaceOtherBuild: true });
+  expect(await starts()).toBe(2);
+
+  expect(JSON.parse(await readFile(join(directory, 'identity'), 'utf8'))).toMatchObject({
+    entry: rebuilt.entryPath,
+  });
+
+  expect(() => process.kill(first.pid, 0)).toThrow();
+
+  await ensureCompanion({ ...options(), runtime: rebuilt, replaceOtherBuild: true });
+  expect(await starts()).toBe(2);
+});
+
 it('rejects protocol mismatch without starting or replacing the existing companion', async () => {
   await expect(
     ensureCompanion({ ...options(), probe: async () => ({ protocolVersion: 2, instanceId: 'existing' }) }),
