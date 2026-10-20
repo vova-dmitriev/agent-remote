@@ -1,6 +1,8 @@
 import { RuntimeEvent } from './domain/runtime.js';
 import {
+  ErrorCode,
   FrameType,
+  RELAY_PROTOCOL,
   SocketCloseCode,
   SocketCloseReason,
   serverFrameSchema,
@@ -38,7 +40,9 @@ export class RelayClient extends EventEmitter {
     this.socket = socket;
     const authTimeout = setTimeout(() => socket.terminate(), 5000);
 
-    socket.on('open', () => this.send({ type: FrameType.Auth, token: this.token }));
+    socket.on('open', () =>
+      this.send({ type: FrameType.Auth, token: this.token, protocolVersion: RELAY_PROTOCOL.Current }),
+    );
 
     socket.on('message', (raw) => {
       try {
@@ -79,6 +83,14 @@ export class RelayClient extends EventEmitter {
       if (code === SocketCloseCode.Revoked) {
         this.stopped = true;
         this.emit(RuntimeEvent.Revoked);
+
+        return;
+      }
+
+      // Reconnecting cannot help until one side is upgraded.
+      if (code === SocketCloseCode.ProtocolUnsupported) {
+        this.stopped = true;
+        this.emit(RuntimeEvent.ProtocolUnsupported, ErrorCode.PROTOCOL_UNSUPPORTED);
 
         return;
       }

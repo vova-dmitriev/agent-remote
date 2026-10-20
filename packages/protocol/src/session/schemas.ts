@@ -318,7 +318,12 @@ export const deviceFrameSchema = z.discriminatedUnion('type', [
     generation: id,
     message: historySchema,
   }),
-  z.strictObject({ type: z.literal(FrameType.Auth), token: id }),
+  z.strictObject({
+    type: z.literal(FrameType.Auth),
+    token: id,
+    /** Absent from a daemon older than the handshake: version 1. */
+    protocolVersion: z.number().int().positive().optional(),
+  }),
   z.strictObject({ type: z.literal(FrameType.Heartbeat) }),
   z.strictObject({
     type: z.literal(FrameType.Snapshot),
@@ -340,7 +345,12 @@ export const serverFrameSchema = z.discriminatedUnion('type', [
     request: profileRequestSchema,
   }),
   historyReadSchema,
-  z.strictObject({ type: z.literal(FrameType.Authenticated), epoch: id.optional() }),
+  z.strictObject({
+    type: z.literal(FrameType.Authenticated),
+    epoch: id.optional(),
+    /** The negotiated version, sent only to a daemon that announced one. */
+    protocolVersion: z.number().int().positive().optional(),
+  }),
   z.strictObject({
     type: z.literal(FrameType.Snapshot),
     deviceId: id,

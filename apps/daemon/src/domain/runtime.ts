@@ -1,6 +1,7 @@
 export const RuntimeEvent = {
   Frame: 'frame',
   Revoked: 'revoked',
+  ProtocolUnsupported: 'protocol_unsupported',
   Snapshot: 'snapshot',
   Event: 'event',
   Online: 'online',

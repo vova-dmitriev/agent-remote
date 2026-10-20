@@ -17,6 +17,8 @@ export interface DeviceConnection {
   epoch: string;
   device: DeviceRecord;
   lastSeen: number;
+  /** The daemon↔relay protocol version negotiated at authentication; see `RELAY_PROTOCOL`. */
+  protocolVersion: number;
 }
 
 export interface AppConnection {

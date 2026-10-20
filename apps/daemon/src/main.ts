@@ -1,3 +1,4 @@
+import type { ErrorCode } from '@protocol';
 import { RuntimeEvent } from './domain/runtime.js';
 import { NativeProcesses } from './sessions/native-process.js';
 import { CodexManager } from './runtime/services/codex-manager.js';
@@ -191,6 +192,12 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
   relay.on(RuntimeEvent.Revoked, () => {
     relay.close();
     dispatcher.setConnection(false);
+  });
+
+  relay.on(RuntimeEvent.ProtocolUnsupported, (code: ErrorCode) => {
+    relay.close();
+    dispatcher.setConnection(false);
+    process.stderr.write(`${code}\n`);
   });
 
   return {

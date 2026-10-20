@@ -6,8 +6,10 @@ import {
   FrameType,
   SocketCloseCode,
   SocketCloseReason,
+  UNVERSIONED_RELAY_PROTOCOL,
   deviceFrameSchema,
   eventSchema,
+  supportsRelayProtocol,
 } from '@protocol';
 import { randomUUID } from 'node:crypto';
 import { WebSocket } from 'ws';
@@ -108,6 +110,15 @@ export class DeviceSocket {
               throw new Fault(ErrorCode.UNAUTHORIZED);
             }
 
+            const protocolVersion = frame.protocolVersion ?? UNVERSIONED_RELAY_PROTOCOL;
+
+            if (!supportsRelayProtocol(protocolVersion)) {
+              send(socket, { type: FrameType.Error, code: ErrorCode.PROTOCOL_UNSUPPORTED });
+              socket.close(SocketCloseCode.ProtocolUnsupported, SocketCloseReason.ProtocolUnsupported);
+
+              return;
+            }
+
             const found = await devices.authenticate(frame.token);
 
             await fence.run(found.id, async () => {
@@ -119,7 +130,7 @@ export class DeviceSocket {
 
               const previous = live.get(device.id);
 
-              connection = { socket, device, epoch: randomUUID(), lastSeen: Date.now() };
+              connection = { socket, device, epoch: randomUUID(), lastSeen: Date.now(), protocolVersion };
               live.set(device.id, connection);
 
               if (previous) {
@@ -129,7 +140,13 @@ export class DeviceSocket {
 
               previous?.socket.close(SocketCloseCode.Replaced, SocketCloseReason.Replaced);
               clearTimeout(timeout);
-              send(socket, { type: FrameType.Authenticated, epoch: connection.epoch });
+
+              // Only a daemon that announced a version gets one back: an older one parses this frame strictly.
+              send(socket, {
+                type: FrameType.Authenticated,
+                epoch: connection.epoch,
+                ...(frame.protocolVersion === undefined ? {} : { protocolVersion }),
+              });
             });
 
             return;

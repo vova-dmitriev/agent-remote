@@ -13,6 +13,7 @@ export * from './errors/coded-error.js';
 export * from './session/values.js';
 export * from './session/command-values.js';
 export * from './connection/values.js';
+export * from './connection/protocol-version.js';
 export * from './history/values.js';
 export * from './history/preferences-values.js';
 export * from './execution/values.js';
