@@ -87,21 +87,19 @@ it('deletes old and surplus events and old commands in batches, and keeps the ne
     now,
   );
 
-  const deletes = spy.mock.calls.filter(
-    ([sql]) => typeof sql === 'string' && sql.startsWith('DELETE FROM events'),
-  );
+  // pg gets a string from raw SQL and a `{ text }` config plus values from the query builder; names may be quoted.
+  const calls = spy.mock.calls.map(([query, values]) => ({
+    text: (typeof query === 'string' ? query : String((query as { text?: unknown }).text ?? '')).replaceAll(
+      '"',
+      '',
+    ),
+    values: (Array.isArray(values) ? values : ((query as { values?: unknown[] }).values ?? [])) as unknown[],
+  }));
 
-  const surplus = deletes.filter(
-    ([sql, values]) => String(sql).includes('OFFSET') && (values as unknown[])[0] === 'busy',
-  );
-
-  const old = deletes.filter(
-    ([sql, values]) => String(sql).includes('occurred_at<') && (values as unknown[])[0] === 'quiet',
-  );
-
-  const commandDeletes = spy.mock.calls.filter(
-    ([sql]) => typeof sql === 'string' && sql.startsWith('DELETE FROM command_audit'),
-  );
+  const deletes = calls.filter(({ text }) => text.startsWith('DELETE FROM events'));
+  const surplus = deletes.filter(({ text, values }) => text.includes('OFFSET') && values[0] === 'busy');
+  const old = deletes.filter(({ text, values }) => text.includes('occurred_at<') && values[0] === 'quiet');
+  const commandDeletes = calls.filter(({ text }) => text.startsWith('DELETE FROM command_audit'));
 
   // 12 000 surplus rows on the busy device go 5 000, 5 000, 2 000; an empty batch ends the loop.
   expect(surplus).toHaveLength(4);
@@ -109,9 +107,7 @@ it('deletes old and surplus events and old commands in batches, and keeps the ne
   expect(old).toHaveLength(3);
   expect(commandDeletes).toHaveLength(3);
 
-  expect(
-    [...deletes, ...commandDeletes].every(([, values]) => (values as unknown[]).at(-1) === RETENTION_BATCH),
-  ).toBe(true);
+  expect([...deletes, ...commandDeletes].every(({ values }) => values.at(-1) === RETENTION_BATCH)).toBe(true);
 
   const busy = await db.pool.query(
     "SELECT count(*)::int AS count,min(seq)::int AS oldest FROM events WHERE device_id='busy'",

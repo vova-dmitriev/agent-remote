@@ -120,7 +120,7 @@ export class SessionHistory {
       const first = rows[0],
         last = rows.at(-1);
 
-      const has = (row: HistoryRow, operator: string) => repository.beyond(scope, row, operator);
+      const has = (row: HistoryRow, operator: '<' | '>') => repository.beyond(scope, row, operator);
 
       return {
         events: rows.map((row) => ({

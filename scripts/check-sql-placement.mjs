@@ -45,7 +45,6 @@ export const RAW_SQL_PENDING = new Set([
   'apps/server/src/commands/repositories/claims.ts',
   'apps/server/src/continuity/repositories/conversations.ts',
   'apps/server/src/continuity/repositories/handoffs.ts',
-  'apps/server/src/history/repository.ts',
   'apps/server/src/notifications/repositories/notifications.ts',
   'apps/server/src/profiles/routing/repository.ts',
 ]);

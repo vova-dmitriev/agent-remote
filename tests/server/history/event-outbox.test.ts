@@ -34,8 +34,12 @@ it('rolls back the event and revision if notification intent cannot be persisted
       payload: {},
     };
 
-    await expect(persistEvent(new HistoryRepository(fixture.db), 'owner', event)).rejects.toThrow(
-      'synthetic outbox failure',
+    // The query builder keeps the database error as `cause`.
+    await expect(persistEvent(new HistoryRepository(fixture.db), 'owner', event)).rejects.toSatisfy(
+      (error: unknown) =>
+        String((error as { cause?: { message?: unknown } }).cause?.message).includes(
+          'synthetic outbox failure',
+        ),
     );
 
     expect((await fixture.db.pool.query('SELECT count(*) FROM events')).rows[0].count).toBe('0');

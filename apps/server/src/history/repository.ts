@@ -1,9 +1,11 @@
 import { EventType, HISTORY_PAGE_MESSAGES, type EventEnvelope } from '@protocol';
+import { and, asc, eq, gt, isNull, sql, type SQL } from 'drizzle-orm';
 import type { PoolClient } from 'pg';
-import type { Database } from '../db/database.js';
+import { ormOn, type Database } from '../db/database.js';
+import { devices, events, notificationOutbox, sessionActivity, sessions } from '../db/schema/index.js';
 import { HISTORY_WINDOW_AFTER_MESSAGES, HISTORY_WINDOW_BEFORE_MESSAGES } from './limits.js';
 
-export interface HistoryRow {
+export interface HistoryRow extends Record<string, unknown> {
   data: EventEnvelope;
   event_id: string;
   occurred_at: string;
@@ -30,17 +32,47 @@ export interface SourceSessionRow {
   data: { generation: string; capabilities?: { historyWindow?: boolean; subagentHistory?: boolean } };
 }
 
-// Native timestamps determine conversation order. Import time only chooses the latest revision of an ID.
-const source = `WITH messages AS (
- SELECT DISTINCT ON (coalesce(data->'payload'->>'id',event_id)) data,event_id,stream_id,seq,
- CASE WHEN data->>'type'=$4 AND (data->'payload'->>'occurredAt') ~ '^[0-9]{1,15}$' THEN (data->'payload'->>'occurredAt')::bigint ELSE occurred_at END AS occurred_at
- FROM events WHERE owner_id=$1 AND device_id=$2 AND session_id=$3
- ORDER BY coalesce(data->'payload'->>'id',event_id),events.occurred_at DESC,stream_id DESC,seq DESC,event_id DESC
+/*
+ * Message pages use SQL fragments for what the query builder has no form for: DISTINCT ON over a JSON key in a CTE,
+ * row-value comparisons for keyset paging, and a UNION ALL window whose halves keep their own ORDER BY and LIMIT.
+ * Every value is a bound parameter and every name comes from the schema or a fixed column list.
+ */
+const payloadId = sql`${events.data}->'payload'->>'id'`;
+
+/** Native timestamps determine conversation order. Import time only chooses the latest revision of an ID. */
+const messages = (scope: HistoryScope) => sql`WITH messages AS (
+ SELECT DISTINCT ON (coalesce(${payloadId}, ${events.eventId})) ${events.data} AS data, ${events.eventId} AS event_id,
+ ${events.streamId} AS stream_id, ${events.seq} AS seq,
+ CASE WHEN ${events.data}->>'type'=${EventType.Message} AND (${events.data}->'payload'->>'occurredAt') ~ '^[0-9]{1,15}$'
+ THEN (${events.data}->'payload'->>'occurredAt')::bigint ELSE ${events.occurredAt} END AS occurred_at
+ FROM ${events}
+ WHERE ${events.ownerId}=${scope.ownerId} AND ${events.deviceId}=${scope.deviceId} AND ${events.sessionId}=${scope.sessionId}
+ ORDER BY coalesce(${payloadId}, ${events.eventId}), ${events.occurredAt} DESC, ${events.streamId} DESC, ${events.seq} DESC, ${events.eventId} DESC
 )`;
 
-const tuple = '(occurred_at,stream_id,seq,event_id)';
-const params = (cursor: HistoryBoundary) => [cursor.at, cursor.streamId ?? '', cursor.seq ?? 0, cursor.id];
-const scoped = (scope: HistoryScope) => [scope.ownerId, scope.deviceId, scope.sessionId, EventType.Message];
+const KEYS = ['occurred_at', 'stream_id', 'seq', 'event_id'] as const;
+const LEGACY_KEYS = ['occurred_at', 'event_id'] as const;
+const ASC = sql`ASC`;
+const DESC = sql`DESC`;
+const message = sql.identifier('messages');
+
+const columns = (keys: readonly string[]) =>
+  sql.join(
+    keys.map((key) => sql.identifier(key)),
+    sql`, `,
+  );
+
+const ordered = (keys: readonly string[], direction: SQL) =>
+  sql.join(
+    keys.map((key) => sql`${sql.identifier(key)} ${direction}`),
+    sql`, `,
+  );
+
+/** The boundary as a row value in the same column order as `keys`. */
+const position = (boundary: HistoryBoundary, legacy: boolean) =>
+  legacy
+    ? sql`(${boundary.at}::bigint, ${boundary.id}::text)`
+    : sql`(${boundary.at}::bigint, ${boundary.streamId ?? ''}::text, ${boundary.seq ?? 0}::bigint, ${boundary.id}::text)`;
 
 /** Stored device events: persistence, session history pages, replay and retention. */
 export class HistoryRepository {
@@ -52,35 +84,39 @@ export class HistoryRepository {
 
   /** Stores an event once; returns whether it was new. */
   async insertEvent(tx: PoolClient, ownerId: string, event: EventEnvelope): Promise<boolean> {
-    const saved = await tx.query(
-      'INSERT INTO events(owner_id,device_id,stream_id,seq,event_id,session_id,occurred_at,data) VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT DO NOTHING RETURNING seq',
-      [
+    const saved = await ormOn(tx)
+      .insert(events)
+      .values({
         ownerId,
-        event.deviceId,
-        event.streamId,
-        event.seq,
-        event.eventId,
-        event.sessionId,
-        event.occurredAt,
-        JSON.stringify(event),
-      ],
-    );
+        deviceId: event.deviceId,
+        streamId: event.streamId,
+        seq: event.seq,
+        eventId: event.eventId,
+        sessionId: event.sessionId,
+        occurredAt: event.occurredAt,
+        data: sql`${JSON.stringify(event)}::jsonb`,
+      })
+      .onConflictDoNothing()
+      .returning({ seq: events.seq });
 
-    return Boolean(saved.rowCount);
+    return saved.length > 0;
   }
 
   async bumpRevision(tx: PoolClient, ownerId: string, deviceId: string) {
-    await tx.query('UPDATE devices SET history_revision=history_revision+1 WHERE owner_id=$1 AND id=$2', [
-      ownerId,
-      deviceId,
-    ]);
+    await ormOn(tx)
+      .update(devices)
+      .set({ historyRevision: sql`${devices.historyRevision}+1` })
+      .where(and(eq(devices.ownerId, ownerId), eq(devices.id, deviceId)));
   }
 
   async recordActivity(tx: PoolClient, ownerId: string, deviceId: string, sessionId: string, at: number) {
-    await tx.query(
-      'INSERT INTO session_activity(owner_id,device_id,session_id,last_message_at) VALUES($1,$2,$3,$4) ON CONFLICT(owner_id,device_id,session_id) DO UPDATE SET last_message_at=greatest(session_activity.last_message_at,EXCLUDED.last_message_at)',
-      [ownerId, deviceId, sessionId, at],
-    );
+    await ormOn(tx)
+      .insert(sessionActivity)
+      .values({ ownerId, deviceId, sessionId, lastMessageAt: at })
+      .onConflictDoUpdate({
+        target: [sessionActivity.ownerId, sessionActivity.deviceId, sessionActivity.sessionId],
+        set: { lastMessageAt: sql`greatest(${sessionActivity.lastMessageAt}, excluded.last_message_at)` },
+      });
   }
 
   async recordNotification(
@@ -91,40 +127,41 @@ export class HistoryRepository {
     kind: string,
     now: number,
   ) {
-    await tx.query(
-      'INSERT INTO notification_outbox(id,owner_id,session_id,kind,created_at,next_attempt_at) VALUES($1,$2,$3,$4,$5,$5) ON CONFLICT DO NOTHING',
-      [id, ownerId, sessionId, kind, now],
-    );
+    await ormOn(tx)
+      .insert(notificationOutbox)
+      .values({ id, ownerId, sessionId, kind, createdAt: now, nextAttemptAt: now })
+      .onConflictDoNothing();
   }
 
   /** An owned session on a live device, with that device's history revision. */
   async liveSession(ownerId: string, sessionId: string) {
-    return (
-      await this.db.pool.query<{ device_id: string; history_revision: string }>(
-        'SELECT s.device_id,d.history_revision FROM sessions s JOIN devices d ON d.id=s.device_id AND d.owner_id=s.owner_id WHERE s.owner_id=$1 AND s.id=$2 AND d.revoked_at IS NULL',
-        [ownerId, sessionId],
-      )
-    ).rows[0];
+    const [row] = await this.db.orm
+      .select({ device_id: sessions.deviceId, history_revision: devices.historyRevision })
+      .from(sessions)
+      .innerJoin(devices, and(eq(devices.id, sessions.deviceId), eq(devices.ownerId, sessions.ownerId)))
+      .where(and(eq(sessions.ownerId, ownerId), eq(sessions.id, sessionId), isNull(devices.revokedAt)));
+
+    return row;
   }
 
   /** An owned session on a live device, with its stored data. */
   async sourceSession(ownerId: string, sessionId: string): Promise<SourceSessionRow | undefined> {
-    return (
-      await this.db.pool.query<SourceSessionRow>(
-        'SELECT s.device_id,s.data FROM sessions s JOIN devices d ON d.id=s.device_id AND d.owner_id=s.owner_id WHERE s.owner_id=$1 AND s.id=$2 AND d.revoked_at IS NULL',
-        [ownerId, sessionId],
-      )
-    ).rows[0];
+    const [row] = await this.db.orm
+      .select({ device_id: sessions.deviceId, data: sessions.data })
+      .from(sessions)
+      .innerJoin(devices, and(eq(devices.id, sessions.deviceId), eq(devices.ownerId, sessions.ownerId)))
+      .where(and(eq(sessions.ownerId, ownerId), eq(sessions.id, sessionId), isNull(devices.revokedAt)));
+
+    return row as SourceSessionRow | undefined;
   }
 
   /** The latest revision of a message by its payload id. */
   async message(scope: HistoryScope, messageId: string): Promise<HistoryRow | undefined> {
-    return (
-      await this.db.pool.query<HistoryRow>(
-        source + ` SELECT * FROM messages WHERE data->'payload'->>'id'=$5 LIMIT 1`,
-        [...scoped(scope), messageId],
-      )
-    ).rows[0];
+    const result = await this.db.orm.execute<HistoryRow>(
+      sql`${messages(scope)} SELECT * FROM ${message} WHERE data->'payload'->>'id'=${messageId} LIMIT 1`,
+    );
+
+    return result.rows[0];
   }
 
   /**
@@ -137,98 +174,95 @@ export class HistoryRepository {
     anchored: boolean,
     newer: boolean,
   ): Promise<HistoryRow[]> {
-    const legacy = boundary && boundary.streamId === undefined;
-    const compare = legacy ? '(occurred_at,event_id)' : tuple;
-    const against = legacy ? '($5::bigint,$6::text)' : '($5::bigint,$6::text,$7::bigint,$8::text)';
-    let boundValues: (string | number)[] = [];
+    const legacy = boundary !== undefined && boundary.streamId === undefined;
+    const keys = legacy ? LEGACY_KEYS : KEYS;
+    const tuple = sql`(${columns(keys)})`;
+    let query: SQL;
 
-    if (boundary) {
-      boundValues = legacy ? [boundary.at, boundary.id] : params(boundary);
+    if (anchored && boundary) {
+      const at = position(boundary, legacy);
+
+      query = sql`SELECT * FROM ((SELECT * FROM ${message} WHERE ${tuple} <= ${at} ORDER BY ${ordered(keys, DESC)} LIMIT ${HISTORY_WINDOW_BEFORE_MESSAGES})
+        UNION ALL (SELECT * FROM ${message} WHERE ${tuple} > ${at} ORDER BY ${ordered(keys, ASC)} LIMIT ${HISTORY_WINDOW_AFTER_MESSAGES})) history_window
+        ORDER BY ${ordered(keys, ASC)}`;
+    } else {
+      const where = boundary
+        ? sql`WHERE ${tuple} ${newer ? sql`>` : sql`<`} ${position(boundary, legacy)}`
+        : sql``;
+
+      query = sql`SELECT * FROM ${message} ${where} ORDER BY ${ordered(keys, newer ? ASC : DESC)} LIMIT ${HISTORY_PAGE_MESSAGES}`;
     }
 
-    const order = legacy ? 'occurred_at,event_id' : 'occurred_at,stream_id,seq,event_id';
-
-    const descending = order
-      .split(',')
-      .map((key) => key + ' DESC')
-      .join(',');
-
-    const ascending = order
-      .split(',')
-      .map((key) => key + ' ASC')
-      .join(',');
-
-    const query =
-      anchored && boundary
-        ? `SELECT * FROM ((SELECT * FROM messages WHERE ${compare}<=${against} ORDER BY ${descending} LIMIT ${HISTORY_WINDOW_BEFORE_MESSAGES}) UNION ALL (SELECT * FROM messages WHERE ${compare}>${against} ORDER BY ${ascending} LIMIT ${HISTORY_WINDOW_AFTER_MESSAGES})) history_window ORDER BY ${ascending}`
-        : `SELECT * FROM messages ${boundary ? `WHERE ${compare}${newer ? '>' : '<'}${against}` : ''} ORDER BY ${newer ? ascending : descending} LIMIT ${HISTORY_PAGE_MESSAGES}`;
-
-    return (await this.db.pool.query<HistoryRow>(source + ' ' + query, [...scoped(scope), ...boundValues]))
-      .rows;
+    return (await this.db.orm.execute<HistoryRow>(sql`${messages(scope)} ${query}`)).rows;
   }
 
   /** Whether any message lies beyond a row in the given direction (`<` older, `>` newer). */
-  async beyond(scope: HistoryScope, row: HistoryRow, operator: string): Promise<boolean> {
-    return Boolean(
-      (
-        await this.db.pool.query(
-          source +
-            ` SELECT 1 FROM messages WHERE ${tuple}${operator}($5::bigint,$6::text,$7::bigint,$8::text) LIMIT 1`,
-          [...scoped(scope), Number(row.occurred_at), row.stream_id, Number(row.seq), row.event_id],
-        )
-      ).rowCount,
+  async beyond(scope: HistoryScope, row: HistoryRow, operator: '<' | '>'): Promise<boolean> {
+    const at = position(
+      { at: Number(row.occurred_at), streamId: row.stream_id, seq: Number(row.seq), id: row.event_id },
+      false,
     );
+
+    const result = await this.db.orm.execute(
+      sql`${messages(scope)} SELECT 1 FROM ${message} WHERE (${columns(KEYS)}) ${operator === '<' ? sql`<` : sql`>`} ${at} LIMIT 1`,
+    );
+
+    return result.rows.length > 0;
   }
 
   async streamBounds(ownerId: string, deviceId: string, streamId: string) {
-    return (
-      await this.db.pool.query<{ min: string; max: string }>(
-        'SELECT min(seq)::text AS min,max(seq)::text AS max FROM events WHERE owner_id=$1 AND device_id=$2 AND stream_id=$3',
-        [ownerId, deviceId, streamId],
-      )
-    ).rows[0];
+    const [row] = await this.db.orm
+      .select({ min: sql<string>`min(${events.seq})::text`, max: sql<string>`max(${events.seq})::text` })
+      .from(events)
+      .where(and(eq(events.ownerId, ownerId), eq(events.deviceId, deviceId), eq(events.streamId, streamId)));
+
+    return row;
   }
 
   /** Up to 100 events of a stream after a sequence number, in order. */
   async after(ownerId: string, deviceId: string, streamId: string, seq: number): Promise<EventEnvelope[]> {
-    return (
-      await this.db.pool.query<{ data: EventEnvelope }>(
-        'SELECT data FROM events WHERE owner_id=$1 AND device_id=$2 AND stream_id=$3 AND seq>$4 ORDER BY seq LIMIT 100',
-        [ownerId, deviceId, streamId, seq],
+    const rows = await this.db.orm
+      .select({ data: events.data })
+      .from(events)
+      .where(
+        and(
+          eq(events.ownerId, ownerId),
+          eq(events.deviceId, deviceId),
+          eq(events.streamId, streamId),
+          gt(events.seq, seq),
+        ),
       )
-    ).rows.map((row) => row.data);
+      .orderBy(asc(events.seq))
+      .limit(100);
+
+    return rows.map((row) => row.data as EventEnvelope);
   }
 
   /** Every device, revoked ones included, that holds at least one event. */
   async deviceIds(): Promise<string[]> {
-    return (
-      await this.db.pool.query<{ id: string }>(
-        'SELECT d.id FROM devices d WHERE EXISTS(SELECT 1 FROM events e WHERE e.device_id=d.id)',
-      )
-    ).rows.map((row) => row.id);
+    const rows = await this.db.orm
+      .select({ id: devices.id })
+      .from(devices)
+      .where(sql`EXISTS (SELECT 1 FROM ${events} WHERE ${events.deviceId}=${devices.id})`);
+
+    return rows.map((row) => row.id);
   }
 
   /** Drops up to `limit` of a device's events older than `before`, through `events_retention`; returns how many. */
   async pruneOlder(deviceId: string, before: number, limit: number): Promise<number> {
-    return (
-      (
-        await this.db.pool.query(
-          'DELETE FROM events WHERE ctid IN (SELECT ctid FROM events WHERE device_id=$1 AND occurred_at<$2 LIMIT $3)',
-          [deviceId, before, limit],
-        )
-      ).rowCount ?? 0
+    const result = await this.db.orm.execute(
+      sql`DELETE FROM ${events} WHERE ctid IN (SELECT ctid FROM ${events} WHERE ${events.deviceId}=${deviceId} AND ${events.occurredAt}<${before} LIMIT ${limit})`,
     );
+
+    return result.rowCount ?? 0;
   }
 
   /** Drops up to `limit` of a device's events beyond its newest `keep`, through `events_retention`; returns how many. */
   async pruneSurplus(deviceId: string, keep: number, limit: number): Promise<number> {
-    return (
-      (
-        await this.db.pool.query(
-          'DELETE FROM events WHERE ctid IN (SELECT ctid FROM events WHERE device_id=$1 ORDER BY occurred_at DESC OFFSET $2 LIMIT $3)',
-          [deviceId, keep, limit],
-        )
-      ).rowCount ?? 0
+    const result = await this.db.orm.execute(
+      sql`DELETE FROM ${events} WHERE ctid IN (SELECT ctid FROM ${events} WHERE ${events.deviceId}=${deviceId} ORDER BY ${events.occurredAt} DESC OFFSET ${keep} LIMIT ${limit})`,
     );
+
+    return result.rowCount ?? 0;
   }
 }
