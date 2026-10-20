@@ -9,6 +9,7 @@ import {
   BindingState,
   DeviceStatus,
   IntegrationState,
+  MAX_DEVICE_SESSIONS,
   NativeRestartState,
   SessionStatus,
   StatusConfidence,
@@ -251,7 +252,7 @@ export const connectorSchema = z.strictObject({
   reason: z.string().max(1024).nullable(),
 });
 export const snapshotSchema = z.strictObject({
-  sessions: z.array(sessionSchema).max(10),
+  sessions: z.array(sessionSchema).max(MAX_DEVICE_SESSIONS),
   deviceStatus: z.enum(DeviceStatus),
   cursor: cursorSchema,
   permissions: z.array(permissionSchema).max(100),

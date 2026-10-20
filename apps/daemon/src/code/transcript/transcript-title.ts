@@ -1,6 +1,7 @@
 import { ClaudeRecordType } from '../../domain/claude.js';
 import { ASCII_CONTROL_CHARACTERS } from '../../validation/control-characters.js';
-import { type FileHandle } from 'node:fs/promises';
+import { constants, mkdir, open, type FileHandle } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 import { openTranscript } from './transcript-file.js';
 import { createHash } from 'node:crypto';
 import { CodedError, ErrorCode, truncateUtf8 } from '@protocol';
@@ -184,11 +185,35 @@ export class TranscriptTitle {
   }
 }
 
+/** Claude Code's session list reads a renamed session's title from `<project>/<session id>/custom-title.json`. */
+async function writeTitleFile(path: string, sessionId: string, title: string) {
+  const directory = join(dirname(path), sessionId);
+
+  await mkdir(directory, { recursive: true, mode: 0o700 });
+
+  const file = await open(
+    join(directory, 'custom-title.json'),
+    constants.O_WRONLY | constants.O_CREAT | constants.O_TRUNC | constants.O_NOFOLLOW,
+    0o600,
+  );
+
+  try {
+    await file.writeFile(JSON.stringify({ customTitle: title }));
+  } finally {
+    await file.close();
+  }
+}
+
 /**
- * Names a Claude Code session the way `/rename` does: a `custom-title` record appended to its transcript. The
- * transcript must end with a whole line, so the record never joins a line Claude is still writing.
+ * Names a Claude Code session the way `/rename` does: a `custom-title` record appended to its transcript and the
+ * title file beside it. The transcript must end with a whole line, so the record never joins a line Claude is
+ * still writing.
  */
 export async function appendCustomTitle(path: string, allowedRoot: string, sessionId: string, title: string) {
+  if (!/^[\w-]+$/.test(sessionId)) {
+    throw new CodedError(ErrorCode.TRANSCRIPT_UNAVAILABLE);
+  }
+
   const opened = await openTranscript(path, allowedRoot, { refuseSymlinks: true, append: true });
 
   if (!opened) {
@@ -214,4 +239,6 @@ export async function appendCustomTitle(path: string, allowedRoot: string, sessi
   } finally {
     await file.close();
   }
+
+  await writeTitleFile(path, sessionId, title);
 }

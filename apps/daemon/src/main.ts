@@ -106,7 +106,7 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
     attachments,
   });
 
-  const names = new SessionNames({ monitor, readers, codex: () => codex });
+  const names = new SessionNames({ monitor, adapters, readers, codex: () => codex });
 
   const hookServer = await startHookWiring({
     path: socketPath(),
@@ -122,6 +122,8 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
     desktopBindings,
     readers,
     legacyClaudeHooks: options.legacyClaudeHooks ?? false,
+    store,
+    nativeProcesses,
   });
 
   const { localController, localServer } = await startLocalSurface({

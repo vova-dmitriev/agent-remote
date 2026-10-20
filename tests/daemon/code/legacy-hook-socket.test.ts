@@ -120,6 +120,8 @@ async function cliDaemon() {
     desktopBindings: new Map(),
     readers: {} as never,
     legacyClaudeHooks: false,
+    store: { cmuxSessions: () => [] },
+    nativeProcesses: {} as never,
   });
 
   cleanups.push(() => wiring.close());
@@ -493,6 +495,8 @@ it.each([
       desktopBindings: new Map(),
       readers: {} as never,
       legacyClaudeHooks,
+      store: { cmuxSessions: () => [] },
+      nativeProcesses: {} as never,
     });
 
     try {

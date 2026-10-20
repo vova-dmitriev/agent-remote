@@ -12,7 +12,7 @@ import { PermissionBroker } from '@daemon/commands/permission-broker.js';
 import { installHooks } from '@daemon/code/hooks/install-hooks.js';
 import { createDesktopSource } from '@daemon/desktop/adapter.js';
 import { BridgeClient } from '@daemon/desktop/bridge-client.js';
-import type { Command } from '@protocol';
+import { MAX_DEVICE_SESSIONS, type Command } from '@protocol';
 
 const cleanup: Array<() => void | Promise<void>> = [];
 
@@ -133,12 +133,12 @@ describe('review regressions', () => {
   it('retires ended sessions and explicitly replaces a disconnected connector', async () => {
     const f = await fixture();
 
-    for (let i = 0; i < 15; i++) {
+    for (let i = 0; i < MAX_DEVICE_SESSIONS + 5; i++) {
       f.monitor.ingestHook({ hook_event_name: 'SessionStart', session_id: 's' + i }, 'managed');
       f.monitor.ingestHook({ hook_event_name: 'SessionEnd', session_id: 's' + i }, 'managed');
     }
 
-    expect(f.monitor.snapshot().sessions.length).toBeLessThanOrEqual(10);
+    expect(f.monitor.snapshot().sessions.length).toBeLessThanOrEqual(MAX_DEVICE_SESSIONS);
     await f.adapters.disconnect('managed');
     expect(() => f.adapters.register(new SourceAdapter(f.descriptor))).not.toThrow();
   });

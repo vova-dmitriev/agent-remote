@@ -98,6 +98,14 @@ it('shares auto-discovered endpoints with concurrent explicit selections without
     expect(JSON.parse(await readFile(join(directory, 'codex-connections.json'), 'utf8'))).toEqual(
       expect.arrayContaining([expect.objectContaining({ threadId: 'loaded' })]),
     );
+
+    // A thread no app-server serves (a Codex desktop thread) is named through one on the same Codex home.
+    expect(await manager.renameThread('desktop-thread', 'Named')).toBe(true);
+
+    expect(rpc.request).toHaveBeenCalledWith('thread/name/set', {
+      threadId: 'desktop-thread',
+      name: 'Named',
+    });
   } finally {
     await manager.close();
     permissions.close();

@@ -10,6 +10,7 @@ import {
   EventType,
   historySchema,
   IntegrationState,
+  MAX_DEVICE_SESSIONS,
   NativeRestartState,
   noCapabilities,
   PermissionDecision,
@@ -75,7 +76,7 @@ export class Monitor extends EventEmitter implements MonitorPort {
     super();
     this.pins = this.options.store.pinnedSessions();
 
-    for (const { session: saved } of this.options.store.nativeSessions().slice(0, 10)) {
+    for (const { session: saved } of this.options.store.nativeSessions().slice(0, MAX_DEVICE_SESSIONS)) {
       const adapter = this.options.adapters.get(saved.target.connectorId);
 
       if (
@@ -513,7 +514,7 @@ export class Monitor extends EventEmitter implements MonitorPort {
   }
   canCreateSession() {
     return (
-      this.sessions.size < 10 ||
+      this.sessions.size < MAX_DEVICE_SESSIONS ||
       [...this.sessions.values()].some(
         (session) =>
           session.status === SessionStatus.Ended ||
@@ -525,7 +526,7 @@ export class Monitor extends EventEmitter implements MonitorPort {
     );
   }
   private makeRoom() {
-    if (this.sessions.size < 10) {
+    if (this.sessions.size < MAX_DEVICE_SESSIONS) {
       return;
     }
 

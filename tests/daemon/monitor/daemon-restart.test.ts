@@ -7,7 +7,7 @@ import { Monitor } from '@daemon/monitor/monitor.js';
 import { EventReplay } from '@daemon/monitor/replay.js';
 import { PermissionBroker } from '@daemon/commands/permission-broker.js';
 import { AdapterRegistry, SourceAdapter } from '@daemon/adapters/registry.js';
-import type { EventEnvelope } from '@protocol';
+import { MAX_DEVICE_SESSIONS, type EventEnvelope } from '@protocol';
 
 const cleanups: Array<() => void> = [];
 
@@ -205,7 +205,7 @@ function restoredAtQuota() {
 
   const originals = [];
 
-  for (let index = 0; index < 10; index++) {
+  for (let index = 0; index < MAX_DEVICE_SESSIONS; index++) {
     first.monitor.ingestHook({ hook_event_name: 'SessionStart', session_id: 'saved-' + index }, 'native');
     const session = first.monitor.findClaude('native', 'saved-' + index)!;
 
@@ -227,11 +227,11 @@ it('makes room for a fresh source by retiring the oldest untouched restored nati
     monitor.ingestHook({ hook_event_name: 'SessionStart', session_id: 'fresh' }, 'native'),
   ).not.toThrow();
 
-  expect(monitor.snapshot().sessions).toHaveLength(10);
+  expect(monitor.snapshot().sessions).toHaveLength(MAX_DEVICE_SESSIONS);
   expect(monitor.findClaude('native', 'fresh')?.binding).toBe('verified');
   expect(monitor.session(originals[0]!.id)).toBeUndefined();
   expect(store.nativeSessions().some(({ session }) => session.id === originals[0]!.id)).toBe(false);
-  expect(store.nativeSessions()).toHaveLength(10);
+  expect(store.nativeSessions()).toHaveLength(MAX_DEVICE_SESSIONS);
 });
 
 it('protects a restored source that receives any fresh hook from fallback eviction', () => {
@@ -253,8 +253,8 @@ it('does not evict verified active native or managed sessions to admit a new sou
 
   adapters.register(new SourceAdapter({ ...descriptor, connectorId: 'managed', transport: 'pty' }));
 
-  for (let index = 0; index < 10; index++) {
-    const connectorId = index < 5 ? 'native' : 'managed';
+  for (let index = 0; index < MAX_DEVICE_SESSIONS; index++) {
+    const connectorId = index < MAX_DEVICE_SESSIONS / 2 ? 'native' : 'managed';
 
     monitor.ingestHook({ hook_event_name: 'SessionStart', session_id: 'active-' + index }, connectorId);
     monitor.ingestHook({ hook_event_name: 'UserPromptSubmit', session_id: 'active-' + index }, connectorId);
@@ -273,7 +273,7 @@ it('allows managed session creation to reclaim restored observers instead of blo
   const f = fixture(),
     first = f.open();
 
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < MAX_DEVICE_SESSIONS; i++) {
     first.monitor.ingestHook({ hook_event_name: 'SessionStart', session_id: 'source-' + i }, 'native');
   }
 
@@ -281,10 +281,10 @@ it('allows managed session creation to reclaim restored observers instead of blo
   first.store.close();
   const restarted = f.open();
 
-  expect(restarted.monitor.snapshot().sessions).toHaveLength(10);
+  expect(restarted.monitor.snapshot().sessions).toHaveLength(MAX_DEVICE_SESSIONS);
   expect(restarted.monitor.canCreateSession()).toBe(true);
   restarted.monitor.ingestHook({ hook_event_name: 'SessionStart', session_id: 'new-source' }, 'native');
-  expect(restarted.monitor.snapshot().sessions).toHaveLength(10);
+  expect(restarted.monitor.snapshot().sessions).toHaveLength(MAX_DEVICE_SESSIONS);
   expect(restarted.monitor.findClaude('native', 'new-source')?.binding).toBe('verified');
 });
 

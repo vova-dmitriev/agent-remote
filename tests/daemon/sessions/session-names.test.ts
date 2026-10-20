@@ -14,6 +14,15 @@ const codex = {
   claudeSessionId: null,
 } as unknown as Session;
 
+const live = {
+  ...claude,
+  id: 's-live',
+  status: 'idle',
+  capabilities: { prompt: true },
+} as unknown as Session;
+
+const asking = { ...live, id: 's-asking', status: 'waiting_permission' } as Session;
+
 function names(
   sessions: Session[],
   overrides: { append?: () => Promise<boolean>; renameThread?: () => Promise<boolean> } = {},
@@ -21,14 +30,20 @@ function names(
   const setSessionTitle = vi.fn();
   const appendTitle = vi.fn(overrides.append ?? (async () => true));
   const renameThread = vi.fn(overrides.renameThread ?? (async () => true));
+  const sendPrompt = vi.fn(async () => ({}));
 
   const service = new SessionNames({
-    monitor: { session: (id: string) => sessions.find((item) => item.id === id), setSessionTitle } as never,
+    monitor: {
+      session: (id: string) => sessions.find((item) => item.id === id),
+      binding: (id: string) => ({ id }),
+      setSessionTitle,
+    } as never,
+    adapters: { resolve: () => ({ sendPrompt }) } as never,
     readers: { appendTitle } as never,
     codex: () => ({ renameThread }),
   });
 
-  return { service, setSessionTitle, appendTitle, renameThread };
+  return { service, setSessionTitle, appendTitle, renameThread, sendPrompt };
 }
 
 it('names a Claude session in its transcript and a Codex thread through its app-server', async () => {
@@ -43,6 +58,19 @@ it('names a Claude session in its transcript and a Codex thread through its app-
     ['s-claude', 'Claude name'],
     ['s-codex', 'Codex name'],
   ]);
+});
+
+it('renames a Claude session that takes input live, with /rename on one line', async () => {
+  const f = names([claude, live, asking]);
+
+  expect(await f.service.rename('s-live', 'Two\nlines')).toBe(true);
+  expect(f.sendPrompt).toHaveBeenCalledWith({ id: 's-live' }, '/rename Two lines');
+  expect(f.appendTitle).toHaveBeenCalledWith('s-live', 'Two lines');
+
+  // Enter would answer a permission prompt, and a session without input has nothing to type into.
+  await f.service.rename('s-asking', 'Name');
+  await f.service.rename('s-claude', 'Name');
+  expect(f.sendPrompt).toHaveBeenCalledTimes(1);
 });
 
 it('still shows the name when the agent cannot take it, and says so', async () => {

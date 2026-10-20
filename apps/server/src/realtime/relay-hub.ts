@@ -38,7 +38,8 @@ export class RelayHub {
   readonly live = new Map<string, DeviceConnection>();
   readonly clients = new Set<AppConnection>();
   readonly sender = new BoundedSender();
-  readonly deviceWss = new WebSocketServer({ noServer: true, maxPayload: 131072, perMessageDeflate: false });
+  // A device snapshot carries up to MAX_DEVICE_SESSIONS sessions, with subagents bounded to 32 KiB across them.
+  readonly deviceWss = new WebSocketServer({ noServer: true, maxPayload: 524288, perMessageDeflate: false });
   readonly appWss = new WebSocketServer({ noServer: true, maxPayload: 131072, perMessageDeflate: false });
   closing = false;
 

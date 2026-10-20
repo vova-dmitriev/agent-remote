@@ -12,6 +12,7 @@ import {
   type EventEnvelope,
   FrameType,
   type HistoryRead,
+  MAX_DEVICE_SESSIONS,
   type Session,
   sessionSchema,
   SessionStatus,
@@ -25,6 +26,8 @@ import Sqlite from 'better-sqlite3';
 import { chmodSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
+
+type ManagedRow = { data: string; transcript_path: string | null };
 
 export class LocalStore implements LocalStorePort {
   private db: Sqlite.Database;
@@ -174,12 +177,27 @@ export class LocalStore implements LocalStorePort {
   managedRegistration(connectorId: string): NativeSessionRegistration | undefined {
     const row = this.db
       .prepare('SELECT data,transcript_path FROM managed_sessions WHERE device_id=? AND connector_id=?')
-      .get(this.deviceId, connectorId) as { data: string; transcript_path: string | null } | undefined;
+      .get(this.deviceId, connectorId) as ManagedRow | undefined;
 
-    if (!row) {
-      return;
-    }
+    return row && this.managed(row, connectorId);
+  }
+  /** Saved sessions that cmux started and a hook attached (their connector is their surface), newest first. */
+  cmuxSessions(): NativeSessionRegistration[] {
+    const rows = this.db
+      .prepare('SELECT connector_id,data,transcript_path FROM managed_sessions WHERE device_id=?')
+      .all(this.deviceId) as (ManagedRow & { connector_id: string })[];
 
+    return rows
+      .map((row) => this.managed(row, row.connector_id))
+      .filter(
+        (saved): saved is NativeSessionRegistration =>
+          saved?.session.target.kind === TargetKind.Cmux &&
+          saved.session.target.surfaceId === saved.session.target.connectorId,
+      )
+      .sort((a, b) => b.session.lastEventAt - a.session.lastEventAt)
+      .slice(0, MAX_DEVICE_SESSIONS);
+  }
+  private managed(row: ManagedRow, connectorId: string): NativeSessionRegistration | undefined {
     try {
       const session = sessionSchema.parse(JSON.parse(row.data));
 

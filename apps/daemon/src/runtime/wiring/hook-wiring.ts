@@ -12,6 +12,12 @@ import { DaemonErrorCode } from '../../error-codes.js';
 import { startHookServer, type HookSocketOptions } from '../../code/hooks/hook-server.js';
 import { requestHookSocketRelease, startLegacyHookSocket } from '../../code/hooks/legacy-socket.js';
 import type { DesktopBindingEntry } from '../source-poller.js';
+import type { LocalStore } from '../../monitor/store.js';
+import type { NativeProcesses } from '../../sessions/native-process.js';
+import { cmuxAttacher } from '../../cmux/attach.js';
+import { restoreCmuxSessions } from '../../cmux/restore.js';
+import { NativeRestartState } from '@protocol';
+import { logDebug } from '../../diagnostics/log.js';
 
 type HookWiringDeps = {
   path: string;
@@ -27,11 +33,23 @@ type HookWiringDeps = {
   desktopBindings: Map<string, DesktopBindingEntry>;
   readers: TranscriptSources;
   legacyClaudeHooks: boolean;
+  store: Pick<LocalStore, 'cmuxSessions'>;
+  nativeProcesses: Pick<NativeProcesses, 'inspect'>;
 };
 
 export async function startHookWiring(deps: HookWiringDeps) {
   const { monitor, adapters, desktopBridge, desktopBindings, readers, inputEnabled, permissionsEnabled } =
     deps;
+
+  const attachCmux = cmuxAttacher({ adapters, inputEnabled, permissionsEnabled });
+
+  const onTranscript = (sessionId: string, path: string) => {
+    const session = monitor.session(sessionId);
+
+    if (session) {
+      readers.open(sessionId, session.generation, path, session.claudeSessionId ?? undefined);
+    }
+  };
 
   const listen = (socket: HookSocketOptions) =>
     startHookServer({
@@ -41,6 +59,7 @@ export async function startHookWiring(deps: HookWiringDeps) {
       permissions: deps.permissions,
       inputEnabled,
       permissionsEnabled,
+      attachCmux,
       onCodexConnect: (selection) => deps.codex.connect(selection),
       onDesktopBind: async (mode) => {
         const desktop = (await desktopBridge.request({
@@ -64,13 +83,7 @@ export async function startHookWiring(deps: HookWiringDeps) {
 
         return { sessionId: source.session.id, state: source.session.integrationState };
       },
-      onTranscript: (sessionId, path) => {
-        const session = monitor.session(sessionId);
-
-        if (session) {
-          readers.open(sessionId, session.generation, path, session.claudeSessionId ?? undefined);
-        }
-      },
+      onTranscript,
     });
 
   // The CLI daemon has precedence on its own path: a desktop companion's legacy listener yields it.
@@ -89,6 +102,15 @@ export async function startHookWiring(deps: HookWiringDeps) {
   };
 
   const primary = await listenPrimary();
+
+  // In the background: each surface is confirmed through the cmux CLI.
+  void restoreCmuxSessions({
+    saved: deps.store.cmuxSessions(),
+    attach: attachCmux,
+    running: async (id) => (await deps.nativeProcesses.inspect(id)).state === NativeRestartState.Available,
+    monitor,
+    onTranscript,
+  }).catch((error: unknown) => logDebug('runtime/wiring/hook-wiring', error));
 
   // Desktop companion only: the CLI daemon owns the legacy path itself.
   const legacy = deps.legacyClaudeHooks

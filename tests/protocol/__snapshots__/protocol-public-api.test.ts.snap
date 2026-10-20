@@ -69,6 +69,7 @@ exports[`keeps the public @protocol export set stable 1`] = `
   "LocalOrigin",
   "MAX_ATTACHMENTS",
   "MAX_ATTACHMENT_BYTES",
+  "MAX_DEVICE_SESSIONS",
   "MAX_MESSAGE_ATTACHMENT_BYTES",
   "MessageRole",
   "NATIVE_HOST_NAME",

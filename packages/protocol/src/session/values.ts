@@ -25,6 +25,9 @@ export const SessionStatus = {
 
 export type SessionStatus = (typeof SessionStatus)[keyof typeof SessionStatus];
 
+/** How many sessions one device reports at once: every open terminal and thread on a busy Mac. */
+export const MAX_DEVICE_SESSIONS = 30;
+
 export const IntegrationState = {
   Ready: 'ready',
   NeedsSetup: 'needs_setup',

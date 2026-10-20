@@ -273,13 +273,12 @@ export class CodexManager {
     });
   }
   /**
-   * Names a thread through the app-server that serves it (`thread/name/set`); its `thread/name/updated` notification
-   * then renames the session. False when no app-server serves the thread (a Codex desktop thread, or none bound).
+   * Names a thread through an app-server (`thread/name/set`), which writes it to the Codex home's name index: the one
+   * serving the thread, else any connected one (a Codex desktop thread shares the home). False with no app-server.
    */
   async renameThread(threadId: string, name: string): Promise<boolean> {
-    const entry = [...this.connections.values()].find(
-      (item) => item.rpc && !item.ipc && item.bindings.has(threadId),
-    );
+    const servers = [...this.connections.values()].filter((item) => item.rpc && !item.ipc);
+    const entry = servers.find((item) => item.bindings.has(threadId)) ?? servers[0];
 
     if (!entry?.rpc) {
       return false;

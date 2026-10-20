@@ -204,6 +204,23 @@ describe('naming a Claude session in its transcript', () => {
     expect(source.title).toBe('Named in the app');
   });
 
+  it('also writes the private title file Claude Code reads for its session list', async () => {
+    const { appendCustomTitle } = await import('@daemon/code/transcript/transcript-title.js');
+    const { readFile, stat } = await import('node:fs/promises');
+    const sidecar = join(root, 'session-a', 'custom-title.json');
+
+    await writeFile(path, metadata('ai-title', 'Generated title'));
+    await appendCustomTitle(path, root, 'session-a', 'First name');
+    await appendCustomTitle(path, root, 'session-a', 'Named in the app');
+
+    expect(JSON.parse(await readFile(sidecar, 'utf8'))).toEqual({ customTitle: 'Named in the app' });
+    expect((await stat(sidecar)).mode & 0o777).toBe(0o600);
+
+    await expect(appendCustomTitle(path, root, '../escape', 'Name')).rejects.toThrow(
+      'TRANSCRIPT_UNAVAILABLE',
+    );
+  });
+
   it('never joins a line Claude is still writing, and never writes outside the transcript root', async () => {
     const { appendCustomTitle } = await import('@daemon/code/transcript/transcript-title.js');
 
