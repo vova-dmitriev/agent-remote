@@ -55,7 +55,7 @@ it('opens Telegram with a fixed executable and URL argument', async () => {
 });
 
 it('uses one native confirmation with the Telegram ID passed separately from AppleScript', async () => {
-  fake.execute.mockResolvedValue({ stdout: 'Подключить\n' });
+  fake.execute.mockResolvedValue({ stdout: 'Connect\n' });
   expect(await confirmOnMac('101', signal())).toBe(true);
   const args = fake.execute.mock.calls[0]![1] as string[];
 

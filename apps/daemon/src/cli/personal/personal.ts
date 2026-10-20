@@ -26,7 +26,7 @@ export async function startPersonal(root = installationRoot()) {
 
   if (!config.botToken.trim()) {
     process.stdout.write(
-      `Вставь токен в BOT_TOKEN= в ${envPath}\nСохрани файл и повтори npm run personal.\n`,
+      `Put your bot token after BOT_TOKEN= in ${envPath}\nSave the file and run npm run personal again.\n`,
     );
 
     return;
@@ -39,7 +39,7 @@ export async function startPersonal(root = installationRoot()) {
   const bot = personalBot(config.botToken.trim());
   const username = await bot.check();
 
-  process.stdout.write('Запуск локальной базы…\n');
+  process.stdout.write('Starting the local database…\n');
 
   try {
     await execute(
@@ -132,11 +132,11 @@ export async function startPersonal(root = installationRoot()) {
     const configPath = join(dataDirectory, 'cloudflared.yml');
 
     if (config.tunnel) {
-      process.stdout.write('Подключение постоянного HTTPS-адреса…\n');
+      process.stdout.write('Connecting the permanent HTTPS address…\n');
       tunnel = await startNamedTunnel(3040, config.tunnel, { configPath });
     } else {
       await writeFile(configPath, '{}\n', { mode: 0o600 });
-      process.stdout.write('Получение бесплатного HTTPS-адреса…\n');
+      process.stdout.write('Getting a free HTTPS address…\n');
       tunnel = await startQuickTunnel(3040, { configPath });
     }
 
@@ -144,7 +144,7 @@ export async function startPersonal(root = installationRoot()) {
       tunnelStopped = true;
 
       if (ready && !stopped) {
-        process.stderr.write('TUNNEL_EXITED: повтори npm run personal.\n');
+        process.stderr.write('TUNNEL_EXITED: run npm run personal again.\n');
         process.exitCode = 1;
         stop();
       }
@@ -165,7 +165,7 @@ export async function startPersonal(root = installationRoot()) {
 
     checkRunning();
     await relay.listen(3040, '127.0.0.1');
-    process.stdout.write('Ожидание DNS и HTTPS туннеля…\n');
+    process.stdout.write('Waiting for the tunnel DNS and HTTPS…\n');
     let healthy = false;
     const healthDeadline = Date.now() + 180000;
 
@@ -253,12 +253,12 @@ export async function startPersonal(root = installationRoot()) {
         process.env.REMOTE_INPUT_ENABLED = '1';
         process.env.REMOTE_PERMISSIONS_ENABLED = '1';
         daemon = await startDaemon();
-        process.stdout.write('Companion подключён к локальному relay.\n');
+        process.stdout.write('Companion connected to the local relay.\n');
       })()
         .catch(() => {
           if (!stopped) {
             process.stderr.write(
-              'COMPANION_START_FAILED: повтори подключение командой node apps/daemon/bin/remote.mjs connect и проверь отсутствие другого remote start.\n',
+              'COMPANION_START_FAILED: connect again with node apps/daemon/bin/remote.mjs connect and make sure no other remote start is running.\n',
             );
           }
         })
@@ -272,7 +272,7 @@ export async function startPersonal(root = installationRoot()) {
     ready = true;
 
     process.stdout.write(
-      `Готово: https://t.me/${username}\nВ боте нажми Start, затем «Открыть Agent Remote».\nHTTPS: ${tunnel.origin}\nОстановка: Ctrl+C.\n`,
+      `Ready: https://t.me/${username}\nIn the bot, press Start, then "Open Agent Remote".\nHTTPS: ${tunnel.origin}\nStop: Ctrl+C.\n`,
     );
 
     return { origin: tunnel.origin, close };

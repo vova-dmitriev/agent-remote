@@ -108,7 +108,7 @@ it('updates the bot menu to the current HTTPS origin only after checking webhook
       body: {
         menu_button: {
           type: 'web_app',
-          text: 'Открыть Agent Remote',
+          text: 'Open Agent Remote',
           web_app: { url: 'https://current-fixture.trycloudflare.com' },
         },
       },

@@ -49,7 +49,38 @@ it('sends only to the persisted private recipient and skips an already sent outb
   expect(await delivery.deliver(Date.now(), id)).toBe(0);
   expect(await delivery.deliver(Date.now(), id)).toBe(0);
   expect(calls).toHaveLength(1);
-  expect(calls[0]).toMatchObject({ chat_id: 'a', text: 'Агент запрашивает разрешение.' });
+  expect(calls[0]).toMatchObject({ chat_id: 'a', text: 'An agent is asking for permission.' });
+});
+
+it('writes in the language the recipient chose in the app, English otherwise', async () => {
+  for (const id of ['ru', 'en']) {
+    await fixture.db.pool.query(
+      'INSERT INTO users(id,telegram_id,created_at,private_chat_id) VALUES($1,$1,0,$1)',
+      [id],
+    );
+  }
+
+  await fixture.db.pool.query("INSERT INTO user_preferences(owner_id,language) VALUES('ru','ru')");
+
+  // A fresh delivery per recipient: one delivery paces chats, which is not what this checks.
+  const sent = async (owner: string) => {
+    let body: { text: string; reply_markup: { inline_keyboard: { text: string }[][] } } | undefined;
+
+    await new NotificationDelivery(
+      new NotificationRepository(fixture.db),
+      'https://example.invalid',
+      async (value) => {
+        body = value as typeof body;
+
+        return { ok: true };
+      },
+    ).deliver(Date.now(), await outbox(owner));
+
+    return [body!.text, body!.reply_markup.inline_keyboard[0]![0]!.text];
+  };
+
+  expect(await sent('ru')).toEqual(['Агент запрашивает разрешение.', 'Открыть сессию']);
+  expect(await sent('en')).toEqual(['An agent is asking for permission.', 'Open session']);
 });
 
 it('locks a row across competing consumers so only one sends it', async () => {

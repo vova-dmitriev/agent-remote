@@ -96,7 +96,7 @@ it('delivers paragraphs, ordered list items and supported Markdown as Telegram H
     '<b>Готово</b>\n\n1. Первый пункт с <code>кодом</code>\n2. Второй пункт\n\nПроверки прошли.',
   );
 
-  expect(body.text).toContain('Codex ответил · Synthetic formatting\n\n');
+  expect(body.text).toContain('Codex replied · Synthetic formatting\n\n');
 
   expect(body.reply_markup.inline_keyboard[0]![0]!.web_app.url).toBe(
     'https://example.invalid/app#session=' + id,
@@ -153,10 +153,10 @@ it('keeps repeated large links within Telegram bounds and closes every emitted l
 });
 
 it.each([
-  [{ kind: 'permission' }, 'ждёт разрешения'],
-  [{ reason: 'interrupted' }, 'остановлен'],
-  [{ reason: 'failed' }, 'не смог завершить запрос'],
-  [{ errorCode: 'synthetic_failure' }, 'не смог завершить запрос'],
+  [{ kind: 'permission' }, 'is waiting for permission'],
+  [{ reason: 'interrupted' }, 'was stopped'],
+  [{ reason: 'failed' }, 'could not finish the request'],
+  [{ errorCode: 'synthetic_failure' }, 'could not finish the request'],
 ])(
   'keeps action-required notification semantics without exposing an answer: %j',
   async (options, expected) => {

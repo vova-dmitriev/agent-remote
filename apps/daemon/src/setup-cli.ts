@@ -63,7 +63,7 @@ export async function runCli(argv = process.argv.slice(2)) {
       const connected = await connectMac(options);
 
       if (connected) {
-        process.stdout.write('Запусти remote start.\n');
+        process.stdout.write('Run remote start.\n');
       }
     } finally {
       process.off('SIGINT', stop);
@@ -86,14 +86,14 @@ export async function runCli(argv = process.argv.slice(2)) {
     const daemon = await startDaemon().catch((error: unknown) => {
       if (hasErrorCode(error, DaemonErrorCode.HOOK_SOCKET_HELD_BY_COMPANION)) {
         process.stderr.write(
-          `${DaemonErrorCode.HOOK_SOCKET_HELD_BY_COMPANION}: ${socketPath()} занят Desktop companion (Agent Remote Desktop), и он не освободил сокет. Закрой Agent Remote Desktop и повтори remote start.\n`,
+          `${DaemonErrorCode.HOOK_SOCKET_HELD_BY_COMPANION}: ${socketPath()} is held by the Agent Remote desktop companion, which did not release it. Quit Agent Remote and run remote start again.\n`,
         );
       }
 
       throw error;
     });
 
-    process.stdout.write('Companion запущен.\n');
+    process.stdout.write('Companion started.\n');
 
     const stop = () => {
       void daemon.close().then(() => {
@@ -218,7 +218,7 @@ export async function runCli(argv = process.argv.slice(2)) {
       const backup = await installHooks(settings, entry);
 
       process.stdout.write(
-        `Hooks установлены. Backup: ${backup}\nПерезапусти или resume Claude для загрузки новых hooks.\n`,
+        `Hooks installed. Backup: ${backup}\nRestart or resume Claude to load the new hooks.\n`,
       );
 
       return;
@@ -226,7 +226,7 @@ export async function runCli(argv = process.argv.slice(2)) {
 
     if (args[0] === CliAction.Uninstall) {
       await uninstallHooks(settings);
-      process.stdout.write('Hooks Claude Remote удалены.\n');
+      process.stdout.write('Claude Remote hooks removed.\n');
 
       return;
     }

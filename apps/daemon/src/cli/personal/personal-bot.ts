@@ -54,7 +54,7 @@ export function personalBot(token: string, fetcher: typeof fetch = fetch) {
       await api('setChatMenuButton', {
         menu_button: {
           type: TelegramButtonType.WebApp,
-          text: 'Открыть Agent Remote',
+          text: 'Open Agent Remote',
           web_app: { url: url.origin },
         },
       });

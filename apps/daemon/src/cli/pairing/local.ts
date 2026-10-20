@@ -23,7 +23,7 @@ export async function confirmOnMac(telegramId: string, signal: AbortSignal) {
           '-e',
           [
             'on run argv',
-            'display dialog ("Разрешить этому Telegram-аккаунту доступ к Mac? Telegram ID: " & item 1 of argv) with title "Agent Remote" buttons {"Отмена", "Подключить"} default button "Подключить" cancel button "Отмена"',
+            'display dialog ("Allow this Telegram account to access this Mac? Telegram ID: " & item 1 of argv) with title "Agent Remote" buttons {"Cancel", "Connect"} default button "Connect" cancel button "Cancel"',
             'return button returned of result',
             'end run',
           ].join('\n'),
@@ -32,7 +32,7 @@ export async function confirmOnMac(telegramId: string, signal: AbortSignal) {
         { signal },
       );
 
-      return stdout.trim() === 'Подключить';
+      return stdout.trim() === 'Connect';
     } catch (error) {
       if (signal.aborted) {
         throw error;
@@ -52,7 +52,7 @@ export async function confirmOnMac(telegramId: string, signal: AbortSignal) {
 
   try {
     return (
-      (await input.question(`Разрешить подключение Telegram ID ${telegramId}? [yes/no] `, { signal }))
+      (await input.question(`Allow Telegram ID ${telegramId} to connect? [yes/no] `, { signal }))
         .trim()
         .toLowerCase() === 'yes'
     );

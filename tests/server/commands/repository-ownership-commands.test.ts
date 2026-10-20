@@ -231,7 +231,7 @@ describe('NotificationRepository', () => {
 
   it('latestTurn', async () => {
     const latest = (owner: string) =>
-      f.db.transaction((tx) => outbox().latestTurn(tx, owner, f.deviceA, f.sessionA, String(Date.now())));
+      f.db.transaction((tx) => outbox().latestTurn(tx, owner, f.deviceA, f.sessionA, Date.now()));
 
     expect(await latest(f.ownerA)).toHaveLength(1);
     expect(await latest(f.ownerB)).toEqual([]);

@@ -3,12 +3,14 @@ import { EventType, MessageRole } from '@protocol';
 import { type PoolClient } from 'pg';
 import { notificationPreview, notificationTitle } from './format.js';
 import { type NotificationRepository } from './repositories/notifications.js';
+import { notificationCopy } from './copy/messages.js';
 
 interface NotificationContext {
   owner_id: string;
   session_id: string | null;
   kind: string;
-  created_at: string;
+  created_at: number;
+  language: string | null;
 }
 
 export async function notificationContext(
@@ -16,19 +18,18 @@ export async function notificationContext(
   tx: PoolClient,
   row: NotificationContext,
 ): Promise<string> {
+  const copy = notificationCopy(row.language);
   const record = await outbox.session(tx, row.owner_id, row.session_id);
 
   const agent = record?.data.target?.kind?.startsWith('codex-') ? 'Codex' : 'Claude';
   const title = record?.data.title ? ' · ' + notificationTitle(record.data.title) : '';
 
   if (row.kind === EventType.Permission) {
-    return record
-      ? `${agent} ждёт разрешения${title}. Открой сессию, чтобы подтвердить или отклонить действие.`
-      : 'Агент запрашивает разрешение.';
+    return record ? copy.permission(agent, title) : copy.permissionUnknownSession;
   }
 
   if (!record) {
-    return 'Обработка запроса закончилась. Открой сессию, чтобы проверить результат.';
+    return copy.finished('');
   }
 
   const latest = await outbox.latestTurn(tx, row.owner_id, record.device_id, row.session_id, row.created_at);
@@ -36,11 +37,11 @@ export async function notificationContext(
   const reason = latest.find((item) => item.type === EventType.TurnEnd)?.payload?.reason;
 
   if (reason === NotificationTurnReason.Interrupted) {
-    return `${agent} остановлен${title}. Открой сессию, чтобы продолжить.`;
+    return copy.interrupted(agent, title);
   }
 
   if (reason === NotificationTurnReason.Failed || record.data.errorCode) {
-    return `${agent} не смог завершить запрос${title}. Открой сессию, чтобы посмотреть причину.`;
+    return copy.failed(agent, title);
   }
 
   const message = latest.find((item) => item.type === EventType.Message)?.payload;
@@ -50,7 +51,5 @@ export async function notificationContext(
       ? notificationPreview(message.text)
       : '';
 
-  return preview
-    ? `${agent} ответил${title}\n\n${preview}`
-    : `Обработка запроса закончилась${title}. Открой сессию, чтобы проверить результат.`;
+  return preview ? copy.answered(agent, title, preview) : copy.finished(title);
 }

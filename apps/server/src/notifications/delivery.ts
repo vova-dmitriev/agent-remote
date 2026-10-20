@@ -1,6 +1,7 @@
 import { EventType, HttpStatus } from '@protocol';
 import { NotificationKind } from '../domain/notifications.js';
 import { notificationContext } from './context.js';
+import { notificationCopy } from './copy/messages.js';
 import { type NotificationRepository } from './repositories/notifications.js';
 
 export interface TelegramSendResult {
@@ -54,15 +55,15 @@ export class NotificationDelivery {
       this.perChat.set(row.private_chat_id, now + 1000);
       this.nextGlobal = now + 34;
 
-      let text = 'Mac недоступен.';
+      const copy = notificationCopy(row.language);
+      let text = copy.deviceUnavailable;
 
       if (row.kind === NotificationKind.PairPending) {
-        text = 'Подтверди подключение на Mac. Затем открой Agent Remote кнопкой ниже.';
+        text = copy.pairPending;
       } else if (row.kind === NotificationKind.PairQuota) {
-        text =
-          'У этого аккаунта уже подключён Mac. Используй его или отзови доступ в приложении перед новым подключением.';
+        text = copy.pairQuota;
       } else if (row.kind === NotificationKind.PairUnavailable) {
-        text = 'Ссылка подключения недоступна. Запусти подключение заново на Mac.';
+        text = copy.pairUnavailable;
       } else if (
         [EventType.TurnEnd, EventType.Permission].some((candidateValue) => candidateValue === row.kind)
       ) {
@@ -87,7 +88,7 @@ export class NotificationDelivery {
             inline_keyboard: [
               [
                 {
-                  text: row.kind.startsWith('pair_') ? 'Открыть Agent Remote' : 'Открыть сессию',
+                  text: row.kind.startsWith('pair_') ? copy.openApp : copy.openSession,
                   web_app: { url: url.toString() },
                 },
               ],

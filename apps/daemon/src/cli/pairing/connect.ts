@@ -148,7 +148,7 @@ export async function connectMac(options: ConnectOptions = {}, deps = defaults) 
     check();
 
     deps.write(
-      `Код подключения (5 минут): ${code}\nЕсли ссылка не открылась, введи код в Telegram Mini App.\n`,
+      `Connection code (valid 5 minutes): ${code}\nIf the link did not open, enter the code in the Telegram Mini App.\n`,
     );
 
     const username = options.botUsername ?? registration.botUsername;
@@ -156,7 +156,7 @@ export async function connectMac(options: ConnectOptions = {}, deps = defaults) 
     if (!options.manual && typeof username === 'string' && /^[A-Za-z0-9_]+$/.test(username)) {
       const url = `https://t.me/${username}?start=pair_${code}`;
 
-      deps.write(`Открой Telegram и нажми Start: ${url}\n`);
+      deps.write(`Open Telegram and press Start: ${url}\n`);
 
       try {
         await deps.open(url, signal);
@@ -197,7 +197,7 @@ export async function connectMac(options: ConnectOptions = {}, deps = defaults) 
         check();
 
         if (!result) {
-          deps.write('Подключение отклонено.\n');
+          deps.write('Connection declined.\n');
 
           return false;
         }
@@ -205,7 +205,7 @@ export async function connectMac(options: ConnectOptions = {}, deps = defaults) 
         await deps.save({ relayUrl, deviceId: result.deviceId, deviceToken: result.token });
         await deps.secret();
         complete = true;
-        deps.write('Mac подключён.\n');
+        deps.write('Mac connected.\n');
 
         return true;
       }

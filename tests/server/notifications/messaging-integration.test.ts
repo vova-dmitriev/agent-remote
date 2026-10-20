@@ -83,7 +83,7 @@ it('persists intent during Redis disconnection and delivers after reconnect with
   expect(sent).toHaveLength(0);
   proxy.online();
   await expect.poll(() => sent.length, { timeout: 5000 }).toBe(1);
-  expect(sent[0]).toMatchObject({ chat_id: '7003', text: 'Агент запрашивает разрешение.' });
+  expect(sent[0]).toMatchObject({ chat_id: '7003', text: 'An agent is asking for permission.' });
 
   await expect
     .poll(async () => (await relay.db.pool.query('SELECT sent FROM notification_outbox')).rows[0].sent)
@@ -120,6 +120,6 @@ it('reconstructs missing Redis queue data from the PostgreSQL outbox', async () 
 
   expect(sent[1]).toMatchObject({
     chat_id: '7003',
-    text: 'Обработка запроса закончилась. Открой сессию, чтобы проверить результат.',
+    text: 'The request finished. Open the session to check the result.',
   });
 });

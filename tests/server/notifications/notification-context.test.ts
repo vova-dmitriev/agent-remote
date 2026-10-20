@@ -86,7 +86,7 @@ it('never describes a future answer or an earlier assistant answer as the curren
   expect(result.text).toContain('Fix mobile layout');
   expect(result.text).not.toContain('Fixed mobile');
   expect(result.text).not.toContain('FUTURE');
-  expect(result.text).toContain('Открой сессию');
+  expect(result.text).toContain('Open the session');
 });
 
 it('does not expose context for a revoked device', async () => {
