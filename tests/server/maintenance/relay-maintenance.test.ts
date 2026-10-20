@@ -13,9 +13,9 @@ import {
   COMMAND_ACK_TIMEOUT_MS,
 } from '@server/maintenance/limits.js';
 import { RelayHub, type AppConnection } from '@server/realtime/relay-hub.js';
-import { attachmentRelayFixture } from '../../helpers/attachment-relay.js';
-import { databaseFixture } from '../../helpers/database.js';
-import { testBotToken } from '../../helpers/telegram.js';
+import { attachmentRelayFixture } from '../../helpers/relay/attachment-relay.js';
+import { databaseFixture } from '../../helpers/relay/database.js';
+import { testBotToken } from '../../helpers/relay/telegram.js';
 
 const cleanups: Array<() => Promise<unknown>> = [];
 

@@ -9,7 +9,7 @@ import { startLocalServer } from '@daemon/local/server/server.js';
 import { FramedPeer } from '@daemon/browser/transport/peer.js';
 import { encryptEnrollment } from '@transport/credentials/sealed-box.js';
 import { profileServiceFixture } from './fixtures/service.fixture.js';
-import { localFixture, localTestOrigin } from '../../helpers/local-runtime.js';
+import { localFixture, localTestOrigin } from '../../helpers/local/local-runtime.js';
 import { deferred } from './fixtures/runtime/deferred.js';
 
 it.each(['disconnect', 'logout'])(

@@ -6,8 +6,8 @@ import { promisify } from 'node:util';
 import { afterEach, expect, it } from 'vitest';
 import { ErrorCode, LocalOperation } from '@protocol';
 import { createDesktopCompanionConnector } from '@desktop/runtime/connector.js';
-import { desktopRuntimeFixture } from '../helpers/desktop-runtime-fixture.js';
-import { guardRuntimeProcesses, trackRuntimeChild } from '../helpers/runtime-processes.js';
+import { desktopRuntimeFixture } from '../helpers/desktop/desktop-runtime-fixture.js';
+import { guardRuntimeProcesses, trackRuntimeChild } from '../helpers/desktop/runtime-processes.js';
 
 const runFile = promisify(execFile);
 const cleanups: Array<() => Promise<unknown>> = [];

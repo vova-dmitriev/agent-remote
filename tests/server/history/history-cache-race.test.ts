@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
 import { Redis } from 'ioredis';
 import { randomUUID } from 'node:crypto';
-import { databaseFixture } from '../../helpers/database.js';
+import { databaseFixture } from '../../helpers/relay/database.js';
 import { RedisCache } from '@server/infrastructure/redis.js';
 import { SessionHistory } from '@server/history/service.js';
 import { HistoryRepository } from '@server/history/repository.js';

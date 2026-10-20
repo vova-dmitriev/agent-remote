@@ -2,7 +2,11 @@ import { mkdir, readFile, rename, symlink, unlink, writeFile } from 'node:fs/pro
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { ContextCheckpointManager } from '@daemon/continuity/context/checkpoint.js';
-import { checkpointRoot, checkpointSource, cleanCheckpointRoots } from '../../helpers/checkpoint-fixtures.js';
+import {
+  checkpointRoot,
+  checkpointSource,
+  cleanCheckpointRoots,
+} from '../../helpers/sessions/checkpoint-fixtures.js';
 
 const source = () => {
   const { source: adapter, change } = checkpointSource([

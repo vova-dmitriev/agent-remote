@@ -3,7 +3,7 @@ import { CommandActionType, CommandStatus } from '@protocol';
 import { Dispatcher } from '@daemon/commands/dispatcher.js';
 import { DispatchScheduler } from '@daemon/commands/scheduling/index.js';
 import { PermissionBroker } from '@daemon/commands/permission-broker.js';
-import { localFixture } from '../../helpers/local-runtime.js';
+import { localFixture } from '../../helpers/local/local-runtime.js';
 
 const cleanups: (() => Promise<void>)[] = [];
 

@@ -22,7 +22,7 @@ import { LocalStore } from '@daemon/monitor/store.js';
 import { DesktopHistory } from '@/app/api/desktop/history.js';
 import { HistoryPageSkip } from '@/shared/api/types.js';
 import type { DesktopBridgeConnection } from '@/app/api/desktop/desktop-connection.js';
-import { sessionSnapshot } from '../../e2e/support/session-fixtures.js';
+import { sessionSnapshot } from '../../e2e/support/fixtures/session-fixtures.js';
 
 type HistoryAction = Extract<LocalAction, { operation: typeof LocalOperation.History }>;
 type Page = { before: string | null; after: string | null };

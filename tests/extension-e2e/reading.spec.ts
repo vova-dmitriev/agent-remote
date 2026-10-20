@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test';
 import { test, selectSession } from './fixture.js';
-import { byTestId } from '../e2e/support/testid.js';
-import { jumpNear, railMarker } from '../e2e/support/rail.js';
+import { byTestId } from '../e2e/support/ui/testid.js';
+import { jumpNear, railMarker } from '../e2e/support/ui/rail.js';
 import { SESSION_PAGE_IDS, SESSION_FEED_IDS } from '@/pages/session/config/test-ids.js';
 import { EventType, MessageRole } from '@protocol';
 import { LocalDocumentKind } from '@daemon/local/state/values.js';

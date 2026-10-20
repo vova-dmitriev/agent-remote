@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { WebSocket } from 'ws';
 import { DeviceRepository } from '@server/devices/repositories/devices.js';
 import { DeviceService } from '@server/devices/service.js';
-import { attachmentRelayFixture } from '../../helpers/attachment-relay.js';
+import { attachmentRelayFixture } from '../../helpers/relay/attachment-relay.js';
 
 let f: Awaited<ReturnType<typeof attachmentRelayFixture>>;
 const secret = 'synthetic chat message text';

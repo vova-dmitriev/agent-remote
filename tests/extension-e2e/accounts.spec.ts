@@ -5,7 +5,7 @@ import { ACCOUNTS_PAGE_IDS } from '@/pages/accounts/config/test-ids.js';
 import { PROFILE_MANAGE_IDS } from '@/pages/accounts/config/management/test-ids.js';
 import { PROFILE_ENROLL_IDS } from '@/pages/accounts/config/enrollment/test-ids.js';
 import { PROFILE_CARD_IDS } from '@/pages/accounts/config/profile/test-ids.js';
-import { openAccounts } from '../e2e/support/settings-menu.js';
+import { openAccounts } from '../e2e/support/ui/settings-menu.js';
 
 interface BrowserStorageScope {
   chrome: { storage: { local: { get(keys: null): Promise<Record<string, unknown>> } } };

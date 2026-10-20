@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { ErrorCode } from '@protocol';
 import { startLocalServer } from '@daemon/local/server/server.js';
 import { probeCompanion } from '@daemon/local/bootstrap/probe.js';
-import { localFixture } from '../../helpers/local-runtime.js';
+import { localFixture } from '../../helpers/local/local-runtime.js';
 
 const cleanups: Array<() => Promise<unknown>> = [];
 

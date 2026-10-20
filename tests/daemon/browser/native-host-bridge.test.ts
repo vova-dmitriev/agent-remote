@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { PassThrough } from 'node:stream';
-import { localFixture, localTestOrigin } from '../../helpers/local-runtime.js';
+import { localFixture, localTestOrigin } from '../../helpers/local/local-runtime.js';
 import { startLocalServer } from '@daemon/local/server/server.js';
 import { FramedPeer } from '@daemon/browser/transport/peer.js';
 import { runNativeHost } from '@daemon/browser/host/bridge.js';

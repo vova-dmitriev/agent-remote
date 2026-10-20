@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, expect, it } from 'vitest';
-import { databaseFixture } from '../../helpers/database.js';
+import { databaseFixture } from '../../helpers/relay/database.js';
 import { AttachmentRepository } from '@server/attachments/repositories/attachments.js';
 import { AttachmentService } from '@server/attachments/service.js';
 import { sessionSchema } from '@protocol';

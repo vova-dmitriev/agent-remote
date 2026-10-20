@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { expect, type Page } from '@playwright/test';
-import { test, deviceFixture, publishMessages } from '../support/relay-fixture.js';
+import { test, deviceFixture, publishMessages } from '../support/relay/relay-fixture.js';
 import { ATTACHMENT_IDS } from '@/entities/attachment/config/test-ids.js';
 import { openAttachments, image, png } from './fixture.js';
 

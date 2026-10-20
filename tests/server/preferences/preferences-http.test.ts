@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { Database } from '@server/db/database.js';
 import { createRelay } from '@server/app/create-relay.js';
-import { databaseFixture } from '../../helpers/database.js';
-import { initData, testBotToken } from '../../helpers/telegram.js';
+import { databaseFixture } from '../../helpers/relay/database.js';
+import { initData, testBotToken } from '../../helpers/relay/telegram.js';
 
 let fixture: Awaited<ReturnType<typeof databaseFixture>>;
 let relay: Awaited<ReturnType<typeof createRelay>>;

@@ -6,13 +6,13 @@ import { expect } from '@playwright/test';
 import { startDaemon } from '@daemon/main.js';
 import { saveConfig, localSecret, socketPath } from '@daemon/config.js';
 import { requestLocal } from '@daemon/code/hooks/ipc.js';
-import { initData } from '../../helpers/telegram.js';
+import { initData } from '../../helpers/relay/telegram.js';
 import type { ClientCommand } from '@protocol';
 import { cliProvider } from './cli.js';
 import { desktopProvider } from './desktop.js';
 import type { Kind, Provider } from './model.js';
 import { appOrigin, relayOrigin, relayPort } from '../runtime/app-origin.js';
-import { startRelayProcess, type RemoteRelay } from '../support/relay-process.js';
+import { startRelayProcess, type RemoteRelay } from '../support/relay/relay-process.js';
 
 const environmentNames = [
   'CLAUDE_REMOTE_HOME',

@@ -8,8 +8,8 @@ import type { Response } from 'express';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { JsonExpressAdapter } from '@server/http/pipeline/json-express-adapter.js';
 import { createRelay } from '@server/app/create-relay.js';
-import { databaseFixture } from '../../helpers/database.js';
-import { initData, testBotToken } from '../../helpers/telegram.js';
+import { databaseFixture } from '../../helpers/relay/database.js';
+import { initData, testBotToken } from '../../helpers/relay/telegram.js';
 
 const JSON_CONTENT_TYPE = 'application/json; charset=utf-8';
 

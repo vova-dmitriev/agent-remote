@@ -1,12 +1,12 @@
 import { expect, type Page } from '@playwright/test';
-import { identity } from '../support/identity.js';
-import { byTestId } from '../support/testid.js';
-import { initData } from '../../helpers/telegram.js';
+import { identity } from '../support/relay/identity.js';
+import { byTestId } from '../support/ui/testid.js';
+import { initData } from '../../helpers/relay/telegram.js';
 import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
 import { COMMAND_IDS } from '@/features/send-command/config/test-ids.js';
 import { SHELL_IDS } from '@/widgets/application-shell/config/test-ids.js';
 import { SESSION_PAGE_IDS } from '@/pages/session/config/test-ids.js';
-import { setSessionLanguage } from '../support/session-language.js';
+import { setSessionLanguage } from '../support/ui/session-language.js';
 import type { Runtime } from './runtime.js';
 import { relayOrigin } from '../runtime/app-origin.js';
 

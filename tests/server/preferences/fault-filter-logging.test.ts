@@ -5,8 +5,8 @@ import { logDebug } from '@daemon/diagnostics/log.js';
 import { createRelay } from '@server/app/create-relay.js';
 import { PreferenceService } from '@server/preferences/service.js';
 import { redactError } from '@transport/diagnostics/redact-error.js';
-import { databaseFixture } from '../../helpers/database.js';
-import { initData, testBotToken } from '../../helpers/telegram.js';
+import { databaseFixture } from '../../helpers/relay/database.js';
+import { initData, testBotToken } from '../../helpers/relay/telegram.js';
 
 let fixture: Awaited<ReturnType<typeof databaseFixture>>;
 let relay: Awaited<ReturnType<typeof createRelay>>;

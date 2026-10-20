@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { databaseFixture } from '../../helpers/database.js';
+import { databaseFixture } from '../../helpers/relay/database.js';
 import { persistEvent } from '@server/history/events.js';
 import { HistoryRepository } from '@server/history/repository.js';
 import type { EventEnvelope } from '@protocol';

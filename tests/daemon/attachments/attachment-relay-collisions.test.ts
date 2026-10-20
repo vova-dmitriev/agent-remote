@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
 import { AttachmentService } from '@daemon/attachments/service.js';
 import { attachmentPrompt } from '@daemon/attachments/content/input.js';
-import { attachmentLocalRelay } from '../../helpers/attachment-local-relay.js';
+import { attachmentLocalRelay } from '../../helpers/relay/attachment-local-relay.js';
 
 it('keeps distinct local history IDs when relay deduplication would collapse attachments to one ID', async () => {
   const f = await attachmentLocalRelay(true);

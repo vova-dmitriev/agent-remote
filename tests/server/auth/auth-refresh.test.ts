@@ -1,8 +1,8 @@
 import { expect, it } from 'vitest';
-import { attachmentRelayFixture } from '../../helpers/attachment-relay.js';
+import { attachmentRelayFixture } from '../../helpers/relay/attachment-relay.js';
 import { BrowserSessions } from '@server/auth/sessions/browser-sessions.js';
 import { BrowserSessionRepository } from '@server/auth/sessions/repository.js';
-import { initData } from '../../helpers/telegram.js';
+import { initData } from '../../helpers/relay/telegram.js';
 
 it('renews access using a server-side browser session and revokes all its access tokens on logout', async () => {
   const f = await attachmentRelayFixture();

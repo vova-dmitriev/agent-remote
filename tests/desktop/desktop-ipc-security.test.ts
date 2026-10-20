@@ -14,7 +14,7 @@ import {
 import { resolveDesktopAsset } from '@desktop/main/protocol/asset-path.js';
 import { DESKTOP_ASSET_URL } from '@desktop/main/config/links.js';
 import { DesktopPrivateIpcChannel } from '@desktop/shared/private-ipc.js';
-import { createDesktopIpcFixture as createFixture } from '../helpers/desktop-ipc-fixture.js';
+import { createDesktopIpcFixture as createFixture } from '../helpers/desktop/desktop-ipc-fixture.js';
 
 vi.mock('electron', () => ({ shell: { openExternal: vi.fn() } }));
 

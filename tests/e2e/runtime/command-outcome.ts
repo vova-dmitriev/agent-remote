@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test';
-import { delivered, deviceFixture } from '../support/relay-fixture.js';
+import { delivered, deviceFixture } from '../support/relay/relay-fixture.js';
 import { CommandStatus, FrameType } from '@protocol';
 import { FixtureCommandOutcome } from './command-outcome-values.js';
 

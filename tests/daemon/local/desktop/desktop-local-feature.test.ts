@@ -8,7 +8,7 @@ import { ErrorCode, LocalFeature, LOCAL_LIMITS } from '@protocol';
 import { FramedPeer } from '@daemon/browser/transport/peer.js';
 import { probeCompanion } from '@daemon/local/bootstrap/probe.js';
 import { startLocalServer } from '@daemon/local/server/server.js';
-import { localFixture } from '../../../helpers/local-runtime.js';
+import { localFixture } from '../../../helpers/local/local-runtime.js';
 
 const cleanups: (() => Promise<unknown>)[] = [];
 

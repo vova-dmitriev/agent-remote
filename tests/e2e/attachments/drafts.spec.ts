@@ -1,10 +1,10 @@
 import { expect } from '@playwright/test';
-import { test } from '../support/relay-fixture.js';
-import { byTestId } from '../support/testid.js';
+import { test } from '../support/relay/relay-fixture.js';
+import { byTestId } from '../support/ui/testid.js';
 import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
 import { SESSION_PAGE_IDS } from '@/pages/session/config/test-ids.js';
 import { SHELL_IDS } from '@/widgets/application-shell/config/test-ids.js';
-import { setSessionLanguage } from '../support/session-language.js';
+import { setSessionLanguage } from '../support/ui/session-language.js';
 import { COMMAND_IDS } from '@/features/send-command/config/test-ids.js';
 import { UPLOAD_IDS } from '@/features/send-command/ui/attachments/test-ids.js';
 import { image, file, openAttachments } from './fixture.js';

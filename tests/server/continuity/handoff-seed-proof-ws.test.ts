@@ -6,9 +6,9 @@ import {
   startHandoffProofFixture,
   waitFrame,
   type HandoffProofFixture,
-} from '../../helpers/handoff-proof-fixture.js';
+} from '../../helpers/sessions/handoff-proof-fixture.js';
 import { CommandActionType, CommandStatus, HttpStatus } from '@protocol';
-import { dispatchAndCheckCreateEvidence } from '../../helpers/handoff-create-evidence.js';
+import { dispatchAndCheckCreateEvidence } from '../../helpers/sessions/handoff-create-evidence.js';
 
 let fixture: HandoffProofFixture;
 

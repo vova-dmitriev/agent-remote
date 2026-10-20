@@ -1,6 +1,6 @@
 import type { localProfileFixture } from './profiles.js';
 import type { BrowserContext, Page } from '@playwright/test';
-import type { localFixture } from '../../helpers/local-runtime.js';
+import type { localFixture } from '../../helpers/local/local-runtime.js';
 import type { SessionStatus } from '@protocol';
 
 export interface ExtensionHarness {

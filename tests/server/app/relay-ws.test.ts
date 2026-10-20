@@ -4,7 +4,7 @@ import { Pool } from 'pg';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { createRelay } from '@server/app/create-relay.js';
 import { NotificationWorker } from '@server/notifications/worker.js';
-import { initData, testBotToken } from '../../helpers/telegram.js';
+import { initData, testBotToken } from '../../helpers/relay/telegram.js';
 import {
   SocketCloseCode,
   SocketCloseReason,

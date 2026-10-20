@@ -9,7 +9,7 @@ import { createRelay } from '@server/app/create-relay.js';
 import { startDaemon } from '@daemon/main.js';
 import { saveConfig } from '@daemon/config.js';
 import { installHooks } from '@daemon/code/hooks/install-hooks.js';
-import { initData, testBotToken } from '../tests/helpers/telegram.js';
+import { initData, testBotToken } from '../tests/helpers/relay/telegram.js';
 
 const url =
     process.env.TEST_DATABASE_URL ??

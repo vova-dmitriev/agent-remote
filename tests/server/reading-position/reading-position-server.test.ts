@@ -4,7 +4,7 @@ import { Redis } from 'ioredis';
 import { RedisCache } from '@server/infrastructure/redis.js';
 import { ReadingPositionService } from '@server/reading-position/service.js';
 import { ReadingPositionRepository } from '@server/reading-position/repository.js';
-import { attachmentRelayFixture } from '../../helpers/attachment-relay.js';
+import { attachmentRelayFixture } from '../../helpers/relay/attachment-relay.js';
 
 it('persists a bounded reading anchor and ignores delayed writes from an older visit', async () => {
   const f = await attachmentRelayFixture();

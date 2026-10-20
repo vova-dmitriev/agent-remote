@@ -10,7 +10,7 @@ import { startDaemon } from '@daemon/main.js';
 import { saveConfig, localSecret, socketPath } from '@daemon/config.js';
 import { requestLocal, lineReader, writeFrame } from '@daemon/code/hooks/ipc.js';
 import type { AppSnapshot } from '@protocol';
-import { initData, testBotToken } from '../helpers/telegram.js';
+import { initData, testBotToken } from '../helpers/relay/telegram.js';
 
 const url =
     process.env.TEST_DATABASE_URL ??

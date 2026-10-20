@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { attachmentRelayFixture } from '../../helpers/attachment-relay.js';
+import { attachmentRelayFixture } from '../../helpers/relay/attachment-relay.js';
 import { persistEvent } from '@server/history/events.js';
 import { HistoryRepository } from '@server/history/repository.js';
 import { SessionLabels } from '@server/sessions/labels.js';

@@ -1,6 +1,6 @@
 import { expect, it, vi } from 'vitest';
 import type { ProfiledExecutionLaunch } from '@daemon/sessions/execution/types.js';
-import { executionProfile, executionSelection } from '../../../helpers/execution-profile.js';
+import { executionProfile, executionSelection } from '../../../helpers/sessions/execution-profile.js';
 import { executionProfileSummarySchema } from '@protocol';
 import { startProfiledCodexRuntime } from '@daemon/sessions/execution/start-profiled-codex.js';
 import { ManagedCodexLaunchEvidenceType } from '@daemon/codex/launch/types.js';

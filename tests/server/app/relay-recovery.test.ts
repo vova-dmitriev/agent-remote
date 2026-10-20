@@ -4,7 +4,7 @@ import { WebSocket } from 'ws';
 import { randomUUID, randomBytes, createHash } from 'node:crypto';
 import { createRelay } from '@server/app/create-relay.js';
 import type { EventEnvelope } from '@protocol';
-import { initData, testBotToken } from '../../helpers/telegram.js';
+import { initData, testBotToken } from '../../helpers/relay/telegram.js';
 
 const url =
     process.env.TEST_DATABASE_URL ??

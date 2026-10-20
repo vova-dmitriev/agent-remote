@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import type { WebSocket } from 'ws';
-import { databaseFixture } from '../../helpers/database.js';
+import { databaseFixture } from '../../helpers/relay/database.js';
 import { SourceHistory } from '@server/history/source.js';
 import { HistoryRepository } from '@server/history/repository.js';
 import type { Principal } from '@server/auth/security.js';

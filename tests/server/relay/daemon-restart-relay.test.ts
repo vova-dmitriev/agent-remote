@@ -10,8 +10,8 @@ import { LocalStore } from '@daemon/monitor/store.js';
 import { Monitor } from '@daemon/monitor/monitor.js';
 import { AdapterRegistry, SourceAdapter } from '@daemon/adapters/registry.js';
 import { PermissionBroker } from '@daemon/commands/permission-broker.js';
-import { databaseFixture } from '../../helpers/database.js';
-import { initData, testBotToken } from '../../helpers/telegram.js';
+import { databaseFixture } from '../../helpers/relay/database.js';
+import { initData, testBotToken } from '../../helpers/relay/telegram.js';
 
 it('restores registered native history through the actual relay despite a retired queue head and another daemon restart', async () => {
   const fixture = await databaseFixture();

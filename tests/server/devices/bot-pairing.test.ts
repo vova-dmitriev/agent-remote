@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { randomBytes, randomUUID } from 'node:crypto';
-import { databaseFixture } from '../../helpers/database.js';
+import { databaseFixture } from '../../helpers/relay/database.js';
 import { NotificationWorker } from '@server/notifications/worker.js';
 import { DeviceRepository } from '@server/devices/repositories/devices.js';
 import { PairingRepository } from '@server/devices/repositories/pairings.js';

@@ -3,8 +3,14 @@ import { randomUUID } from 'node:crypto';
 import { readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { LocalOperation, ErrorCode, type AttachmentDescriptor } from '@protocol';
-import { restartWithExpiredStage } from '../../helpers/extension-media-runtime.js';
-import { fixture, begin, session, principal, controlledBody } from '../../helpers/extension-media-runtime.js';
+import { restartWithExpiredStage } from '../../helpers/local/extension-media-runtime.js';
+import {
+  fixture,
+  begin,
+  session,
+  principal,
+  controlledBody,
+} from '../../helpers/local/extension-media-runtime.js';
 
 afterEach(() => vi.restoreAllMocks());
 

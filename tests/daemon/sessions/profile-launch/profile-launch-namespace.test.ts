@@ -2,7 +2,7 @@ import { expect, it } from 'vitest';
 import { chmod, lstat, mkdtemp, rm, symlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { profileExecutionNamespace } from '@daemon/sessions/execution/namespace.js';
-import { executionProfile } from '../../../helpers/execution-profile.js';
+import { executionProfile } from '../../../helpers/sessions/execution-profile.js';
 import { ErrorCode, executionProfileSummarySchema } from '@protocol';
 
 it('allocates short private deterministic namespaces without exposing profile identity in socket paths', async () => {

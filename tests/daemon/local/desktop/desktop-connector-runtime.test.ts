@@ -7,9 +7,9 @@ import { LocalGrants } from '@daemon/local/grants/service.js';
 import { startLocalServer } from '@daemon/local/server/server.js';
 import { LocalOperation, LocalOrigin } from '@protocol';
 import { createDesktopCompanionConnector } from '@desktop/runtime/connector.js';
-import { desktopRuntimeFixture } from '../../../helpers/desktop-runtime-fixture.js';
-import { localFixture } from '../../../helpers/local-runtime.js';
-import { guardRuntimeProcesses } from '../../../helpers/runtime-processes.js';
+import { desktopRuntimeFixture } from '../../../helpers/desktop/desktop-runtime-fixture.js';
+import { localFixture } from '../../../helpers/local/local-runtime.js';
+import { guardRuntimeProcesses } from '../../../helpers/desktop/runtime-processes.js';
 
 const cleanups: Array<() => Promise<unknown>> = [];
 const itOnDarwin = it.skipIf(process.platform !== 'darwin');

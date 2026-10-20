@@ -17,8 +17,8 @@ import {
   RETENTION_QUEUE,
 } from '@server/maintenance/limits.js';
 import { Retention } from '@server/maintenance/retention.js';
-import { databaseFixture } from '../../helpers/database.js';
-import { testBotToken } from '../../helpers/telegram.js';
+import { databaseFixture } from '../../helpers/relay/database.js';
+import { testBotToken } from '../../helpers/relay/telegram.js';
 
 const cleanups: Array<() => Promise<unknown>> = [];
 

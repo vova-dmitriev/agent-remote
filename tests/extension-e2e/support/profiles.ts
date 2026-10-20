@@ -1,7 +1,7 @@
 import { join, resolve } from 'node:path';
 import { writeFile } from 'node:fs/promises';
 import { RuntimeProfiles } from '@daemon/runtime/services/runtime-profiles.js';
-import type { localFixture } from '../../helpers/local-runtime.js';
+import type { localFixture } from '../../helpers/local/local-runtime.js';
 
 export async function localProfileFixture(local: ReturnType<typeof localFixture>, directory: string) {
   const settings = join(directory, 'profile-native-settings.json');

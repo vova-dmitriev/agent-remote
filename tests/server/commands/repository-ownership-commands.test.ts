@@ -3,7 +3,7 @@ import { AttachmentRepository } from '@server/attachments/repositories/attachmen
 import { CommandRepository } from '@server/commands/repositories/audit.js';
 import { CommandClaimRepository } from '@server/commands/repositories/claims.js';
 import { NotificationRepository } from '@server/notifications/repositories/notifications.js';
-import { ownershipFixture } from '../../helpers/ownership-fixture.js';
+import { ownershipFixture } from '../../helpers/relay/ownership-fixture.js';
 
 // Attachments, commands and notifications: every owner-scoped repository method, called as owner B with owner A's
 // ids, returns nothing and changes nothing.

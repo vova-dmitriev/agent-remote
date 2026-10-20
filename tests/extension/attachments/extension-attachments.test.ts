@@ -4,8 +4,8 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { LocalMediaRepository } from '@daemon/local/media/repository.js';
 import { LocalOperation, ErrorCode, type AttachmentDescriptor } from '@protocol';
-import { fillTransfers } from '../../helpers/extension-media-runtime.js';
-import { fixture, begin, session, cleanup } from '../../helpers/extension-media-runtime.js';
+import { fillTransfers } from '../../helpers/local/extension-media-runtime.js';
+import { fixture, begin, session, cleanup } from '../../helpers/local/extension-media-runtime.js';
 
 it.each(['text/plain', 'image/png', 'image/svg+xml'])(
   'persists opaque private files and canonical descriptors: %s',

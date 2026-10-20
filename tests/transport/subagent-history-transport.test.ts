@@ -20,7 +20,7 @@ import {
   type LocalAction,
   type ServerFrame,
 } from '@protocol';
-import { databaseFixture } from '../helpers/database.js';
+import { databaseFixture } from '../helpers/relay/database.js';
 import { SourceHistory } from '@server/history/source.js';
 import { HistoryRepository } from '@server/history/repository.js';
 import type { Principal } from '@server/auth/security.js';
@@ -30,8 +30,8 @@ import { LocalStore } from '@daemon/monitor/store.js';
 import { DesktopHistory } from '@/app/api/desktop/history.js';
 import type { DesktopBridgeConnection } from '@/app/api/desktop/desktop-connection.js';
 import { HistoryWindow } from '@/entities/session/api/history-window.js';
-import { sessionSnapshot } from '../e2e/support/session-fixtures.js';
-import { attachmentRelayFixture } from '../helpers/attachment-relay.js';
+import { sessionSnapshot } from '../e2e/support/fixtures/session-fixtures.js';
+import { attachmentRelayFixture } from '../helpers/relay/attachment-relay.js';
 
 type HistoryAction = Extract<LocalAction, { operation: typeof LocalOperation.History }>;
 

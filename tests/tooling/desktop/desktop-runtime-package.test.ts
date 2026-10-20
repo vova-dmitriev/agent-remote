@@ -5,9 +5,9 @@ import { join } from 'node:path';
 import { LOCAL_LIMITS } from '@protocol';
 import { installDesktopRuntime } from '@desktop/runtime/install-runtime.js';
 import { verifyDesktopRuntime } from '../../../scripts/desktop/verify-runtime-lib.mjs';
-import { desktopRuntimeFixture } from '../../helpers/desktop-runtime-fixture.js';
-import { packagedCompanionFixture } from '../../helpers/packaged-companion.js';
-import { guardRuntimeProcesses } from '../../helpers/runtime-processes.js';
+import { desktopRuntimeFixture } from '../../helpers/desktop/desktop-runtime-fixture.js';
+import { packagedCompanionFixture } from '../../helpers/desktop/packaged-companion.js';
+import { guardRuntimeProcesses } from '../../helpers/desktop/runtime-processes.js';
 import {
   copyRuntimeTree,
   packageDesktopRuntime,

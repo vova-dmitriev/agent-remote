@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { afterEach, beforeEach, expect, it } from 'vitest';
-import { attachmentRelayFixture } from '../../helpers/attachment-relay.js';
+import { attachmentRelayFixture } from '../../helpers/relay/attachment-relay.js';
 import type { AppSnapshot, PendingUserInput, Session, UserInputAnswers } from '@protocol';
 
 let fixture: Awaited<ReturnType<typeof attachmentRelayFixture>>;

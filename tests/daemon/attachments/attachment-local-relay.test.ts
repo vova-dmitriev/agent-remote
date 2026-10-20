@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { LocalOperation } from '@protocol';
 import { AttachmentService } from '@daemon/attachments/service.js';
 import { attachmentPrompt } from '@daemon/attachments/content/input.js';
-import { attachmentLocalRelay, syntheticBytes } from '../../helpers/attachment-local-relay.js';
+import { attachmentLocalRelay, syntheticBytes } from '../../helpers/relay/attachment-local-relay.js';
 
 const cleanups: Array<() => Promise<void>> = [];
 

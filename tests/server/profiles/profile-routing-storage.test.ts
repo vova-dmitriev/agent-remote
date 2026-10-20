@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { databaseFixture } from '../../helpers/database.js';
+import { databaseFixture } from '../../helpers/relay/database.js';
 import { ProfileRoutingRepository } from '@server/profiles/routing/repository.js';
 import {
   fallbackPolicySchema,

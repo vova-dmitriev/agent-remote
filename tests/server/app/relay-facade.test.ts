@@ -10,8 +10,8 @@ import { Notifier } from '@server/notifications/notify.js';
 import { NotificationQueue } from '@server/notifications/queue.js';
 import { RealtimeModule } from '@server/realtime/realtime.module.js';
 import { RelayModule } from '@server/app/relay.module.js';
-import { databaseFixture } from '../../helpers/database.js';
-import { initData, testBotToken } from '../../helpers/telegram.js';
+import { databaseFixture } from '../../helpers/relay/database.js';
+import { initData, testBotToken } from '../../helpers/relay/telegram.js';
 
 const RELAY_KEYS = [
   'db',

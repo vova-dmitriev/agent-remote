@@ -11,7 +11,7 @@ import {
   stopFixture,
   probeAt,
   waitForFixture,
-} from '../../helpers/companion-fixture.js';
+} from '../../helpers/desktop/companion-fixture.js';
 import { ensureCompanion } from '@daemon/local/supervisor/index.js';
 import { CompanionEnvironment } from '@daemon/local/supervisor/values.js';
 

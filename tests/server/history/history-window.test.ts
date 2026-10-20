@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { databaseFixture } from '../../helpers/database.js';
+import { databaseFixture } from '../../helpers/relay/database.js';
 import { SessionHistory } from '@server/history/service.js';
 import { HistoryRepository } from '@server/history/repository.js';
 import type { Principal } from '@server/auth/security.js';

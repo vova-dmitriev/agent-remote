@@ -16,7 +16,7 @@ import { LocalStore } from '@daemon/monitor/store.js';
 import { Monitor } from '@daemon/monitor/monitor.js';
 import { AdapterRegistry } from '@daemon/adapters/registry.js';
 import { PermissionBroker } from '@daemon/commands/permission-broker.js';
-import { writeControlledCodexPeer } from '../../../helpers/profile-codex-peer.js';
+import { writeControlledCodexPeer } from '../../../helpers/sessions/profile-codex-peer.js';
 
 const directories: string[] = [];
 

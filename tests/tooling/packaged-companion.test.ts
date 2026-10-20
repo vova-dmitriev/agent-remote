@@ -5,8 +5,8 @@ import { chmod, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:f
 import { tmpdir } from 'node:os';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
-import { compileCompanionFixture, packagedCompanionFixture } from '../helpers/packaged-companion.js';
-import { guardRuntimeProcesses } from '../helpers/runtime-processes.js';
+import { compileCompanionFixture, packagedCompanionFixture } from '../helpers/desktop/packaged-companion.js';
+import { guardRuntimeProcesses } from '../helpers/desktop/runtime-processes.js';
 
 const run = promisify(execFile);
 

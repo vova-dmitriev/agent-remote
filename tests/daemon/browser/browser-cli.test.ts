@@ -8,7 +8,7 @@ import {
   createBrowserFixture,
   cleanupBrowserFixture,
   pendingGrant,
-} from '../../helpers/browser-cli-fixture.js';
+} from '../../helpers/local/browser-cli-fixture.js';
 import { runBrowserCli } from '@daemon/cli/browser/index.js';
 import { LocalOrigin } from '@protocol';
 import { CompanionEnvironment } from '@daemon/local/supervisor/values.js';

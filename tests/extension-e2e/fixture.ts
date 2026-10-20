@@ -5,7 +5,7 @@ import { randomBytes } from 'node:crypto';
 import { build } from 'vite';
 import { pathToFileURL } from 'node:url';
 import { RuntimeEvent } from '@daemon/domain/runtime.js';
-import { localFixture } from '../helpers/local-runtime.js';
+import { localFixture } from '../helpers/local/local-runtime.js';
 import { startLocalServer } from '@daemon/local/server/server.js';
 import { BrowserKind, NATIVE_HOST_NAME } from '@protocol';
 import { shellQuote } from '@daemon/shell/index.js';

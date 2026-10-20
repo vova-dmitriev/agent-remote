@@ -4,7 +4,7 @@ import { randomUUID, randomBytes, createHash } from 'node:crypto';
 import { writeFile, mkdir } from 'node:fs/promises';
 import { WebSocket } from 'ws';
 import { HttpStatus } from '@protocol';
-import { initData, testBotToken } from '../tests/helpers/telegram.js';
+import { initData, testBotToken } from '../tests/helpers/relay/telegram.js';
 
 const url =
   process.env.TEST_DATABASE_URL ??

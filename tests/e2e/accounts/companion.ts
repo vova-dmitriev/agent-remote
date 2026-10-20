@@ -5,9 +5,9 @@ import { LocalDatabase } from '@daemon/local/state/database.js';
 import { RuntimeProfiles } from '@daemon/runtime/services/runtime-profiles.js';
 import { RuntimeProfileRelay } from '@daemon/profiles/runtime/router/relay.js';
 import { FrameType, serverFrameSchema, type ProfileRequest } from '@protocol';
-import { deviceFixture, liveEpoch, rememberEpoch } from '../support/relay-fixture.js';
+import { deviceFixture, liveEpoch, rememberEpoch } from '../support/relay/relay-fixture.js';
 import { WebSocket } from 'ws';
-import { sessionSnapshot } from '../support/session-fixtures.js';
+import { sessionSnapshot } from '../support/fixtures/session-fixtures.js';
 import { relaySocketOrigin } from '../runtime/app-origin.js';
 
 interface ProfileCompanionOptions { beforeApi?: () => Promise<void> }

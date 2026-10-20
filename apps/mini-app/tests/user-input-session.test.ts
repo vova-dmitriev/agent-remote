@@ -2,7 +2,7 @@ import { expect, it } from "vitest"
 import { DeviceStatus, SessionStatus, FrameType, ConnectionStatus, CapabilityKey } from "@protocol"
 import { canSend, initialState, reduceSessionState } from "../src/entities/session/model/session-state"
 import { sessionUserInputs } from "../src/entities/session/lib/selectors"
-import { sessionSnapshot } from "../../../tests/e2e/support/session-fixtures"
+import { sessionSnapshot } from "../../../tests/e2e/support/fixtures/session-fixtures"
 import { questionRequest } from "../src/pages/session/ui/questions/fixtures"
 
 it("filters questions by current session, generation and capability", () => {

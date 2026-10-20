@@ -15,7 +15,7 @@ import { createCodexCheckpointSource } from '@daemon/continuity/source/native.js
 import type { RepositoryProbe, RepositoryWorkingTreeIdentity } from '@daemon/continuity/source/types.js';
 import { ContextCheckpointManager } from '@daemon/continuity/context/checkpoint.js';
 import { LocalStore } from '@daemon/monitor/store.js';
-import { checkpointRoot, cleanCheckpointRoots } from '../../helpers/checkpoint-fixtures.js';
+import { checkpointRoot, cleanCheckpointRoots } from '../../helpers/sessions/checkpoint-fixtures.js';
 
 afterEach(cleanCheckpointRoots);
 

@@ -2,7 +2,7 @@ import { ErrorCode, FrameType, SocketCloseCode, SocketCloseReason } from '@proto
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { hash } from '@server/auth/security.js';
 import { AUTH_RECHECK_MS } from '@server/maintenance/limits.js';
-import { attachmentRelayFixture } from '../../helpers/attachment-relay.js';
+import { attachmentRelayFixture } from '../../helpers/relay/attachment-relay.js';
 
 // Only the maintenance intervals and the clock are fake: sockets, PostgreSQL and frame waits run on real I/O.
 let f: Awaited<ReturnType<typeof attachmentRelayFixture>>;

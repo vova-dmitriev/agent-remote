@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { NotificationQueue } from '@server/notifications/queue.js';
 import { NotificationRepository } from '@server/notifications/repositories/notifications.js';
 import { redisClient } from '@server/infrastructure/redis.js';
-import { databaseFixture } from '../../helpers/database.js';
+import { databaseFixture } from '../../helpers/relay/database.js';
 
 const url = process.env.TEST_REDIS_URL ?? 'redis://127.0.0.1:56380';
 const client = redisClient(url);

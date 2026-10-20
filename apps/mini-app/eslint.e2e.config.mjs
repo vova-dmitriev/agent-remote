@@ -6,7 +6,7 @@ import { selectorRules } from "./eslint/rules.mjs"
 import { crossBoundaryImportPatterns, crossBoundaryImportSyntax } from "../../eslint/cross-boundary-imports.mjs"
 
 export default ts.config(
-  { ignores: ["tests/e2e/support/testid.ts"] },
+  { ignores: ["tests/e2e/support/ui/testid.ts"] },
   {
     files: ["tests/{e2e,extension-e2e}/**/*.ts"],
     extends: [js.configs.recommended, ...ts.configs.recommended],

@@ -7,8 +7,12 @@ import { fileURLToPath } from 'node:url';
 import { build as buildVite } from 'vite';
 import { afterEach, expect, it } from 'vitest';
 import type { ElectronApplication } from 'playwright';
-import { desktopRuntimeFixture } from '../helpers/desktop-runtime-fixture.js';
-import { guardRuntimeProcesses, trackRuntimeChild, trackRuntimeRoot } from '../helpers/runtime-processes.js';
+import { desktopRuntimeFixture } from '../helpers/desktop/desktop-runtime-fixture.js';
+import {
+  guardRuntimeProcesses,
+  trackRuntimeChild,
+  trackRuntimeRoot,
+} from '../helpers/desktop/runtime-processes.js';
 import { verifyDesktopAuthLinkPolicy } from '../desktop-e2e/auth-link-policy.js';
 
 const root = resolve(fileURLToPath(new URL('../..', import.meta.url)));

@@ -1,7 +1,7 @@
 import { expect, it } from "vitest"
 import { deviceFrameSchema, ErrorCode, FrameType, Language, serverFrameSchema } from "@protocol"
 import { createLanguageInstance, feedbackText, type Translate } from "../src/shared/lib/i18n/index.js"
-import { sessionSnapshot } from "../../../tests/e2e/support/session-fixtures.js"
+import { sessionSnapshot } from "../../../tests/e2e/support/fixtures/session-fixtures.js"
 
 const FUTURE_CODE = "CODEX_SOMETHING_ADDED_LATER"
 

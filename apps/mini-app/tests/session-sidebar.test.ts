@@ -12,7 +12,7 @@ import { filterSessions, matchParts } from "../src/widgets/session-sidebar/lib/s
 import { groupByRecency } from "../src/widgets/session-sidebar/lib/sidebar-groups.js"
 import { relativeTime } from "../src/widgets/session-sidebar/lib/sidebar-format.js"
 import { SidebarGroup } from "../src/widgets/session-sidebar/config/values.js"
-import { sessionSnapshot } from "../../../tests/e2e/support/session-fixtures.js"
+import { sessionSnapshot } from "../../../tests/e2e/support/fixtures/session-fixtures.js"
 
 const NOW = new Date(2026, 9, 19, 15, 0).getTime()
 const MINUTE = 60_000

@@ -8,7 +8,7 @@ import { AdapterRegistry } from '@daemon/adapters/registry.js';
 import { PermissionBroker } from '@daemon/commands/permission-broker.js';
 import { profileExecutionNamespace } from '@daemon/sessions/execution/namespace.js';
 import type { ProfiledExecutionLaunch } from '@daemon/sessions/execution/types.js';
-import { executionProfile, executionSelection } from '../../../helpers/execution-profile.js';
+import { executionProfile, executionSelection } from '../../../helpers/sessions/execution-profile.js';
 import { executionProfileSummarySchema } from '@protocol';
 import { ManagedCodexLaunchEvidenceType } from '@daemon/codex/launch/types.js';
 

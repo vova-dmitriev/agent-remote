@@ -5,7 +5,7 @@ import { HistoryRepository } from '@server/history/repository.js';
 import { PreferenceRepository } from '@server/preferences/repository.js';
 import { ReadingPositionRepository } from '@server/reading-position/repository.js';
 import { SessionRepository } from '@server/sessions/repository.js';
-import { PgErrorCode, ownershipFixture } from '../../helpers/ownership-fixture.js';
+import { PgErrorCode, ownershipFixture } from '../../helpers/relay/ownership-fixture.js';
 
 // Every owner-scoped repository method, called as owner B with owner A's ids, returns nothing and changes nothing.
 // A foreign insert keyed by (owner, device) cannot attach a row to A's device: PostgreSQL refuses it.
