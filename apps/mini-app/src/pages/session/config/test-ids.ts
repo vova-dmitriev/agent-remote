@@ -1,4 +1,5 @@
 export const SESSION_PAGE_IDS = {
+  loading: "session-page-loading",
   root: "session-page",
   back: "session-page-back",
   title: "session-page-title",

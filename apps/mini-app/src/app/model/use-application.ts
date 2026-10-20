@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { ConnectionStatus } from "@protocol"
 import { useRuntime } from "@/shared/lib/runtime"
@@ -24,6 +24,8 @@ export function useApplication() {
   const devices = deviceQuery.data ?? []
   const firstDevice = devices[0]?.id
   const linkedSession = useRef<string | null | undefined>(undefined)
+  /** A session link (the bot's Open session button) waits for the snapshot; the app shows the chat loading meanwhile. */
+  const [linkPending, setLinkPending] = useState(() => new URLSearchParams(window.location.hash.slice(1)).has("session"))
 
   const selection = useSessionSelection()
   const commands = useCommand()
@@ -67,9 +69,12 @@ export function useApplication() {
 
     const session = state.snapshot?.sessions.find((item) => item.id === linkedSession.current)
 
+    // A link to a session the snapshot does not have (gone, or another device's) falls back to the list.
+    if (state.snapshot && !session) setLinkPending(false)
     if (!session || state.connection !== ConnectionStatus.Online) return
     linkedSession.current = null
     void selection.select(session)
+    setLinkPending(false)
 
     const hash = new URLSearchParams(window.location.hash.slice(1))
 
@@ -98,6 +103,10 @@ export function useApplication() {
     pairing,
     revoke,
     logout,
-    loading: state.connection === ConnectionStatus.Connecting || (state.connection === ConnectionStatus.Online && deviceQuery.isPending),
+    linkPending: linkPending && state.connection !== ConnectionStatus.Expired,
+    // Until the first snapshot an empty list is not known to be empty.
+    loading:
+      state.connection === ConnectionStatus.Connecting ||
+      (state.connection === ConnectionStatus.Online && (deviceQuery.isPending || (devices.length > 0 && !state.snapshot))),
   }
 }

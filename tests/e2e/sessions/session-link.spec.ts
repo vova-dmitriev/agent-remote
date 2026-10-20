@@ -16,6 +16,33 @@ test('notification link opens only its owned session and back remains in the ses
   await expect(page.getByTestId(SESSION_PAGE_IDS.root)).toHaveCount(0);
 });
 
+test('a notification link goes straight to the loading chat, never through the session list', async ({ page }) => {
+  await page.addInitScript((ids: string[]) => {
+    const seen: string[] = [];
+
+    (window as unknown as { seenTestIds: string[] }).seenTestIds = seen;
+
+    const note = (element: Element) => {
+      const id = element.getAttribute('data-testid');
+
+      if (id && ids.includes(id) && !seen.includes(id)) seen.push(id);
+    };
+
+    new MutationObserver((records) => {
+      for (const node of records.flatMap((record) => [...record.addedNodes])) {
+        if (!(node instanceof Element)) continue;
+        note(node);
+        for (const child of node.getElementsByTagName('*')) note(child);
+      }
+    }).observe(document, { subtree: true, childList: true });
+  }, [SESSIONS_PAGE_IDS.root, SESSIONS_PAGE_IDS.empty]);
+
+  await identity(page, '801', 'en');
+  await page.goto('/#session=chat-session');
+  await expect(page.getByTestId(SESSION_PAGE_IDS.root)).toBeVisible();
+  expect(await page.evaluate(() => (window as unknown as { seenTestIds: string[] }).seenTestIds)).toEqual([]);
+});
+
 test('unknown or another owner session link never substitutes a different session', async ({ page }) => {
   await identity(page, '801', 'en');
   await page.goto('/#session=private-other-owner');

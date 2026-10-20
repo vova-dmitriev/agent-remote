@@ -1,7 +1,7 @@
 import { ConnectionStatus, DeviceStatus, HistoryStatus } from "@protocol"
 import { AccountsPage } from "@/pages/accounts"
 import { SignInPage } from "@/pages/sign-in"
-import { SessionPage, SubagentPage } from "@/pages/session"
+import { SessionLoading, SessionPage, SubagentPage } from "@/pages/session"
 import type { ApplicationContentProps } from "./application-content.types"
 
 export function ApplicationContent({ model, accounts, subagent, back, closeAccounts, home, sessionBack = true }: ApplicationContentProps) {
@@ -16,7 +16,7 @@ export function ApplicationContent({ model, accounts, subagent, back, closeAccou
         onBack={closeAccounts}
       />
     )
-  if (!selected) return home
+  if (!selected) return model.linkPending ? <SessionLoading /> : home
   if (subagent.agentId)
     return (
       <SubagentPage
