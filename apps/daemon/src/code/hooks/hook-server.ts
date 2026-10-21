@@ -1,5 +1,5 @@
 import { DaemonErrorCode } from '../../error-codes.js';
-import { RuleGuard, ruleHookOutput } from '../../rules/check.js';
+import { RuleGuard, ruleHookOutput, type RuleStop } from '../../rules/check.js';
 import {
   AttachmentMode,
   CodedError,
@@ -9,10 +9,11 @@ import {
   ErrorCode,
   IntegrationState,
   TargetKind,
+  type Session,
 } from '@protocol';
 
 import { DesktopMode } from '../../domain/desktop.js';
-import { IpcMessageType, PrimaryHookMessageTypes, WrapperActionType } from '../../domain/ipc.js';
+import { HookAgent, IpcMessageType, PrimaryHookMessageTypes, WrapperActionType } from '../../domain/ipc.js';
 import { RuntimeEvent, SourceVersion } from '../../domain/runtime.js';
 import { ClaudeHookEvent } from '../../domain/claude.js';
 import { attachmentPrompt } from '../../attachments/content/input.js';
@@ -22,7 +23,7 @@ import { cmuxAttacher } from '../../cmux/attach.js';
 import { createServer, type Socket } from 'node:net';
 import { randomUUID, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
-import { type MonitorPort, hookSchema } from '../../domain/ports/monitor.js';
+import { type HookEnvelope, type MonitorPort, hookSchema } from '../../domain/ports/monitor.js';
 import { SourceAdapter, type AdapterRegistry, type DispatchReceipt } from '../../adapters/registry.js';
 import { PermissionBroker, permissionHookOutput } from '../../commands/permission-broker.js';
 import { bindHookSocket } from './hook-socket.js';
@@ -70,6 +71,7 @@ const authenticated = z.object({
   sourceVersion: z.string().max(128).optional(),
   mode: z.enum([DesktopMode.Chat, DesktopMode.Code]).optional(),
   payload: z.unknown().optional(),
+  agent: z.enum(HookAgent).optional(),
   codex: codexConnectionSchema.optional(),
 });
 
@@ -346,6 +348,48 @@ export async function startHookServer(options: Options) {
 
         const hook = hookSchema.parse(message.payload);
 
+        /** Holds the command until the owner answers the rule stop; another daemon's answer closes this socket. */
+        const answerRule = async (
+          stop: RuleStop,
+          input: HookEnvelope,
+          session: Session,
+          agent: HookAgent,
+        ) => {
+          socket.once('close', () => options.permissions.cancelSession(session.id, session.generation));
+          options.monitor.emit(RuntimeEvent.Snapshot);
+
+          const decision = await options.rules!.ask(stop, input, session);
+
+          if (!socket.destroyed) {
+            writeFrame(socket, {
+              type: IpcMessageType.HookResult,
+              output: ruleHookOutput(decision, stop.rule, agent),
+              settled: true,
+            });
+          }
+
+          options.monitor.emit(RuntimeEvent.Snapshot);
+        };
+
+        // A Codex hook only gates a command against the owner's rules; its session reports through Codex itself.
+        if (message.agent === HookAgent.Codex) {
+          const session = options.monitor
+            .snapshot()
+            .sessions.find((item) => 'threadId' in item.target && item.target.threadId === hook.session_id);
+
+          const stop = session && options.rules ? await options.rules.check(hook, session) : null;
+
+          if (stop && session) {
+            await answerRule(stop, hook, session, HookAgent.Codex);
+          } else {
+            writeFrame(socket, { type: IpcMessageType.HookResult, output: {} });
+          }
+
+          socket.end();
+
+          return;
+        }
+
         const deviceId =
           options.monitor.snapshot().sessions[0]?.target.deviceId ?? options.adapters.deviceIdentity();
 
@@ -388,22 +432,8 @@ export async function startHookServer(options: Options) {
             ? await options.rules.check(hook, session)
             : null;
 
-        if (stop && options.rules) {
-          // Another daemon's answer closes this socket: the owner answered there, so this request goes.
-          socket.once('close', () => options.permissions.cancelSession(session.id, session.generation));
-          options.monitor.emit(RuntimeEvent.Snapshot);
-
-          const decision = await options.rules.ask(stop, hook, session);
-
-          if (!socket.destroyed) {
-            writeFrame(socket, {
-              type: IpcMessageType.HookResult,
-              output: ruleHookOutput(decision, stop.rule),
-              settled: true,
-            });
-          }
-
-          options.monitor.emit(RuntimeEvent.Snapshot);
+        if (stop) {
+          await answerRule(stop, hook, session, HookAgent.Claude);
         } else if (hook.hook_event_name === ClaudeHookEvent.PermissionRequest && options.permissionsEnabled) {
           const answer = options.permissions.open({
             requestId: randomUUID(),

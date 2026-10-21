@@ -9,13 +9,15 @@ import {
 } from '@protocol';
 import type { PermissionBroker } from '../commands/permission-broker.js';
 import { ClaudeHookEvent, ClaudePermissionMode, ClaudeShellTool } from '../domain/claude.js';
+import { CodexShellTool } from '../domain/codex/codex.js';
+import { HookAgent } from '../domain/ipc.js';
 import type { HookEnvelope } from '../domain/ports/monitor.js';
 import { matchCommand, rulesInForce, type RuleInForce } from './match.js';
 import { projectRoot } from './project.js';
 import { emptyScope, type RulesStore } from './store.js';
 
 /** Tools whose input is a shell command. */
-const SHELL_TOOLS: ReadonlySet<string> = new Set([ClaudeShellTool]);
+const SHELL_TOOLS: ReadonlySet<string> = new Set([ClaudeShellTool, CodexShellTool]);
 
 interface RuleGuardDeps {
   store: RulesStore;
@@ -31,11 +33,11 @@ export interface RuleStop extends RuleInForce {
 }
 
 const commandOf = (hook: Pick<HookEnvelope, 'tool_name' | 'tool_input'>) => {
-  const input = hook.tool_input as { command?: unknown } | undefined;
+  const input = hook.tool_input as { command?: unknown; cmd?: unknown } | undefined;
+  // Claude's Bash takes `command`; Codex's exec_command takes `cmd`.
+  const command = input?.command ?? input?.cmd;
 
-  return SHELL_TOOLS.has(hook.tool_name ?? '') && typeof input?.command === 'string'
-    ? input.command
-    : undefined;
+  return SHELL_TOOLS.has(hook.tool_name ?? '') && typeof command === 'string' ? command : undefined;
 };
 
 /** Stops a shell command an owner's rule covers until the owner answers it, in the app or Telegram. */
@@ -102,10 +104,21 @@ export class RuleGuard {
   }
 }
 
-/** Claude's PreToolUse answer: allow, or deny with the rule's name and why. */
-export function ruleHookOutput(decision: string, rule: Pick<Rule, 'name'>) {
+/**
+ * The PreToolUse answer: allow, or deny with the rule's name and why. Codex rejects an explicit allow, so its allow
+ * is no output (the daemon marks the reply settled so it still wins over another daemon).
+ */
+export function ruleHookOutput(
+  decision: string,
+  rule: Pick<Rule, 'name'>,
+  agent: HookAgent = HookAgent.Claude,
+) {
   const allowed = decision === PermissionDecision.Allow || decision === PermissionDecision.AllowAlways;
   const why = decision === PermissionDecision.Deny ? 'denied by the owner' : 'no answer in 10 minutes';
+
+  if (allowed && agent === HookAgent.Codex) {
+    return {};
+  }
 
   return {
     hookSpecificOutput: allowed

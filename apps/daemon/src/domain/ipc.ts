@@ -15,6 +15,14 @@ export const IpcMessageType = {
 
 export type IpcMessageType = (typeof IpcMessageType)[keyof typeof IpcMessageType];
 
+/** The agent whose hook `remote hook` relays; Claude when the hook does not say. */
+export const HookAgent = {
+  Claude: 'claude',
+  Codex: 'codex',
+} as const;
+
+export type HookAgent = (typeof HookAgent)[keyof typeof HookAgent];
+
 export const WrapperActionType = {
   Bind: 'bind',
   Prompt: 'prompt',

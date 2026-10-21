@@ -1,6 +1,7 @@
 import { DaemonErrorCode } from '../../error-codes.js';
 import { shellQuote as quote } from '../../shell/index.js';
 import { ClaudeHookEvent, ClaudeHookType } from '../../domain/claude.js';
+import { HookAgent } from '../../domain/ipc.js';
 import { readFile, writeFile, copyFile, rename, mkdir } from 'node:fs/promises';
 import { dirname, isAbsolute } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -8,7 +9,7 @@ import { CodedError, RULE_ANSWER_TIMEOUT_MS } from '@protocol';
 
 const marker = '--managed-by=claude-remote-v1';
 
-const events = [
+const claudeEvents = [
   ClaudeHookEvent.SessionStart,
   ClaudeHookEvent.SessionEnd,
   ClaudeHookEvent.UserPromptSubmit,
@@ -71,7 +72,14 @@ async function atomic(path: string, data: Settings) {
   await rename(temp, path);
 }
 
-export async function installHooks(path: string, entry: string) {
+/** Codex sessions report through their own integration; its hooks only gate commands against the owner's rules. */
+const EVENTS: Record<HookAgent, readonly string[]> = {
+  [HookAgent.Claude]: claudeEvents,
+  [HookAgent.Codex]: [ClaudeHookEvent.PreToolUse],
+};
+
+/** Installs into a hook file in Claude's format: Claude's `settings.json`, or Codex's `hooks.json`. */
+export async function installHooks(path: string, entry: string, agent: HookAgent = HookAgent.Claude) {
   if (!isAbsolute(entry)) {
     throw new CodedError(DaemonErrorCode.ABSOLUTE_ENTRY_REQUIRED);
   }
@@ -93,12 +101,14 @@ export async function installHooks(path: string, entry: string) {
   strip(data);
   data.hooks ??= {};
 
-  for (const event of events) {
+  const flag = agent === HookAgent.Claude ? '' : ` --agent=${agent}`;
+
+  for (const event of EVENTS[agent]) {
     (data.hooks[event] ??= []).push({
       hooks: [
         {
           type: ClaudeHookType.Command,
-          command: `${quote(process.execPath)} ${quote(entry)} hook ${marker}`,
+          command: `${quote(process.execPath)} ${quote(entry)} hook${flag} ${marker}`,
           timeout: HOOK_TIMEOUT_SECONDS[event] ?? 5,
         } as { command: string },
       ],

@@ -1,6 +1,6 @@
 import { DaemonErrorCode } from './error-codes.js';
 import { CliCommand, CliAction } from './domain/cli.js';
-import { IpcMessageType } from './domain/ipc.js';
+import { HookAgent, IpcMessageType } from './domain/ipc.js';
 import { ClaudeHookEvent } from './domain/claude.js';
 import { DesktopMode } from './domain/desktop.js';
 import { ASCII_CONTROL_CHARACTERS } from './validation/control-characters.js';
@@ -22,6 +22,11 @@ const HOOK_WAIT_MS: Partial<Record<string, number>> = {
   [ClaudeHookEvent.PermissionRequest]: 50_000,
   [ClaudeHookEvent.PreToolUse]: RULE_ANSWER_TIMEOUT_MS + 30_000,
 };
+
+/** Marks a hook Codex runs: `remote hook --agent=codex`. */
+const CODEX_HOOK_FLAG = `--agent=${HookAgent.Codex}`;
+
+const codexHooksFile = () => join(process.env.CODEX_HOME ?? join(homedir(), '.codex'), 'hooks.json');
 
 const sessionEntryPath = () => fileURLToPath(new URL('./entry/entry.js', import.meta.url));
 
@@ -223,9 +228,10 @@ export async function runCli(argv = process.argv.slice(2)) {
     if (args[0] === CliAction.Install) {
       const entry = fileURLToPath(new URL('../../../../apps/daemon/bin/remote.mjs', import.meta.url));
       const backup = await installHooks(settings, entry);
+      const codexBackup = await installHooks(codexHooksFile(), entry, HookAgent.Codex);
 
       process.stdout.write(
-        `Hooks installed. Backup: ${backup}\nRestart or resume Claude to load the new hooks.\n`,
+        `Hooks installed. Backups: ${backup}, ${codexBackup}\nRestart or resume Claude and Codex to load the new hooks.\n`,
       );
 
       return;
@@ -233,6 +239,7 @@ export async function runCli(argv = process.argv.slice(2)) {
 
     if (args[0] === CliAction.Uninstall) {
       await uninstallHooks(settings);
+      await uninstallHooks(codexHooksFile());
       process.stdout.write('Claude Remote hooks removed.\n');
 
       return;
@@ -259,6 +266,7 @@ export async function runCli(argv = process.argv.slice(2)) {
         {
           type: IpcMessageType.Hook,
           payload,
+          ...(args.includes(CODEX_HOOK_FLAG) ? { agent: HookAgent.Codex } : {}),
           ...(process.env.CLAUDE_REMOTE_WRAPPER_ID
             ? { wrapperId: process.env.CLAUDE_REMOTE_WRAPPER_ID }
             : hookCmuxSurface(process.env)),

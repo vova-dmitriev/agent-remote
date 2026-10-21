@@ -126,9 +126,11 @@ it('answers the agent: allow, or deny naming the rule and why', () => {
     },
   });
 
-  expect(ruleHookOutput(PermissionDecision.Local, rule).hookSpecificOutput.permissionDecisionReason).toBe(
-    'Agent Remote rule «Suspicious database queries»: no answer in 10 minutes',
-  );
+  expect(ruleHookOutput(PermissionDecision.Local, rule)).toMatchObject({
+    hookSpecificOutput: {
+      permissionDecisionReason: 'Agent Remote rule «Suspicious database queries»: no answer in 10 minutes',
+    },
+  });
 });
 
 it("keeps the session's permission mode from its hooks", async () => {

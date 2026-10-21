@@ -23,6 +23,9 @@ export const CodexRolloutType = { EventMessage: 'event_msg' } as const;
 
 export const CodexEventType = { TokenCount: 'token_count' } as const;
 
+/** Codex's shell tool, as its hooks name it; the command line is its `cmd`. */
+export const CodexShellTool = 'exec_command';
+
 export const CodexContentType = {
   InputImage: 'inputImage',
   Text: 'text',
