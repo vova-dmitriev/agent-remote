@@ -30,7 +30,7 @@ afterEach(async () => {
 });
 
 /** A daemon's hook socket that answers each hook after `delayMs` (never, when undefined). */
-async function daemon(name: string, output: object, delayMs?: number) {
+async function daemon(name: string, output: object, delayMs?: number, settled = false) {
   const path = join(dir, name + '.sock');
   const frames: unknown[] = [];
   const closed: Socket[] = [];
@@ -42,7 +42,12 @@ async function daemon(name: string, output: object, delayMs?: number) {
       frames.push(frame);
 
       if (delayMs !== undefined) {
-        setTimeout(() => !socket.destroyed && writeFrame(socket, { type: 'hook_result', output }), delayMs);
+        setTimeout(
+          () =>
+            !socket.destroyed &&
+            writeFrame(socket, { type: 'hook_result', output, ...(settled ? { settled } : {}) }),
+          delayMs,
+        );
       }
     });
   });
@@ -103,4 +108,18 @@ it('adds a desktop companion that yielded the hook path, never the CLI daemon tw
 
   await removeHookPeer(join(dir, 'cli'));
   expect(await hookTargets()).toHaveLength(1);
+});
+
+it("takes a daemon's settled answer even when it is empty, so an owner's allow beats another daemon's later deny", async () => {
+  const allowed = await daemon('allowed', {}, 10, true);
+  const waiting = await daemon('waiting', { hookSpecificOutput: { permissionDecision: 'deny' } }, 500);
+
+  const output = await deliverHook(
+    [allowed, waiting].map(({ path }) => ({ path, token: 't' })),
+    { type: 'hook', payload: { hook_event_name: 'PreToolUse' } },
+    5000,
+  );
+
+  expect(output).toEqual({});
+  await expect.poll(() => waiting.closed.length).toBe(1);
 });

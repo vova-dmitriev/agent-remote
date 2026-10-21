@@ -4,7 +4,7 @@ import { ClaudeHookEvent, ClaudeHookType } from '../../domain/claude.js';
 import { readFile, writeFile, copyFile, rename, mkdir } from 'node:fs/promises';
 import { dirname, isAbsolute } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { CodedError } from '@protocol';
+import { CodedError, RULE_ANSWER_TIMEOUT_MS } from '@protocol';
 
 const marker = '--managed-by=claude-remote-v1';
 
@@ -20,6 +20,15 @@ const events = [
   ClaudeHookEvent.SubagentStart,
   ClaudeHookEvent.SubagentStop,
 ];
+
+/**
+ * A PreToolUse hook may hold a command while the owner answers a rule stop (10 minutes); Claude runs the command
+ * when a hook times out, so the hook's own deadline comes first.
+ */
+const HOOK_TIMEOUT_SECONDS: Partial<Record<string, number>> = {
+  [ClaudeHookEvent.PermissionRequest]: 60,
+  [ClaudeHookEvent.PreToolUse]: RULE_ANSWER_TIMEOUT_MS / 1000 + 60,
+};
 
 type Settings = {
   hooks?: Record<string, Array<{ hooks?: Array<{ command?: string }> }>>;
@@ -90,7 +99,7 @@ export async function installHooks(path: string, entry: string) {
         {
           type: ClaudeHookType.Command,
           command: `${quote(process.execPath)} ${quote(entry)} hook ${marker}`,
-          timeout: event === ClaudeHookEvent.PermissionRequest ? 60 : 5,
+          timeout: HOOK_TIMEOUT_SECONDS[event] ?? 5,
         } as { command: string },
       ],
     });

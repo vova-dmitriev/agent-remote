@@ -24,6 +24,8 @@ export const hookSchema = z.object({
   tool_use_id: z.string().min(1).max(512).optional(),
   tool_name: z.string().max(512).optional(),
   tool_input: z.unknown().optional(),
+  /** Claude Code's permission mode for this session, e.g. `bypassPermissions`. */
+  permission_mode: sessionSchema.shape.permissionMode.optional(),
 });
 export type HookEnvelope = z.infer<typeof hookSchema>;
 

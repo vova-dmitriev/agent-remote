@@ -24,6 +24,12 @@ export const ClaudeRecordType = {
 
 export type ClaudeRecordType = (typeof ClaudeRecordType)[keyof typeof ClaudeRecordType];
 
+/** Claude Code's permission modes, as hooks report them in `permission_mode`. */
+export const ClaudePermissionMode = { Bypass: 'bypassPermissions' } as const;
+
+/** Claude's shell tool, the one whose input is a command line. */
+export const ClaudeShellTool = 'Bash';
+
 /** An attachment record Claude writes for a prompt typed while it was working. */
 export const ClaudeAttachmentType = { QueuedCommand: 'queued_command' } as const;
 

@@ -15,7 +15,13 @@ import { deliverHook, hookTargets } from './code/hooks/hook-delivery.js';
 import { installHooks, uninstallHooks } from './code/hooks/install-hooks.js';
 import { startDaemon } from './main.js';
 import { startClaude } from './cli/wrapper.js';
-import { CodedError, hasErrorCode } from '@protocol';
+import { CodedError, RULE_ANSWER_TIMEOUT_MS, hasErrorCode } from '@protocol';
+
+/** How long `remote hook` waits for the daemons: a permission prompt, or an owner answering a rule stop. */
+const HOOK_WAIT_MS: Partial<Record<string, number>> = {
+  [ClaudeHookEvent.PermissionRequest]: 50_000,
+  [ClaudeHookEvent.PreToolUse]: RULE_ANSWER_TIMEOUT_MS + 30_000,
+};
 
 const sessionEntryPath = () => fileURLToPath(new URL('./entry/entry.js', import.meta.url));
 
@@ -257,7 +263,7 @@ export async function runCli(argv = process.argv.slice(2)) {
             ? { wrapperId: process.env.CLAUDE_REMOTE_WRAPPER_ID }
             : hookCmuxSurface(process.env)),
         },
-        payload.hook_event_name === ClaudeHookEvent.PermissionRequest ? 50000 : 1500,
+        HOOK_WAIT_MS[payload.hook_event_name] ?? 1500,
       );
 
       process.stdout.write(JSON.stringify(output) + '\n');

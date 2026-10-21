@@ -46,6 +46,8 @@ export interface LocalReply {
   type?: string;
   code?: string;
   output?: unknown;
+  /** The daemon took a decision for this hook, even one with no output (an owner's allow for Codex). */
+  settled?: boolean;
   result?: { connected?: number };
 }
 

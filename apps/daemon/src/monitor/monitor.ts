@@ -241,6 +241,10 @@ export class Monitor extends EventEmitter implements MonitorPort {
       }
     }
 
+    if (hook.permission_mode) {
+      session.permissionMode = hook.permission_mode;
+    }
+
     if (hook.cwd) {
       session.cwd = hook.cwd;
     }

@@ -1,4 +1,5 @@
 import { DaemonErrorCode } from '../../error-codes.js';
+import { RuleGuard, ruleHookOutput } from '../../rules/check.js';
 import {
   AttachmentMode,
   CodedError,
@@ -43,6 +44,8 @@ interface Options extends HookSocketOptions {
   monitor: MonitorPort;
   adapters: AdapterRegistry;
   permissions: PermissionBroker;
+  /** Stops shell commands an owner's rule covers; works whether or not remote permissions are on. */
+  rules?: RuleGuard;
   inputEnabled: boolean;
   permissionsEnabled: boolean;
   onTranscript?: (sessionId: string, path: string) => void;
@@ -380,7 +383,28 @@ export async function startHookServer(options: Options) {
           options.onTranscript?.(session.id, hook.transcript_path);
         }
 
-        if (hook.hook_event_name === ClaudeHookEvent.PermissionRequest && options.permissionsEnabled) {
+        const stop =
+          hook.hook_event_name === ClaudeHookEvent.PreToolUse && options.rules
+            ? await options.rules.check(hook, session)
+            : null;
+
+        if (stop && options.rules) {
+          // Another daemon's answer closes this socket: the owner answered there, so this request goes.
+          socket.once('close', () => options.permissions.cancelSession(session.id, session.generation));
+          options.monitor.emit(RuntimeEvent.Snapshot);
+
+          const decision = await options.rules.ask(stop, hook, session);
+
+          if (!socket.destroyed) {
+            writeFrame(socket, {
+              type: IpcMessageType.HookResult,
+              output: ruleHookOutput(decision, stop.rule),
+              settled: true,
+            });
+          }
+
+          options.monitor.emit(RuntimeEvent.Snapshot);
+        } else if (hook.hook_event_name === ClaudeHookEvent.PermissionRequest && options.permissionsEnabled) {
           const answer = options.permissions.open({
             requestId: randomUUID(),
             sessionId: session.id,

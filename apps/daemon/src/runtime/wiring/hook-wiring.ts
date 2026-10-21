@@ -10,6 +10,8 @@ import type { PermissionBroker } from '../../commands/permission-broker.js';
 import { hasErrorCode } from '@protocol';
 import { DaemonErrorCode } from '../../error-codes.js';
 import { startHookServer, type HookSocketOptions } from '../../code/hooks/hook-server.js';
+import { RuleGuard } from '../../rules/check.js';
+import { RulesStore } from '../../rules/store.js';
 import { requestHookSocketRelease, startLegacyHookSocket } from '../../code/hooks/legacy-socket.js';
 import { removeHookPeer, writeHookPeer } from '../../code/hooks/hook-delivery.js';
 import { dirname } from 'node:path';
@@ -59,6 +61,7 @@ export async function startHookWiring(deps: HookWiringDeps) {
       monitor,
       adapters,
       permissions: deps.permissions,
+      rules: new RuleGuard({ store: new RulesStore(), permissions: deps.permissions, monitor }),
       inputEnabled,
       permissionsEnabled,
       attachCmux,

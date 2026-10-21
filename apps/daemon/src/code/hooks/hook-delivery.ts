@@ -49,8 +49,9 @@ export async function hookTargets(): Promise<HookTarget[]> {
 }
 
 /**
- * Gives one Claude hook to every target. The first non-empty answer (a permission decision) wins and the other
- * requests are dropped, which cancels their pending prompts; with no decision the answer is empty.
+ * Gives one hook to every target. The first decision wins — a non-empty answer, or one the daemon marks settled
+ * (an owner's answer to a rule stop) — and the other requests are dropped, which cancels their pending prompts;
+ * with no decision the answer is empty.
  */
 export function deliverHook(
   targets: HookTarget[],
@@ -68,13 +69,16 @@ export function deliverHook(
     for (const target of targets) {
       void requestLocal(target.path, { ...frame, token: target.token }, timeoutMs, controller.signal)
         .then(
-          (reply) => (reply.output && typeof reply.output === 'object' ? reply.output : {}),
-          () => ({}),
+          (reply) => ({
+            output: reply.output && typeof reply.output === 'object' ? reply.output : {},
+            settled: reply.settled === true,
+          }),
+          () => ({ output: {}, settled: false }),
         )
-        .then((output) => {
+        .then(({ output, settled }) => {
           left--;
 
-          if (Object.keys(output).length) {
+          if (settled || Object.keys(output).length) {
             controller.abort();
             done(output as Record<string, unknown>);
           } else if (!left) {

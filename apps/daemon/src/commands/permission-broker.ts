@@ -4,6 +4,8 @@ import {
   ErrorCode,
   PermissionDecision,
   positiveInteger,
+  RULE_ANSWER_TIMEOUT_MS,
+  type PermissionRule,
   type RemotePermissionDecision,
 } from '@protocol';
 
@@ -17,6 +19,8 @@ export interface PendingPermission {
   toolName: string;
   input: unknown;
   expiresAt: number;
+  /** The owner's rule that stopped the command; such a request may be answered allow-always. */
+  rule?: PermissionRule;
 }
 interface Entry {
   request: PendingPermission;
@@ -36,6 +40,7 @@ export class PermissionBroker {
     this.maxPending = positiveInteger(options.maxPending ?? 100, 'MAX_PENDING');
   }
 
+  /** A rule stop waits for the owner longer than the agent's own prompts do. */
   async open(source: PendingPermission): Promise<PermissionDecision> {
     if (this.closed) {
       throw new CodedError(DaemonErrorCode.BROKER_CLOSED);
@@ -65,7 +70,7 @@ export class PermissionBroker {
 
     const request = structuredClone({
       ...source,
-      expiresAt: Math.min(source.expiresAt, now + this.maxWaitMs),
+      expiresAt: Math.min(source.expiresAt, now + (source.rule ? RULE_ANSWER_TIMEOUT_MS : this.maxWaitMs)),
     });
 
     if (request.expiresAt <= now) {
@@ -98,12 +103,20 @@ export class PermissionBroker {
 
     if (
       entry.request.generation !== generation ||
-      (decision !== PermissionDecision.Allow && decision !== PermissionDecision.Deny)
+      ![PermissionDecision.Allow, PermissionDecision.AllowAlways, PermissionDecision.Deny].some(
+        (value) => value === decision,
+      )
     ) {
       return false;
     }
 
-    this.finish(requestId, decision);
+    // Allow-always means something only for a rule stop; for the agent's own prompt it is an allow.
+    this.finish(
+      requestId,
+      decision === PermissionDecision.AllowAlways && !entry.request.rule
+        ? PermissionDecision.Allow
+        : decision,
+    );
 
     return true;
   }
@@ -151,7 +164,9 @@ export class PermissionBroker {
   }
 }
 
-export function permissionHookOutput(decision: PermissionDecision) {
+export function permissionHookOutput(answer: PermissionDecision) {
+  const decision = answer === PermissionDecision.AllowAlways ? PermissionDecision.Allow : answer;
+
   if (decision === PermissionDecision.Local) {
     return {};
   }
