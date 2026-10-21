@@ -7,7 +7,11 @@ import type { LocalDocuments } from '../state/documents.js';
 import type { LocalGrants } from '../grants/service.js';
 import type { LocalPrincipal } from '../grants/types.js';
 import type { RuntimeProfilesPort } from '../../domain/ports/runtime-profiles.js';
-import type { SessionNamesPort, SessionRemovalPort } from '../../domain/ports/session-names.js';
+import type {
+  SessionModelPort,
+  SessionNamesPort,
+  SessionRemovalPort,
+} from '../../domain/ports/session-names.js';
 import type { AnalyticsPort } from '../../analytics/collector.js';
 import type { RulesPort } from '../../rules/service.js';
 
@@ -25,6 +29,8 @@ export interface LocalControllerOptions {
   names?: SessionNamesPort;
   /** Hides, archives or ends sessions; without it the app cannot remove one. */
   removal?: SessionRemovalPort;
+  /** Switches running sessions to another model; without it the app cannot switch one. */
+  models?: SessionModelPort;
   /** The usage report; without it the app reports usage as unavailable. */
   analytics?: AnalyticsPort | undefined;
   /** The owner's rules for agents' commands. */

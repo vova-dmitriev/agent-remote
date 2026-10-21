@@ -1,3 +1,5 @@
+import { type AgentModel, ReasoningEffort } from '@protocol';
+
 export const ClaudeHookEvent = {
   SessionStart: 'SessionStart',
   SessionEnd: 'SessionEnd',
@@ -67,3 +69,23 @@ export const ClaudeUsageWindowMinutes = {
   five_hour: 300,
   seven_day: 10_080,
 } as const;
+
+/** Claude Code's model aliases (`claude --model`): each names the latest model of its family. */
+export const ClaudeModelAlias = {
+  Fable: 'fable',
+  Opus: 'opus',
+  Sonnet: 'sonnet',
+  Haiku: 'haiku',
+} as const;
+
+/** The models the app offers for Claude Code, with the levels `claude --effort` takes. */
+export const CLAUDE_MODELS: AgentModel[] = Object.values(ClaudeModelAlias).map((id) => ({
+  id,
+  efforts: [
+    ReasoningEffort.Low,
+    ReasoningEffort.Medium,
+    ReasoningEffort.High,
+    ReasoningEffort.Xhigh,
+    ReasoningEffort.Max,
+  ],
+}));

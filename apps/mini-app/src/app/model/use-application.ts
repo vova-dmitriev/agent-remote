@@ -6,6 +6,7 @@ import { selectedSession, useSessionConnection, useSessionSelection, useSessionS
 import { useDevices } from "@/entities/device"
 import { useRenameSession } from "@/features/rename-session"
 import { useRemoveSession } from "@/features/remove-session"
+import { useSwitchModel } from "@/features/switch-model"
 import { useCommand } from "@/features/send-command"
 import { usePairDevice } from "@/features/pair-device"
 import { useRevokeDevice } from "@/features/device-access"
@@ -20,6 +21,7 @@ export function useApplication() {
   const selected = selectedSession(state)
   const rename = useRenameSession()
   const remove = useRemoveSession()
+  const switchModel = useSwitchModel()
   const cache = useQueryClient()
 
   const deviceQuery = useDevices(state.connection === ConnectionStatus.Online)
@@ -103,6 +105,7 @@ export function useApplication() {
     commands,
     rename,
     remove,
+    switchModel,
     pairing,
     revoke,
     logout,

@@ -18,6 +18,7 @@ import type {
   RulesReply,
   RulesRequest,
   SessionRemoval,
+  ModelChoice,
 } from "@protocol"
 import type { AttachmentAccess } from "./attachment-access"
 import type { Device, HistoryPageSkip } from "./types"
@@ -30,6 +31,8 @@ export interface ApplicationOperations {
   pinSession(sessionId: string, generation: string, pinned: boolean): Promise<unknown>
   /** Hides, archives or ends a session on its device; the session leaves the device's next snapshot. */
   removeSession(sessionId: string, generation: string, mode: SessionRemoval): Promise<unknown>
+  /** Switches a session to another model on its device; its next turn uses it. */
+  switchSessionModel(sessionId: string, generation: string, choice: ModelChoice): Promise<unknown>
   /** The text of a file the session changed, read on its device. */
   readSessionFile(sessionId: string, generation: string, path: string): Promise<SessionFile>
   /** Token usage, cost and plan limits counted on the device. */

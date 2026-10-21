@@ -6,7 +6,10 @@ import type { LocalPrincipal } from '../grants/types.js';
 import type { LocalControllerOptions } from './types.js';
 import { logDebug } from '../../diagnostics/log.js';
 
-/** Operations on the owner's documents, labels, pins, changed files and usage, answered by `documentOperation`. */
+/**
+ * Operations on the owner's documents, labels, pins, removals, models, changed files and usage, answered by
+ * `documentOperation`.
+ */
 export const DOCUMENT_OPERATIONS: ReadonlySet<LocalOperation> = new Set([
   LocalOperation.PreferencesGet,
   LocalOperation.PreferencesSave,
@@ -14,6 +17,8 @@ export const DOCUMENT_OPERATIONS: ReadonlySet<LocalOperation> = new Set([
   LocalOperation.ReadingSave,
   LocalOperation.Rename,
   LocalOperation.Pin,
+  LocalOperation.Remove,
+  LocalOperation.Model,
   LocalOperation.File,
   LocalOperation.Analytics,
   LocalOperation.Rules,
@@ -79,6 +84,18 @@ export function documentOperation(
       options.monitor.setPinned(action.sessionId, action.pinned);
 
       return null;
+
+    // The device owner picks the models of the device's sessions, like their names.
+    case LocalOperation.Model:
+      if (principal.ownerId !== options.ownerId) {
+        throw new CodedError(ErrorCode.ACCESS_DENIED);
+      }
+
+      if (!options.models) {
+        throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
+      }
+
+      return options.models.switch(action.sessionId, action.choice).then(() => null);
 
     // Like pins, what the owner hid is the device owner's; the session leaves the lists at once, ending may take longer.
     case LocalOperation.Remove:

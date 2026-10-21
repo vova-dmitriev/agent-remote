@@ -24,6 +24,8 @@ import {
   SubagentStatus,
   type Target,
   TargetKind,
+  AgentProvider,
+  type AgentModel,
 } from '@protocol';
 import { ClaudeHookEvent } from '../domain/claude.js';
 import { RuntimeEvent, ModelOrigin } from '../domain/runtime.js';
@@ -73,6 +75,7 @@ export class Monitor extends EventEmitter implements MonitorPort {
   private transcriptModels = new Map<string, { generation: string; model: string | undefined }>();
   private terminal: AppSnapshot['terminal'] = null;
   private rateLimits: RateLimit[] = [];
+  private providerModels = new Map<AgentProvider, AgentModel[]>();
   /** Sessions the owner pinned; kept in the store so a pin outlives restarts. */
   private pins: Set<string>;
   /** When the owner hid each session; a hidden session stays out of the lists until a newer message. */
@@ -723,6 +726,17 @@ export class Monitor extends EventEmitter implements MonitorPort {
     this.emit(RuntimeEvent.Snapshot);
   }
   /** The agents' plan limits, for the session header. */
+  /** The models the device's own sign-in of an agent offers; replaces that agent's earlier list. */
+  setProviderModels(provider: AgentProvider, models: AgentModel[]) {
+    const next = new Map(this.providerModels).set(provider, models);
+
+    if (JSON.stringify([...next]) === JSON.stringify([...this.providerModels])) {
+      return;
+    }
+
+    this.providerModels = next;
+    this.emit(RuntimeEvent.Snapshot);
+  }
   setRateLimits(limits: RateLimit[]) {
     if (JSON.stringify(this.rateLimits) === JSON.stringify(limits)) {
       return;
@@ -910,6 +924,9 @@ export class Monitor extends EventEmitter implements MonitorPort {
         userInputs: this.options.userInputs?.pending() ?? [],
         terminal: this.terminal,
         ...(this.rateLimits.length ? { rateLimits: this.rateLimits } : {}),
+        ...(this.providerModels.size
+          ? { models: [...this.providerModels].map(([provider, models]) => ({ provider, models })) }
+          : {}),
       }),
     );
   }

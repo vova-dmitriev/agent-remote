@@ -7,13 +7,13 @@ import { useSessionCreation } from "../model/use-session-creation"
 import { SessionCreationForm } from "./session-creation-form"
 import type { SessionCreationProps } from "./session-creation.types"
 
-export function SessionCreation({ sessions, disabled, online, create, profileData, inline = false }: SessionCreationProps) {
+export function SessionCreation({ sessions, disabled, online, create, profileData, models = [], inline = false }: SessionCreationProps) {
   const { t } = useTranslation()
   const deviceId = sessions[0]?.target.deviceId ?? ""
   const profileQuery = useExecutionProfiles(deviceId, online)
   const data = profileData ?? profileQuery.data
   const checking = (profileQuery.isFetching || profileQuery.isError) && !profileData
-  const model = useSessionCreation(sessions, data, online, checking)
+  const model = useSessionCreation(sessions, data, online, checking, models)
 
   if (!model.selected) return null
 

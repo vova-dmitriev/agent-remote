@@ -1,5 +1,10 @@
 import { z } from 'zod';
-import { clientCommandSchema, serverFrameSchema, sessionRemoveSchema } from '../session/schemas.js';
+import {
+  clientCommandSchema,
+  serverFrameSchema,
+  sessionModelChoiceSchema,
+  sessionRemoveSchema,
+} from '../session/schemas.js';
 import { readingPositionSchema } from '../history/reading-position.js';
 import { preferencePatchSchema } from '../history/preferences.js';
 import { HistoryCursorPrefix, HistoryDirection } from '../history/values.js';
@@ -45,6 +50,7 @@ export const localActionSchema = z.discriminatedUnion('operation', [
   }),
   z.strictObject({ ...operation(LocalOperation.Pin), ...session, generation: id, pinned: z.boolean() }),
   z.strictObject({ ...operation(LocalOperation.Remove), ...session, ...sessionRemoveSchema.shape }),
+  z.strictObject({ ...operation(LocalOperation.Model), ...session, ...sessionModelChoiceSchema.shape }),
   z.strictObject({
     ...operation(LocalOperation.File),
     ...session,

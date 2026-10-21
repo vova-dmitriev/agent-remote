@@ -23,8 +23,9 @@ import { UserInputRequests } from "./questions/requests/user-input-requests"
 import { SessionPermissions } from "./permission-card/session-permissions"
 import { SessionFeed } from "./session-feed/session-feed"
 import { SessionRulesBadge } from "./rules/session-rules-badge"
-import { SessionNotices } from "./session-notices"
-import { SessionMenu } from "./session-menu"
+import { SessionNotices } from "./header/session-notices"
+import { SessionMenu } from "./header/session-menu"
+import { SessionModelChips } from "./header/session-model-chips"
 import { SESSION_PAGE_IDS } from "../config/test-ids"
 import type { SessionPageProps } from "./session-page.types"
 
@@ -42,6 +43,7 @@ export function SessionPage({
   controller,
   rename,
   remove,
+  switchModel,
   onOpenSubagent,
   onOpenFile,
   onOpenRules,
@@ -87,6 +89,7 @@ export function SessionPage({
             </p>
           </div>
         </div>
+        <SessionModelChips session={session} state={state} controller={switchModel} />
         <SessionRulesBadge session={session} state={state} onOpen={onOpenRules} />
         <RateLimits
           limits={providerLimits(state.snapshot?.rateLimits ?? [], usageProvider(session.target.kind))}
@@ -108,7 +111,7 @@ export function SessionPage({
         {t(session.statusConfidence === StatusConfidence.Inferred ? "inferredStatus" : "observedStatus")}
         <SessionUsage usage={session.usage} />
       </p>
-      <SessionNotices session={session} removeFailed={remove?.failed === true} />
+      <SessionNotices session={session} remove={remove} switchModel={switchModel} />
       {session.capabilities.terminalSnapshot ? (
         <div className="mt-[28px] flex gap-[24px] border-b border-border session:mt-[4px] session:flex-none session:gap-[18px] session:short:mt-[3px]">
           <Button

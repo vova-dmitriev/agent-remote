@@ -5,7 +5,11 @@ import type { TranscriptSources } from '../monitor/history.js';
 import type { AdapterRegistry } from '../adapters/registry.js';
 import type { Dispatcher } from '../commands/dispatcher.js';
 import type { RuntimeProfileRelay } from '../profiles/runtime/router/relay.js';
-import type { SessionNamesPort, SessionRemovalPort } from '../domain/ports/session-names.js';
+import type {
+  SessionModelPort,
+  SessionNamesPort,
+  SessionRemovalPort,
+} from '../domain/ports/session-names.js';
 import { logDebug } from '../diagnostics/log.js';
 import { readSessionFile } from '../files/session-files.js';
 import type { AnalyticsPort } from '../analytics/collector.js';
@@ -21,6 +25,7 @@ export type RelayFrameRouterDeps = {
   dispatcher: Dispatcher;
   names: SessionNamesPort;
   removal?: SessionRemovalPort | undefined;
+  models?: SessionModelPort | undefined;
   /** Absent when the usage store could not open. */
   analytics?: AnalyticsPort | undefined;
   rules?: RulesPort | undefined;
@@ -54,6 +59,11 @@ export class RelayFrameRouter {
     } else if (frame.type === FrameType.SessionRemove) {
       // Like pins, the relay sends removals only for its owner's sessions on this device.
       await this.deps.removal?.remove(frame.sessionId, frame.mode).catch((error: unknown) => {
+        logDebug('runtime/relay-frame-router', error);
+      });
+    } else if (frame.type === FrameType.SessionModel) {
+      // Like renames, the relay sends model switches only for its owner's sessions on this device.
+      await this.deps.models?.switch(frame.sessionId, frame.choice).catch((error: unknown) => {
         logDebug('runtime/relay-frame-router', error);
       });
     } else if (frame.type === FrameType.SessionRename) {

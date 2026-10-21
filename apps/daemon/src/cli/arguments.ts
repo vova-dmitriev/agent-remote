@@ -1,7 +1,8 @@
 import { DaemonErrorCode } from '../error-codes.js';
 import { ASCII_CONTROL_CHARACTERS } from '../validation/control-characters.js';
 import { isAbsolute } from 'node:path';
-import { CodedError } from '@protocol';
+import { CodedError, ReasoningEffort } from '@protocol';
+import { z } from 'zod';
 
 /** Local-only launcher flags. No server endpoint can select a process or its arguments. */
 export function parseClaudeArgs(args: string[]): string[] {
@@ -19,6 +20,15 @@ export function parseClaudeArgs(args: string[]): string[] {
 
     if (flag === '--resume') {
       if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,511}$/.test(value)) {
+        throw new CodedError(DaemonErrorCode.INVALID_CLAUDE_ARGS);
+      }
+    } else if (flag === '--model') {
+      // An alias (`opus`) or a full name, optionally with a context suffix (`claude-opus-5-5[1m]`).
+      if (!/^[a-zA-Z0-9][a-zA-Z0-9._:[\]-]{0,255}$/.test(value)) {
+        throw new CodedError(DaemonErrorCode.INVALID_CLAUDE_ARGS);
+      }
+    } else if (flag === '--effort') {
+      if (!z.enum(ReasoningEffort).safeParse(value).success) {
         throw new CodedError(DaemonErrorCode.INVALID_CLAUDE_ARGS);
       }
     } else if (flag === '--settings') {

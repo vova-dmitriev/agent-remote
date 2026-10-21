@@ -9,15 +9,14 @@ import {
   type ConnectorDescriptor,
   ConnectorTransport,
   type Session,
+  type ModelChoice,
+  CodedError,
+  ErrorCode,
 } from '@protocol';
+import { DaemonErrorCode } from '../error-codes.js';
 import { type PreparedAttachment } from '../attachments/types.js';
 import type { Binding } from '../domain/ports/binding.js';
 
-export class AdapterError extends Error {
-  constructor(public code: string) {
-    super(code);
-  }
-}
 export type { Binding };
 export interface DispatchReceipt {
   status: typeof CommandStatus.Dispatched | typeof CommandStatus.Unknown;
@@ -46,6 +45,7 @@ export interface SessionAdapter {
     delivery?: PromptDelivery,
   ): Promise<DispatchReceipt>;
   interrupt(binding: Binding): Promise<DispatchReceipt>;
+  setModel(binding: Binding, choice: ModelChoice): Promise<void>;
   close(): Promise<void>;
 }
 type Driver = {
@@ -57,6 +57,8 @@ type Driver = {
   ) => Promise<DispatchReceipt>;
   interrupt?: (binding: Binding) => Promise<DispatchReceipt>;
   screen?: (binding: Binding) => Promise<string>;
+  /** Switches the session's model from its next turn. */
+  model?: (binding: Binding, choice: ModelChoice) => Promise<void>;
 };
 export class SourceAdapter implements SessionAdapter {
   private bindings = new Map<string, Binding>();
@@ -88,11 +90,11 @@ export class SourceAdapter implements SessionAdapter {
     this.check(binding, CapabilityKey.Prompt);
 
     if (attachments?.length && !this.description.capabilities.attachments) {
-      throw new AdapterError('CAPABILITY_UNAVAILABLE');
+      throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
     }
 
     if (!this.driver.prompt) {
-      throw new AdapterError('CAPABILITY_UNAVAILABLE');
+      throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
     }
 
     return this.driver.prompt(binding, text, attachments, delivery);
@@ -101,20 +103,30 @@ export class SourceAdapter implements SessionAdapter {
     this.check(binding, CapabilityKey.Interrupt);
 
     if (!this.driver.interrupt) {
-      throw new AdapterError('CAPABILITY_UNAVAILABLE');
+      throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
     }
 
     return this.driver.interrupt(binding);
+  }
+  /** Switches a session that takes prompts to another model from its next turn, where its source can. */
+  async setModel(binding: Binding, choice: ModelChoice) {
+    this.check(binding, CapabilityKey.Prompt);
+
+    if (!this.driver.model) {
+      throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
+    }
+
+    await this.driver.model(binding, choice);
   }
   async readScreen(binding: Binding) {
     const current = this.bindings.get(JSON.stringify(binding.target));
 
     if (!this.description.capabilities.terminalSnapshot || !this.driver.screen) {
-      throw new AdapterError('CAPABILITY_UNAVAILABLE');
+      throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
     }
 
     if (!current || current.generation !== binding.generation || current.localProof !== binding.localProof) {
-      throw new AdapterError('STALE_SESSION');
+      throw new CodedError(ErrorCode.STALE_SESSION);
     }
 
     return this.driver.screen(binding);
@@ -127,11 +139,11 @@ export class SourceAdapter implements SessionAdapter {
     const current = this.bindings.get(JSON.stringify(binding.target));
 
     if (!this.description.capabilities[capability]) {
-      throw new AdapterError('CAPABILITY_UNAVAILABLE');
+      throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
     }
 
     if (!current || current.localProof !== binding.localProof || current.generation !== binding.generation) {
-      throw new AdapterError('STALE_SESSION');
+      throw new CodedError(ErrorCode.STALE_SESSION);
     }
   }
 }
@@ -148,7 +160,7 @@ export class AdapterRegistry {
       this.adapters.get(descriptor.connectorId)?.descriptor().state !== undefined &&
       this.adapters.get(descriptor.connectorId)!.descriptor().state !== IntegrationState.Disconnected
     ) {
-      throw new AdapterError('CONNECTOR_EXISTS');
+      throw new CodedError(DaemonErrorCode.CONNECTOR_EXISTS);
     }
 
     for (const [id, existing] of this.adapters) {
@@ -169,7 +181,7 @@ export class AdapterRegistry {
       adapter.descriptor().kind !== target.kind ||
       adapter.descriptor().state === IntegrationState.Disconnected
     ) {
-      throw new AdapterError('NOT_FOUND');
+      throw new CodedError(ErrorCode.NOT_FOUND);
     }
 
     return adapter;

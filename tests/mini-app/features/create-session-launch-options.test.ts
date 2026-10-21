@@ -61,12 +61,23 @@ describe('create-session launch options', () => {
   });
 
   it('offers the profile models after a disabled entry for an unavailable selected model', () => {
-    const options = modelOptions(profile, 'retired-model', translate);
+    const options = modelOptions(profile.models, 'retired-model', 'Choose a model', translate);
 
     expect(options.map((option) => [option.value, !!option.disabled])).toEqual([
       ['', false],
       ['retired-model', true],
       ['synthetic-model', false],
+    ]);
+
+    expect(options[0]!.label).toBe('Choose a model');
+  });
+
+  it("offers the device's own models under the default model, which keeps the agent's default", () => {
+    const options = modelOptions([{ id: 'synthetic-native', efforts: [] }], '', 'Default model', translate);
+
+    expect(options.map((option) => [option.value, option.label])).toEqual([
+      ['', 'Default model'],
+      ['synthetic-native', 'synthetic-native'],
     ]);
   });
 

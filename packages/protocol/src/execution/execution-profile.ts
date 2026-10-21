@@ -16,6 +16,21 @@ export const executionCapabilitiesSchema = z.strictObject({
   quota: z.boolean(),
 });
 
+/** A model a sign-in offers, with the reasoning efforts it takes. */
+export const agentModelSchema = z.strictObject({ id, efforts: z.array(z.enum(ReasoningEffort)).max(8) });
+export type AgentModel = z.infer<typeof agentModelSchema>;
+
+/** The models the device's own sign-in of an agent offers, for new sessions and for switching a session's model. */
+export const providerModelsSchema = z.strictObject({
+  provider: z.enum(AgentProvider),
+  models: z.array(agentModelSchema).max(100),
+});
+export type ProviderModels = z.infer<typeof providerModelsSchema>;
+
+/** A model, and optionally its reasoning effort, the owner picks for a session on the device's own sign-in. */
+export const modelChoiceSchema = z.strictObject({ model: id, effort: z.enum(ReasoningEffort).optional() });
+export type ModelChoice = z.infer<typeof modelChoiceSchema>;
+
 export const executionProfileSummarySchema = z
   .strictObject({
     id: z.uuid(),
@@ -34,7 +49,7 @@ export const executionProfileSummarySchema = z
       })
       .nullable(),
     capabilities: executionCapabilitiesSchema,
-    models: z.array(z.strictObject({ id, efforts: z.array(z.enum(ReasoningEffort)).max(8) })).max(100),
+    models: z.array(agentModelSchema).max(100),
     version,
     updatedAt: time,
   })

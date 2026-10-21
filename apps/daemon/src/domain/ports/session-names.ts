@@ -1,4 +1,4 @@
-import type { SessionRemoval } from '@protocol';
+import type { ModelChoice, SessionRemoval } from '@protocol';
 
 /** Renames sessions in their agents (Claude Code, Codex); see `SessionNames`. */
 export interface SessionNamesPort {
@@ -19,4 +19,9 @@ export interface SessionRemovalPort {
 /** The part of the Codex manager that archives threads. */
 export interface CodexThreadArchive {
   archiveThread(threadId: string): Promise<void>;
+}
+
+/** Switches running sessions to another model; see `SessionModelSwitch`. */
+export interface SessionModelPort {
+  switch(sessionId: string, choice: ModelChoice): Promise<void>;
 }

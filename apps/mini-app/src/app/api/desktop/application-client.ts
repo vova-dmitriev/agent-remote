@@ -11,6 +11,7 @@ import {
   type HistoryPageDirection,
   type ServerFrame,
   type SessionRemoval,
+  type ModelChoice,
 } from "@protocol"
 import { BoundProfileClient } from "@transport/profile-client.js"
 import type { ApplicationClient, TransportHandlers } from "@/shared/api"
@@ -156,6 +157,8 @@ export class DesktopApplicationClient implements ApplicationClient {
   pinSession = (sessionId: string, generation: string, pinned: boolean) => this.operations.pinSession(sessionId, generation, pinned)
   removeSession = (sessionId: string, generation: string, mode: SessionRemoval) =>
     this.operations.removeSession(sessionId, generation, mode)
+  switchSessionModel = (sessionId: string, generation: string, choice: ModelChoice) =>
+    this.operations.switchSessionModel(sessionId, generation, choice)
   readSessionFile = (sessionId: string, generation: string, path: string) => this.operations.readSessionFile(sessionId, generation, path)
   usageReport = (deviceId: string, period: Parameters<ApplicationClient["usageReport"]>[1]) => this.operations.usageReport(deviceId, period)
   rules = (deviceId: string, request: Parameters<ApplicationClient["rules"]>[1]) => this.operations.rules(deviceId, request)

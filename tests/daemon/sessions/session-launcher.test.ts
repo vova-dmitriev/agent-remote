@@ -36,3 +36,26 @@ it('validates an existing directory and writes a fixed private Terminal launcher
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+it('starts Claude with the model and effort the owner picked', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'remote-launch-'));
+
+  try {
+    const scripts: string[] = [];
+
+    await launchClaudeSession({
+      directory: dir,
+      cwd: dir,
+      node: '/node',
+      entry: '/remote.mjs',
+      model: { model: 'opus', effort: 'high' },
+      open: async (_file, args) => {
+        scripts.push(await readFile(args[2]!, 'utf8'));
+      },
+    });
+
+    expect(scripts[0]).toContain("exec '/node' '/remote.mjs' claude --model 'opus' --effort 'high'");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});

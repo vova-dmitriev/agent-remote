@@ -28,6 +28,7 @@ import {
   SessionStatus,
   StatusConfidence,
   TargetKind,
+  type ModelChoice,
 } from '@protocol';
 import { RuntimeEvent } from '../../domain/runtime.js';
 import { CodexFileChanges } from './file-changes.js';
@@ -127,6 +128,8 @@ export async function bindCodex(options: CodexBindingOptions, deps: Dependencies
     closed = false;
 
   let lifecycleRevision = 0;
+  /** The model the owner switched to; the next turn carries it. */
+  let modelChoice: ModelChoice | undefined;
   /** Bound without resuming (no rollout yet), so this connection does not receive the thread's items. */
   let unfollowed = false;
   let activityRevision = 0;
@@ -506,6 +509,10 @@ export async function bindCodex(options: CodexBindingOptions, deps: Dependencies
       reason: null,
     },
     {
+      // Codex takes a model with a turn and keeps it for the turns after.
+      model: async (_binding, choice) => {
+        modelChoice = choice;
+      },
       prompt: async (_binding, text, attachments = [], delivery) => {
         if (!closed && session.status === SessionStatus.Running && delivery === PromptDelivery.Immediate) {
           const expectedTurnId = activeTurn;
@@ -545,6 +552,9 @@ export async function bindCodex(options: CodexBindingOptions, deps: Dependencies
               input: attachments.length
                 ? codexAttachmentInput(text, attachments)
                 : [{ type: CodexContentType.Text, text }],
+              ...(modelChoice
+                ? { model: modelChoice.model, ...(modelChoice.effort ? { effort: modelChoice.effort } : {}) }
+                : {}),
             }),
           );
 

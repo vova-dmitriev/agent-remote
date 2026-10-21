@@ -44,16 +44,16 @@ export function profileOptions(
   return [{ value: "", label: nativeLabel, testId }, ...entries, ...missing]
 }
 
-export function modelOptions(profile: ExecutionProfileSummary | undefined, modelId: string, translate: Translate): LaunchOption<string>[] {
+export function modelOptions(models: ProfileModel[], modelId: string, emptyLabel: string, translate: Translate): LaunchOption<string>[] {
   const testId = SESSION_CREATE_IDS.modelOption
-  const listed = !!profile?.models.some((entry) => entry.id === modelId)
+  const listed = models.some((entry) => entry.id === modelId)
 
   const missing =
     modelId !== "" && !listed ? unavailable(modelId, translate("sessionSelectedModelUnavailable", { model: modelId }), testId) : []
 
-  const entries = profile?.models.map((entry) => ({ value: entry.id, label: entry.id, testId })) ?? []
+  const entries = models.map((entry) => ({ value: entry.id, label: entry.id, testId }))
 
-  return [{ value: "", label: translate("sessionChooseModel"), testId }, ...missing, ...entries]
+  return [{ value: "", label: emptyLabel, testId }, ...missing, ...entries]
 }
 
 export function effortOptions(

@@ -12,6 +12,7 @@ import {
   type PreferencePatch,
   type ReadingPosition,
   type SessionRemoval,
+  type ModelChoice,
 } from '@protocol';
 import { chromeApi } from '../config/chrome-api.js';
 import { ExtensionConfig } from '../config/values.js';
@@ -56,6 +57,10 @@ export class ExtensionOperations {
 
   removeSession(sessionId: string, generation: string, mode: SessionRemoval) {
     return this.connection.request({ operation: LocalOperation.Remove, sessionId, generation, mode });
+  }
+
+  switchSessionModel(sessionId: string, generation: string, choice: ModelChoice) {
+    return this.connection.request({ operation: LocalOperation.Model, sessionId, generation, choice });
   }
 
   async readSessionFile(sessionId: string, generation: string, path: string) {

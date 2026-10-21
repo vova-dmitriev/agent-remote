@@ -52,6 +52,7 @@ export function ApplicationContent({
       showBack={sessionBack}
       rename={model.rename}
       remove={model.remove}
+      switchModel={model.switchModel}
       controller={commands}
       onOpenSubagent={subagent.readable ? (agentId) => subagent.open(selected.id, agentId) : undefined}
       onOpenFile={(path) => setFile({ sessionId: selected.id, path })}

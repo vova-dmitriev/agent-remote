@@ -2,6 +2,7 @@ import { expect } from '@playwright/test';
 import { test, deviceFixture, delivered, setCommandOutcome } from '../support/relay/relay-fixture.js';
 import { sessionSnapshot } from '../support/fixtures/session-fixtures.js';
 import { identity } from '../support/relay/identity.js';
+import { byTestId } from '../support/ui/testid.js';
 import { SESSION_CREATE_IDS } from '@/features/create-session/config/test-ids.js';
 import { SESSION_PAGE_IDS } from '@/pages/session/config/test-ids.js';
 
@@ -67,3 +68,44 @@ for (const provider of ['claude', 'codex'] as const) {
     expect(delivered).toHaveLength(1);
   });
 }
+
+test("creates a Codex session on a model of the device's own sign-in, or on its default model", async ({ page }) => {
+  const { sockets, deviceId } = deviceFixture();
+  const snapshot = sessionSnapshot(deviceId);
+  const source = snapshot.sessions[0]!;
+
+  source.cwd = '/synthetic/project';
+  source.capabilities.createSession = true;
+
+  snapshot.models = [
+    {
+      provider: 'codex',
+      models: [
+        { id: 'synthetic-fast', efforts: [] },
+        { id: 'synthetic-deep', efforts: ['low', 'high'] },
+      ],
+    },
+  ];
+
+  sockets[0]!.send(JSON.stringify({ type: 'snapshot', snapshot, connectors: [] }));
+  setCommandOutcome('held');
+  await identity(page, '801', 'en');
+  await page.goto('/');
+  await page.getByTestId(SESSION_CREATE_IDS.toggle).click();
+
+  await expect(page.getByTestId(SESSION_CREATE_IDS.model.trigger)).toHaveText('Default model');
+  await page.getByTestId(SESSION_CREATE_IDS.model.trigger).click();
+  await byTestId(page, SESSION_CREATE_IDS.modelOption, { value: 'synthetic-deep' }).click();
+  await page.getByTestId(SESSION_CREATE_IDS.effort.trigger).click();
+  await byTestId(page, SESSION_CREATE_IDS.effortOption, { value: 'high' }).click();
+  await page.getByTestId(SESSION_CREATE_IDS.submit).click();
+
+  await expect.poll(() => delivered.length).toBe(1);
+
+  expect(delivered[0]?.action).toEqual({
+    type: 'create_session',
+    provider: 'codex',
+    cwd: '/synthetic/project',
+    model: { model: 'synthetic-deep', effort: 'high' },
+  });
+});

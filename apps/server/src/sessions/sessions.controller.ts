@@ -20,6 +20,7 @@ import {
   RelayProtocolFeature,
   type ServerFrame,
   sessionFileQuerySchema,
+  sessionModelChoiceSchema,
   sessionPinSchema,
   sessionRemoveSchema,
 } from '@protocol';
@@ -39,7 +40,7 @@ import { SessionRepository } from './repository.js';
 
 /**
  * Session history pages (from the companion's source when it has one, else the relay's events), renaming, pins,
- * removal and the files a session changed.
+ * models, removal and the files a session changed.
  */
 @Controller('sessions/:id')
 @UseGuards(PrincipalGuard)
@@ -177,13 +178,30 @@ export class SessionsController {
     return { mode: body.mode };
   }
 
+  /** Switches an owned session to another model on its live device; the session's next turn uses it. */
+  @Put('model')
+  async model(@CurrentPrincipal() p: Principal, @Param('id') id: string, @Body() input: unknown) {
+    const body = sessionModelChoiceSchema.parse(input);
+
+    await this.sendToDevice(p, id, body.generation, RelayProtocolFeature.ModelChoice, {
+      type: FrameType.SessionModel,
+      sessionId: id,
+      choice: body.choice,
+    });
+
+    return { choice: body.choice };
+  }
+
   /** Sends a frame about an owned live session of this generation to its device, if the device speaks it. */
   private async sendToDevice(
     p: Principal,
     id: string,
     generation: string,
     feature: number,
-    frame: Extract<ServerFrame, { type: typeof FrameType.SessionPin | typeof FrameType.SessionRemove }>,
+    frame: Extract<
+      ServerFrame,
+      { type: typeof FrameType.SessionPin | typeof FrameType.SessionRemove | typeof FrameType.SessionModel }
+    >,
   ) {
     const session = await this.sessions.live(p.userId, id);
 

@@ -3,6 +3,7 @@ import type { DeviceStatus, HistoryMessage, Session } from "@protocol"
 import type { Connection, HistoryStatus, HistoryDirection } from "@/shared/api"
 import type { RenameSessionController } from "@/features/rename-session"
 import type { RemoveSessionController } from "@/features/remove-session"
+import type { SwitchModelController } from "@/features/switch-model"
 import type { CommandController } from "@/features/send-command"
 
 export interface SessionPageProps {
@@ -20,6 +21,8 @@ export interface SessionPageProps {
   rename?: RenameSessionController
   /** Hides, archives or ends the session from its menu; absent, the menu offers no removal. */
   remove?: RemoveSessionController
+  /** Switches the session's model from its header; absent, the header shows no model chips. */
+  switchModel?: SwitchModelController
   controller: CommandController
   /** Opens a subagent's read-only view; the caller passes it only where the session's source can read subagent transcripts. */
   onOpenSubagent?: ((agentId: string) => void) | undefined
@@ -31,7 +34,14 @@ export interface SessionPageProps {
 
 export interface SessionNoticesProps {
   session: Session
-  removeFailed: boolean
+  remove?: RemoveSessionController | undefined
+  switchModel?: SwitchModelController | undefined
+}
+
+export interface SessionModelChipsProps {
+  session: Session
+  state: SessionState
+  controller?: SwitchModelController | undefined
 }
 
 export interface SessionMenuProps {

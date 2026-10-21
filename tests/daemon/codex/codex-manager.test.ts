@@ -224,7 +224,7 @@ it('binds a Codex thread while the device has room, though twelve other sessions
   }
 });
 
-it('binds a thread it just created, which Codex cannot resume before its first message', async () => {
+it('starts a thread on the picked model and binds it, though Codex cannot resume it before its first message', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'codex-fresh-test-'));
   const endpoint = join(directory, 'codex/app-server.sock');
   let started = false;
@@ -284,9 +284,19 @@ it('binds a thread it just created, which Codex cannot resume before its first m
   } as unknown as ConstructorParameters<typeof CodexManager>[0]);
 
   try {
-    const sessionId = await manager.createSession('/synthetic/project');
+    const sessionId = await manager.createSession('/synthetic/project', undefined, {
+      model: 'synthetic-model',
+      effort: 'high',
+    });
 
     expect(monitor.session(sessionId)).toMatchObject({ integrationState: 'ready' });
+
+    // The model the owner picked in the app, instead of the Codex home's default.
+    expect(rpc.request).toHaveBeenCalledWith('thread/start', {
+      cwd: '/synthetic/project',
+      model: 'synthetic-model',
+      config: { model_reasoning_effort: 'high' },
+    });
   } finally {
     await manager.close();
     permissions.close();

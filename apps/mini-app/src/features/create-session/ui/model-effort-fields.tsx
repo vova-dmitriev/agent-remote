@@ -1,5 +1,5 @@
 import { Cpu, Gauge } from "lucide-react"
-import type { ExecutionProfileSummary, ReasoningEffort } from "@protocol"
+import type { AgentModel, ReasoningEffort } from "@protocol"
 import { useTranslation } from "@/shared/lib/hooks"
 import { ChoiceDropdown } from "@/shared/ui/dropdown"
 import { chipFieldClass, chipLabelClass } from "../config/chip-classes"
@@ -7,11 +7,14 @@ import { SESSION_CREATE_IDS } from "../config/test-ids"
 import { effortOptions, modelOptions } from "../model/launch-options"
 
 interface ModelEffortFieldsProps {
-  profileId: string
-  profileAvailable: boolean
-  profile: ExecutionProfileSummary | undefined
+  /** The models to offer; none hides the fields. */
+  models: AgentModel[] | undefined
+  /** Whether the models can be picked now, e.g. the chosen profile is ready. */
+  available: boolean
+  /** The device's own sign-in: no model keeps the agent's default instead of asking for one. */
+  native: boolean
   modelId: string
-  selectedModel: ExecutionProfileSummary["models"][number] | undefined
+  selectedModel: AgentModel | undefined
   effort: ReasoningEffort | ""
   disabled: boolean
   onModelChange: (value: string) => void
@@ -19,9 +22,9 @@ interface ModelEffortFieldsProps {
 }
 
 export function ModelEffortFields({
-  profileId,
-  profileAvailable,
-  profile,
+  models,
+  available,
+  native,
   modelId,
   selectedModel,
   effort,
@@ -31,7 +34,9 @@ export function ModelEffortFields({
 }: ModelEffortFieldsProps) {
   const { t } = useTranslation()
 
-  if (profileId === "") return null
+  if (!models) return null
+
+  const emptyLabel = t(native ? "sessionDefaultModel" : "sessionChooseModel")
 
   return (
     <>
@@ -39,13 +44,13 @@ export function ModelEffortFields({
         value={modelId}
         onChange={onModelChange}
         label={t("sessionModel")}
-        triggerLabel={modelId === "" ? t("sessionChooseModel") : modelId}
+        triggerLabel={modelId === "" ? emptyLabel : modelId}
         icon={Cpu}
         ids={SESSION_CREATE_IDS.model}
         className={chipFieldClass}
         labelClassName={chipLabelClass}
-        disabled={disabled || !profileAvailable || !profile}
-        options={modelOptions(profile, modelId, t)}
+        disabled={disabled || !available}
+        options={modelOptions(models, modelId, emptyLabel, t)}
       />
       {modelId !== "" && (effort !== "" || selectedModel?.efforts.length) ? (
         <ChoiceDropdown
@@ -57,7 +62,7 @@ export function ModelEffortFields({
           ids={SESSION_CREATE_IDS.effort}
           className={chipFieldClass}
           labelClassName={chipLabelClass}
-          disabled={disabled || !profileAvailable || !selectedModel}
+          disabled={disabled || !available || !selectedModel}
           options={effortOptions(selectedModel, effort, t)}
         />
       ) : null}

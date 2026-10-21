@@ -1,7 +1,7 @@
 import { ConnectionStatus, DeviceStatus } from "@protocol"
 import { SessionActions } from "@/features/send-command"
 import { RemoveSessionItems } from "@/features/remove-session"
-import type { SessionMenuProps } from "./session-page.types"
+import type { SessionMenuProps } from "../session-page.types"
 
 /** The session's "…" menu: interrupting the agent, and removing the session when the page can. */
 export function SessionMenu({ session, controller, remove, connection, deviceStatus, onRemoved }: SessionMenuProps) {

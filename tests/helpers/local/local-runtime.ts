@@ -21,6 +21,7 @@ export function localFixture(
   names?: LocalControllerOptions['names'],
   analytics?: LocalControllerOptions['analytics'],
   rules?: LocalControllerOptions['rules'],
+  sessions: Pick<LocalControllerOptions, 'removal' | 'models'> = {},
 ) {
   const store = new LocalStore(':memory:', 'device-local');
   const database = new LocalDatabase(':memory:');
@@ -95,6 +96,7 @@ export function localFixture(
     ...(media ? { media } : {}),
     ...(profiles ? { profiles } : {}),
     ...(names ? { names } : {}),
+    ...sessions,
     analytics,
     rules,
     ownerId: 'owner-local',

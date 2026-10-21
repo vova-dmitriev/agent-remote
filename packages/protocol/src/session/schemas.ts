@@ -35,7 +35,11 @@ import { validatePrompt } from '../errors/validation.js';
 import { attachmentsSchema } from '../history/attachments.js';
 import { pendingUserInputSchema, userInputAnswersSchema } from '../input/user-input.js';
 import { profileRequestSchema, profileReplySchema } from '../profile/profile-access.js';
-import { executionLaunchSelectionSchema } from '../execution/execution-profile.js';
+import {
+  executionLaunchSelectionSchema,
+  modelChoiceSchema,
+  providerModelsSchema,
+} from '../execution/execution-profile.js';
 import { executionVersionSchema } from '../execution/execution-fields.js';
 import {
   continuityLocalRequestSchema,
@@ -152,6 +156,9 @@ export const sessionSchema = z
 /** Pins or unpins a session of the current generation; the device holds the pin. */
 export const sessionPinSchema = z.strictObject({ pinned: z.boolean(), generation: id });
 export type SessionPin = z.infer<typeof sessionPinSchema>;
+/** Switches a session of the current generation to another model; it applies from the session's next turn. */
+export const sessionModelChoiceSchema = z.strictObject({ choice: modelChoiceSchema, generation: id });
+export type SessionModelChoice = z.infer<typeof sessionModelChoiceSchema>;
 /** Removes a session of the current generation from the lists; the device holds what it hid. */
 export const sessionRemoveSchema = z.strictObject({ mode: z.enum(SessionRemoval), generation: id });
 export type SessionRemove = z.infer<typeof sessionRemoveSchema>;
@@ -188,7 +195,10 @@ export const actionSchema = z.discriminatedUnion('type', [
           expectedVersion: executionVersionSchema,
         })
         .optional(),
+      /** The model on the device's own sign-in; a profile launch names its model in `execution` instead. */
+      model: modelChoiceSchema.optional(),
     })
+    .refine((action) => !(action.execution && action.model), { message: ErrorCode.INVALID_COMMAND })
     .refine((action) => !action.execution || action.execution.selection.provider === action.provider, {
       message: ErrorCode.PROFILE_MISMATCH,
     }),
@@ -279,6 +289,8 @@ export const snapshotSchema = z.strictObject({
   terminal: terminalSchema.nullable(),
   /** The plan limits of the device's agents, for the session header. */
   rateLimits: rateLimitsSchema.optional(),
+  /** The models the device's own sign-in of each agent offers. */
+  models: z.array(providerModelsSchema).max(2).optional(),
 });
 export const appFrameSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal(FrameType.Auth), token: id }),
@@ -418,6 +430,7 @@ export const serverFrameSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal(FrameType.Select), sessionId: id.nullable() }),
   z.strictObject({ type: z.literal(FrameType.SessionPin), sessionId: id, pinned: z.boolean() }),
   z.strictObject({ type: z.literal(FrameType.SessionRemove), sessionId: id, mode: z.enum(SessionRemoval) }),
+  z.strictObject({ type: z.literal(FrameType.SessionModel), sessionId: id, choice: modelChoiceSchema }),
   z.strictObject({
     type: z.literal(FrameType.SessionRename),
     sessionId: id,

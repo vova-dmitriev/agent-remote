@@ -1,4 +1,11 @@
-import { CodedError, ErrorCode, IntegrationState, TargetKind } from '@protocol';
+import {
+  AgentProvider,
+  CodedError,
+  ErrorCode,
+  IntegrationState,
+  type ModelChoice,
+  TargetKind,
+} from '@protocol';
 import { RuntimeEvent } from '../../domain/runtime.js';
 import { CodexMethod } from '../../domain/codex/codex.js';
 import { type AttachmentService } from '../../attachments/service.js';
@@ -55,8 +62,18 @@ interface Connection {
   clients: Map<string, CodexClient>;
   executionLeases: Map<string, ProfiledExecutionLaunch['executionLease']>;
 }
+
+/** A thread's model and reasoning effort as `thread/start` takes them; none keeps the Codex home's defaults. */
+function modelOverrides(choice: ModelChoice | undefined) {
+  return choice
+    ? { model: choice.model, ...(choice.effort ? { config: { model_reasoning_effort: choice.effort } } : {}) }
+    : {};
+}
+
 export class CodexManager {
   private connections = new Map<string, Connection>();
+  /** App-servers of the device's own Codex sign-in, whose models the app offers. */
+  private nativeSockets = new Set<string>();
   private saved = new Map<string, CodexConnection>();
   private closed = false;
   private scanning: Promise<void> = Promise.resolve();
@@ -80,10 +97,18 @@ export class CodexManager {
       this.saved.set(JSON.stringify(selection), selection);
     }
 
-    for (const selection of [
-      { kind: TargetKind.CodexDesktop, socketPath: join(home, 'ipc/ipc.sock') },
+    const native = [
       { kind: TargetKind.CodexCli, socketPath: join(home, 'app-server-control/app-server-control.sock') },
       { kind: TargetKind.CodexCli, socketPath: join(this.deps.stateDirectory, 'codex/app-server.sock') },
+    ];
+
+    for (const selection of native) {
+      this.nativeSockets.add(selection.socketPath);
+    }
+
+    for (const selection of [
+      { kind: TargetKind.CodexDesktop, socketPath: join(home, 'ipc/ipc.sock') },
+      ...native,
       ...saved,
     ]) {
       this.add(selection);
@@ -127,7 +152,7 @@ export class CodexManager {
       return { connected: count, kind: selection.kind };
     });
   }
-  async createSession(cwd: string, launch?: ProfiledExecutionLaunch): Promise<string> {
+  async createSession(cwd: string, launch?: ProfiledExecutionLaunch, choice?: ModelChoice): Promise<string> {
     return this.enqueue(async () => {
       if (this.closed || !this.deps.inputEnabled) {
         launch?.executionLease.releaseBeforeLaunch();
@@ -198,14 +223,7 @@ export class CodexManager {
         const response = object(
           await entry.rpc!.request('thread/start', {
             cwd,
-            ...(launch
-              ? {
-                  model: launch.selection.model,
-                  ...(launch.selection.effort
-                    ? { config: { model_reasoning_effort: launch.selection.effort } }
-                    : {}),
-                }
-              : {}),
+            ...modelOverrides(launch?.selection ?? choice),
           }),
         );
 
@@ -441,6 +459,13 @@ export class CodexManager {
         reset();
         void this.releaseExitedExecutions(entry);
       });
+
+      if (this.nativeSockets.has(selection.socketPath)) {
+        void nativeProfileModels(entry.rpc as CodexRpcClient).then(
+          (models) => this.deps.monitor.setProviderModels(AgentProvider.Codex, models),
+          (error: unknown) => logDebug('runtime/services/codex-manager', error),
+        );
+      }
     }
 
     if (selection.kind === TargetKind.CodexDesktop && !entry.ipc) {

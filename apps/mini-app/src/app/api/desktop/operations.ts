@@ -12,6 +12,7 @@ import {
   type PreferencePatch,
   type ReadingPosition,
   type SessionRemoval,
+  type ModelChoice,
 } from "@protocol"
 import type { DesktopBridgeConnection } from "./desktop-connection.js"
 
@@ -41,6 +42,10 @@ export class DesktopOperations {
 
   removeSession(sessionId: string, generation: string, mode: SessionRemoval) {
     return this.connection.request({ operation: LocalOperation.Remove, sessionId, generation, mode })
+  }
+
+  switchSessionModel(sessionId: string, generation: string, choice: ModelChoice) {
+    return this.connection.request({ operation: LocalOperation.Model, sessionId, generation, choice })
   }
 
   async readSessionFile(sessionId: string, generation: string, path: string) {

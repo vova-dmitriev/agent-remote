@@ -7,6 +7,8 @@ import {
   RuleAction,
   type AnalyticsReport,
   type AppSnapshot,
+  SessionRemoval,
+  ReasoningEffort,
 } from '@protocol';
 import { localFixture } from '../../helpers/local/local-runtime.js';
 
@@ -256,4 +258,38 @@ it('changes rules only for the device owner', async () => {
   await expect(f.controller.execute({ ...f.principal, ownerId: 'owner-other' }, ask)).rejects.toThrow();
   expect(rules.apply).not.toHaveBeenCalled();
   expect(await f.controller.execute(f.principal, ask)).toEqual({ projects: [], session: null });
+});
+
+it("removes and switches the model of only the device owner's current session", async () => {
+  const removed: unknown[] = [];
+  const switched: unknown[] = [];
+
+  const f = localFixture(undefined, undefined, undefined, undefined, undefined, {
+    removal: { remove: async (...call) => void removed.push(call) },
+    models: { switch: async (...call) => void switched.push(call) },
+  });
+
+  fixtures.push(f);
+
+  const current = { sessionId: f.session.id, generation: f.session.generation };
+  const remove = { operation: LocalOperation.Remove, ...current, mode: SessionRemoval.Archive };
+
+  const model = {
+    operation: LocalOperation.Model,
+    ...current,
+    choice: { model: 'synthetic-model', effort: ReasoningEffort.High },
+  };
+
+  await expect(f.controller.execute({ ...f.principal, ownerId: 'owner-other' }, remove)).rejects.toThrow();
+  await expect(f.controller.execute({ ...f.principal, ownerId: 'owner-other' }, model)).rejects.toThrow();
+
+  await expect(f.controller.execute(f.principal, { ...model, generation: 'old' })).rejects.toThrow(
+    ErrorCode.STALE_SESSION,
+  );
+
+  expect(await f.controller.execute(f.principal, remove)).toBeNull();
+  expect(await f.controller.execute(f.principal, model)).toBeNull();
+
+  expect(removed).toEqual([[f.session.id, SessionRemoval.Archive]]);
+  expect(switched).toEqual([[f.session.id, { model: 'synthetic-model', effort: ReasoningEffort.High }]]);
 });

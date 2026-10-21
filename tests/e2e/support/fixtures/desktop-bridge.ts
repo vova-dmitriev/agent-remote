@@ -13,7 +13,7 @@ interface FakeBridgeOptions {
     result: string;
     version: number;
     snapshot: string;
-    operations: Record<'devices' | 'select' | 'history' | 'preferences' | 'reading' | 'draft' | 'queue' | 'pin' | 'remove' | 'file' | 'analytics' | 'rules', string>;
+    operations: Record<'devices' | 'select' | 'history' | 'preferences' | 'reading' | 'draft' | 'queue' | 'pin' | 'remove' | 'model' | 'file' | 'analytics' | 'rules', string>;
     unavailable: string;
   };
 }
@@ -50,6 +50,7 @@ export async function installDesktopBridge(
         queue: LocalOperation.QueueGet,
         pin: LocalOperation.Pin,
         remove: LocalOperation.Remove,
+        model: LocalOperation.Model,
         file: LocalOperation.File,
         analytics: LocalOperation.Analytics,
         rules: LocalOperation.Rules,
@@ -92,7 +93,7 @@ export async function installDesktopBridge(
         },
         request: async (request: {
           requestId: string;
-          action: { operation: string; agentId?: string; sessionId?: string; pinned?: boolean; mode?: string; path?: string; period?: string; request?: unknown };
+          action: { operation: string; agentId?: string; sessionId?: string; pinned?: boolean; mode?: string; choice?: { model: string; effort?: string }; path?: string; period?: string; request?: unknown };
         }) => {
           const base = { kind: values.result, version: values.version, requestId: request.requestId, leaseId, epoch };
           const { operation, agentId } = request.action;
@@ -121,6 +122,23 @@ export async function installDesktopBridge(
             usage.usageReads = [...(usage.usageReads ?? []), request.action.period ?? ''];
 
             return report ? { ...base, ok: true, data: report } : { ...base, ok: false, code: values.unavailable };
+          }
+
+          // Like the companion: the session shows its new model; a test reads `modelSwitches`.
+          if (operation === operations.model) {
+            const record = window as unknown as { modelSwitches?: unknown[] };
+            const choice = request.action.choice!;
+
+            record.modelSwitches = [...(record.modelSwitches ?? []), { sessionId: request.action.sessionId, choice }];
+
+            snapshot = {
+              ...snapshot,
+              sessions: snapshot.sessions.map((session) => (session.id === request.action.sessionId ? { ...session, model: choice.model } : session)),
+            };
+
+            setTimeout(publish, 0);
+
+            return { ...base, ok: true, data: null };
           }
 
           // Like the companion: the removed session leaves the snapshot; a test reads `removals`.

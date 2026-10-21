@@ -52,5 +52,16 @@ describe('local installation', () => {
     );
 
     expect(() => parseClaudeArgs(['--settings', 'relative.json'])).toThrow('INVALID_CLAUDE_ARGS');
+
+    expect(parseClaudeArgs(['--model', 'opus', '--effort', 'high'])).toEqual([
+      '--model',
+      'opus',
+      '--effort',
+      'high',
+    ]);
+
+    expect(parseClaudeArgs(['--model', 'claude-opus-5-5[1m]'])).toEqual(['--model', 'claude-opus-5-5[1m]']);
+    expect(() => parseClaudeArgs(['--model', '--settings=x'])).toThrow('INVALID_CLAUDE_ARGS');
+    expect(() => parseClaudeArgs(['--effort', 'ludicrous'])).toThrow('INVALID_CLAUDE_ARGS');
   });
 });

@@ -1,5 +1,5 @@
 import { DaemonErrorCode } from '../../error-codes.js';
-import { CodedError, ErrorCode } from '@protocol';
+import { CodedError, ErrorCode, type ModelChoice } from '@protocol';
 
 import { shellQuote as quote } from '../../shell/index.js';
 import { ASCII_CONTROL_CHARACTERS } from '../../validation/control-characters.js';
@@ -39,6 +39,8 @@ export async function launchClaudeSession(options: {
   node: string;
   entry: string;
   resumeId?: string;
+  /** The model and effort the owner picked for a new session. */
+  model?: ModelChoice;
   launchContext?: LaunchContext;
   cmux?: CmuxContext;
   launchCmux?: typeof launchInCmux;
@@ -73,7 +75,10 @@ export async function launchClaudeSession(options: {
       quote(options.entry) +
       (options.launchContext
         ? ' restore-claude ' + quote(payload)
-        : ' claude' + (options.resumeId ? ' --resume ' + quote(options.resumeId) : '')) +
+        : ' claude' +
+          (options.resumeId ? ' --resume ' + quote(options.resumeId) : '') +
+          (options.model ? ' --model ' + quote(options.model.model) : '') +
+          (options.model?.effort ? ' --effort ' + quote(options.model.effort) : '')) +
       '\n',
     { mode: 0o700, flag: 'wx' },
   );

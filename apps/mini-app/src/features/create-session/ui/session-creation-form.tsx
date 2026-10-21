@@ -1,5 +1,5 @@
 import { Bot, Folder } from "lucide-react"
-import { AgentProvider, CapabilityKey, type Session } from "@protocol"
+import { AgentProvider, CapabilityKey, type ModelChoice, type Session } from "@protocol"
 import { ProviderFilterValue } from "@/entities/session"
 import { useTranslation } from "@/shared/lib/hooks"
 import { Button } from "@/shared/ui/button"
@@ -18,7 +18,7 @@ interface SessionCreationFormProps {
   online: boolean
   profilesUnavailable: boolean
   checkingProfiles: boolean
-  create: (session: Session, provider: AgentProvider, execution?: ProfileExecution) => void
+  create: (session: Session, provider: AgentProvider, execution?: ProfileExecution, model?: ModelChoice) => void
 }
 
 export function SessionCreationForm({ model, disabled, online, profilesUnavailable, checkingProfiles, create }: SessionCreationFormProps) {
@@ -33,7 +33,8 @@ export function SessionCreationForm({ model, disabled, online, profilesUnavailab
       data-testid={SESSION_CREATE_IDS.form}
       onSubmit={(event) => {
         event.preventDefault()
-        if (model.selected && !disabled && launchReady) create(model.selected, model.provider, model.execution ?? undefined)
+        if (model.selected && !disabled && launchReady)
+          create(model.selected, model.provider, model.execution ?? undefined, model.modelChoice)
       }}
     >
       <ChoiceDropdown
@@ -74,9 +75,9 @@ export function SessionCreationForm({ model, disabled, online, profilesUnavailab
         onChange={model.setLaunchProfile}
       />
       <ModelEffortFields
-        profileId={model.profileId}
-        profileAvailable={model.profileAvailable}
-        profile={model.profile}
+        models={model.fieldModels}
+        available={model.modelsAvailable}
+        native={model.native}
         modelId={model.modelId}
         selectedModel={model.selectedModel}
         effort={model.effort}

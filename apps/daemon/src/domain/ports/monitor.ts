@@ -1,5 +1,7 @@
 import type { EventEmitter } from 'node:events';
 import {
+  type AgentModel,
+  type AgentProvider,
   type AppSnapshot,
   type EventEnvelope,
   type PermissionDecision,
@@ -52,6 +54,7 @@ export interface MonitorPort extends EventEmitter {
   setSessionTitle(id: string, title: string | undefined): boolean;
   setPinned(id: string, pinned: boolean): boolean;
   hide(id: string, at?: number): boolean;
+  setProviderModels(provider: AgentProvider, models: AgentModel[]): void;
   setSubagents(id: string, agents: Session['subagents']): void;
   settleSubagentPermission(sessionId: string, agentId: string, decision: PermissionDecision): void;
   setSessionModel(

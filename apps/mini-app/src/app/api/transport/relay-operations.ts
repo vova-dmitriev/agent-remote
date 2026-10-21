@@ -13,6 +13,7 @@ import {
   type PreferencePatch,
   type ReadingPosition,
   type SessionRemoval,
+  type ModelChoice,
 } from "@protocol"
 import type { ApplicationOperations, Device } from "@/shared/api"
 import { RelayCommandOperations } from "./relay-command-operations"
@@ -69,6 +70,13 @@ export abstract class RelayOperations extends RelayCommandOperations implements 
     return this.request("/sessions/" + encodeURIComponent(sessionId) + "/remove", {
       method: "POST",
       body: JSON.stringify({ mode, generation }),
+    })
+  }
+
+  switchSessionModel(sessionId: string, generation: string, choice: ModelChoice) {
+    return this.request("/sessions/" + encodeURIComponent(sessionId) + "/model", {
+      method: "PUT",
+      body: JSON.stringify({ choice, generation }),
     })
   }
 

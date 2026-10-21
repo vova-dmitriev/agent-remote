@@ -14,9 +14,16 @@ export function sessionCreationProps(model: ReturnType<typeof useApplication>): 
     sessions: state.snapshot?.sessions ?? [],
     online,
     disabled: !online || commands.busy || commands.awaitingReceipt || commands.uncertain,
-    create: (session, provider, execution) =>
+    models: state.snapshot?.models ?? [],
+    create: (session, provider, execution, model) =>
       void commands.action(
-        { type: CommandActionType.CreateSession, provider, cwd: session.cwd!, ...(execution ? { execution } : {}) },
+        {
+          type: CommandActionType.CreateSession,
+          provider,
+          cwd: session.cwd!,
+          ...(execution ? { execution } : {}),
+          ...(model ? { model } : {}),
+        },
         session,
       ),
   }

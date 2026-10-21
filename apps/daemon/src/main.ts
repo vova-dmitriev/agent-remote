@@ -1,8 +1,10 @@
-import type { ErrorCode } from '@protocol';
+import { AgentProvider, type ErrorCode } from '@protocol';
+import { CLAUDE_MODELS } from './domain/claude.js';
 import { RuntimeEvent } from './domain/runtime.js';
 import { NativeProcesses } from './sessions/native-process.js';
 import { SessionNames } from './sessions/session-names.js';
 import { SessionRemover } from './sessions/session-removal.js';
+import { SessionModelSwitch } from './sessions/session-model.js';
 import { CodexManager } from './runtime/services/codex-manager.js';
 import { BridgeClient } from './desktop/bridge-client.js';
 import { join } from 'node:path';
@@ -61,6 +63,8 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
     allowSessionCreation: inputEnabled,
   });
 
+  monitor.setProviderModels(AgentProvider.Claude, CLAUDE_MODELS);
+
   const localServices = await openLocalServices(config, stateDirectory(), (id) => monitor.session(id), {
     inputEnabled,
     baseEnvironment: process.env,
@@ -112,6 +116,8 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
   });
 
   const names = new SessionNames({ monitor, adapters, readers, codex: () => codex });
+
+  const models = new SessionModelSwitch({ monitor, adapters });
 
   const removal = new SessionRemover({
     monitor,
@@ -167,6 +173,7 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
     readers,
     names,
     removal,
+    models,
     analytics,
     rules,
   }).catch(async (error: unknown) => {
@@ -197,6 +204,7 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
     nativeProcesses,
     names,
     removal,
+    models,
     analytics,
     rules,
   });
