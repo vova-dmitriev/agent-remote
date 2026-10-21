@@ -1,3 +1,4 @@
+import { TriangleAlert } from "lucide-react"
 import { useTranslation } from "@/shared/lib/hooks"
 import { cn } from "@/shared/lib/utils"
 import { RATE_LIMIT_IDS } from "@/entities/usage/config/test-ids"
@@ -41,7 +42,8 @@ export function LimitDetails({ limits, agent, now }: LimitDetailsProps) {
       })}
       <span className="text-[11px] text-muted-foreground">{t("limitUpdated", { time: relativeTime(observedAt, language, now) })}</span>
       {now - observedAt > LIMIT_STALE_MS ? (
-        <span className="text-[11px] text-warning" data-testid={RATE_LIMIT_IDS.stale}>
+        <span className="flex gap-[6px] text-[11px]" data-testid={RATE_LIMIT_IDS.stale}>
+          <TriangleAlert className="mt-[1px] flex-none text-warning" aria-hidden="true" size={13} />
           {t("limitStale")}
         </span>
       ) : null}
