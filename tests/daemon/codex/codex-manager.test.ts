@@ -294,3 +294,87 @@ it('binds a thread it just created, which Codex cannot resume before its first m
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+it('binds an empty loaded thread after a restart and follows it once its first message is sent', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'codex-empty-test-'));
+  const endpoint = join(directory, 'codex/app-server.sock');
+
+  const empty = {
+    id: 'empty',
+    cwd: '/synthetic/project',
+    canAcceptDirectInput: true,
+    status: { type: 'idle' },
+  };
+
+  let turns = 0;
+
+  const rpc = Object.assign(new EventEmitter(), {
+    request: vi.fn(async (method: string) => {
+      if (method === 'thread/loaded/list') {
+        return { data: ['empty'] };
+      }
+
+      if (method === 'thread/read') {
+        return { thread: { ...empty, turns: [] } };
+      }
+
+      // Codex writes the rollout with the first turn: until then the thread cannot be resumed.
+      if (method === 'thread/resume') {
+        if (!turns) {
+          throw new CodexRpcError(-32600);
+        }
+
+        return { thread: { ...empty, turns: [] } };
+      }
+
+      if (method === 'turn/start') {
+        turns++;
+
+        return { turn: { id: 'turn-1', status: 'inProgress' } };
+      }
+
+      return { data: [], nextCursor: null };
+    }),
+    respond() {},
+    async close() {},
+  });
+
+  connectSocket.mockImplementation(async () => rpc);
+
+  const store = new LocalStore(':memory:', 'device'),
+    adapters = new AdapterRegistry('device'),
+    permissions = new PermissionBroker();
+
+  const monitor = new Monitor({ deviceId: 'device', store, adapters, permissions });
+
+  const manager = new CodexManager({
+    stateDirectory: directory,
+    codexHome: directory,
+    monitor,
+    adapters,
+    permissions,
+    inputEnabled: true,
+    permissionsEnabled: false,
+  } as unknown as ConstructorParameters<typeof CodexManager>[0]);
+
+  try {
+    await manager.connect({ kind: 'codex-cli', socketPath: endpoint });
+
+    const session = monitor
+      .snapshot()
+      .sessions.find((item) => 'threadId' in item.target && item.target.threadId === 'empty')!;
+
+    expect(session).toMatchObject({ integrationState: 'ready', capabilities: { prompt: true } });
+
+    await adapters.resolve(session.target).sendPrompt(monitor.binding(session.id)!, 'First message');
+
+    const methods = rpc.request.mock.calls.map(([method]) => method);
+
+    expect(methods.lastIndexOf('thread/resume')).toBeGreaterThan(methods.indexOf('turn/start'));
+  } finally {
+    await manager.close();
+    permissions.close();
+    store.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});

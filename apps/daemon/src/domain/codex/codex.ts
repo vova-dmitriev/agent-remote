@@ -23,6 +23,9 @@ export const CodexRolloutType = { EventMessage: 'event_msg' } as const;
 
 export const CodexEventType = { TokenCount: 'token_count' } as const;
 
+/** JSON-RPC's invalid-request code: Codex answers it to resuming a thread that has no rollout yet. */
+export const JSON_RPC_INVALID_REQUEST = -32600;
+
 /** Codex's shell tool, as its hooks name it; the command line is its `cmd`. */
 export const CodexShellTool = 'exec_command';
 

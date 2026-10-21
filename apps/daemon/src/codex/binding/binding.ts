@@ -9,6 +9,7 @@ import {
   CodexTurnStatus,
   CodexActiveFlag,
   CodexContentType,
+  JSON_RPC_INVALID_REQUEST,
 } from '../../domain/codex/codex.js';
 import {
   AttachmentMode,
@@ -41,6 +42,8 @@ import { type PermissionBroker } from '../../commands/permission-broker.js';
 import type { MonitorPort } from '../../domain/ports/monitor.js';
 import type { CodexBindingOptions, CodexClient, RpcFrame } from '../../domain/codex/client.js';
 import { codexTurnError } from '../errors.js';
+import { logDebug } from '../../diagnostics/log.js';
+import { CodexRpcError } from '../rpc/rpc-client.js';
 import { CodexModelReader } from '../history/model-reader.js';
 import { type UserInputBroker } from '../../commands/user-input-broker.js';
 import { CodexSubagents } from './subagents.js';
@@ -124,6 +127,8 @@ export async function bindCodex(options: CodexBindingOptions, deps: Dependencies
     closed = false;
 
   let lifecycleRevision = 0;
+  /** Bound without resuming (no rollout yet), so this connection does not receive the thread's items. */
+  let unfollowed = false;
   let activityRevision = 0;
   let modelRevision = 0;
   const completedTurns = new Set<string>();
@@ -549,6 +554,18 @@ export async function bindCodex(options: CodexBindingOptions, deps: Dependencies
             throw new CodedError(ErrorCode.UNKNOWN_AFTER_WRITE);
           }
 
+          // The first turn wrote the thread's rollout: follow the thread now.
+          if (unfollowed) {
+            await rpc
+              .request(CodexMethod.ThreadResume, { threadId: options.threadId, excludeTurns: true })
+              .then(
+                () => {
+                  unfollowed = false;
+                },
+                (error: unknown) => logDebug('codex/binding', error),
+              );
+          }
+
           if (
             ![CodexTurnStatus.Completed, CodexTurnStatus.Failed, CodexTurnStatus.Interrupted].some(
               (candidateValue) => candidateValue === String(turn.status),
@@ -615,11 +632,23 @@ export async function bindCodex(options: CodexBindingOptions, deps: Dependencies
     const initialModel = await modelReader?.read();
     const resumeRevision = lifecycleRevision;
 
-    const resumeResponse = options.started
-      ? { thread: metadata, model: metadata.model }
-      : object(
+    let resumeResponse: Record<string, unknown> = { thread: metadata, model: metadata.model };
+
+    if (!options.started) {
+      try {
+        resumeResponse = object(
           await rpc.request(CodexMethod.ThreadResume, { threadId: options.threadId, excludeTurns: true }),
         );
+      } catch (error) {
+        // A loaded thread with no turn yet has no rollout to resume (after a restart, say): it is bound unfollowed
+        // and followed once its first turn writes one.
+        if (!(error instanceof CodexRpcError) || error.rpcCode !== JSON_RPC_INVALID_REQUEST) {
+          throw error;
+        }
+
+        unfollowed = true;
+      }
+    }
 
     const resumed = object(resumeResponse.thread);
 
@@ -749,14 +778,15 @@ export async function bindCodex(options: CodexBindingOptions, deps: Dependencies
     } catch {
       const historyRevision = lifecycleRevision;
 
-      // A thread this connection just started has no turns yet, and Codex cannot read turns without a rollout.
-      const history = options.started
-        ? { id: options.threadId, turns: [] }
-        : object(
-            object(
-              await rpc.request(CodexMethod.ThreadRead, { threadId: options.threadId, includeTurns: true }),
-            ).thread,
-          );
+      // A thread with no turn yet has no turns to read, and Codex cannot read turns without a rollout.
+      const history =
+        options.started || unfollowed
+          ? { id: options.threadId, turns: [] }
+          : object(
+              object(
+                await rpc.request(CodexMethod.ThreadRead, { threadId: options.threadId, includeTurns: true }),
+              ).thread,
+            );
 
       if (history.id !== options.threadId) {
         throw new CodedError(DaemonErrorCode.CODEX_THREAD_MISMATCH);
