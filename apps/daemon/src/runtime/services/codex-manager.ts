@@ -47,6 +47,8 @@ interface Connection {
   selection: CodexConnection;
   discover: boolean;
   requested: Set<string>;
+  /** Threads this connection started: it follows them without resuming. */
+  started: Set<string>;
   rpc?: CodexClient;
   ipc?: DesktopIpcClient;
   bindings: Map<string, CodexBinding>;
@@ -234,6 +236,7 @@ export class CodexManager {
       }
 
       entry.requested.add(threadId);
+      entry.started.add(threadId);
 
       try {
         await this.refresh(entry);
@@ -329,6 +332,7 @@ export class CodexManager {
       selection,
       discover: !selection.threadId,
       requested: new Set(selection.threadId ? [selection.threadId] : []),
+      started: new Set(),
       bindings: new Map(),
       clients: new Map(),
       executionLeases: new Map(),
@@ -486,7 +490,10 @@ export class CodexManager {
           continue;
         }
 
-        const bound = await bindCodex(thread, { ...this.deps, rpc: client });
+        const bound = await bindCodex(
+          { ...thread, ...(entry.started.has(id) && !entry.ipc ? { started: true } : {}) },
+          { ...this.deps, rpc: client },
+        );
 
         entry.bindings.set(id, bound);
       } catch {

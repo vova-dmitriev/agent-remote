@@ -615,9 +615,11 @@ export async function bindCodex(options: CodexBindingOptions, deps: Dependencies
     const initialModel = await modelReader?.read();
     const resumeRevision = lifecycleRevision;
 
-    const resumeResponse = object(
-      await rpc.request(CodexMethod.ThreadResume, { threadId: options.threadId, excludeTurns: true }),
-    );
+    const resumeResponse = options.started
+      ? { thread: metadata, model: metadata.model }
+      : object(
+          await rpc.request(CodexMethod.ThreadResume, { threadId: options.threadId, excludeTurns: true }),
+        );
 
     const resumed = object(resumeResponse.thread);
 
@@ -747,10 +749,14 @@ export async function bindCodex(options: CodexBindingOptions, deps: Dependencies
     } catch {
       const historyRevision = lifecycleRevision;
 
-      const history = object(
-        object(await rpc.request(CodexMethod.ThreadRead, { threadId: options.threadId, includeTurns: true }))
-          .thread,
-      );
+      // A thread this connection just started has no turns yet, and Codex cannot read turns without a rollout.
+      const history = options.started
+        ? { id: options.threadId, turns: [] }
+        : object(
+            object(
+              await rpc.request(CodexMethod.ThreadRead, { threadId: options.threadId, includeTurns: true }),
+            ).thread,
+          );
 
       if (history.id !== options.threadId) {
         throw new CodedError(DaemonErrorCode.CODEX_THREAD_MISMATCH);

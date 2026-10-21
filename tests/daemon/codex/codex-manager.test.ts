@@ -10,10 +10,18 @@ import { Monitor } from '@daemon/monitor/monitor.js';
 import { AdapterRegistry } from '@daemon/adapters/registry.js';
 import { PermissionBroker } from '@daemon/commands/permission-broker.js';
 import { registerNativeAdapter } from '@daemon/runtime/wiring/native-adapter.js';
+import { CodexRpcError } from '@daemon/codex/rpc/rpc-client.js';
 
 const connectSocket = vi.hoisted(() => vi.fn());
 
 vi.mock('@daemon/codex/rpc/transport.js', () => ({ connectCodexSocket: connectSocket }));
+
+const managedSocket = vi.hoisted(() => vi.fn());
+
+vi.mock('@daemon/codex/launcher.js', async (original) => ({
+  ...(await original<object>()),
+  ensureManagedCodexSocket: managedSocket,
+}));
 
 it('accepts local Codex selection and rejects network endpoints and remote process injection', () => {
   expect(
@@ -208,6 +216,77 @@ it('binds a Codex thread while the device has room, though twelve other sessions
         .snapshot()
         .sessions.find((session) => 'threadId' in session.target && session.target.threadId === 'loaded'),
     ).toMatchObject({ integrationState: 'ready' });
+  } finally {
+    await manager.close();
+    permissions.close();
+    store.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+it('binds a thread it just created, which Codex cannot resume before its first message', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'codex-fresh-test-'));
+  const endpoint = join(directory, 'codex/app-server.sock');
+  let started = false;
+
+  const fresh = {
+    id: 'fresh',
+    cwd: '/synthetic/project',
+    canAcceptDirectInput: true,
+    status: { type: 'idle' },
+    turns: [],
+  };
+
+  const rpc = Object.assign(new EventEmitter(), {
+    request: vi.fn(async (method: string, params: unknown) => {
+      if (method === 'thread/start') {
+        started = true;
+
+        return { thread: fresh };
+      }
+
+      if (method === 'thread/loaded/list') {
+        return { data: started ? ['fresh'] : [] };
+      }
+
+      if (method === 'thread/read' && !(params as { includeTurns?: boolean }).includeTurns) {
+        return { thread: fresh };
+      }
+
+      // Codex writes a thread's rollout with its first turn: an empty thread cannot be resumed or have its turns read.
+      if (method === 'thread/resume' || method === 'thread/read') {
+        throw new CodexRpcError(-32600);
+      }
+
+      return { data: [], nextCursor: null };
+    }),
+    respond() {},
+    async close() {},
+  });
+
+  connectSocket.mockImplementation(async () => rpc);
+  managedSocket.mockResolvedValue(endpoint);
+
+  const store = new LocalStore(':memory:', 'device'),
+    adapters = new AdapterRegistry('device'),
+    permissions = new PermissionBroker();
+
+  const monitor = new Monitor({ deviceId: 'device', store, adapters, permissions });
+
+  const manager = new CodexManager({
+    stateDirectory: directory,
+    codexHome: directory,
+    monitor,
+    adapters,
+    permissions,
+    inputEnabled: true,
+    permissionsEnabled: false,
+  } as unknown as ConstructorParameters<typeof CodexManager>[0]);
+
+  try {
+    const sessionId = await manager.createSession('/synthetic/project');
+
+    expect(monitor.session(sessionId)).toMatchObject({ integrationState: 'ready' });
   } finally {
     await manager.close();
     permissions.close();

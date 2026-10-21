@@ -21,4 +21,9 @@ export interface CodexBindingOptions {
   kind: typeof TargetKind.CodexCli | typeof TargetKind.CodexDesktop;
   threadId: string;
   endpoint: string;
+  /**
+   * This connection just started the thread, so it already follows it. Codex writes a thread's rollout with its
+   * first turn, and resuming an empty thread fails ("no rollout found"), so a started thread is not resumed.
+   */
+  started?: boolean;
 }
