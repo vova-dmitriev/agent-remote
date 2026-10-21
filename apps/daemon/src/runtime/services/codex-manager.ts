@@ -132,6 +132,12 @@ export class CodexManager {
         throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
       }
 
+      // The device's one session limit, checked before any Codex process starts.
+      if (!this.deps.monitor.canCreateSession()) {
+        launch?.executionLease.releaseBeforeLaunch();
+        throw new CodedError(ErrorCode.SESSION_QUOTA);
+      }
+
       const socketPath = launch
         ? await startProfiledCodexRuntime(launch, {
             ...(this.deps.codexExecutable ? { executable: this.deps.codexExecutable } : {}),
@@ -182,18 +188,6 @@ export class CodexManager {
         }
 
         launch.assertCurrent();
-      }
-
-      if (
-        this.deps.monitor
-          .snapshot()
-          .sessions.filter(
-            (session) =>
-              session.status !== SessionStatus.Ended &&
-              session.integrationState !== IntegrationState.Disconnected,
-          ).length >= 10
-      ) {
-        throw new CodedError(ErrorCode.SESSION_QUOTA);
       }
 
       let threadId: string;

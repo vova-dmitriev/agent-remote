@@ -9,6 +9,7 @@ import { LocalStore } from '@daemon/monitor/store.js';
 import { Monitor } from '@daemon/monitor/monitor.js';
 import { AdapterRegistry } from '@daemon/adapters/registry.js';
 import { PermissionBroker } from '@daemon/commands/permission-broker.js';
+import { registerNativeAdapter } from '@daemon/runtime/wiring/native-adapter.js';
 
 const connectSocket = vi.hoisted(() => vi.fn());
 
@@ -110,6 +111,46 @@ it('shares auto-discovered endpoints with concurrent explicit selections without
     await manager.close();
     permissions.close();
     store.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+it('creates a Codex thread while the device has room, under the same limit as every other session', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'codex-quota-test-'));
+
+  const store = new LocalStore(':memory:', 'device'),
+    adapters = new AdapterRegistry('device'),
+    permissions = new PermissionBroker();
+
+  registerNativeAdapter(adapters, false);
+
+  const monitor = new Monitor({ deviceId: 'device', store, adapters, permissions });
+
+  // Twelve working sessions used to be over Codex's own limit of ten.
+  for (let index = 0; index < 12; index++) {
+    monitor.ingestHook({ hook_event_name: 'SessionStart', session_id: 'active-' + index }, 'native');
+    monitor.ingestHook({ hook_event_name: 'UserPromptSubmit', session_id: 'active-' + index }, 'native');
+  }
+
+  expect(monitor.canCreateSession()).toBe(true);
+
+  const manager = new CodexManager({
+    stateDirectory: directory,
+    codexHome: directory,
+    monitor,
+    adapters,
+    permissions,
+    inputEnabled: true,
+    permissionsEnabled: false,
+  } as unknown as ConstructorParameters<typeof CodexManager>[0]);
+
+  vi.spyOn(monitor, 'canCreateSession').mockReturnValue(false);
+
+  try {
+    await expect(manager.createSession('/synthetic/project')).rejects.toThrow('SESSION_QUOTA');
+    expect(connectSocket).not.toHaveBeenCalled();
+  } finally {
+    await manager.close();
     await rm(directory, { recursive: true, force: true });
   }
 });
