@@ -15,6 +15,11 @@ function unicodePrefix(value: string, limit: number): string {
   return value.slice(0, end >= 0xd800 && end <= 0xdbff ? limit - 1 : limit);
 }
 
+/** A command line for a ❗ message: escaped, at most 500 characters. */
+export function notificationCommand(value: string): string {
+  return escapeHtml(value.length > 500 ? unicodePrefix(value, 499) + '…' : value);
+}
+
 export function notificationTitle(value: string): string {
   const title = value.replace(/\s+/g, ' ').trim();
 

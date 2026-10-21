@@ -2,6 +2,7 @@ import { EventType, MessageRole } from '@protocol';
 import { and, asc, desc, eq, inArray, isNotNull, isNull, lte, or, sql } from 'drizzle-orm';
 import type { PoolClient } from 'pg';
 import { ormOn, type Database } from '../../db/database.js';
+import { TelegramActionRepository } from './telegram-actions.js';
 import {
   botState,
   devices,
@@ -53,7 +54,12 @@ const deliverable = and(
 
 /** The Telegram outbox, its recipients and the bot's update offset. */
 export class NotificationRepository {
-  constructor(private readonly db: Database) {}
+  /** Answer buttons of ❗ rule stops. */
+  readonly actions: TelegramActionRepository;
+
+  constructor(private readonly db: Database) {
+    this.actions = new TelegramActionRepository(db);
+  }
 
   transaction<T>(operation: (tx: PoolClient) => Promise<T>) {
     return this.db.transaction(operation);

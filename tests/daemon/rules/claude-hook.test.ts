@@ -84,7 +84,12 @@ it('stops a matching command in a bypass session, asks once and allows always on
   expect(published).toEqual([
     {
       type: EventType.Permission,
-      payload: expect.objectContaining({ command: 'psql -c "DROP TABLE users"', rule: pending!.rule }),
+      payload: expect.objectContaining({
+        command: 'psql -c "DROP TABLE users"',
+        rule: pending!.rule,
+        requestId: pending!.requestId,
+        generation: 'g1',
+      }),
     },
   ]);
 

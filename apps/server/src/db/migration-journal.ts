@@ -11,6 +11,7 @@ export const MigrationVersion = {
   ProfileRouting: '007_profile_routing',
   CommandAuditCreatedAt: '008_command_audit_created_at',
   NotificationPayload: '009_notification_payload',
+  TelegramActions: '010_telegram_actions',
 } as const;
 export type MigrationVersion = (typeof MigrationVersion)[keyof typeof MigrationVersion];
 export const MigrationError = {
@@ -37,6 +38,7 @@ const legacyTables: Record<MigrationVersion, readonly string[]> = {
   [MigrationVersion.ProfileRouting]: ['profile_routing_settings', 'profile_quota_observations'],
   [MigrationVersion.CommandAuditCreatedAt]: [],
   [MigrationVersion.NotificationPayload]: [],
+  [MigrationVersion.TelegramActions]: [],
 };
 
 const digest = (sql: string) => createHash('sha256').update(sql).digest('hex');

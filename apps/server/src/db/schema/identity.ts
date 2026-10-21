@@ -10,6 +10,19 @@ export const users = pgTable('users', {
   notificationsEnabled: boolean('notifications_enabled').notNull().default(true),
 });
 
+/** A Telegram answer button's short token: which owner may press it and which request it answers. */
+export const telegramActions = pgTable('telegram_actions', {
+  token: text('token').primaryKey(),
+  ownerId: text('owner_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  deviceId: text('device_id').notNull(),
+  sessionId: text('session_id').notNull(),
+  requestId: text('request_id').notNull(),
+  generation: text('generation').notNull(),
+  expiresAt: epoch('expires_at').notNull(),
+});
+
 export const browserSessions = pgTable(
   'browser_sessions',
   {

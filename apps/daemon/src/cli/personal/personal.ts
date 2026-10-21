@@ -205,6 +205,7 @@ export async function startPersonal(root = installationRoot()) {
       tunnel.origin,
       fetch,
       relay.messaging?.queue,
+      relay.command,
     );
 
     await worker.start();

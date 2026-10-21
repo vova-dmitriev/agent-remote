@@ -41,6 +41,7 @@ export class Database {
         [MigrationVersion.ProfileRouting, '007_profile_routing.sql'],
         [MigrationVersion.CommandAuditCreatedAt, '008_command_audit_created_at.sql'],
         [MigrationVersion.NotificationPayload, '009_notification_payload.sql'],
+        [MigrationVersion.TelegramActions, '010_telegram_actions.sql'],
       ].map(async ([version, file]) => ({
         version: version as MigrationVersion,
         sql: await readFile(new URL(`./migrations/${file}`, import.meta.url), 'utf8'),

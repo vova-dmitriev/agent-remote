@@ -1,4 +1,4 @@
-import { Language } from '@protocol';
+import { Language, ReadyRule, RemotePermissionDecision } from '@protocol';
 
 /** Everything the Telegram bot says, per language. `title` is a ready " · Title" suffix or empty. */
 export interface NotificationCopy {
@@ -20,6 +20,15 @@ export interface NotificationCopy {
   limitWindow: (minutes: number) => string;
   /** A span of time to the minute: "3 h 52 min", "2 d 4 h". */
   duration: (milliseconds: number) => string;
+  /** `rule` and `title` are already escaped; `command` is HTML. */
+  rulePermission: (agent: string, rule: string, title: string, command: string) => string;
+  readyRules: Record<ReadyRule, string>;
+  allowOnce: string;
+  allowAlways: string;
+  deny: string;
+  /** The toast a pressed answer button shows. */
+  decided: Record<RemotePermissionDecision, string>;
+  decisionClosed: string;
 }
 
 const MINUTES_PER_DAY = 1440;
@@ -75,6 +84,24 @@ export const NOTIFICATION_COPY: Record<Language, NotificationCopy> = {
         (count) => `${count}-day`,
       ),
     duration: (milliseconds) => span(milliseconds, 'd', 'h', 'min'),
+    rulePermission: (agent, rule, title, command) =>
+      `❗ ${agent} wants to run a command your rule «${rule}» covers${title}\n\n<code>${command}</code>`,
+    readyRules: {
+      [ReadyRule.Database]: 'Suspicious database queries',
+      [ReadyRule.RemoveOutsideProject]: 'rm -rf outside the project',
+      [ReadyRule.ForcePush]: 'git push --force',
+      [ReadyRule.DeployMigrations]: 'Deploys and migrations',
+      [ReadyRule.Secrets]: 'Changes to .env and secrets',
+    },
+    allowOnce: 'Allow once',
+    allowAlways: 'Always allow',
+    deny: 'Deny',
+    decided: {
+      [RemotePermissionDecision.Allow]: 'Allowed once.',
+      [RemotePermissionDecision.AllowAlways]: 'Allowed; this command will not ask again.',
+      [RemotePermissionDecision.Deny]: 'Denied.',
+    },
+    decisionClosed: 'This request is not yours or is already closed.',
   },
   [Language.Ru]: {
     deviceUnavailable: 'Mac недоступен.',
@@ -102,6 +129,24 @@ export const NOTIFICATION_COPY: Record<Language, NotificationCopy> = {
         (count) => `${count} дн.`,
       ),
     duration: (milliseconds) => span(milliseconds, 'дн.', 'ч', 'мин'),
+    rulePermission: (agent, rule, title, command) =>
+      `❗ ${agent} хочет выполнить команду по правилу «${rule}»${title}\n\n<code>${command}</code>`,
+    readyRules: {
+      [ReadyRule.Database]: 'Опасные запросы к БД',
+      [ReadyRule.RemoveOutsideProject]: 'rm -rf вне проекта',
+      [ReadyRule.ForcePush]: 'git push --force',
+      [ReadyRule.DeployMigrations]: 'Деплой и миграции',
+      [ReadyRule.Secrets]: 'Изменение .env и секретов',
+    },
+    allowOnce: 'Разрешить один раз',
+    allowAlways: 'Разрешать всегда',
+    deny: 'Отказать',
+    decided: {
+      [RemotePermissionDecision.Allow]: 'Разрешено один раз.',
+      [RemotePermissionDecision.AllowAlways]: 'Разрешено; эта команда больше не будет спрашивать.',
+      [RemotePermissionDecision.Deny]: 'Отказано.',
+    },
+    decisionClosed: 'Этот запрос не ваш или уже закрыт.',
   },
 };
 

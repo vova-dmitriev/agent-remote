@@ -42,7 +42,14 @@ async function main() {
     staticDirectory: resolve('dist/mini-app'),
   });
 
-  const worker = new NotificationWorker(relay.db, botToken, origin.origin, fetch, relay.messaging?.queue);
+  const worker = new NotificationWorker(
+    relay.db,
+    botToken,
+    origin.origin,
+    fetch,
+    relay.messaging?.queue,
+    relay.command,
+  );
 
   try {
     await worker.start();

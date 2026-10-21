@@ -3,6 +3,10 @@ import { NotificationDelivery } from './delivery.js';
 import { NotificationRepository } from './repositories/notifications.js';
 import { type NotificationQueue } from './queue.js';
 import { randomUUID } from 'node:crypto';
+import { CommandActionType, clientCommandSchema, type ClientCommand } from '@protocol';
+import type { Principal } from '../auth/security.js';
+import { pressedButton } from './actions/rule-permission.js';
+import { notificationCopy } from './copy/messages.js';
 import { DeviceRepository } from '../devices/repositories/devices.js';
 import { PairingRepository } from '../devices/repositories/pairings.js';
 import { DeviceService } from '../devices/service.js';
@@ -21,7 +25,16 @@ interface TelegramResult<T> {
 interface Update {
   update_id: number;
   message?: { text?: string; from?: { id: number }; chat?: { id: number; type: string } };
+  callback_query?: {
+    id: string;
+    from: { id: number };
+    data?: string;
+    message?: { message_id: number; chat: { id: number } };
+  };
 }
+
+/** Sends a client command as its owner: the same path the app's answers take. */
+export type OwnerCommand = (principal: Principal, command: ClientCommand) => Promise<unknown>;
 const WORKER_CONTEXT = 'NotificationWorker';
 
 export class NotificationWorker {
@@ -39,6 +52,8 @@ export class NotificationWorker {
     private appUrl: string,
     private fetcher: typeof fetch = fetch,
     private broker?: NotificationQueue,
+    /** Answers ❗ rule stops pressed in Telegram; without it the buttons answer that the request is closed. */
+    private command?: OwnerCommand,
   ) {
     this.outbox = new NotificationRepository(db);
     this.devices = new DeviceService(new DeviceRepository(db), new PairingRepository(db));
@@ -60,8 +75,54 @@ export class NotificationWorker {
 
     return response.json() as Promise<TelegramResult<T>>;
   }
+  /** A pressed answer button: only its owner's press of an open request reaches the device, once. */
+  private async press(query: NonNullable<Update['callback_query']>) {
+    const pressed = pressedButton(query.data);
+    const telegramId = String(query.from.id);
+
+    const action =
+      pressed && this.command
+        ? await this.outbox.actions.take(telegramId, pressed.token, Date.now())
+        : undefined;
+
+    const copy = notificationCopy(await this.outbox.actions.language(telegramId));
+
+    if (action && pressed && this.command) {
+      await this.command(
+        { userId: action.ownerId, telegramId },
+        clientCommandSchema.parse({
+          commandId: randomUUID(),
+          target: action.target,
+          sessionId: action.sessionId,
+          generation: action.generation,
+          action: {
+            type: CommandActionType.Permission,
+            requestId: action.requestId,
+            decision: pressed.decision,
+          },
+        }),
+      );
+
+      if (query.message) {
+        await this.api('editMessageReplyMarkup', {
+          chat_id: query.message.chat.id,
+          message_id: query.message.message_id,
+          reply_markup: { inline_keyboard: [] },
+        });
+      }
+    }
+
+    await this.api('answerCallbackQuery', {
+      callback_query_id: query.id,
+      text: action && pressed ? copy.decided[pressed.decision] : copy.decisionClosed,
+    });
+  }
   async updates(updates: Update[]) {
     for (const update of updates) {
+      if (update.callback_query) {
+        await this.press(update.callback_query).catch((error: unknown) => logWarning(WORKER_CONTEXT, error));
+      }
+
       const message = update.message;
 
       if (
@@ -121,7 +182,7 @@ export class NotificationWorker {
           const result = await this.api<Update[]>('getUpdates', {
             offset: Number(offset ?? 0),
             timeout: 25,
-            allowed_updates: [TelegramUpdateType.Message],
+            allowed_updates: [TelegramUpdateType.Message, TelegramUpdateType.CallbackQuery],
             limit: 100,
           });
 

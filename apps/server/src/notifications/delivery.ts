@@ -3,6 +3,7 @@ import { NotificationKind } from '../domain/notifications.js';
 import { notificationContext } from './context.js';
 import { notificationCopy } from './copy/messages.js';
 import { isRateLimitKind, rateLimitText } from './limits/rate-limits.js';
+import { ruleMessage } from './actions/rule-permission.js';
 import { type NotificationRepository } from './repositories/notifications.js';
 
 export interface TelegramSendResult {
@@ -58,6 +59,7 @@ export class NotificationDelivery {
 
       const copy = notificationCopy(row.language);
       let text = copy.deviceUnavailable;
+      const rule = row.kind === EventType.Permission ? await ruleMessage(outbox, tx, row, copy) : undefined;
 
       if (row.kind === NotificationKind.PairPending) {
         text = copy.pairPending;
@@ -67,6 +69,8 @@ export class NotificationDelivery {
         text = copy.pairUnavailable;
       } else if (isRateLimitKind(row.kind)) {
         text = rateLimitText(copy, row.kind, row.payload, now) ?? text;
+      } else if (rule) {
+        text = rule.text;
       } else if (
         [EventType.TurnEnd, EventType.Permission].some((candidateValue) => candidateValue === row.kind)
       ) {
@@ -89,6 +93,7 @@ export class NotificationDelivery {
           link_preview_options: { is_disabled: true },
           reply_markup: {
             inline_keyboard: [
+              ...(rule ? [rule.buttons] : []),
               [
                 {
                   text:

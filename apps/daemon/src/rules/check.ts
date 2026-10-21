@@ -72,9 +72,10 @@ export class RuleGuard {
   /** Asks the owner; an allow-always is remembered on the rule's scope before it is returned. */
   async ask(stop: RuleStop, hook: Pick<HookEnvelope, 'tool_name' | 'tool_input'>, session: Session) {
     const rule = { id: stop.rule.id, name: stop.rule.name, scope: stop.scope.kind };
+    const requestId = randomUUID();
 
     const answer = this.deps.permissions.open({
-      requestId: randomUUID(),
+      requestId,
       sessionId: session.id,
       generation: session.generation,
       toolName: hook.tool_name ?? ClaudeShellTool,
@@ -87,6 +88,9 @@ export class RuleGuard {
       status: session.status,
       rule,
       command: stop.command,
+      // Telegram's answer buttons send the decision for exactly this request.
+      requestId,
+      generation: session.generation,
     });
 
     const decision = await answer;
