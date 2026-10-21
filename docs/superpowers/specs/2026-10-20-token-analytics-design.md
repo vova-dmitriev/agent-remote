@@ -1,4 +1,4 @@
-# Token analytics on the Mac (DuckDB)
+# Token analytics on the Mac (SQLite)
 
 Date: 2026-10-20. Status: draft for the user's approval.
 
@@ -9,11 +9,11 @@ The user runs 20+ Claude Code and Codex sessions at once and cannot see what the
 ## Decisions the user made
 
 - Everything is computed on the Mac; only aggregates leave it ("да, считай всё на mac").
-- Storage is DuckDB ("давай duckdb"), not SQLite, Postgres or ClickHouse.
+- Storage is SQLite through the daemon's existing better-sqlite3 ("давай sqlite", replacing the earlier DuckDB choice): about 48k requests a month need no column store, and DuckDB added a ~118 MB native binary. Not the relay's Postgres: per-request rows would leave the Mac, and analytics would not work without a relay.
 
 ## Goals
 
-1. **Collector.** The daemon reads token usage from the transcripts already on the Mac and keeps it in a DuckDB file:
+1. **Collector.** The daemon reads token usage from the transcripts already on the Mac and keeps it in a SQLite file:
    - Claude Code: every `type: "assistant"` record with `message.usage` in `~/.claude/projects/*/*.jsonl` and subagent transcripts under `<project>/<session-id>/subagents/`. Fields: `input_tokens`, `output_tokens`, `cache_creation_input_tokens`, `cache_read_input_tokens`, `message.model`, record `timestamp`, `sessionId`, `cwd`.
    - Codex: `event_msg` records with `payload.type == "token_count"` in `~/.codex/sessions/YYYY/MM/DD/*.jsonl`, using `payload.info.last_token_usage` (`input_tokens`, `cached_input_tokens`, `cache_write_input_tokens`, `output_tokens`, `reasoning_output_tokens`); model from the latest preceding `turn_context.payload.model`; thread id and cwd from `session_meta`.
 2. **Backfill and live updates.** On first start the collector imports all existing transcripts (measured on the user's Mac: 530 Claude files / 1.2 GB, 100 Codex files / 2.1 GB, ~88k usage records). After that it reads only appended bytes, per file, from a stored offset; a file that shrank or changed identity is re-read from the start.
@@ -33,11 +33,10 @@ The user runs 20+ Claude Code and Codex sessions at once and cannot see what the
 
 ## Constraints and verified facts
 
-- **One DuckDB writer per file.** Verified with `@duckdb/node-api@1.5.6-r.1`: while one process holds `x.duckdb`, a second `DuckDBInstance.create` fails with `IO Error: Could not set lock on file`. The CLI daemon and the desktop companion can run together, so each keeps its own file in its own state directory: `~/.claude-remote/analytics.duckdb` and `<desktop-companion>/analytics.duckdb`. Both read the same transcripts, so both show the same numbers.
+- **One file per daemon.** The CLI daemon and the desktop companion can run together, so each keeps its own file in its own state directory: `~/.claude-remote/analytics.sqlite` and `<desktop-companion>/analytics.sqlite`. Both read the same transcripts, so both show the same numbers.
 - **Claude writes usage twice.** In the largest transcript, 10,873 assistant records carry usage for 5,350 distinct `message.id`s (streamed content blocks repeat the usage). Rows are keyed by `(provider, message id)`; the last record per id wins (its usage is final).
 - **Codex usage is per event.** `last_token_usage` is the increment for that event; `total_token_usage` is cumulative and is not summed. Key: `(thread id, file offset of the record)`.
-- **Package size.** `@duckdb/node-bindings-darwin-arm64` is ~118 MB unpacked (115 MB installed). The desktop app grows by about that much; the native module loads in the plain Node runtime the companion runs on, not in Electron's renderer.
-- **Privacy.** Transcripts are read locally; the DuckDB file stores numbers, model names, cwd, session ids and timestamps only, no message text. The file lives in the 0700 state directory with 0600 permissions. Nothing new goes into version control; tests use synthetic transcripts.
+- **Privacy.** Transcripts are read locally; the SQLite file stores numbers, model names, cwd, session ids and timestamps only, no message text. The file lives in the 0700 state directory with 0600 permissions. Nothing new goes into version control; tests use synthetic transcripts.
 - **Multi-user.** The relay endpoint is scoped to the authenticated owner and the owner's device, like every other device request.
 - Repo rules apply: domain vocabulary in `as const` objects, frontend rules in `apps/mini-app/AGENTS.md`, `npm run check:frontend`, staged validation on commit.
 
@@ -48,7 +47,7 @@ The user runs 20+ Claude Code and Codex sessions at once and cannot see what the
 - `usage` table: `provider`, `record_key` (unique per provider), `session_id` (Claude session id or Codex thread id), `parent_session_id` (for subagents, else null), `model`, `cwd`, `occurred_at` (timestamp), `input_tokens`, `output_tokens`, `cache_read_tokens`, `cache_write_tokens`, `reasoning_tokens`. Upsert on `(provider, record_key)`.
 - `sources` table: `path`, `device` + `inode`, `size`, `offset`, `updated_at`, for incremental reads.
 - `context` table: last turn per session (`session_id`, `model`, `context_tokens`, `context_window`, `occurred_at`).
-- The file is a cache: deleting it triggers a full re-import. A schema version in DuckDB metadata; a version mismatch drops and rebuilds.
+- The file is a cache: deleting it triggers a full re-import. A schema version in the store's `meta` table; a version mismatch drops and rebuilds.
 
 ### Collector
 
@@ -81,7 +80,7 @@ The user runs 20+ Claude Code and Codex sessions at once and cannot see what the
 
 ## Calls I made (the user can override)
 
-1. One DuckDB file per daemon, not one shared file (DuckDB allows one writer process).
+1. One SQLite file per daemon, not one shared file: each daemon writes only its own.
 2. Cost is API-price equivalent, labelled as such; unknown models show tokens only.
 3. The price table is checked into the repo and updated by hand.
 4. Analytics opens from the settings menu as "Usage", not as a new tab in the sidebar.

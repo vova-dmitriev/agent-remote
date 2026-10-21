@@ -17,7 +17,7 @@ import { WebSocket } from 'ws';
 import { MESSAGING } from '../app/relay-config.js';
 import { CommandRepository } from '../commands/repositories/audit.js';
 import { ContinuityProxy } from '../continuity/proxy.js';
-import { SessionFiles } from '../sessions/files.js';
+import { DeviceRequests } from '../sessions/device-requests.js';
 import { ContinuityService } from '../continuity/service.js';
 import { DeviceState } from '../devices/device-state.js';
 import { DeviceFence } from '../devices/fence.js';
@@ -55,7 +55,7 @@ export class DeviceSocket {
     @Inject(SourceHistory) private readonly sourceHistory: SourceHistory,
     @Inject(ProfileProxy) private readonly profileProxy: ProfileProxy,
     @Inject(ContinuityProxy) private readonly continuityProxy: ContinuityProxy,
-    @Inject(SessionFiles) private readonly files: SessionFiles,
+    @Inject(DeviceRequests) private readonly requests: DeviceRequests,
   ) {}
 
   readonly connect = (socket: WebSocket) => {
@@ -73,7 +73,7 @@ export class DeviceSocket {
       sourceHistory,
       profileProxy,
       continuityProxy,
-      files,
+      requests,
     } = this;
 
     const { live, send, fanout } = hub;
@@ -140,7 +140,7 @@ export class DeviceSocket {
               if (previous) {
                 profileProxy.disconnect(previous);
                 continuityProxy.disconnect(previous);
-                files.disconnect(previous);
+                requests.disconnect(previous);
               }
 
               previous?.socket.close(SocketCloseCode.Replaced, SocketCloseReason.Replaced);
@@ -169,8 +169,8 @@ export class DeviceSocket {
             return;
           }
 
-          if (frame.type === FrameType.FileResult) {
-            files.accept(connection, frame);
+          if (frame.type === FrameType.FileResult || frame.type === FrameType.AnalyticsResult) {
+            requests.accept(connection, frame);
 
             return;
           }
@@ -370,7 +370,7 @@ export class DeviceSocket {
       clearTimeout(timeout);
 
       if (connection) {
-        files.disconnect(connection);
+        requests.disconnect(connection);
 
         void offline(connection).catch((error: unknown) =>
           logWarning(DEVICE_SOCKET_CONTEXT, error, ServerErrorCode.DEVICE_OFFLINE_FAILED),

@@ -5,6 +5,7 @@ import { SessionNames } from './sessions/session-names.js';
 import { CodexManager } from './runtime/services/codex-manager.js';
 import { BridgeClient } from './desktop/bridge-client.js';
 import { join } from 'node:path';
+import { homedir } from 'node:os';
 import { mkdir } from 'node:fs/promises';
 import { LocalStore } from './monitor/store.js';
 import { Monitor } from './monitor/monitor.js';
@@ -30,6 +31,7 @@ import { saveRelayStatus } from './diagnostics/relay-status.js';
 import { runtimeConfiguration } from './local/bootstrap/configuration.js';
 import { openLocalServices } from './runtime/services/local-services.js';
 import { NoRelay } from './local/bootstrap/no-relay.js';
+import { startAnalytics } from './analytics/live.js';
 
 export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {}) {
   const config = await runtimeConfiguration(stateDirectory()),
@@ -108,6 +110,14 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
 
   const names = new SessionNames({ monitor, adapters, readers, codex: () => codex });
 
+  const analytics = startAnalytics(monitor, {
+    path: join(stateDirectory(), 'analytics.sqlite'),
+    claudeHomes: [claudeConfigDirectory()],
+    codexHomes: [process.env.CODEX_HOME ?? join(homedir(), '.codex')],
+    // Claude Code keeps `.claude.json` in its config directory when one is set, else in the home directory.
+    claudeStates: [join(process.env.CLAUDE_CONFIG_DIR ?? homedir(), '.claude.json')],
+  });
+
   const hookServer = await startHookWiring({
     path: socketPath(),
     token,
@@ -136,8 +146,10 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
     dispatcher: localDispatcher,
     readers,
     names,
+    analytics,
   }).catch(async (error: unknown) => {
     await hookServer.close();
+    await analytics?.close();
     throw error;
   });
 
@@ -162,6 +174,7 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
     inputEnabled,
     nativeProcesses,
     names,
+    analytics,
   });
 
   sourcePoller.start();
@@ -196,6 +209,7 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
     await codex.close();
     await attachments.close();
     await adapters.close();
+    await analytics?.close();
     store.close();
     localServices.database.close();
     await saveRelayStatus(stateDirectory(), null).catch((error: unknown) => logWarning('main', error));

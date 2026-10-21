@@ -75,7 +75,7 @@ it('accepts a report and a session usage with unpriced cost', () => {
       byProject: [row],
       bySession: [{ ...row, provider: UsageProvider.Claude, lastAt: 1 }],
       daily: [{ day: '2026-10-21', tokens, costUsd: null }],
-      rateLimits: null,
+      rateLimits: [],
     }).byModel,
   ).toEqual([row]);
 });

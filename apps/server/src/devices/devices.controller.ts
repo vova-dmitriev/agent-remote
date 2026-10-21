@@ -1,12 +1,22 @@
 import { Controller, Delete, Get, Inject, Param, Query, UseGuards } from '@nestjs/common';
-import { DeviceStatus, FrameType, SocketCloseCode, SocketCloseReason } from '@protocol';
+import {
+  analyticsQuerySchema,
+  DeviceStatus,
+  ErrorCode,
+  FrameType,
+  RelayProtocolFeature,
+  SocketCloseCode,
+  SocketCloseReason,
+} from '@protocol';
 import { z } from 'zod';
 import type { Principal } from '../auth/security.js';
 import { ContinuityProxy } from '../continuity/proxy.js';
 import { CurrentPrincipal } from '../http/auth/current-principal.js';
 import { PrincipalGuard } from '../http/auth/principal.guard.js';
+import { Fault } from '../http/errors/fault.js';
 import { ProfileProxy } from '../profiles/transport/proxy.js';
 import { RelayHub } from '../realtime/relay-hub.js';
+import { DeviceRequests } from '../sessions/device-requests.js';
 import { DeviceState } from './device-state.js';
 import { DeviceFence } from './fence.js';
 import { DeviceService } from './service.js';
@@ -24,6 +34,7 @@ export class DevicesController {
     @Inject(RelayHub) private readonly hub: RelayHub,
     @Inject(ProfileProxy) private readonly profileProxy: ProfileProxy,
     @Inject(ContinuityProxy) private readonly continuityProxy: ContinuityProxy,
+    @Inject(DeviceRequests) private readonly requests: DeviceRequests,
   ) {}
 
   @Get()
@@ -61,6 +72,26 @@ export class DevicesController {
   @Get(':id/connectors')
   async connectors(@CurrentPrincipal() p: Principal, @Param('id') id: string) {
     return (await this.devices.owned(p, id)).connectors;
+  }
+
+  /** The device's token usage, computed on the Mac; an offline device, or one too old to keep it, cannot answer. */
+  @Get(':id/analytics')
+  async analytics(@CurrentPrincipal() p: Principal, @Param('id') id: string, @Query() query: unknown) {
+    const { period } = analyticsQuerySchema.parse(query);
+
+    await this.devices.owned(p, id);
+
+    const connection = this.hub.live.get(id);
+
+    if (!connection || connection.device.owner_id !== p.userId) {
+      throw new Fault(ErrorCode.DEVICE_OFFLINE);
+    }
+
+    if (connection.protocolVersion < RelayProtocolFeature.Analytics) {
+      throw new Fault(ErrorCode.CAPABILITY_UNAVAILABLE);
+    }
+
+    return this.requests.analytics(connection, period);
   }
 
   @Get(':id/events')

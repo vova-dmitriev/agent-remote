@@ -7,6 +7,7 @@ import { RelayFrameRouter } from '../relay-frame-router.js';
 import { RelayLink, type RelayLinkDeps } from '../relay-link.js';
 import { SourcePoller, type DesktopBindingEntry } from '../source-poller.js';
 import type { SessionNamesPort } from '../../domain/ports/session-names.js';
+import type { AnalyticsPort } from '../../analytics/collector.js';
 
 type RelayRuntimeDeps = RelayLinkDeps & {
   desktopBridge: BridgeClient;
@@ -14,6 +15,7 @@ type RelayRuntimeDeps = RelayLinkDeps & {
   inputEnabled: boolean;
   nativeProcesses: NativeProcesses;
   names: SessionNamesPort;
+  analytics?: AnalyticsPort | undefined;
 };
 
 /** Builds the relay link, frame router and pollers; the caller starts the pollers and connects the relay. */
@@ -30,6 +32,7 @@ export function createRelayRuntime(deps: RelayRuntimeDeps) {
     adapters,
     dispatcher,
     names: deps.names,
+    analytics: deps.analytics,
   });
 
   relay.on(RuntimeEvent.Frame, (frame: ServerFrame) => void router.route(frame));

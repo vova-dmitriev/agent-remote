@@ -55,3 +55,9 @@ export const ClaudeRestartArgument = {
   Fork: '--fork-session',
 } as const;
 export type ClaudeRestartArgument = (typeof ClaudeRestartArgument)[keyof typeof ClaudeRestartArgument];
+
+/** Plan windows Claude Code caches in `.claude.json` (`cachedUsageUtilization.utilization`), with their length. */
+export const ClaudeUsageWindowMinutes = {
+  five_hour: 300,
+  seven_day: 10_080,
+} as const;

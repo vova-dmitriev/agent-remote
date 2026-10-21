@@ -5,6 +5,18 @@ import { LocalDocumentKind } from '../state/values.js';
 import type { LocalPrincipal } from '../grants/types.js';
 import type { LocalControllerOptions } from './types.js';
 
+/** Operations on the owner's documents, labels, pins, changed files and usage, answered by `documentOperation`. */
+export const DOCUMENT_OPERATIONS: ReadonlySet<LocalOperation> = new Set([
+  LocalOperation.PreferencesGet,
+  LocalOperation.PreferencesSave,
+  LocalOperation.ReadingGet,
+  LocalOperation.ReadingSave,
+  LocalOperation.Rename,
+  LocalOperation.Pin,
+  LocalOperation.File,
+  LocalOperation.Analytics,
+]);
+
 export function documentOperation(
   options: LocalControllerOptions,
   principal: LocalPrincipal,
@@ -73,6 +85,18 @@ export function documentOperation(
       }
 
       return readSessionFile(options.monitor, action.sessionId, action.path);
+
+    // Usage is the device owner's, like the transcripts it is counted from.
+    case LocalOperation.Analytics:
+      if (principal.ownerId !== options.ownerId) {
+        throw new CodedError(ErrorCode.ACCESS_DENIED);
+      }
+
+      if (!options.analytics) {
+        throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
+      }
+
+      return options.analytics.report(action.period);
 
     default:
       throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);

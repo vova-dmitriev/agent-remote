@@ -23,11 +23,19 @@ export const sessionUsageSchema = z.strictObject({
 
 const usageRowSchema = z.strictObject({ key: label, label, tokens: usageTokensSchema, costUsd: cost });
 
-const rateLimitSchema = z.strictObject({
-  usedPercent: z.number().nonnegative().max(100),
+/** One rate-limit window of an agent's plan, as the agent last reported it. */
+export const rateLimitSchema = z.strictObject({
+  provider: z.enum(UsageProvider),
+  /** 300 for Claude's and Codex's five-hour window, 10080 for the weekly one. */
   windowMinutes: count,
+  usedPercent: z.number().nonnegative().max(100),
   resetsAt: time,
+  /** When the agent reported it; an old reading is stale. */
+  observedAt: time,
 });
+
+/** Every window of every agent on the device; Claude and Codex have two each. */
+export const rateLimitsSchema = z.array(rateLimitSchema).max(8);
 
 export const analyticsQuerySchema = z.strictObject({ period: z.enum(AnalyticsPeriod) });
 
@@ -49,13 +57,11 @@ export const analyticsReportSchema = z.strictObject({
       }),
     )
     .max(400),
-  /** The latest Codex rate-limit windows. */
-  rateLimits: z
-    .strictObject({ primary: rateLimitSchema.nullable(), secondary: rateLimitSchema.nullable() })
-    .nullable(),
+  rateLimits: rateLimitsSchema,
 });
 
 export type UsageTokens = z.infer<typeof usageTokensSchema>;
 export type SessionUsage = z.infer<typeof sessionUsageSchema>;
 export type AnalyticsQuery = z.infer<typeof analyticsQuerySchema>;
 export type AnalyticsReport = z.infer<typeof analyticsReportSchema>;
+export type RateLimit = z.infer<typeof rateLimitSchema>;

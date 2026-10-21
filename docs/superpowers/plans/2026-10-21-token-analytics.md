@@ -4,17 +4,17 @@
 
 **Goal:** Token usage, API-equivalent cost, context fill and Codex rate limits, computed on the Mac from transcripts and shown in the desktop and Telegram apps.
 
-**Architecture:** A daemon collector reads Claude and Codex transcripts incrementally into a per-daemon DuckDB file and answers one report query. Per-session usage (tokens, cost, context fill) rides the existing snapshot; the full report travels as a request/response pair (local operation for desktop/extension, relay frames for Telegram), like the changed-file read.
+**Architecture:** A daemon collector reads Claude and Codex transcripts incrementally into a per-daemon SQLite file and answers one report query. Per-session usage (tokens, cost, context fill) rides the existing snapshot; the full report travels as a request/response pair (local operation for desktop/extension, relay frames for Telegram), like the changed-file read.
 
-**Tech Stack:** `@duckdb/node-api@1.5.6-r.1`, TypeScript, zod, NestJS relay, React Mini App (FSD, Tailwind v4), Playwright, Vitest.
+**Tech Stack:** better-sqlite3 (already a daemon dependency), TypeScript, zod, NestJS relay, React Mini App (FSD, Tailwind v4), Playwright, Vitest.
 
 **Spec:** `docs/superpowers/specs/2026-10-20-token-analytics-design.md` (approved: "дальше давай по плану делай все улучшения").
 
 ## Global Constraints
 
-- Everything is computed on the Mac; only aggregates leave it. No message text in DuckDB, frames or the relay.
-- DuckDB allows one writer process per file: `~/.claude-remote/analytics.duckdb` (CLI daemon) and `<desktop-companion>/analytics.duckdb`; file mode 0600 in the 0700 state directory.
-- Claude rows are keyed by `(claude, message.id)`, last record wins; Codex rows by `(codex, thread id + file offset)`, summing `last_token_usage` only.
+- Everything is computed on the Mac; only aggregates leave it. No message text in the store, frames or the relay.
+- One store per daemon: `~/.claude-remote/analytics.sqlite` (CLI daemon) and `<desktop-companion>/analytics.sqlite`; file mode 0600 in the 0700 state directory.
+- Claude rows are keyed by `(claude, message.id)`; the record with the most output wins (a request's records grow as it streams, and a resume copies it into a second transcript). Codex rows are keyed by `(codex, thread, total_token_usage, last_token_usage)`: Codex repeats a token count when only rate limits change and replays them after a rollback, and the first `session_meta` names the file's thread.
 - Cost is labelled "API-equivalent"; a model without a price shows tokens and "—".
 - Repo rules: `as const` vocabulary in `packages/protocol/src/analytics/values.ts`, Drizzle-only server data access, `apps/mini-app/AGENTS.md`, ≤200 lines per file, ≤6 files per directory, `npm run check:frontend`, staged validation on commit, synthetic fixtures only.
 - Relay protocol bump to 6 (`RelayProtocolFeature.Analytics`); release order relay before daemons.
@@ -29,13 +29,9 @@
 
 ---
 
-### Task 1: DuckDB dependency that ships in the desktop runtime
+### Task 1: Storage dependency
 
-**Files:** `package.json`, `pnpm-lock.yaml`, `tests/desktop/desktop-runtime-package.test.ts` (or the existing packaging test).
-
-- [ ] Add `@duckdb/node-api@1.5.6-r.1` to the root dependencies.
-- [ ] Packaging test asserts the runtime manifest lists a DuckDB `.node` addon and that the packaged Node can open `:memory:` and run `SELECT 42`.
-- [ ] `npm run package:desktop` passes; commit.
+Dropped: the store uses better-sqlite3, already a daemon dependency.
 
 ### Task 2: Protocol vocabulary, schemas and prices
 

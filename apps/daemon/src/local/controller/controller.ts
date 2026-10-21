@@ -1,4 +1,4 @@
-import { documentOperation } from './documents.js';
+import { DOCUMENT_OPERATIONS, documentOperation } from './documents.js';
 import { localHistory } from './history.js';
 import { LocalPersistence } from './persistence.js';
 import {
@@ -135,6 +135,10 @@ export class LocalController {
   ): Promise<unknown> {
     const { store } = this.options;
 
+    if (DOCUMENT_OPERATIONS.has(action.operation)) {
+      return documentOperation(this.options, principal, action);
+    }
+
     switch (action.operation) {
       case LocalOperation.Profiles:
         if (
@@ -152,14 +156,6 @@ export class LocalController {
         );
       case LocalOperation.Devices:
         return [{ id: this.options.deviceId, last_seen_at: new Date().toISOString() }];
-      case LocalOperation.PreferencesGet:
-      case LocalOperation.PreferencesSave:
-      case LocalOperation.ReadingGet:
-      case LocalOperation.ReadingSave:
-      case LocalOperation.Rename:
-      case LocalOperation.Pin:
-      case LocalOperation.File:
-        return documentOperation(this.options, principal, action);
       case LocalOperation.History:
         return localHistory(this.options, action);
       case LocalOperation.DraftGet:

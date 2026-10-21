@@ -13,3 +13,6 @@ export const UsageProvider = {
 } as const;
 
 export type UsageProvider = (typeof UsageProvider)[keyof typeof UsageProvider];
+
+/** The key and label of usage whose model or folder the transcript did not name. */
+export const UNKNOWN_USAGE_KEY = 'unknown';

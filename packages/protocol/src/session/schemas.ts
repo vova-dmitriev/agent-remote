@@ -20,7 +20,12 @@ import { AttachmentMode } from '../history/values.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import { z } from 'zod';
 import { sessionChangesSchema, sessionFileQuerySchema, sessionFileSchema } from './file-changes.js';
-import { analyticsQuerySchema, analyticsReportSchema, sessionUsageSchema } from '../analytics/schemas.js';
+import {
+  analyticsQuerySchema,
+  analyticsReportSchema,
+  rateLimitsSchema,
+  sessionUsageSchema,
+} from '../analytics/schemas.js';
 import { sessionActivitySchema, toolActivitySchema } from './activity.js';
 import { historyReadSchema, historyDoneSchema } from '../history/history-window.js';
 import { subagentSchema } from './subagents.js';
@@ -261,6 +266,8 @@ export const snapshotSchema = z.strictObject({
   permissions: z.array(permissionSchema).max(100),
   userInputs: z.array(pendingUserInputSchema).max(100).optional(),
   terminal: terminalSchema.nullable(),
+  /** The plan limits of the device's agents, for the session header. */
+  rateLimits: rateLimitsSchema.optional(),
 });
 export const appFrameSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal(FrameType.Auth), token: id }),

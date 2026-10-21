@@ -8,6 +8,8 @@ import {
   ErrorCode,
   type EventEnvelope,
   type SessionChanges,
+  type SessionUsage,
+  type RateLimit,
   EventType,
   historySchema,
   IntegrationState,
@@ -70,6 +72,7 @@ export class Monitor extends EventEmitter implements MonitorPort {
   private nativeModelRevisions = new Map<string, number>();
   private transcriptModels = new Map<string, { generation: string; model: string | undefined }>();
   private terminal: AppSnapshot['terminal'] = null;
+  private rateLimits: RateLimit[] = [];
   /** Sessions the owner pinned; kept in the store so a pin outlives restarts. */
   private pins: Set<string>;
   selectedId: string | null = null;
@@ -679,6 +682,26 @@ export class Monitor extends EventEmitter implements MonitorPort {
     session.changes = changes;
     this.emit(RuntimeEvent.Snapshot);
   }
+  /** The agents' plan limits, for the session header. */
+  setRateLimits(limits: RateLimit[]) {
+    if (JSON.stringify(this.rateLimits) === JSON.stringify(limits)) {
+      return;
+    }
+
+    this.rateLimits = limits;
+    this.emit(RuntimeEvent.Snapshot);
+  }
+  /** Tokens, cost and context a session used, from the analytics store. */
+  setSessionUsage(id: string, usage: SessionUsage | undefined) {
+    const session = this.sessions.get(id);
+
+    if (!session || !usage || JSON.stringify(session.usage) === JSON.stringify(usage)) {
+      return;
+    }
+
+    session.usage = usage;
+    this.emit(RuntimeEvent.Snapshot);
+  }
   setSubagents(id: string, agents: Session['subagents']) {
     const session = this.sessions.get(id);
     const parsed = sessionSchema.shape.subagents.safeParse(agents);
@@ -825,6 +848,7 @@ export class Monitor extends EventEmitter implements MonitorPort {
         permissions: this.options.permissions.pending(),
         userInputs: this.options.userInputs?.pending() ?? [],
         terminal: this.terminal,
+        ...(this.rateLimits.length ? { rateLimits: this.rateLimits } : {}),
       }),
     );
   }

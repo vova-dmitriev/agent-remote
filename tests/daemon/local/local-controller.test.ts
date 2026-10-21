@@ -1,5 +1,12 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { ErrorCode, LocalOperation, ProfileRequestKind, type AppSnapshot } from '@protocol';
+import {
+  AnalyticsPeriod,
+  ErrorCode,
+  LocalOperation,
+  ProfileRequestKind,
+  type AnalyticsReport,
+  type AppSnapshot,
+} from '@protocol';
 import { localFixture } from '../../helpers/local/local-runtime.js';
 
 const fixtures: ReturnType<typeof localFixture>[] = [];
@@ -213,4 +220,23 @@ it('renames in the agent and drops the local label, keeping a label only when th
   // No label left to mask what the agent reports from now on.
   f.monitor.setSessionTitle(f.session.id, 'Renamed in the agent');
   expect(title()).toBe('Renamed in the agent');
+});
+
+it('reports usage only to the device owner, and says so when the store is unavailable', async () => {
+  const report = { period: AnalyticsPeriod.Today } as AnalyticsReport;
+  const analytics = { report: vi.fn(async () => report) };
+  const f = localFixture(undefined, undefined, undefined, analytics);
+  const without = setup();
+  const ask = { operation: LocalOperation.Analytics, period: AnalyticsPeriod.Today } as const;
+
+  fixtures.push(f);
+
+  await expect(f.controller.execute({ ...f.principal, ownerId: 'owner-other' }, ask)).rejects.toThrow();
+  expect(analytics.report).not.toHaveBeenCalled();
+  expect(await f.controller.execute(f.principal, ask)).toBe(report);
+  expect(analytics.report).toHaveBeenCalledWith(AnalyticsPeriod.Today);
+
+  await expect(without.controller.execute(without.principal, ask)).rejects.toThrow(
+    ErrorCode.CAPABILITY_UNAVAILABLE,
+  );
 });

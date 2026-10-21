@@ -24,7 +24,7 @@ export const RelayProtocolFeature = {
   SessionRename: 4,
   /** The relay's `FileRequest` frame and the device's `FileResult`: the app reads a file a session changed. */
   SessionFiles: 5,
-  /** Session `usage` on the snapshot, the relay's `AnalyticsRequest` and the device's `AnalyticsResult`. */
+  /** Session `usage` and `rateLimits` on the snapshot, the relay's `AnalyticsRequest` and the device's `AnalyticsResult`. */
   Analytics: 6,
 } as const;
 

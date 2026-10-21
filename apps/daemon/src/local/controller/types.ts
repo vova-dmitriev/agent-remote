@@ -8,6 +8,7 @@ import type { LocalGrants } from '../grants/service.js';
 import type { LocalPrincipal } from '../grants/types.js';
 import type { RuntimeProfilesPort } from '../../domain/ports/runtime-profiles.js';
 import type { SessionNamesPort } from '../../domain/ports/session-names.js';
+import type { AnalyticsPort } from '../../analytics/collector.js';
 
 export interface LocalControllerOptions {
   ownerId: string;
@@ -21,6 +22,8 @@ export interface LocalControllerOptions {
   profiles?: RuntimeProfilesPort;
   /** Renames sessions in their agents; without it a rename stays a local label. */
   names?: SessionNamesPort;
+  /** The usage report; without it the app reports usage as unavailable. */
+  analytics?: AnalyticsPort | undefined;
   history?: (
     request: HistoryRead,
   ) => Promise<{ messages: HistoryMessage[]; before: string | null; after: string | null } | null>;

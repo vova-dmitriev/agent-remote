@@ -17,7 +17,7 @@ import { CurrentPrincipal } from '../http/auth/current-principal.js';
 import { PrincipalGuard } from '../http/auth/principal.guard.js';
 import { Fault } from '../http/errors/fault.js';
 import { RelayHub } from '../realtime/relay-hub.js';
-import { SessionFiles } from './files.js';
+import { DeviceRequests } from './device-requests.js';
 import { SessionLabels } from './labels.js';
 import { SessionRepository } from './repository.js';
 
@@ -36,7 +36,7 @@ export class SessionsController {
     @Inject(SourceHistory) private readonly sourceHistory: SourceHistory,
     @Inject(SessionHistory) private readonly history: SessionHistory,
     @Inject(RelayHub) private readonly hub: RelayHub,
-    @Inject(SessionFiles) private readonly files: SessionFiles,
+    @Inject(DeviceRequests) private readonly requests: DeviceRequests,
   ) {}
 
   @Get('events')
@@ -185,6 +185,6 @@ export class SessionsController {
       throw new Fault(ErrorCode.CAPABILITY_UNAVAILABLE);
     }
 
-    return this.files.read(connection, id, path);
+    return this.requests.read(connection, id, path);
   }
 }

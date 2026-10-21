@@ -18,6 +18,11 @@ export const CodexItemType = {
 
 export type CodexItemType = (typeof CodexItemType)[keyof typeof CodexItemType];
 
+/** Rollout records the usage collector reads besides `session_meta` and `turn_context`. */
+export const CodexRolloutType = { EventMessage: 'event_msg' } as const;
+
+export const CodexEventType = { TokenCount: 'token_count' } as const;
+
 export const CodexContentType = {
   InputImage: 'inputImage',
   Text: 'text',
