@@ -1,4 +1,4 @@
-import { FrameType, SocketCloseCode } from '@protocol';
+import { AnalyticsPeriod, FrameType, RuleAction, SessionRemoval, SocketCloseCode } from '@protocol';
 import { once } from 'node:events';
 import { afterEach, expect, it, vi } from 'vitest';
 import { WebSocketServer } from 'ws';
@@ -58,4 +58,43 @@ it('keeps backing off when a relay authenticates the companion and drops it at o
 
   // Every connection did authenticate before the relay dropped it.
   expect(online).toBe(4);
+});
+
+it('hands every request the relay sends to the router, not only commands and history reads', async () => {
+  const requestId = '00000000-0000-4000-8000-000000000001';
+
+  const requests = [
+    { type: FrameType.SessionPin, sessionId: 's', pinned: true },
+    { type: FrameType.SessionRename, sessionId: 's', title: 'Synthetic title' },
+    { type: FrameType.SessionRemove, sessionId: 's', mode: SessionRemoval.Hide },
+    { type: FrameType.SessionModel, requestId, sessionId: 's', choice: { model: 'synthetic-model' } },
+    { type: FrameType.FileRequest, requestId, sessionId: 's', path: '/synthetic/file.md' },
+    { type: FrameType.AnalyticsRequest, requestId, period: AnalyticsPeriod.Today },
+    { type: FrameType.RulesRequest, requestId, request: { action: RuleAction.View, sessionId: null } },
+  ];
+
+  const server = new WebSocketServer({ port: 0, host: '127.0.0.1' });
+
+  cleanups.push(() => new Promise((resolve) => server.close(resolve)));
+
+  server.on('connection', (socket) =>
+    socket.once('message', () => {
+      socket.send(JSON.stringify({ type: FrameType.Authenticated, epoch: 'synthetic-epoch' }));
+
+      for (const frame of requests) {
+        socket.send(JSON.stringify(frame));
+      }
+    }),
+  );
+
+  await once(server, 'listening');
+  const { port } = server.address() as { port: number };
+  const client = new RelayClient(`http://127.0.0.1:${port}`, 'synthetic-device-token');
+  const routed: string[] = [];
+
+  client.on(RuntimeEvent.Frame, (frame: { type: string }) => routed.push(frame.type));
+  cleanups.push(() => client.close());
+  client.connect();
+
+  await vi.waitFor(() => expect(routed).toEqual(requests.map((frame) => frame.type)));
 });

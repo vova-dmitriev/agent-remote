@@ -56,14 +56,9 @@ export class RelayClient extends EventEmitter {
           this.backoff.authenticated();
           this.heartbeat = setInterval(() => this.send({ type: FrameType.Heartbeat }), 10000);
           this.emit(RuntimeEvent.Online, frame.epoch);
-        } else if (
-          frame.type === FrameType.ProfilesRequest ||
-          frame.type === FrameType.ProfilesCancel ||
-          frame.type === FrameType.HistoryRead ||
-          frame.type === FrameType.Command ||
-          frame.type === FrameType.Select ||
-          frame.type === FrameType.Ack
-        ) {
+        } else {
+          // Every other frame goes to the router, which acts on the ones it knows; a list kept here fell behind
+          // the router and silently dropped pins, renames, removals, model switches, file, usage and rules requests.
           this.emit(RuntimeEvent.Frame, frame);
         }
       } catch {
