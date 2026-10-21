@@ -13,7 +13,7 @@ import { CmuxClient } from './client.js';
 import type { CmuxContext, CmuxSurface } from './context.js';
 import { prepareCmuxContext } from './launch.js';
 
-type Terminal = Pick<CmuxClient, 'pasteAndSubmit' | 'sendEscape' | 'readScreen'>;
+type Terminal = Pick<CmuxClient, 'pasteAndSubmit' | 'sendEscape' | 'sendEnter' | 'readScreen'>;
 
 export interface CmuxAttachOptions {
   adapters: AdapterRegistry;
@@ -83,6 +83,7 @@ export function cmuxAttacher(options: CmuxAttachOptions) {
 
               return { status: CommandStatus.Dispatched };
             },
+            enter: (binding) => terminal.sendEnter(binding.target as CmuxTarget),
             interrupt: async (binding) => {
               await terminal.sendEscape(binding.target as CmuxTarget);
 

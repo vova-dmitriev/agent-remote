@@ -3,6 +3,7 @@ import {
   ClaudeContentType,
   ClaudeQueueOrigin,
   ClaudeRecordType,
+  claudeCommandText,
 } from '../../domain/claude.js';
 import {
   TRANSCRIPT_DEFAULT_MAX_READ_BYTES,
@@ -343,6 +344,13 @@ export class TranscriptReader {
         .join('\n');
     }
 
+    // A slash command reads as typed, and its output as Claude Code's answer, not as tagged text from the owner.
+    const command = row.type === ClaudeRecordType.User ? claudeCommandText(text) : undefined;
+
+    if (command) {
+      text = command.text;
+    }
+
     const media = this.options.transform ? nativeClaudeMedia(row) : [];
     const tools = this.options.includeTools ? transcriptToolItems(content) : [];
 
@@ -368,7 +376,10 @@ export class TranscriptReader {
     const timestamp = typeof row.timestamp === 'string' ? Date.parse(row.timestamp) : NaN;
 
     const base = {
-      role: row.type === ClaudeRecordType.Assistant ? ClaudeRecordType.Assistant : ClaudeRecordType.User,
+      role:
+        row.type === ClaudeRecordType.Assistant || command?.output
+          ? ClaudeRecordType.Assistant
+          : ClaudeRecordType.User,
       occurredAt: Number.isFinite(timestamp) ? timestamp : 0,
       ...(this.options.withPosition
         ? {

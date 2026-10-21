@@ -60,6 +60,33 @@ describe('TranscriptReader', () => {
     expect(await reader.readNext()).toEqual([]);
   });
 
+  it("shows Claude Code's own commands as the owner typed them and their output as its answer", async () => {
+    const user = (id: string, content: string) =>
+      JSON.stringify({ type: 'user', uuid: id, timestamp: '2026-10-16T12:00:00Z', message: { content } }) +
+      '\n';
+
+    await writeFile(
+      file,
+      user(
+        'cmd',
+        '<command-name>/model</command-name>\n<command-message>model</command-message>\n<command-args>sonnet</command-args>',
+      ) +
+        user('out', '<local-command-stdout>Set model to `Sonnet`</local-command-stdout>') +
+        user(
+          'bare',
+          '<command-name>/clear</command-name>\n<command-message>clear</command-message>\n<command-args></command-args>',
+        ),
+    );
+
+    const reader = new TranscriptReader({ path: file, allowedRoot: allowed });
+
+    expect((await reader.readNext()).map(({ role, text }) => ({ role, text }))).toEqual([
+      { role: 'user', text: '/model sonnet' },
+      { role: 'assistant', text: 'Set model to `Sonnet`' },
+      { role: 'user', text: '/clear' },
+    ]);
+  });
+
   it('skips malformed, hidden and oversized records then resumes', async () => {
     await writeFile(
       file,

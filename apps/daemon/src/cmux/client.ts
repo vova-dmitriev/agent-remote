@@ -9,6 +9,9 @@ import {
 } from '@protocol';
 import { execFile } from 'node:child_process';
 
+/** Keys `cmux send-key` takes. */
+const CmuxKey = { Escape: 'Escape', Enter: 'enter' } as const;
+
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** A local CLI adapter; ownership/authentication belongs to the calling daemon. */
@@ -33,7 +36,12 @@ export class CmuxClient {
   }
 
   async sendEscape(target: CmuxTarget): Promise<void> {
-    await this.run(['send-key', ...this.selectors(target), 'Escape']);
+    await this.run(['send-key', ...this.selectors(target), CmuxKey.Escape]);
+  }
+
+  /** Presses Enter, e.g. to take the focused answer of a dialog in the terminal. */
+  async sendEnter(target: CmuxTarget): Promise<void> {
+    await this.run(['send-key', ...this.selectors(target), CmuxKey.Enter]);
   }
 
   private selectors(target: CmuxTarget): string[] {

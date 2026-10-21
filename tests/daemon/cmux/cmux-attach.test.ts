@@ -54,6 +54,7 @@ async function harness(identified: CmuxSurface | 'fail') {
   const terminal = {
     pasteAndSubmit: vi.fn(async () => {}),
     sendEscape: vi.fn(async () => {}),
+    sendEnter: vi.fn(async () => {}),
     readScreen: vi.fn(async () => 'screen'),
   };
 

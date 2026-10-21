@@ -46,6 +46,8 @@ export interface SessionAdapter {
   ): Promise<DispatchReceipt>;
   interrupt(binding: Binding): Promise<DispatchReceipt>;
   setModel(binding: Binding, choice: ModelChoice): Promise<void>;
+  pressEnter(binding: Binding): Promise<boolean>;
+  readScreen(binding: Binding): Promise<string>;
   close(): Promise<void>;
 }
 type Driver = {
@@ -59,6 +61,8 @@ type Driver = {
   screen?: (binding: Binding) => Promise<string>;
   /** Switches the session's model from its next turn. */
   model?: (binding: Binding, choice: ModelChoice) => Promise<void>;
+  /** Presses Enter in the session's terminal. */
+  enter?: (binding: Binding) => Promise<void>;
 };
 export class SourceAdapter implements SessionAdapter {
   private bindings = new Map<string, Binding>();
@@ -117,6 +121,18 @@ export class SourceAdapter implements SessionAdapter {
     }
 
     await this.driver.model(binding, choice);
+  }
+  /** Presses Enter in a session that takes prompts, e.g. to confirm a dialog it opened; false where it cannot. */
+  async pressEnter(binding: Binding): Promise<boolean> {
+    this.check(binding, CapabilityKey.Prompt);
+
+    if (!this.driver.enter) {
+      return false;
+    }
+
+    await this.driver.enter(binding);
+
+    return true;
   }
   async readScreen(binding: Binding) {
     const current = this.bindings.get(JSON.stringify(binding.target));

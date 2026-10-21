@@ -89,3 +89,29 @@ export const CLAUDE_MODELS: AgentModel[] = Object.values(ClaudeModelAlias).map((
     ReasoningEffort.Max,
   ],
 }));
+
+const COMMAND_NAME = /<command-name>([^<]*)<\/command-name>/u;
+const COMMAND_ARGS = /<command-args>([^<]*)<\/command-args>/u;
+const COMMAND_OUTPUT = /^\s*<local-command-stdout>([\s\S]*)<\/local-command-stdout>\s*$/u;
+
+/**
+ * Claude Code records a slash command the owner ran (`/model sonnet`) and its output as tagged user text. Returns
+ * the command as typed, or its output as Claude Code's answer; undefined for any other text.
+ */
+export function claudeCommandText(text: string): { text: string; output: boolean } | undefined {
+  const output = COMMAND_OUTPUT.exec(text);
+
+  if (output) {
+    return { text: output[1]!.trim(), output: true };
+  }
+
+  const name = COMMAND_NAME.exec(text)?.[1]?.trim();
+
+  if (!name) {
+    return undefined;
+  }
+
+  const args = COMMAND_ARGS.exec(text)?.[1]?.trim();
+
+  return { text: args ? `${name} ${args}` : name, output: false };
+}
