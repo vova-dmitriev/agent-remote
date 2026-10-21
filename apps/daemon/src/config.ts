@@ -11,6 +11,13 @@ import { CodedError } from '@protocol';
 /** The CLI default home; `~/.claude/settings.json` hooks post here when CLAUDE_REMOTE_HOME is unset. */
 export const defaultStateDirectory = () => join(homedir(), '.claude-remote');
 export const stateDirectory = () => process.env.CLAUDE_REMOTE_HOME ?? defaultStateDirectory();
+/** Set to `1` when this daemon is one of several users' daemons on a shared machine (a Linux VM). */
+export const MULTI_USER_VARIABLE = 'REMOTE_MULTI_USER';
+/**
+ * One of several users' daemons on a shared machine: it follows only the sessions it created, never the machine's
+ * shared Codex app-server or Codex Desktop. See docs/superpowers/specs/2026-10-21-linux-vm-multi-user-design.md.
+ */
+export const multiUserMode = () => process.env[MULTI_USER_VARIABLE] === '1';
 export const configSchema = z.strictObject({
   relayUrl: z.url(),
   deviceId: z.string().min(1),

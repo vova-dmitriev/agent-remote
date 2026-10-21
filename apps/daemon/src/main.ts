@@ -28,7 +28,7 @@ import {
 import { createAttachments } from './runtime/wiring/attachments.js';
 import { startLocalSurface } from './runtime/wiring/local-surface.js';
 import { startHookWiring } from './runtime/wiring/hook-wiring.js';
-import { localSecret, socketPath, stateDirectory } from './config.js';
+import { localSecret, socketPath, stateDirectory, multiUserMode } from './config.js';
 import { logWarning } from './diagnostics/log.js';
 import { saveRelayStatus } from './diagnostics/relay-status.js';
 import { runtimeConfiguration } from './local/bootstrap/configuration.js';
@@ -113,6 +113,7 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
     permissionsEnabled,
     stateDirectory: stateDirectory(),
     attachments,
+    ownAppServerOnly: multiUserMode(),
   });
 
   const names = new SessionNames({ monitor, adapters, readers, codex: () => codex });

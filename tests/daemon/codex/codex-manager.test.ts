@@ -388,3 +388,40 @@ it('binds an empty loaded thread after a restart and follows it once its first m
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+it("connects a user's daemon on a shared VM only to its own app-server, never to the machine's shared Codex", async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'codex-own-test-'));
+  const own = join(directory, 'state', 'codex/app-server.sock');
+
+  connectSocket.mockReset();
+  connectSocket.mockRejectedValue(new Error('CODEX_DISCONNECTED'));
+
+  const store = new LocalStore(':memory:', 'device'),
+    adapters = new AdapterRegistry('device'),
+    permissions = new PermissionBroker();
+
+  const monitor = new Monitor({ deviceId: 'device', store, adapters, permissions });
+
+  const manager = new CodexManager({
+    stateDirectory: join(directory, 'state'),
+    codexHome: join(directory, 'codex-home'),
+    monitor,
+    adapters,
+    permissions,
+    inputEnabled: true,
+    permissionsEnabled: true,
+    ownAppServerOnly: true,
+  });
+
+  try {
+    await manager.start();
+    await vi.waitFor(() => expect(connectSocket).toHaveBeenCalled());
+
+    expect(new Set(connectSocket.mock.calls.map(([path]) => path))).toEqual(new Set([own]));
+  } finally {
+    await manager.close();
+    permissions.close();
+    store.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});

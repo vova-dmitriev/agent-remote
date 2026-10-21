@@ -49,6 +49,8 @@ interface Dependencies {
   codexPrefixArguments?: readonly string[];
   executionNamespaceRoot?: string;
   attachments?: AttachmentService;
+  /** One of several users' daemons on a shared machine: follow only this daemon's own Codex app-server. */
+  ownAppServerOnly?: boolean;
 }
 interface Connection {
   selection: CodexConnection;
@@ -97,20 +99,29 @@ export class CodexManager {
       this.saved.set(JSON.stringify(selection), selection);
     }
 
-    const native = [
-      { kind: TargetKind.CodexCli, socketPath: join(home, 'app-server-control/app-server-control.sock') },
-      { kind: TargetKind.CodexCli, socketPath: join(this.deps.stateDirectory, 'codex/app-server.sock') },
-    ];
+    const own = {
+      kind: TargetKind.CodexCli,
+      socketPath: join(this.deps.stateDirectory, 'codex/app-server.sock'),
+    };
+
+    // A user's daemon on a shared machine follows only its own app-server: the machine's shared one and Codex
+    // Desktop hold every user's threads.
+    const native = this.deps.ownAppServerOnly
+      ? [own]
+      : [
+          { kind: TargetKind.CodexCli, socketPath: join(home, 'app-server-control/app-server-control.sock') },
+          own,
+        ];
 
     for (const selection of native) {
       this.nativeSockets.add(selection.socketPath);
     }
 
-    for (const selection of [
-      { kind: TargetKind.CodexDesktop, socketPath: join(home, 'ipc/ipc.sock') },
-      ...native,
-      ...saved,
-    ]) {
+    const desktop = this.deps.ownAppServerOnly
+      ? []
+      : [{ kind: TargetKind.CodexDesktop, socketPath: join(home, 'ipc/ipc.sock') }];
+
+    for (const selection of [...desktop, ...native, ...(this.deps.ownAppServerOnly ? [] : saved)]) {
       this.add(selection);
     }
 
