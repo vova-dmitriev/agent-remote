@@ -1,4 +1,4 @@
-import { CodedError, ErrorCode, IntegrationState, SessionStatus, TargetKind } from '@protocol';
+import { CodedError, ErrorCode, IntegrationState, TargetKind } from '@protocol';
 import { RuntimeEvent } from '../../domain/runtime.js';
 import { CodexMethod } from '../../domain/codex/codex.js';
 import { type AttachmentService } from '../../attachments/service.js';
@@ -455,15 +455,8 @@ export class CodexManager {
         continue;
       }
 
-      if (
-        this.deps.monitor
-          .snapshot()
-          .sessions.filter(
-            (session) =>
-              session.integrationState !== IntegrationState.Disconnected &&
-              session.status !== SessionStatus.Ended,
-          ).length >= 10
-      ) {
+      // The device's one session limit: binding a thread adds a session.
+      if (!this.deps.monitor.canCreateSession()) {
         break;
       }
 

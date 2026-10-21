@@ -1,6 +1,6 @@
 import { useCallback, useLayoutEffect, useRef, useState } from "react"
 import { useVirtualizer, type VirtualItem } from "@tanstack/react-virtual"
-import { HistoryDirection, type HistoryMessage } from "@protocol"
+import { HistoryDirection, MessageRole, type HistoryMessage } from "@protocol"
 import { useHistoryPagination } from "./history/use-history-pagination"
 import { useReadingPosition } from "./use-reading-position"
 import { useRenderedRowSizes } from "./use-rendered-row-sizes"
@@ -136,6 +136,18 @@ export function useFollowMessages(
   useLayoutEffect(() => {
     if (follow.current) toBottom()
   }, [enabled, toBottom])
+
+  // A message the owner just sent arrives live as the last one: bring the feed down to it, wherever they were reading.
+  const lastId = useRef(messages.at(-1)?.id)
+
+  useLayoutEffect(() => {
+    const last = messages.at(-1)
+    const previous = lastId.current
+
+    lastId.current = last?.id
+    if (!last || previous === undefined || last.id === previous || last.role !== MessageRole.User || last.historyCursor) return
+    toBottom(navigationScrollBehavior(window.matchMedia("(prefers-reduced-motion: reduce)").matches))
+  }, [messages, toBottom])
 
   const preserveViewport = useCallback(() => {
     const root = scroll.current

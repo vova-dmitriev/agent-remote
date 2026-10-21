@@ -154,3 +154,64 @@ it('creates a Codex thread while the device has room, under the same limit as ev
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+it('binds a Codex thread while the device has room, though twelve other sessions are working', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'codex-bind-test-'));
+  const endpoint = join(directory, 'codex/app-server.sock');
+
+  const rpc = Object.assign(new EventEmitter(), {
+    request: vi.fn(async (method: string) => {
+      if (method === 'thread/loaded/list') {
+        return { data: ['loaded'] };
+      }
+
+      if (method === 'thread/read' || method === 'thread/resume') {
+        return { thread: { id: 'loaded', canAcceptDirectInput: true, status: { type: 'idle' }, turns: [] } };
+      }
+
+      return { data: [], nextCursor: null };
+    }),
+    respond() {},
+    async close() {},
+  });
+
+  connectSocket.mockImplementation(async () => rpc);
+
+  const store = new LocalStore(':memory:', 'device'),
+    adapters = new AdapterRegistry('device'),
+    permissions = new PermissionBroker();
+
+  registerNativeAdapter(adapters, false);
+
+  const monitor = new Monitor({ deviceId: 'device', store, adapters, permissions });
+
+  for (let index = 0; index < 12; index++) {
+    monitor.ingestHook({ hook_event_name: 'SessionStart', session_id: 'active-' + index }, 'native');
+    monitor.ingestHook({ hook_event_name: 'UserPromptSubmit', session_id: 'active-' + index }, 'native');
+  }
+
+  const manager = new CodexManager({
+    stateDirectory: directory,
+    codexHome: directory,
+    monitor,
+    adapters,
+    permissions,
+    inputEnabled: true,
+    permissionsEnabled: false,
+  } as unknown as ConstructorParameters<typeof CodexManager>[0]);
+
+  try {
+    await manager.connect({ kind: 'codex-cli', socketPath: endpoint });
+
+    expect(
+      monitor
+        .snapshot()
+        .sessions.find((session) => 'threadId' in session.target && session.target.threadId === 'loaded'),
+    ).toMatchObject({ integrationState: 'ready' });
+  } finally {
+    await manager.close();
+    permissions.close();
+    store.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
