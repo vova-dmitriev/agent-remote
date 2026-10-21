@@ -49,6 +49,8 @@ export const FrameType = {
   SessionRemove: 'session_remove',
   SessionModel: 'session_model',
   SessionModelResult: 'session_model_result',
+  SessionCreate: 'session_create',
+  SessionCreateResult: 'session_create_result',
   SessionRename: 'session_rename',
   FileRequest: 'file_request',
   FileResult: 'file_result',

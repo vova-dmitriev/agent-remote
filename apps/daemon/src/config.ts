@@ -18,6 +18,8 @@ export const MULTI_USER_VARIABLE = 'REMOTE_MULTI_USER';
  * shared Codex app-server or Codex Desktop. See docs/superpowers/specs/2026-10-21-linux-vm-multi-user-design.md.
  */
 export const multiUserMode = () => process.env[MULTI_USER_VARIABLE] === '1';
+/** On a shared machine, the directory whose subdirectories are the projects users can start sessions in. */
+export const projectsRoot = () => process.env.REMOTE_PROJECTS_ROOT || undefined;
 export const configSchema = z.strictObject({
   relayUrl: z.url(),
   deviceId: z.string().min(1),

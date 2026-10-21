@@ -25,6 +25,7 @@ export const LocalOperation = {
   Pin: 'pin',
   Remove: 'remove',
   Model: 'model',
+  Create: 'create',
   File: 'file',
   Analytics: 'analytics',
   Rules: 'rules',

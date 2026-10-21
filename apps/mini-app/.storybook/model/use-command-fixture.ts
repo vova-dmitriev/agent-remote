@@ -17,6 +17,7 @@ export function useCommandFixture(): CommandController {
   return {
     createdSessionId: null,
     consumeCreatedSession: () => {},
+    openCreatedSession: () => {},
     drafts,
     setPrompt,
     busy: false,

@@ -13,7 +13,7 @@ interface FakeBridgeOptions {
     result: string;
     version: number;
     snapshot: string;
-    operations: Record<'devices' | 'select' | 'history' | 'preferences' | 'reading' | 'draft' | 'queue' | 'pin' | 'remove' | 'model' | 'file' | 'analytics' | 'rules', string>;
+    operations: Record<'devices' | 'select' | 'history' | 'preferences' | 'reading' | 'draft' | 'queue' | 'pin' | 'remove' | 'model' | 'create' | 'file' | 'analytics' | 'rules', string>;
     unavailable: string;
   };
 }
@@ -51,6 +51,7 @@ export async function installDesktopBridge(
         pin: LocalOperation.Pin,
         remove: LocalOperation.Remove,
         model: LocalOperation.Model,
+        create: LocalOperation.Create,
         file: LocalOperation.File,
         analytics: LocalOperation.Analytics,
         rules: LocalOperation.Rules,
@@ -93,7 +94,7 @@ export async function installDesktopBridge(
         },
         request: async (request: {
           requestId: string;
-          action: { operation: string; agentId?: string; sessionId?: string; pinned?: boolean; mode?: string; choice?: { model: string; effort?: string }; path?: string; period?: string; request?: unknown };
+          action: { operation: string; agentId?: string; sessionId?: string; pinned?: boolean; mode?: string; choice?: { model: string; effort?: string }; session?: { provider: string; cwd: string }; path?: string; period?: string; request?: unknown };
         }) => {
           const base = { kind: values.result, version: values.version, requestId: request.requestId, leaseId, epoch };
           const { operation, agentId } = request.action;
@@ -124,35 +125,30 @@ export async function installDesktopBridge(
             return report ? { ...base, ok: true, data: report } : { ...base, ok: false, code: values.unavailable };
           }
 
-          // Like the companion: the session shows its new model; a test reads `modelSwitches`.
-          if (operation === operations.model) {
-            const record = window as unknown as { modelSwitches?: unknown[]; modelRefused?: boolean };
+          // Like the companion: a project session joins the snapshot, a switched session shows its model, a removed one
+          // leaves; a test reads `projectSessions`, `modelSwitches` and `removals`, and sets `modelRefused`.
+          const record = window as unknown as Record<string, unknown[] | boolean | undefined>
+          const note = (key: string, value: unknown) => (record[key] = [...((record[key] as unknown[] | undefined) ?? []), value])
+          const { sessionId, choice, mode } = request.action
 
-            if (record.modelRefused) return { ...base, ok: false, code: values.unavailable };
+          if (operation === operations.model && record.modelRefused) return { ...base, ok: false, code: values.unavailable }
 
-            const choice = request.action.choice!;
+          if (operation === operations.create || operation === operations.model || operation === operations.remove) {
+            const started = { ...snapshot.sessions[0]!, id: 'project-session', cwd: request.action.session?.cwd, title: 'Project session' }
 
-            record.modelSwitches = [...(record.modelSwitches ?? []), { sessionId: request.action.sessionId, choice }];
+            const sessions = {
+              [operations.create]: () => [...snapshot.sessions, started as (typeof snapshot.sessions)[number]],
+              [operations.model]: () => snapshot.sessions.map((item) => (item.id === sessionId ? { ...item, model: choice!.model } : item)),
+              [operations.remove]: () => snapshot.sessions.filter((item) => item.id !== sessionId),
+            }[operation]!
 
-            snapshot = {
-              ...snapshot,
-              sessions: snapshot.sessions.map((session) => (session.id === request.action.sessionId ? { ...session, model: choice.model } : session)),
-            };
+            if (operation === operations.create) note('projectSessions', request.action.session)
+            else if (operation === operations.model) note('modelSwitches', { sessionId, choice })
+            else note('removals', { sessionId, mode })
+            snapshot = { ...snapshot, sessions: sessions() }
+            setTimeout(publish, 0)
 
-            setTimeout(publish, 0);
-
-            return { ...base, ok: true, data: null };
-          }
-
-          // Like the companion: the removed session leaves the snapshot; a test reads `removals`.
-          if (operation === operations.remove) {
-            const record = window as unknown as { removals?: unknown[] };
-
-            record.removals = [...(record.removals ?? []), { sessionId: request.action.sessionId, mode: request.action.mode }];
-            snapshot = { ...snapshot, sessions: snapshot.sessions.filter((session) => session.id !== request.action.sessionId) };
-            setTimeout(publish, 0);
-
-            return { ...base, ok: true, data: null };
+            return { ...base, ok: true, data: operation === operations.create ? { sessionId: started.id } : null }
           }
 
           if (operation === operations.pin) {

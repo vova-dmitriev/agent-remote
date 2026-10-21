@@ -19,6 +19,7 @@ import type {
   RulesRequest,
   SessionRemoval,
   ModelChoice,
+  ProjectSession,
 } from "@protocol"
 import type { AttachmentAccess } from "./attachment-access"
 import type { Device, HistoryPageSkip } from "./types"
@@ -33,6 +34,8 @@ export interface ApplicationOperations {
   removeSession(sessionId: string, generation: string, mode: SessionRemoval): Promise<unknown>
   /** Switches a session to another model on its device; its next turn uses it. */
   switchSessionModel(sessionId: string, generation: string, choice: ModelChoice): Promise<unknown>
+  /** Starts a session in one of the device's projects (a shared VM's projects root); resolves with its id. */
+  createProjectSession(deviceId: string, session: ProjectSession): Promise<{ sessionId: string }>
   /** The text of a file the session changed, read on its device. */
   readSessionFile(sessionId: string, generation: string, path: string): Promise<SessionFile>
   /** Token usage, cost and plan limits counted on the device. */

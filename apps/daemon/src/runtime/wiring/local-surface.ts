@@ -7,7 +7,7 @@ import type { LocalControllerOptions } from '../../local/controller/types.js';
 import type { TranscriptSources } from '../../monitor/history.js';
 import type { AnalyticsPort } from '../../analytics/collector.js';
 import type { RulesPort } from '../../rules/service.js';
-import type { SessionModelPort } from '../../domain/ports/session-names.js';
+import type { ProjectSessionsPort, SessionModelPort } from '../../domain/ports/session-names.js';
 import { startLocalServer } from '../../local/server/server.js';
 
 type RuntimeConfiguration = Awaited<ReturnType<typeof runtimeConfiguration>>;
@@ -17,6 +17,7 @@ type LocalSurfaceDeps = Pick<
   'monitor' | 'store' | 'adapters' | 'dispatcher' | 'names' | 'removal'
 > & {
   models?: SessionModelPort | undefined;
+  projects?: ProjectSessionsPort | undefined;
   config: RuntimeConfiguration;
   stateDirectory: string;
   localServices: LocalServices;
@@ -39,6 +40,7 @@ export async function startLocalSurface(deps: LocalSurfaceDeps) {
     ...(deps.names ? { names: deps.names } : {}),
     ...(deps.removal ? { removal: deps.removal } : {}),
     ...(deps.models ? { models: deps.models } : {}),
+    ...(deps.projects ? { projects: deps.projects } : {}),
     analytics: deps.analytics,
     rules: deps.rules,
     history: (request) => (readers.has(request.sessionId) ? readers.page(request) : Promise.resolve(null)),

@@ -8,6 +8,7 @@ import type { LocalGrants } from '../grants/service.js';
 import type { LocalPrincipal } from '../grants/types.js';
 import type { RuntimeProfilesPort } from '../../domain/ports/runtime-profiles.js';
 import type {
+  ProjectSessionsPort,
   SessionModelPort,
   SessionNamesPort,
   SessionRemovalPort,
@@ -31,6 +32,8 @@ export interface LocalControllerOptions {
   removal?: SessionRemovalPort;
   /** Switches running sessions to another model; without it the app cannot switch one. */
   models?: SessionModelPort;
+  /** Starts sessions in a shared machine's projects; without it the app starts sessions only beside others. */
+  projects?: ProjectSessionsPort;
   /** The usage report; without it the app reports usage as unavailable. */
   analytics?: AnalyticsPort | undefined;
   /** The owner's rules for agents' commands. */

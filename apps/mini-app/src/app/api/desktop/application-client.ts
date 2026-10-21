@@ -12,6 +12,7 @@ import {
   type ServerFrame,
   type SessionRemoval,
   type ModelChoice,
+  type ProjectSession,
 } from "@protocol"
 import { BoundProfileClient } from "@transport/profile-client.js"
 import type { ApplicationClient, TransportHandlers } from "@/shared/api"
@@ -159,6 +160,7 @@ export class DesktopApplicationClient implements ApplicationClient {
     this.operations.removeSession(sessionId, generation, mode)
   switchSessionModel = (sessionId: string, generation: string, choice: ModelChoice) =>
     this.operations.switchSessionModel(sessionId, generation, choice)
+  createProjectSession = (deviceId: string, session: ProjectSession) => this.operations.createProjectSession(deviceId, session)
   readSessionFile = (sessionId: string, generation: string, path: string) => this.operations.readSessionFile(sessionId, generation, path)
   usageReport = (deviceId: string, period: Parameters<ApplicationClient["usageReport"]>[1]) => this.operations.usageReport(deviceId, period)
   rules = (deviceId: string, request: Parameters<ApplicationClient["rules"]>[1]) => this.operations.rules(deviceId, request)

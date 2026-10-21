@@ -76,6 +76,7 @@ export class Monitor extends EventEmitter implements MonitorPort {
   private terminal: AppSnapshot['terminal'] = null;
   private rateLimits: RateLimit[] = [];
   private providerModels = new Map<AgentProvider, AgentModel[]>();
+  private projects: string[] = [];
   /** Sessions the owner pinned; kept in the store so a pin outlives restarts. */
   private pins: Set<string>;
   /** When the owner hid each session; a hidden session stays out of the lists until a newer message. */
@@ -726,6 +727,15 @@ export class Monitor extends EventEmitter implements MonitorPort {
     this.emit(RuntimeEvent.Snapshot);
   }
   /** The agents' plan limits, for the session header. */
+  /** The projects an owner can start a session in without one there yet (a shared machine's projects root). */
+  setProjects(paths: string[]) {
+    if (JSON.stringify(this.projects) === JSON.stringify(paths)) {
+      return;
+    }
+
+    this.projects = paths;
+    this.emit(RuntimeEvent.Snapshot);
+  }
   /** The models the device's own sign-in of an agent offers; replaces that agent's earlier list. */
   setProviderModels(provider: AgentProvider, models: AgentModel[]) {
     const next = new Map(this.providerModels).set(provider, models);
@@ -927,6 +937,7 @@ export class Monitor extends EventEmitter implements MonitorPort {
         ...(this.providerModels.size
           ? { models: [...this.providerModels].map(([provider, models]) => ({ provider, models })) }
           : {}),
+        ...(this.projects.length ? { projects: this.projects } : {}),
       }),
     );
   }

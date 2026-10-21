@@ -14,6 +14,8 @@ import {
   type ReadingPosition,
   type SessionRemoval,
   type ModelChoice,
+  type ProjectSession,
+  projectSessionReplySchema,
 } from "@protocol"
 import type { ApplicationOperations, Device } from "@/shared/api"
 import { RelayCommandOperations } from "./relay-command-operations"
@@ -78,6 +80,12 @@ export abstract class RelayOperations extends RelayCommandOperations implements 
       method: "PUT",
       body: JSON.stringify({ choice, generation }),
     })
+  }
+
+  async createProjectSession(deviceId: string, session: ProjectSession) {
+    return projectSessionReplySchema.parse(
+      await this.request("/devices/" + encodeURIComponent(deviceId) + "/sessions", { method: "POST", body: JSON.stringify(session) }),
+    )
   }
 
   async readSessionFile(sessionId: string, _generation: string, path: string) {

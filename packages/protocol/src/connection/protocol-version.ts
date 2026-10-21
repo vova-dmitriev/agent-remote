@@ -14,7 +14,7 @@
  * `protocolVersion`, so such relays must be upgraded before daemons that send it (see docs/desktop.md).
  * The relay strips unknown `Auth` fields from now on, so a later field never repeats that.
  */
-export const RELAY_PROTOCOL = { Current: 11, MinimumSupported: 1 } as const;
+export const RELAY_PROTOCOL = { Current: 12, MinimumSupported: 1 } as const;
 
 /** The first version that carries each later frame change; gate on the negotiated version. */
 export const RelayProtocolFeature = {
@@ -36,6 +36,8 @@ export const RelayProtocolFeature = {
   ModelChoice: 10,
   /** The relay's `SessionModel` frame carries a `requestId` and the device answers with `SessionModelResult`. */
   ModelSwitchReply: 11,
+  /** Snapshot `projects`, the relay's `SessionCreate` and the device's `SessionCreateResult`. */
+  ProjectSessions: 12,
 } as const;
 
 /** The version of a daemon that sends no `protocolVersion`. */

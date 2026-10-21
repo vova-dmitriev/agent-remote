@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   clientCommandSchema,
   serverFrameSchema,
+  projectSessionSchema,
   sessionModelChoiceSchema,
   sessionRemoveSchema,
 } from '../session/schemas.js';
@@ -51,6 +52,7 @@ export const localActionSchema = z.discriminatedUnion('operation', [
   z.strictObject({ ...operation(LocalOperation.Pin), ...session, generation: id, pinned: z.boolean() }),
   z.strictObject({ ...operation(LocalOperation.Remove), ...session, ...sessionRemoveSchema.shape }),
   z.strictObject({ ...operation(LocalOperation.Model), ...session, ...sessionModelChoiceSchema.shape }),
+  z.strictObject({ ...operation(LocalOperation.Create), session: projectSessionSchema }),
   z.strictObject({
     ...operation(LocalOperation.File),
     ...session,

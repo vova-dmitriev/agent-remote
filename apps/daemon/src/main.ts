@@ -5,6 +5,8 @@ import { NativeProcesses } from './sessions/native-process.js';
 import { SessionNames } from './sessions/session-names.js';
 import { SessionRemover } from './sessions/session-removal.js';
 import { SessionModelSwitch } from './sessions/session-model.js';
+import { ProjectSessions } from './sessions/project-sessions.js';
+import { createManagedSession } from './runtime/services/create-session.js';
 import { CodexManager } from './runtime/services/codex-manager.js';
 import { BridgeClient } from './desktop/bridge-client.js';
 import { join } from 'node:path';
@@ -28,7 +30,7 @@ import {
 import { createAttachments } from './runtime/wiring/attachments.js';
 import { startLocalSurface } from './runtime/wiring/local-surface.js';
 import { startHookWiring } from './runtime/wiring/hook-wiring.js';
-import { localSecret, socketPath, stateDirectory, multiUserMode } from './config.js';
+import { localSecret, socketPath, stateDirectory, multiUserMode, projectsRoot } from './config.js';
 import { logWarning } from './diagnostics/log.js';
 import { saveRelayStatus } from './diagnostics/relay-status.js';
 import { runtimeConfiguration } from './local/bootstrap/configuration.js';
@@ -37,6 +39,9 @@ import { NoRelay } from './local/bootstrap/no-relay.js';
 import { startAnalytics } from './analytics/live.js';
 import { RulesService } from './rules/service.js';
 import { RulesStore } from './rules/store.js';
+
+/** How often a shared machine's projects root is listed again. */
+const PROJECTS_REFRESH_MS = 60_000;
 
 export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {}) {
   const config = await runtimeConfiguration(stateDirectory()),
@@ -120,6 +125,19 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
 
   const models = new SessionModelSwitch({ monitor, adapters });
 
+  const projects = new ProjectSessions({
+    root: projectsRoot(),
+    monitor,
+    // The relay and the local surface check the owner before asking.
+    create: (action) =>
+      createManagedSession(action, {
+        monitor,
+        codex,
+        profiles: localServices.profiles,
+        directory: stateDirectory(),
+      }),
+  });
+
   const removal = new SessionRemover({
     monitor,
     adapters,
@@ -175,6 +193,7 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
     names,
     removal,
     models,
+    projects,
     analytics,
     rules,
   }).catch(async (error: unknown) => {
@@ -206,6 +225,7 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
     names,
     removal,
     models,
+    projects,
     analytics,
     rules,
   });
@@ -213,6 +233,10 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
   sourcePoller.start();
   nativePoller.start();
   await codex.start();
+  await projects.refresh();
+  // ponytail: a minute's poll, not a watcher; a new project shows within a minute.
+  const projectsTimer = setInterval(() => void projects.refresh(), PROJECTS_REFRESH_MS);
+
   // A record left by an earlier companion, crashed or not, never describes this one.
   await saveRelayStatus(stateDirectory(), null).catch((error: unknown) => logWarning('main', error));
   relay.connect();
@@ -223,6 +247,7 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
     }
 
     link.stopping = true;
+    clearInterval(projectsTimer);
     link.profileRelay.disconnect();
     sourcePoller.stop();
     nativePoller.stop();

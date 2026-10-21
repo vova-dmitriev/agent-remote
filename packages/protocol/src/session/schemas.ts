@@ -153,6 +153,22 @@ export const sessionSchema = z
       s.claudeSessionId === null,
     'Codex must use its own thread identity',
   );
+/** An absolute directory on the device, without control characters. */
+export const projectPathSchema = z
+  .string()
+  .min(1)
+  .max(4096)
+  // eslint-disable-next-line no-control-regex -- Intentionally reject control characters at the wire boundary.
+  .regex(/^\/[^\u0000-\u001f\u007f]*$/u);
+/** A new session in one of the device's projects, for an owner who has no session there yet. */
+export const projectSessionSchema = z.strictObject({
+  provider: z.enum(AgentProvider),
+  cwd: projectPathSchema,
+  model: modelChoiceSchema.optional(),
+});
+export type ProjectSession = z.infer<typeof projectSessionSchema>;
+/** The device's answer to a project session: the new session's id. */
+export const projectSessionReplySchema = z.strictObject({ sessionId: id });
 /** Pins or unpins a session of the current generation; the device holds the pin. */
 export const sessionPinSchema = z.strictObject({ pinned: z.boolean(), generation: id });
 export type SessionPin = z.infer<typeof sessionPinSchema>;
@@ -291,6 +307,8 @@ export const snapshotSchema = z.strictObject({
   rateLimits: rateLimitsSchema.optional(),
   /** The models the device's own sign-in of each agent offers. */
   models: z.array(providerModelsSchema).max(2).optional(),
+  /** Project directories the owner can start a session in without one there yet (a shared VM's projects root). */
+  projects: z.array(projectPathSchema).max(200).optional(),
 });
 export const appFrameSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal(FrameType.Auth), token: id }),
@@ -355,6 +373,14 @@ export const deviceFrameSchema = z.discriminatedUnion('type', [
     requestId: z.uuid(),
     reply: z.discriminatedUnion('ok', [
       z.strictObject({ ok: z.literal(true), file: sessionFileSchema }),
+      z.strictObject({ ok: z.literal(false), code: z.enum(ErrorCode) }),
+    ]),
+  }),
+  z.strictObject({
+    type: z.literal(FrameType.SessionCreateResult),
+    requestId: z.uuid(),
+    reply: z.discriminatedUnion('ok', [
+      z.strictObject({ ok: z.literal(true), sessionId: id }),
       z.strictObject({ ok: z.literal(false), code: z.enum(ErrorCode) }),
     ]),
   }),
@@ -468,6 +494,11 @@ export const serverFrameSchema = z.discriminatedUnion('type', [
     type: z.literal(FrameType.RulesRequest),
     requestId: z.uuid(),
     request: rulesRequestSchema,
+  }),
+  z.strictObject({
+    type: z.literal(FrameType.SessionCreate),
+    requestId: z.uuid(),
+    session: projectSessionSchema,
   }),
 ]);
 export type Target = z.infer<typeof targetSchema>;

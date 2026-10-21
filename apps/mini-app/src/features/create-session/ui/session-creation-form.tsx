@@ -2,6 +2,7 @@ import { Bot, Folder } from "lucide-react"
 import { AgentProvider, CapabilityKey, type ModelChoice, type Session } from "@protocol"
 import { ProviderFilterValue } from "@/entities/session"
 import { useTranslation } from "@/shared/lib/hooks"
+import { feedbackText } from "@/shared/lib/i18n"
 import { Button } from "@/shared/ui/button"
 import { ChoiceDropdown } from "@/shared/ui/dropdown"
 import { chipFieldClass, chipLabelClass } from "../config/chip-classes"
@@ -19,12 +20,19 @@ interface SessionCreationFormProps {
   profilesUnavailable: boolean
   checkingProfiles: boolean
   create: (session: Session, provider: AgentProvider, execution?: ProfileExecution, model?: ModelChoice) => void
+  createInProject?: ((cwd: string, provider: AgentProvider, model?: ModelChoice) => Promise<unknown>) | undefined
 }
 
-export function SessionCreationForm({ model, disabled, online, profilesUnavailable, checkingProfiles, create }: SessionCreationFormProps) {
+export function SessionCreationForm({
+  model,
+  disabled,
+  online,
+  profilesUnavailable,
+  checkingProfiles,
+  create,
+  createInProject,
+}: SessionCreationFormProps) {
   const { t } = useTranslation()
-  const launchReady = model.profileId === "" || (model.profileAvailable && !!model.execution)
-
   const status = resolveSessionProfileStatus(model, { online, unavailable: profilesUnavailable, checking: checkingProfiles }, t)
 
   return (
@@ -33,8 +41,7 @@ export function SessionCreationForm({ model, disabled, online, profilesUnavailab
       data-testid={SESSION_CREATE_IDS.form}
       onSubmit={(event) => {
         event.preventDefault()
-        if (model.selected && !disabled && launchReady)
-          create(model.selected, model.provider, model.execution ?? undefined, model.modelChoice)
+        if (!disabled && model.ready) void model.submit(create, createInProject)
       }}
     >
       <ChoiceDropdown
@@ -52,19 +59,15 @@ export function SessionCreationForm({ model, disabled, online, profilesUnavailab
         ]}
       />
       <ChoiceDropdown
-        value={model.selected?.id ?? ""}
+        value={model.projectValue}
         onChange={model.setProjectId}
         label={t("sessionProject")}
-        triggerLabel={model.selected?.cwd ?? ""}
+        triggerLabel={model.projectLabel}
         icon={Folder}
         ids={SESSION_CREATE_IDS.project}
         className={chipFieldClass}
         labelClassName={chipLabelClass}
-        options={model.projects.map((session) => ({
-          value: session.id,
-          label: session.cwd ?? "",
-          testId: SESSION_CREATE_IDS.projectOption,
-        }))}
+        options={model.projectOptions.map((option) => ({ ...option, testId: SESSION_CREATE_IDS.projectOption }))}
       />
       <ProfileSelectField
         nativeProvider={model.provider === AgentProvider.Codex ? ProviderFilterValue.Codex : ProviderFilterValue.Claude}
@@ -86,13 +89,9 @@ export function SessionCreationForm({ model, disabled, online, profilesUnavailab
         onEffortChange={model.setEffort}
       />
       <small className="basis-full leading-[1.4] text-muted-foreground" data-testid={SESSION_CREATE_IDS.profileStatus} role="status">
-        {status}
+        {model.error ? feedbackText(model.error, t) : status}
       </small>
-      <Button
-        type="submit"
-        data-testid={SESSION_CREATE_IDS.submit}
-        disabled={disabled || !launchReady || (model.profileId !== "" && !model.execution)}
-      >
+      <Button type="submit" data-testid={SESSION_CREATE_IDS.submit} disabled={disabled || !model.ready}>
         {t(disabled ? "creatingSession" : CapabilityKey.CreateSession)}
       </Button>
     </form>

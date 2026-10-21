@@ -177,7 +177,8 @@ export class DeviceSocket {
             frame.type === FrameType.FileResult ||
             frame.type === FrameType.AnalyticsResult ||
             frame.type === FrameType.RulesResult ||
-            frame.type === FrameType.SessionModelResult
+            frame.type === FrameType.SessionModelResult ||
+            frame.type === FrameType.SessionCreateResult
           ) {
             requests.accept(connection, frame);
 

@@ -19,6 +19,7 @@ export const DOCUMENT_OPERATIONS: ReadonlySet<LocalOperation> = new Set([
   LocalOperation.Pin,
   LocalOperation.Remove,
   LocalOperation.Model,
+  LocalOperation.Create,
   LocalOperation.File,
   LocalOperation.Analytics,
   LocalOperation.Rules,
@@ -84,6 +85,18 @@ export function documentOperation(
       options.monitor.setPinned(action.sessionId, action.pinned);
 
       return null;
+
+    // A session in one of the device's projects is the device owner's, like any session started there.
+    case LocalOperation.Create:
+      if (principal.ownerId !== options.ownerId) {
+        throw new CodedError(ErrorCode.ACCESS_DENIED);
+      }
+
+      if (!options.projects) {
+        throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
+      }
+
+      return options.projects.create(action.session).then((sessionId) => ({ sessionId }));
 
     // The device owner picks the models of the device's sessions, like their names.
     case LocalOperation.Model:
