@@ -20,7 +20,7 @@ export function SessionComposer({ controller, session, connection, deviceStatus 
 
   return (
     <form
-      className="border-t border-border pt-[4px] session:flex-none session:border-t-0 session:pt-[8px] session:short:pt-[5px]"
+      className="relative z-20 border-t border-border pt-[4px] session:flex-none session:border-t-0 session:pt-[8px] session:short:pt-[5px]"
       data-testid={COMMAND_IDS.root}
       onSubmit={controller.submit}
       {...attachmentEvents}

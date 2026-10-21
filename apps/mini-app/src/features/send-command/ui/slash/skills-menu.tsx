@@ -10,10 +10,10 @@ export function SkillsMenu({ listId, items, active, loading, failed, supported, 
 
   return (
     <div
-      className="absolute inset-x-0 bottom-full z-50 mb-2 max-h-[min(45dvh,320px)] overflow-y-auto rounded-xl border border-border bg-popover p-1 text-popover-foreground shadow-lg"
+      className="absolute inset-x-0 bottom-full z-50 mb-2 max-h-[min(38dvh,280px)] overflow-y-auto overscroll-contain rounded-xl border border-border bg-surface p-1 text-foreground shadow-xl [scrollbar-width:thin]"
       data-testid={SLASH_SKILL_IDS.menu}
     >
-      <p className="px-3 py-2 text-xs text-muted-foreground">{t("slashSkillsTitle")}</p>
+      {items.length ? <p className="px-2.5 py-1 text-[11px] font-medium text-muted-foreground">{t("slashSkillsTitle")}</p> : null}
       <SkillsStatus loading={loading} failed={failed} supported={supported} hasItems={items.length > 0} retry={retry} />
       <div id={listId} role="listbox" aria-label={t("slashSkillsTitle")}>
         <SkillOptions items={items} active={active} listId={listId} pick={pick} highlight={highlight} />

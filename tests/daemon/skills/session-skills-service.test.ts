@@ -41,16 +41,19 @@ function serviceFor(
   current: () => Session | undefined,
   context: { HOME: string; CLAUDE_CONFIG_DIR: string },
   resolve?: () => Promise<NativeProcess | undefined>,
+  cmuxSurface?: () => Promise<{ workspaceId: string; surfaceId: string } | undefined>,
 ) {
   const monitor = { session: current } as unknown as Pick<MonitorPort, 'session'>;
 
   const native = {
     resolve: resolve ?? (async () => processRecord),
     capture: async () => ({ executable: '/claude', args: [], env: context }),
-    cmuxSurface: async () => ({
-      workspaceId: '00000000-0000-4000-8000-000000000002',
-      surfaceId: '00000000-0000-4000-8000-000000000003',
-    }),
+    cmuxSurface:
+      cmuxSurface ??
+      (async () => ({
+        workspaceId: '00000000-0000-4000-8000-000000000002',
+        surfaceId: '00000000-0000-4000-8000-000000000003',
+      })),
   } as unknown as Pick<NativeProcesses, 'resolve' | 'capture' | 'cmuxSurface'>;
 
   return new SessionSkillsService(monitor, native);
@@ -135,6 +138,44 @@ it('rejects a generation change that occurs during filesystem awaits', async () 
   const cwd = join(root, 'project');
   const config = join(home, '.claude');
   const current = session('owner-a', cwd);
+  let sessionReads = 0;
+
+  const service = serviceFor(
+    () => {
+      sessionReads++;
+
+      if (sessionReads === 7) {
+        current.generation = 'generation-2';
+      }
+
+      return current;
+    },
+    { HOME: home, CLAUDE_CONFIG_DIR: config },
+  );
+
+  try {
+    await mkdir(config, { recursive: true });
+    await mkdir(join(cwd, '.claude', 'skills', 'review'), { recursive: true });
+
+    await writeFile(
+      join(cwd, '.claude', 'skills', 'review', 'SKILL.md'),
+      '---\nname: review\ndescription: Review code\n---\nBODY',
+    );
+
+    await expect(service.list(current.id, 'generation-1')).rejects.toMatchObject({
+      code: ErrorCode.STALE_SESSION,
+    });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+it('revalidates the captured process at scan boundaries instead of rescanning it for each filesystem operation', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'session-skills-process-fence-'));
+  const home = join(root, 'profile');
+  const cwd = join(root, 'project');
+  const config = join(home, '.claude');
+  const current = session('owner-a', cwd);
   let resolveCount = 0;
 
   const service = serviceFor(
@@ -142,10 +183,6 @@ it('rejects a generation change that occurs during filesystem awaits', async () 
     { HOME: home, CLAUDE_CONFIG_DIR: config },
     async () => {
       resolveCount++;
-
-      if (resolveCount === 4) {
-        current.generation = 'generation-2';
-      }
 
       return processRecord;
     },
@@ -160,7 +197,79 @@ it('rejects a generation change that occurs during filesystem awaits', async () 
       '---\nname: review\ndescription: Review code\n---\nBODY',
     );
 
-    await expect(service.list(current.id, 'generation-1')).rejects.toMatchObject({
+    const result = await service.list(current.id, current.generation);
+
+    expect(result.supported).toBe(true);
+    expect(resolveCount).toBe(3);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+it('rejects a native process replacement that occurs during filesystem discovery', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'session-skills-process-replaced-'));
+  const home = join(root, 'profile');
+  const cwd = join(root, 'project');
+  const config = join(home, '.claude');
+  const current = session('owner-a', cwd);
+  let resolveCount = 0;
+
+  const service = serviceFor(
+    () => current,
+    { HOME: home, CLAUDE_CONFIG_DIR: config },
+    async () => {
+      resolveCount++;
+
+      return resolveCount === 3 ? { ...processRecord, procStart: 'replacement-process' } : processRecord;
+    },
+  );
+
+  try {
+    await mkdir(config, { recursive: true });
+    await mkdir(join(cwd, '.claude', 'skills', 'review'), { recursive: true });
+
+    await writeFile(
+      join(cwd, '.claude', 'skills', 'review', 'SKILL.md'),
+      '---\nname: review\ndescription: Review code\n---\nBODY',
+    );
+
+    await expect(service.list(current.id, current.generation)).rejects.toMatchObject({
+      code: ErrorCode.STALE_SESSION,
+    });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+it('rejects a Cmux surface change that occurs during filesystem discovery', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'session-skills-cmux-changed-'));
+  const home = join(root, 'profile');
+  const cwd = join(root, 'project');
+  const config = join(home, '.claude');
+  const current = session('cmux-owner', cwd, TargetKind.Cmux);
+  let checks = 0;
+
+  const service = serviceFor(
+    () => current,
+    { HOME: home, CLAUDE_CONFIG_DIR: config },
+    undefined,
+    async () => {
+      checks++;
+
+      return checks < 3
+        ? {
+            workspaceId: '00000000-0000-4000-8000-000000000002',
+            surfaceId: '00000000-0000-4000-8000-000000000003',
+          }
+        : undefined;
+    },
+  );
+
+  try {
+    await mkdir(config, { recursive: true });
+    await mkdir(cwd, { recursive: true });
+
+    await expect(service.list(current.id, current.generation)).rejects.toMatchObject({
       code: ErrorCode.STALE_SESSION,
     });
   } finally {

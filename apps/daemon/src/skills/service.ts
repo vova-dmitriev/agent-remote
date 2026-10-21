@@ -80,6 +80,10 @@ export class SessionSkillsService {
     validateSession();
     const context = await this.nativeProcesses.capture(process);
 
+    const assertSessionCurrent = async () => {
+      validateSession();
+    };
+
     const assertCurrent = async () => {
       validateSession();
       const current = await this.nativeProcesses.resolve(identity.claudeSessionId, identity.cwd);
@@ -88,9 +92,9 @@ export class SessionSkillsService {
         identity.target.kind !== TargetKind.Cmux || (await this.cmuxBound(identity.target, process.pid));
 
       if (
-        !sameSession(this.monitor.session(sessionId), identity) ||
         !sameProcess(current, process) ||
-        !cmuxBound
+        !cmuxBound ||
+        !sameSession(this.monitor.session(sessionId), identity)
       ) {
         throw new CodedError(ErrorCode.STALE_SESSION);
       }
@@ -113,7 +117,7 @@ export class SessionSkillsService {
       home,
       configDirectory,
       args: context.args,
-      assertCurrent,
+      assertCurrent: assertSessionCurrent,
     });
 
     await assertCurrent();

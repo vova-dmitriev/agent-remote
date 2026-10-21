@@ -22,7 +22,7 @@ export function SkillOptions({ items, active, listId, pick, highlight }: SkillOp
       aria-selected={index === active}
       variant="ghost"
       className={cn(
-        "flex h-auto w-full flex-col items-start gap-0.5 whitespace-normal px-3 py-2 text-left",
+        "flex h-auto w-full flex-col items-start gap-0.5 whitespace-normal rounded-lg px-2.5 py-2 text-left",
         index === active && "bg-accent text-accent-foreground",
       )}
       data-testid={SLASH_SKILL_IDS.option}
@@ -31,8 +31,8 @@ export function SkillOptions({ items, active, listId, pick, highlight }: SkillOp
       onMouseMove={() => highlight(index)}
       onClick={() => pick(skill)}
     >
-      <span className="break-all font-medium">{skill.invocation}</span>
-      <span className="line-clamp-2 break-words text-xs text-muted-foreground">{skill.description}</span>
+      <span className="break-all font-mono text-[13px] font-medium leading-5">{skill.invocation}</span>
+      <span className="line-clamp-2 break-words text-[11px] leading-4 text-muted-foreground">{skill.description}</span>
     </Button>
   ))
 }
