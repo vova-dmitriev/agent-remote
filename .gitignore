@@ -45,3 +45,6 @@ appendonlydir/
 apps/mini-app/.storybook/public/
 .dist-stage-*/
 !scripts/build/
+
+# Test snapshots stay local; tests keep expected values in their own source.
+*.snap
