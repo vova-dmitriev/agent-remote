@@ -1,11 +1,27 @@
-import { Body, Controller, Get, Inject, Param, Patch, Put, Query, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Inject,
+  Param,
+  Patch,
+  Post,
+  Put,
+  Query,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ErrorCode,
   FrameType,
   HistoryQueryKey,
+  HttpStatus,
   RelayProtocolFeature,
+  type ServerFrame,
   sessionFileQuerySchema,
   sessionPinSchema,
+  sessionRemoveSchema,
 } from '@protocol';
 import type { Response } from 'express';
 import type { Principal } from '../auth/security.js';
@@ -22,8 +38,8 @@ import { SessionLabels } from './labels.js';
 import { SessionRepository } from './repository.js';
 
 /**
- * Session history pages (from the companion's source when it has one, else the relay's events), renaming, pins and
- * the files a session changed.
+ * Session history pages (from the companion's source when it has one, else the relay's events), renaming, pins,
+ * removal and the files a session changed.
  */
 @Controller('sessions/:id')
 @UseGuards(PrincipalGuard)
@@ -133,13 +149,49 @@ export class SessionsController {
   @Put('pin')
   async pin(@CurrentPrincipal() p: Principal, @Param('id') id: string, @Body() input: unknown) {
     const body = sessionPinSchema.parse(input);
+
+    await this.sendToDevice(p, id, body.generation, RelayProtocolFeature.SessionPins, {
+      type: FrameType.SessionPin,
+      sessionId: id,
+      pinned: body.pinned,
+    });
+
+    return { pinned: body.pinned };
+  }
+
+  /**
+   * Removes an owned session from the lists: hides, archives or ends it. The device holds what it hid, so the change
+   * goes to its live connection and the session leaves its next snapshot.
+   */
+  @Post('remove')
+  @HttpCode(HttpStatus.Ok)
+  async remove(@CurrentPrincipal() p: Principal, @Param('id') id: string, @Body() input: unknown) {
+    const body = sessionRemoveSchema.parse(input);
+
+    await this.sendToDevice(p, id, body.generation, RelayProtocolFeature.SessionRemove, {
+      type: FrameType.SessionRemove,
+      sessionId: id,
+      mode: body.mode,
+    });
+
+    return { mode: body.mode };
+  }
+
+  /** Sends a frame about an owned live session of this generation to its device, if the device speaks it. */
+  private async sendToDevice(
+    p: Principal,
+    id: string,
+    generation: string,
+    feature: number,
+    frame: Extract<ServerFrame, { type: typeof FrameType.SessionPin | typeof FrameType.SessionRemove }>,
+  ) {
     const session = await this.sessions.live(p.userId, id);
 
     if (!session) {
       throw new Fault(ErrorCode.NOT_FOUND);
     }
 
-    if (session.generation !== body.generation) {
+    if (session.generation !== generation) {
       throw new Fault(ErrorCode.STALE_SESSION);
     }
 
@@ -149,17 +201,13 @@ export class SessionsController {
       throw new Fault(ErrorCode.DEVICE_OFFLINE);
     }
 
-    if (connection.protocolVersion < RelayProtocolFeature.SessionPins) {
+    if (connection.protocolVersion < feature) {
       throw new Fault(ErrorCode.CAPABILITY_UNAVAILABLE);
     }
 
-    if (
-      !this.hub.send(connection.socket, { type: FrameType.SessionPin, sessionId: id, pinned: body.pinned })
-    ) {
+    if (!this.hub.send(connection.socket, frame)) {
       throw new Fault(ErrorCode.DEVICE_OFFLINE);
     }
-
-    return { pinned: body.pinned };
   }
 
   /**

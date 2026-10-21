@@ -17,6 +17,7 @@ import type {
   AnalyticsReport,
   RulesReply,
   RulesRequest,
+  SessionRemoval,
 } from "@protocol"
 import type { AttachmentAccess } from "./attachment-access"
 import type { Device, HistoryPageSkip } from "./types"
@@ -27,6 +28,8 @@ export interface ApplicationOperations {
   renameSession(sessionId: string, title: string, generation: string): Promise<unknown>
   /** Pins or unpins a session on its device; the device's next snapshot shows the result. */
   pinSession(sessionId: string, generation: string, pinned: boolean): Promise<unknown>
+  /** Hides, archives or ends a session on its device; the session leaves the device's next snapshot. */
+  removeSession(sessionId: string, generation: string, mode: SessionRemoval): Promise<unknown>
   /** The text of a file the session changed, read on its device. */
   readSessionFile(sessionId: string, generation: string, path: string): Promise<SessionFile>
   /** Token usage, cost and plan limits counted on the device. */

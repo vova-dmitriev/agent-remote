@@ -72,6 +72,27 @@ export class LocalStore implements LocalStorePort {
     this.db.exec(
       'CREATE TABLE IF NOT EXISTS session_pins(device_id TEXT NOT NULL,id TEXT NOT NULL,PRIMARY KEY(device_id,id))',
     );
+
+    this.db.exec(
+      'CREATE TABLE IF NOT EXISTS session_hidden(device_id TEXT NOT NULL,id TEXT NOT NULL,hidden_at INTEGER NOT NULL,PRIMARY KEY(device_id,id))',
+    );
+  }
+  /** When the owner hid each session on this device, by session id. */
+  hiddenSessions(): Map<string, number> {
+    const rows = this.db
+      .prepare('SELECT id,hidden_at FROM session_hidden WHERE device_id=?')
+      .all(this.deviceId) as {
+      id: string;
+      hidden_at: number;
+    }[];
+
+    return new Map(rows.map((row) => [row.id, row.hidden_at]));
+  }
+  setHidden(id: string, at: number) {
+    // ponytail: rows of sessions that came back stay; they only compare against newer messages.
+    this.db
+      .prepare('INSERT OR REPLACE INTO session_hidden(device_id,id,hidden_at) VALUES(?,?,?)')
+      .run(this.deviceId, id, at);
   }
   /** Ids of the sessions the owner pinned on this device. */
   pinnedSessions(): Set<string> {

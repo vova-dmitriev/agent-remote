@@ -12,6 +12,7 @@ import {
   MAX_DEVICE_CONNECTORS,
   MAX_DEVICE_SESSIONS,
   NativeRestartState,
+  SessionRemoval,
   SessionStatus,
   StatusConfidence,
 } from './values.js';
@@ -151,6 +152,9 @@ export const sessionSchema = z
 /** Pins or unpins a session of the current generation; the device holds the pin. */
 export const sessionPinSchema = z.strictObject({ pinned: z.boolean(), generation: id });
 export type SessionPin = z.infer<typeof sessionPinSchema>;
+/** Removes a session of the current generation from the lists; the device holds what it hid. */
+export const sessionRemoveSchema = z.strictObject({ mode: z.enum(SessionRemoval), generation: id });
+export type SessionRemove = z.infer<typeof sessionRemoveSchema>;
 export const actionSchema = z.discriminatedUnion('type', [
   z
     .strictObject({
@@ -413,6 +417,7 @@ export const serverFrameSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal(FrameType.Error), code: id }),
   z.strictObject({ type: z.literal(FrameType.Select), sessionId: id.nullable() }),
   z.strictObject({ type: z.literal(FrameType.SessionPin), sessionId: id, pinned: z.boolean() }),
+  z.strictObject({ type: z.literal(FrameType.SessionRemove), sessionId: id, mode: z.enum(SessionRemoval) }),
   z.strictObject({
     type: z.literal(FrameType.SessionRename),
     sessionId: id,

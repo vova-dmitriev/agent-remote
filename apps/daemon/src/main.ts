@@ -2,6 +2,7 @@ import type { ErrorCode } from '@protocol';
 import { RuntimeEvent } from './domain/runtime.js';
 import { NativeProcesses } from './sessions/native-process.js';
 import { SessionNames } from './sessions/session-names.js';
+import { SessionRemover } from './sessions/session-removal.js';
 import { CodexManager } from './runtime/services/codex-manager.js';
 import { BridgeClient } from './desktop/bridge-client.js';
 import { join } from 'node:path';
@@ -112,6 +113,21 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
 
   const names = new SessionNames({ monitor, adapters, readers, codex: () => codex });
 
+  const removal = new SessionRemover({
+    monitor,
+    adapters,
+    codex: () => codex,
+    stopClaude: async (session) => {
+      const running = session.claudeSessionId
+        ? await nativeProcesses.resolve(session.claudeSessionId, session.cwd)
+        : undefined;
+
+      if (running) {
+        await nativeProcesses.stop(running);
+      }
+    },
+  });
+
   const rules = new RulesService({ store: new RulesStore(), monitor });
 
   const analytics = startAnalytics(monitor, {
@@ -150,6 +166,7 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
     dispatcher: localDispatcher,
     readers,
     names,
+    removal,
     analytics,
     rules,
   }).catch(async (error: unknown) => {
@@ -179,6 +196,7 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
     inputEnabled,
     nativeProcesses,
     names,
+    removal,
     analytics,
     rules,
   });

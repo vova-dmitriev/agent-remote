@@ -13,7 +13,7 @@ type RuntimeConfiguration = Awaited<ReturnType<typeof runtimeConfiguration>>;
 
 type LocalSurfaceDeps = Pick<
   LocalControllerOptions,
-  'monitor' | 'store' | 'adapters' | 'dispatcher' | 'names'
+  'monitor' | 'store' | 'adapters' | 'dispatcher' | 'names' | 'removal'
 > & {
   config: RuntimeConfiguration;
   stateDirectory: string;
@@ -35,6 +35,7 @@ export async function startLocalSurface(deps: LocalSurfaceDeps) {
     adapters: deps.adapters,
     dispatcher: deps.dispatcher,
     ...(deps.names ? { names: deps.names } : {}),
+    ...(deps.removal ? { removal: deps.removal } : {}),
     analytics: deps.analytics,
     rules: deps.rules,
     history: (request) => (readers.has(request.sessionId) ? readers.page(request) : Promise.resolve(null)),

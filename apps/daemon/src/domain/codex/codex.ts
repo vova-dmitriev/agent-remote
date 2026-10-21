@@ -85,6 +85,7 @@ export const CodexMethod = {
   ThreadLoadedList: 'thread/loaded/list',
   ThreadRead: 'thread/read',
   ThreadResume: 'thread/resume',
+  ThreadArchive: 'thread/archive',
   ThreadTurnsList: 'thread/turns/list',
   ThreadItemsList: 'thread/items/list',
   TurnStart: 'turn/start',

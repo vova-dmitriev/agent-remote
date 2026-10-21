@@ -16,7 +16,10 @@ for (const source of sourceCases) {
     await byTestId(page, SESSION_CARD_IDS.root, { 'session-id': 'matrix-session' }).click();
     await expect(page.getByTestId(SESSION_PAGE_IDS.terminal)).toHaveCount(source.terminal ? 1 : 0);
     await expect(page.getByTestId(PERMISSION_IDS.root)).toHaveCount(source.permission ? 1 : 0);
-    await expect(page.getByTestId(COMMAND_IDS.actionsTrigger)).toHaveCount(source.writable ? 1 : 0);
+    // The session menu always offers removal; interrupting is there only for a source that takes input.
+    await page.getByTestId(COMMAND_IDS.actionsTrigger).click();
+    await expect(page.getByTestId(COMMAND_IDS.interrupt)).toHaveCount(source.writable ? 1 : 0);
+    await page.keyboard.press('Escape');
 
     if (source.writable) {
       await expect(page.getByTestId(COMMAND_IDS.prompt)).toBeEnabled();

@@ -11,6 +11,7 @@ import {
   type AnalyticsPeriod,
   type PreferencePatch,
   type ReadingPosition,
+  type SessionRemoval,
 } from "@protocol"
 import type { DesktopBridgeConnection } from "./desktop-connection.js"
 
@@ -36,6 +37,10 @@ export class DesktopOperations {
 
   pinSession(sessionId: string, generation: string, pinned: boolean) {
     return this.connection.request({ operation: LocalOperation.Pin, sessionId, generation, pinned })
+  }
+
+  removeSession(sessionId: string, generation: string, mode: SessionRemoval) {
+    return this.connection.request({ operation: LocalOperation.Remove, sessionId, generation, mode })
   }
 
   async readSessionFile(sessionId: string, generation: string, path: string) {

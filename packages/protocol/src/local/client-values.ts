@@ -23,6 +23,7 @@ export const LocalOperation = {
   PreferencesSave: 'preferences_save',
   Rename: 'rename',
   Pin: 'pin',
+  Remove: 'remove',
   File: 'file',
   Analytics: 'analytics',
   Rules: 'rules',

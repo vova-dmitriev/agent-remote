@@ -10,13 +10,11 @@ import {
   agentName,
   sourceTextClass,
 } from "@/entities/session"
-import { feedbackText } from "@/shared/lib/i18n"
 import { useTranslation } from "@/shared/lib/hooks"
 import { SessionTitle } from "@/features/rename-session"
 import { RateLimits, SessionUsage, providerLimits, usageProvider } from "@/entities/usage"
-import { SessionComposer, SessionActions } from "@/features/send-command"
+import { SessionComposer } from "@/features/send-command"
 import { Button } from "@/shared/ui/button"
-import { noticeVariants } from "@/shared/ui/notice"
 import { cn } from "@/shared/lib/utils"
 import { SessionActivity } from "./activity/session-activity"
 import { sessionObserved } from "../lib/session-availability"
@@ -25,6 +23,8 @@ import { UserInputRequests } from "./questions/requests/user-input-requests"
 import { SessionPermissions } from "./permission-card/session-permissions"
 import { SessionFeed } from "./session-feed/session-feed"
 import { SessionRulesBadge } from "./rules/session-rules-badge"
+import { SessionNotices } from "./session-notices"
+import { SessionMenu } from "./session-menu"
 import { SESSION_PAGE_IDS } from "../config/test-ids"
 import type { SessionPageProps } from "./session-page.types"
 
@@ -41,6 +41,7 @@ export function SessionPage({
   showBack = true,
   controller,
   rename,
+  remove,
   onOpenSubagent,
   onOpenFile,
   onOpenRules,
@@ -92,12 +93,14 @@ export function SessionPage({
           agent={agentName(session)}
         />
         <SessionAvailability key={session.id + ":availability:" + session.generation} available={observed} />
-        <SessionActions
+        <SessionMenu
           key={session.id + ":" + session.generation}
           session={session}
           controller={controller}
+          remove={remove}
           connection={state.connection}
           deviceStatus={deviceStatus}
+          onRemoved={onBack}
         />
       </div>
       <p className="mt-[15px] text-[11px] text-muted-foreground session:mt-[5px] session:flex-none session:text-[10px] session:short:hidden">
@@ -105,11 +108,7 @@ export function SessionPage({
         {t(session.statusConfidence === StatusConfidence.Inferred ? "inferredStatus" : "observedStatus")}
         <SessionUsage usage={session.usage} />
       </p>
-      {session.errorCode ? (
-        <p className={noticeVariants()} role="alert" data-testid={SESSION_PAGE_IDS.sourceError}>
-          {feedbackText(session.errorCode, t)}
-        </p>
-      ) : null}
+      <SessionNotices session={session} removeFailed={remove?.failed === true} />
       {session.capabilities.terminalSnapshot ? (
         <div className="mt-[28px] flex gap-[24px] border-b border-border session:mt-[4px] session:flex-none session:gap-[18px] session:short:mt-[3px]">
           <Button

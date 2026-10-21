@@ -51,6 +51,7 @@ export interface MonitorPort extends EventEmitter {
   invalidate(connectorId: string): void;
   setSessionTitle(id: string, title: string | undefined): boolean;
   setPinned(id: string, pinned: boolean): boolean;
+  hide(id: string, at?: number): boolean;
   setSubagents(id: string, agents: Session['subagents']): void;
   settleSubagentPermission(sessionId: string, agentId: string, decision: PermissionDecision): void;
   setSessionModel(

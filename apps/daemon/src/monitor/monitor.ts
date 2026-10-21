@@ -75,10 +75,13 @@ export class Monitor extends EventEmitter implements MonitorPort {
   private rateLimits: RateLimit[] = [];
   /** Sessions the owner pinned; kept in the store so a pin outlives restarts. */
   private pins: Set<string>;
+  /** When the owner hid each session; a hidden session stays out of the lists until a newer message. */
+  private hidden: Map<string, number>;
   selectedId: string | null = null;
   constructor(private options: Options) {
     super();
     this.pins = this.options.store.pinnedSessions();
+    this.hidden = this.options.store.hiddenSessions();
 
     for (const { session: saved } of this.options.store.nativeSessions().slice(0, MAX_DEVICE_SESSIONS)) {
       const adapter = this.options.adapters.get(saved.target.connectorId);
@@ -520,10 +523,41 @@ export class Monitor extends EventEmitter implements MonitorPort {
     session.nativeRestartState = state;
     this.emit(RuntimeEvent.Snapshot);
   }
+  private shown(session: Session) {
+    const hiddenAt = this.hidden.get(session.id);
+
+    return hiddenAt === undefined || (session.lastMessageAt ?? 0) > hiddenAt;
+  }
+  /** The sessions the lists show and the device limit counts: every session but the hidden ones. */
+  private visible() {
+    return [...this.sessions.values()].filter((session) => this.shown(session));
+  }
+  /** Hides a listed session from the lists until its next message; returns whether it changed. */
+  hide(id: string, at = Date.now()): boolean {
+    const session = this.sessions.get(id);
+
+    if (!session || !this.shown(session)) {
+      return false;
+    }
+
+    this.options.store.setHidden(id, at);
+    this.hidden.set(id, at);
+
+    if (this.selectedId === id) {
+      this.selectedId = null;
+      this.terminal = null;
+    }
+
+    this.emit(RuntimeEvent.Snapshot);
+
+    return true;
+  }
   canCreateSession() {
+    const visible = this.visible();
+
     return (
-      this.sessions.size < MAX_DEVICE_SESSIONS ||
-      [...this.sessions.values()].some(
+      visible.length < MAX_DEVICE_SESSIONS ||
+      visible.some(
         (session) =>
           session.status === SessionStatus.Ended ||
           session.integrationState === IntegrationState.Disconnected ||
@@ -534,12 +568,14 @@ export class Monitor extends EventEmitter implements MonitorPort {
     );
   }
   private makeRoom() {
-    if (this.sessions.size < MAX_DEVICE_SESSIONS) {
+    const visible = this.visible();
+
+    if (visible.length < MAX_DEVICE_SESSIONS) {
       return;
     }
 
     const oldest = (candidates: Session[]) => candidates.sort((a, b) => a.lastEventAt - b.lastEventAt)[0];
-    const sessions = [...this.sessions.values()].filter((session) => !this.restarting.has(session.id));
+    const sessions = visible.filter((session) => !this.restarting.has(session.id));
 
     const retired =
       oldest(
@@ -839,14 +875,24 @@ export class Monitor extends EventEmitter implements MonitorPort {
     const message = type === EventType.Message ? historySchema.safeParse(payload) : null;
     const session = sessionId ? this.sessions.get(sessionId) : undefined;
 
+    let returned = false;
+
     if (session && message?.success) {
+      const shown = this.shown(session);
+
       session.lastMessageAt = Math.max(session.lastMessageAt ?? 0, message.data.occurredAt);
       this.persistNative(session);
+      returned = !shown && this.shown(session);
     }
 
     const event = this.options.store.append({ sessionId, type, payload, occurredAt });
 
     this.emit(RuntimeEvent.Event, event);
+
+    // A hidden session's new message brings it back to the lists.
+    if (returned) {
+      this.emit(RuntimeEvent.Snapshot);
+    }
 
     return event;
   }
@@ -854,7 +900,7 @@ export class Monitor extends EventEmitter implements MonitorPort {
     return structuredClone(
       boundSnapshotChanges({
         sessions: boundSubagentSnapshots(
-          [...this.sessions.values()].map((session) =>
+          this.visible().map((session) =>
             this.pins.has(session.id) ? { ...session, pinned: true as const } : session,
           ),
         ),

@@ -290,6 +290,17 @@ export class CodexManager {
 
     return true;
   }
+  /** Archives a thread through an app-server, like `renameThread`; Codex moves it out of its thread list. */
+  async archiveThread(threadId: string): Promise<void> {
+    const servers = [...this.connections.values()].filter((item) => item.rpc && !item.ipc);
+    const entry = servers.find((item) => item.bindings.has(threadId)) ?? servers[0];
+
+    if (!entry?.rpc) {
+      throw new CodedError(ErrorCode.CODEX_DISCONNECTED);
+    }
+
+    await entry.rpc.request(CodexMethod.ThreadArchive, { threadId });
+  }
   async close() {
     this.closed = true;
     clearInterval(this.timer);

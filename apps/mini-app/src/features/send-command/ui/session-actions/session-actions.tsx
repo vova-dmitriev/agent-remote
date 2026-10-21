@@ -8,13 +8,13 @@ import { canSend } from "@/entities/session"
 import { COMMAND_IDS } from "@/features/send-command/config/test-ids"
 import type { SessionActionsProps } from "./session-actions.types"
 
-export function SessionActions({ session, controller, connection, deviceStatus }: SessionActionsProps) {
+export function SessionActions({ session, controller, connection, deviceStatus, children }: SessionActionsProps) {
   const { t } = useTranslation()
 
   const disabled =
     controller.busy || session.status === SessionStatus.Ended || !canSend(connection, deviceStatus, session, CapabilityKey.Interrupt)
 
-  if (!session.capabilities.interrupt) return null
+  if (!session.capabilities.interrupt && !children) return null
 
   return (
     <div className="flex-none" data-testid={COMMAND_IDS.actions}>
@@ -33,27 +33,30 @@ export function SessionActions({ session, controller, connection, deviceStatus }
           </Button>
         </DropdownTrigger>
         <MenuContent data-testid={COMMAND_IDS.actionsPanel}>
-          <DropdownItem
-            asChild
-            disabled={disabled}
-            onSelect={() => {
-              if (!disabled) void controller.action({ type: CommandActionType.Interrupt })
-            }}
-          >
-            <Button
-              type="button"
-              variant="ghost"
-              className={cn(
-                menuItemClass,
-                "text-danger hover:bg-transparent hover:text-danger dark:hover:bg-transparent dark:data-[highlighted]:bg-highlight",
-              )}
-              data-testid={COMMAND_IDS.interrupt}
+          {session.capabilities.interrupt ? (
+            <DropdownItem
+              asChild
               disabled={disabled}
+              onSelect={() => {
+                if (!disabled) void controller.action({ type: CommandActionType.Interrupt })
+              }}
             >
-              <Square aria-hidden="true" size={16} />
-              {t(CapabilityKey.Interrupt)}
-            </Button>
-          </DropdownItem>
+              <Button
+                type="button"
+                variant="ghost"
+                className={cn(
+                  menuItemClass,
+                  "text-danger hover:bg-transparent hover:text-danger dark:hover:bg-transparent dark:data-[highlighted]:bg-highlight",
+                )}
+                data-testid={COMMAND_IDS.interrupt}
+                disabled={disabled}
+              >
+                <Square aria-hidden="true" size={16} />
+                {t(CapabilityKey.Interrupt)}
+              </Button>
+            </DropdownItem>
+          ) : null}
+          {children}
         </MenuContent>
       </DropdownMenu>
     </div>

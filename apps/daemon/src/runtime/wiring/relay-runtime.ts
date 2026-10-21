@@ -6,7 +6,7 @@ import { NativeRestartPoller } from '../native-restart-poller.js';
 import { RelayFrameRouter } from '../relay-frame-router.js';
 import { RelayLink, type RelayLinkDeps } from '../relay-link.js';
 import { SourcePoller, type DesktopBindingEntry } from '../source-poller.js';
-import type { SessionNamesPort } from '../../domain/ports/session-names.js';
+import type { SessionNamesPort, SessionRemovalPort } from '../../domain/ports/session-names.js';
 import type { AnalyticsPort } from '../../analytics/collector.js';
 import type { RulesPort } from '../../rules/service.js';
 
@@ -16,6 +16,7 @@ type RelayRuntimeDeps = RelayLinkDeps & {
   inputEnabled: boolean;
   nativeProcesses: NativeProcesses;
   names: SessionNamesPort;
+  removal?: SessionRemovalPort;
   analytics?: AnalyticsPort | undefined;
   rules?: RulesPort | undefined;
 };
@@ -34,6 +35,7 @@ export function createRelayRuntime(deps: RelayRuntimeDeps) {
     adapters,
     dispatcher,
     names: deps.names,
+    removal: deps.removal,
     analytics: deps.analytics,
     rules: deps.rules,
   });

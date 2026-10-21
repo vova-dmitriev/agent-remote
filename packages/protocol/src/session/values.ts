@@ -14,6 +14,17 @@ export const ConnectionStatus = {
 
 export type ConnectionStatus = (typeof ConnectionStatus)[keyof typeof ConnectionStatus];
 
+/**
+ * How the owner removes a session from the lists: hide it in Agent Remote only, also archive it in its agent (Codex
+ * threads; Claude has no archive), or also stop the agent. A hidden session comes back with its next message.
+ */
+export const SessionRemoval = {
+  Hide: 'hide',
+  Archive: 'archive',
+  End: 'end',
+} as const;
+export type SessionRemoval = (typeof SessionRemoval)[keyof typeof SessionRemoval];
+
 export const SessionStatus = {
   Unknown: 'unknown',
   Idle: 'idle',

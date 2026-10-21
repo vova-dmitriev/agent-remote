@@ -5,6 +5,7 @@ import { useRuntime } from "@/shared/lib/runtime"
 import { selectedSession, useSessionConnection, useSessionSelection, useSessionStoreApi } from "@/entities/session"
 import { useDevices } from "@/entities/device"
 import { useRenameSession } from "@/features/rename-session"
+import { useRemoveSession } from "@/features/remove-session"
 import { useCommand } from "@/features/send-command"
 import { usePairDevice } from "@/features/pair-device"
 import { useRevokeDevice } from "@/features/device-access"
@@ -18,6 +19,7 @@ export function useApplication() {
   const preferences = useAccountPreferences()
   const selected = selectedSession(state)
   const rename = useRenameSession()
+  const remove = useRemoveSession()
   const cache = useQueryClient()
 
   const deviceQuery = useDevices(state.connection === ConnectionStatus.Online)
@@ -100,6 +102,7 @@ export function useApplication() {
     selection,
     commands,
     rename,
+    remove,
     pairing,
     revoke,
     logout,

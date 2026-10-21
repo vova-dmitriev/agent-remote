@@ -31,4 +31,6 @@ export interface LocalStorePort {
   cursor(): Cursor;
   pinnedSessions(): Set<string>;
   setPinned(id: string, pinned: boolean): void;
+  hiddenSessions(): Map<string, number>;
+  setHidden(id: string, at: number): void;
 }

@@ -13,7 +13,7 @@ interface FakeBridgeOptions {
     result: string;
     version: number;
     snapshot: string;
-    operations: Record<'devices' | 'select' | 'history' | 'preferences' | 'reading' | 'draft' | 'queue' | 'pin' | 'file' | 'analytics' | 'rules', string>;
+    operations: Record<'devices' | 'select' | 'history' | 'preferences' | 'reading' | 'draft' | 'queue' | 'pin' | 'remove' | 'file' | 'analytics' | 'rules', string>;
     unavailable: string;
   };
 }
@@ -49,6 +49,7 @@ export async function installDesktopBridge(
         draft: LocalOperation.DraftGet,
         queue: LocalOperation.QueueGet,
         pin: LocalOperation.Pin,
+        remove: LocalOperation.Remove,
         file: LocalOperation.File,
         analytics: LocalOperation.Analytics,
         rules: LocalOperation.Rules,
@@ -91,7 +92,7 @@ export async function installDesktopBridge(
         },
         request: async (request: {
           requestId: string;
-          action: { operation: string; agentId?: string; sessionId?: string; pinned?: boolean; path?: string; period?: string; request?: unknown };
+          action: { operation: string; agentId?: string; sessionId?: string; pinned?: boolean; mode?: string; path?: string; period?: string; request?: unknown };
         }) => {
           const base = { kind: values.result, version: values.version, requestId: request.requestId, leaseId, epoch };
           const { operation, agentId } = request.action;
@@ -120,6 +121,17 @@ export async function installDesktopBridge(
             usage.usageReads = [...(usage.usageReads ?? []), request.action.period ?? ''];
 
             return report ? { ...base, ok: true, data: report } : { ...base, ok: false, code: values.unavailable };
+          }
+
+          // Like the companion: the removed session leaves the snapshot; a test reads `removals`.
+          if (operation === operations.remove) {
+            const record = window as unknown as { removals?: unknown[] };
+
+            record.removals = [...(record.removals ?? []), { sessionId: request.action.sessionId, mode: request.action.mode }];
+            snapshot = { ...snapshot, sessions: snapshot.sessions.filter((session) => session.id !== request.action.sessionId) };
+            setTimeout(publish, 0);
+
+            return { ...base, ok: true, data: null };
           }
 
           if (operation === operations.pin) {
