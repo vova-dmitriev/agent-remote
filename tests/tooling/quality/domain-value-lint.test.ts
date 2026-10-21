@@ -114,7 +114,7 @@ it.each([
   ['transport', 'packages/transport/src/example.ts'],
   ['application client', 'apps/mini-app/src/app/api/desktop/application-client.ts'],
 ])(
-  'rejects raw uppercase Error/Fault codes in %s source',
+  'rejects raw uppercase codes in any error class or Fault in %s source',
   (_name, filename) => {
     for (const source of [
       "throw new Error('CODEX_DISCONNECTED');",
@@ -131,6 +131,9 @@ it.each([
       "throw new Error(...['CODEX_DISCONNECTED']);",
       "throw new Error(...(['CODEX_DISCONNECTED'] as const));",
       "throw new Fault('NOT_FOUND', 404);",
+      // Any error class takes its code from a constant, not only the built-in ones.
+      "throw new AdapterError('STALE_SESSION');",
+      "throw new CodedError('CAPABILITY_UNAVAILABLE');",
     ]) {
       expect(errorCodeViolations(source, filename), source).not.toHaveLength(0);
     }

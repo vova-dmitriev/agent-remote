@@ -177,7 +177,8 @@ export default {
       NewExpression(node) {
         const constructor = constructorName(node.callee);
 
-        if (!['Error', 'Fault', 'CodedError'].includes(constructor)) {
+        // Every error class (Error, CodedError, AdapterError, …) and Fault takes its code from a named constant.
+        if (constructor !== 'Fault' && !constructor?.endsWith('Error')) {
           return;
         }
 
