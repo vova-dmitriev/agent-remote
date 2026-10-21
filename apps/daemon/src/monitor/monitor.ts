@@ -695,6 +695,17 @@ export class Monitor extends EventEmitter implements MonitorPort {
     this.rateLimits = limits;
     this.emit(RuntimeEvent.Snapshot);
   }
+  /** The owner just created this session from the app: it heads the lists until its first message. */
+  markCreated(id: string, at = Date.now()) {
+    const session = this.sessions.get(id);
+
+    if (!session || session.createdAt) {
+      return;
+    }
+
+    session.createdAt = at;
+    this.emit(RuntimeEvent.Snapshot);
+  }
   /** Tokens, cost and context a session used, from the analytics store. */
   setSessionUsage(id: string, usage: SessionUsage | undefined) {
     const session = this.sessions.get(id);

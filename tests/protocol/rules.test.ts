@@ -1,6 +1,7 @@
 import {
   PermissionDecision,
   RELAY_PROTOCOL,
+  RelayProtocolFeature,
   ReadyRule,
   RuleAction,
   RuleScopeKind,
@@ -101,5 +102,6 @@ it('carries the matched rule on a permission and lets the owner allow always', (
     }),
   ).toMatchObject({ decision: 'allow_always' });
 
-  expect(RELAY_PROTOCOL.Current).toBe(7);
+  expect(RelayProtocolFeature.Rules).toBe(7);
+  expect(RELAY_PROTOCOL.Current).toBeGreaterThanOrEqual(RelayProtocolFeature.Rules);
 });

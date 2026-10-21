@@ -127,6 +127,8 @@ export const sessionSchema = z
     binding: z.enum(BindingState),
     lastEventAt: time,
     lastMessageAt: time.optional(),
+    /** When the owner created the session from the app; it orders the session until its first message. */
+    createdAt: time.optional(),
     /** Present only when the owner pinned the session; the device keeps pins and puts them in its snapshot. */
     pinned: z.literal(true).optional(),
     capabilities: capabilitySchema,

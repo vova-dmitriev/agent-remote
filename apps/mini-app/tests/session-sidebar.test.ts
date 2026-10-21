@@ -136,3 +136,11 @@ it("orders every list by the last message and never by status events", () => {
   expect(sortByRecency([statusOnly, older, newer]).map((session) => session.id)).toEqual([codexCli.id, terminal.id, chat.id])
   expect(groupByRecency([statusOnly], NOW).map((section) => section.group)).toEqual([SidebarGroup.Earlier])
 })
+
+it("puts a session created from the app at its creation time until it has messages", () => {
+  const created = { ...chat, lastMessageAt: undefined, lastEventAt: NOW, createdAt: NOW - MINUTE }
+  const older = at(terminal, 30)
+
+  expect(sortByRecency([older, created]).map((session) => session.id)).toEqual([chat.id, terminal.id])
+  expect(groupByRecency([created], NOW).map((section) => section.group)).toEqual([SidebarGroup.Today])
+})

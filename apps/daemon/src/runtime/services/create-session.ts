@@ -14,16 +14,26 @@ import { type CodexManager } from './codex-manager.js';
 import { launchClaudeSession, validateProject } from '../../sessions/launch/launcher.js';
 import type { RuntimeProfiles } from './runtime-profiles.js';
 
-export async function createManagedSession(
-  action: Extract<Command['action'], { type: typeof CommandActionType.CreateSession }>,
-  options: {
-    monitor: Monitor;
-    codex: CodexManager;
-    profiles?: Pick<RuntimeProfiles, 'prepareExecution'>;
-    current?: () => boolean;
-    directory: string;
-  },
-): Promise<string> {
+type CreateAction = Extract<Command['action'], { type: typeof CommandActionType.CreateSession }>;
+
+interface CreateOptions {
+  monitor: Monitor;
+  codex: CodexManager;
+  profiles?: Pick<RuntimeProfiles, 'prepareExecution'>;
+  current?: () => boolean;
+  directory: string;
+}
+
+/** Starts a session the owner asked for in the app; it heads the session lists until its first message. */
+export async function createManagedSession(action: CreateAction, options: CreateOptions): Promise<string> {
+  const sessionId = await launchSession(action, options);
+
+  options.monitor.markCreated(sessionId);
+
+  return sessionId;
+}
+
+async function launchSession(action: CreateAction, options: CreateOptions): Promise<string> {
   const cwd = await validateProject(action.cwd);
 
   if (!options.monitor.canCreateSession()) {

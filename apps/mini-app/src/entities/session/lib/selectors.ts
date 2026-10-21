@@ -37,11 +37,12 @@ export function filterByProvider(sessions: Session[], provider: ProviderFilterVa
 }
 
 /**
- * The time every session list orders by: the last message. Status events (`lastEventAt`) never reorder a list, so a
- * session without messages has no recency and sorts last (pinned by tests/e2e/sessions/session-labels-order.spec.ts).
+ * The time every session list orders by: the last message, or for a session created from the app and still empty
+ * its creation. Status events (`lastEventAt`) never reorder a list, so a found session without messages has no
+ * recency and sorts last (pinned by tests/e2e/sessions/session-labels-order.spec.ts).
  */
 export function sessionRecency(session: Session) {
-  return session.lastMessageAt ?? NO_RECENCY
+  return session.lastMessageAt ?? session.createdAt ?? NO_RECENCY
 }
 
 /** Newest first; the one ordering shared by the session list and the desktop sidebar. */
