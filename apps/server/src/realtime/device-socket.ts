@@ -34,6 +34,8 @@ import { ProfileProxy } from '../profiles/transport/proxy.js';
 import { SessionLabels } from '../sessions/labels.js';
 import { SessionRepository } from '../sessions/repository.js';
 import { RelayHub, type DeviceConnection } from './relay-hub.js';
+import { Notifier } from '../notifications/notify.js';
+import { rateLimitAlerts } from '../notifications/limits/rate-limits.js';
 
 const DEVICE_SOCKET_CONTEXT = 'DeviceSocket';
 
@@ -56,6 +58,7 @@ export class DeviceSocket {
     @Inject(ProfileProxy) private readonly profileProxy: ProfileProxy,
     @Inject(ContinuityProxy) private readonly continuityProxy: ContinuityProxy,
     @Inject(DeviceRequests) private readonly requests: DeviceRequests,
+    @Inject(Notifier) private readonly notifier: Notifier,
   ) {}
 
   readonly connect = (socket: WebSocket) => {
@@ -74,6 +77,7 @@ export class DeviceSocket {
       profileProxy,
       continuityProxy,
       requests,
+      notifier,
     } = this;
 
     const { live, send, fanout } = hub;
@@ -292,6 +296,11 @@ export class DeviceSocket {
                 await deviceRecords.saveSnapshot(tx, ctx.owner_id, ctx.id, frame.snapshot, frame.connectors);
                 await sessions.replaceAll(tx, ctx.owner_id, ctx.id, frame.snapshot.sessions);
               });
+
+              // The owner hears once per window cycle that a plan limit is nearly used, and when it resets.
+              for (const alert of rateLimitAlerts(frame.snapshot.rateLimits ?? [], Date.now())) {
+                await notifier.notify(ctx.owner_id, alert.key, alert.kind, null, alert);
+              }
 
               fanout(ctx.owner_id, ctx.id, {
                 type: FrameType.Snapshot,

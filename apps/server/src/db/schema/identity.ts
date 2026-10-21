@@ -1,4 +1,4 @@
-import { boolean, index, integer, pgTable, text } from 'drizzle-orm/pg-core';
+import { boolean, index, integer, jsonb, pgTable, text } from 'drizzle-orm/pg-core';
 import { epoch } from './columns.js';
 
 /** Mirrors migrations 001–008; the schema-drift test compares every column against a migrated database. */
@@ -70,4 +70,6 @@ export const notificationOutbox = pgTable('notification_outbox', {
   nextAttemptAt: epoch('next_attempt_at').notNull(),
   attempts: integer('attempts').notNull().default(0),
   sent: boolean('sent').notNull().default(false),
+  /** What a notification is about when its kind alone does not say: a rate-limit window. */
+  payload: jsonb('payload'),
 });

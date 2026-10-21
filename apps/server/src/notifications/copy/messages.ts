@@ -14,7 +14,39 @@ export interface NotificationCopy {
   interrupted: (agent: string, title: string) => string;
   failed: (agent: string, title: string) => string;
   answered: (agent: string, title: string, preview: string) => string;
+  rateLimitHigh: (agent: string, window: string, percent: number, resetIn: string) => string;
+  rateLimitReset: (agent: string, window: string) => string;
+  /** A plan window by its length in minutes: "5-hour", "7-day". */
+  limitWindow: (minutes: number) => string;
+  /** A span of time to the minute: "3 h 52 min", "2 d 4 h". */
+  duration: (milliseconds: number) => string;
 }
+
+const MINUTES_PER_DAY = 1440;
+
+/** Whole days, hours and minutes of a span, rounded to the minute. */
+function parts(milliseconds: number) {
+  const minutes = Math.round(milliseconds / 60_000);
+
+  return {
+    days: Math.floor(minutes / MINUTES_PER_DAY),
+    hours: Math.floor(minutes / 60) % 24,
+    minutes: minutes % 60,
+  };
+}
+
+function span(milliseconds: number, day: string, hour: string, minute: string) {
+  const { days, hours, minutes } = parts(milliseconds);
+
+  if (days) {
+    return `${days} ${day} ${hours} ${hour}`;
+  }
+
+  return hours ? `${hours} ${hour} ${minutes} ${minute}` : `${minutes} ${minute}`;
+}
+
+const windowLength = (minutes: number, hours: (count: number) => string, days: (count: number) => string) =>
+  minutes % MINUTES_PER_DAY === 0 ? days(minutes / MINUTES_PER_DAY) : hours(Math.round(minutes / 60));
 
 export const NOTIFICATION_COPY: Record<Language, NotificationCopy> = {
   [Language.En]: {
@@ -32,6 +64,17 @@ export const NOTIFICATION_COPY: Record<Language, NotificationCopy> = {
     interrupted: (agent, title) => `${agent} was stopped${title}. Open the session to continue.`,
     failed: (agent, title) => `${agent} could not finish the request${title}. Open the session to see why.`,
     answered: (agent, title, preview) => `${agent} replied${title}\n\n${preview}`,
+    rateLimitHigh: (agent, window, percent, resetIn) =>
+      `${agent}: ${percent}% of the ${window} window used. Resets in ${resetIn}.`,
+    rateLimitReset: (agent, window) =>
+      `${agent}: the ${window} window has reset; the limit is available again.`,
+    limitWindow: (minutes) =>
+      windowLength(
+        minutes,
+        (count) => `${count}-hour`,
+        (count) => `${count}-day`,
+      ),
+    duration: (milliseconds) => span(milliseconds, 'd', 'h', 'min'),
   },
   [Language.Ru]: {
     deviceUnavailable: 'Mac недоступен.',
@@ -49,6 +92,16 @@ export const NOTIFICATION_COPY: Record<Language, NotificationCopy> = {
     failed: (agent, title) =>
       `${agent} не смог завершить запрос${title}. Открой сессию, чтобы посмотреть причину.`,
     answered: (agent, title, preview) => `${agent} ответил${title}\n\n${preview}`,
+    rateLimitHigh: (agent, window, percent, resetIn) =>
+      `${agent}: использовано ${percent}% окна ${window}. Сброс через ${resetIn}.`,
+    rateLimitReset: (agent, window) => `${agent}: окно ${window} сброшено, лимит снова доступен.`,
+    limitWindow: (minutes) =>
+      windowLength(
+        minutes,
+        (count) => `${count} ч`,
+        (count) => `${count} дн.`,
+      ),
+    duration: (milliseconds) => span(milliseconds, 'дн.', 'ч', 'мин'),
   },
 };
 

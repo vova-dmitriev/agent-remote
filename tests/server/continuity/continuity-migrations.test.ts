@@ -140,6 +140,7 @@ describe('ordered PostgreSQL migration journal', () => {
       '006_attachment_cache',
       '007_profile_routing',
       '008_command_audit_created_at',
+      '009_notification_payload',
     ]);
 
     expect(
@@ -162,6 +163,7 @@ describe('ordered PostgreSQL migration journal', () => {
       '006_attachment_cache',
       '007_profile_routing',
       '008_command_audit_created_at',
+      '009_notification_payload',
     ]);
 
     expect(

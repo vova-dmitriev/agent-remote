@@ -40,6 +40,7 @@ export class Database {
         [MigrationVersion.AttachmentCache, '006_attachment_cache.sql'],
         [MigrationVersion.ProfileRouting, '007_profile_routing.sql'],
         [MigrationVersion.CommandAuditCreatedAt, '008_command_audit_created_at.sql'],
+        [MigrationVersion.NotificationPayload, '009_notification_payload.sql'],
       ].map(async ([version, file]) => ({
         version: version as MigrationVersion,
         sql: await readFile(new URL(`./migrations/${file}`, import.meta.url), 'utf8'),

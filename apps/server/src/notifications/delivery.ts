@@ -2,6 +2,7 @@ import { EventType, HttpStatus } from '@protocol';
 import { NotificationKind } from '../domain/notifications.js';
 import { notificationContext } from './context.js';
 import { notificationCopy } from './copy/messages.js';
+import { isRateLimitKind, rateLimitText } from './limits/rate-limits.js';
 import { type NotificationRepository } from './repositories/notifications.js';
 
 export interface TelegramSendResult {
@@ -64,6 +65,8 @@ export class NotificationDelivery {
         text = copy.pairQuota;
       } else if (row.kind === NotificationKind.PairUnavailable) {
         text = copy.pairUnavailable;
+      } else if (isRateLimitKind(row.kind)) {
+        text = rateLimitText(copy, row.kind, row.payload, now) ?? text;
       } else if (
         [EventType.TurnEnd, EventType.Permission].some((candidateValue) => candidateValue === row.kind)
       ) {
@@ -88,7 +91,10 @@ export class NotificationDelivery {
             inline_keyboard: [
               [
                 {
-                  text: row.kind.startsWith('pair_') ? copy.openApp : copy.openSession,
+                  text:
+                    row.kind.startsWith('pair_') || isRateLimitKind(row.kind)
+                      ? copy.openApp
+                      : copy.openSession,
                   web_app: { url: url.toString() },
                 },
               ],

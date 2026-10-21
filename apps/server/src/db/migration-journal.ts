@@ -10,6 +10,7 @@ export const MigrationVersion = {
   AttachmentCache: '006_attachment_cache',
   ProfileRouting: '007_profile_routing',
   CommandAuditCreatedAt: '008_command_audit_created_at',
+  NotificationPayload: '009_notification_payload',
 } as const;
 export type MigrationVersion = (typeof MigrationVersion)[keyof typeof MigrationVersion];
 export const MigrationError = {
@@ -35,6 +36,7 @@ const legacyTables: Record<MigrationVersion, readonly string[]> = {
   [MigrationVersion.AttachmentCache]: [],
   [MigrationVersion.ProfileRouting]: ['profile_routing_settings', 'profile_quota_observations'],
   [MigrationVersion.CommandAuditCreatedAt]: [],
+  [MigrationVersion.NotificationPayload]: [],
 };
 
 const digest = (sql: string) => createHash('sha256').update(sql).digest('hex');

@@ -23,6 +23,13 @@ export interface OutboxRow {
   created_at: number;
   /** The recipient's app language, when they chose one. */
   language: string | null;
+  payload: unknown;
+}
+
+/** A notification about something its kind alone does not name, sent at `at` (now when absent). */
+export interface NotificationDetails {
+  payload?: unknown;
+  at?: number;
 }
 
 export interface NotificationSessionRow {
@@ -52,10 +59,25 @@ export class NotificationRepository {
     return this.db.transaction(operation);
   }
 
-  async record(id: string, ownerId: string, sessionId: string | null, kind: string, now: number) {
+  async record(
+    id: string,
+    ownerId: string,
+    sessionId: string | null,
+    kind: string,
+    now: number,
+    details: NotificationDetails = {},
+  ) {
     await this.db.orm
       .insert(notificationOutbox)
-      .values({ id, ownerId, sessionId, kind, createdAt: now, nextAttemptAt: now })
+      .values({
+        id,
+        ownerId,
+        sessionId,
+        kind,
+        createdAt: now,
+        nextAttemptAt: details.at ?? now,
+        payload: details.payload ?? null,
+      })
       .onConflictDoNothing();
   }
 
@@ -79,6 +101,7 @@ export class NotificationRepository {
         next_attempt_at: notificationOutbox.nextAttemptAt,
         created_at: notificationOutbox.createdAt,
         language: userPreferences.language,
+        payload: notificationOutbox.payload,
       })
       .from(notificationOutbox)
       .innerJoin(users, eq(users.id, notificationOutbox.ownerId))
