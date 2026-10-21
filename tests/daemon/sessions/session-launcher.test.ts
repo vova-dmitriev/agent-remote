@@ -59,3 +59,30 @@ it('starts Claude with the model and effort the owner picked', async () => {
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+it('starts Claude in a detached tmux session on Linux, where there is no Terminal app', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'remote-launch-'));
+
+  try {
+    const calls: { file: string; args: string[] }[] = [];
+
+    const id = await launchClaudeSession({
+      directory: dir,
+      cwd: dir,
+      node: '/node',
+      entry: '/remote.mjs',
+      platform: 'linux',
+      open: async (file, args) => {
+        calls.push({ file, args });
+      },
+    });
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]!.file).toBe('tmux');
+    expect(calls[0]!.args.slice(0, 4)).toEqual(['new-session', '-d', '-s', 'agent-remote-' + id]);
+    expect(calls[0]!.args.slice(4, 6)).toEqual(['/bin/sh', join(dir, 'launchers', id + '.command')]);
+    expect(await readFile(calls[0]!.args[5]!, 'utf8')).toContain("exec '/node' '/remote.mjs' claude");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});

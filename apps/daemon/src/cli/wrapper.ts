@@ -1,3 +1,4 @@
+import { readTmuxScreen, tmuxPane } from '../sessions/launch/tmux.js';
 import { CodedError, CommandStatus, ErrorCode, TargetKind } from '@protocol';
 import { WrapperActionType, IpcMessageType } from '../domain/ipc.js';
 import { CmuxClient } from '../cmux/client.js';
@@ -20,6 +21,7 @@ const actionSchema = z.discriminatedUnion('type', [
   }),
   z.strictObject({ type: z.literal(WrapperActionType.Interrupt), sessionId: z.string().min(1).max(512) }),
   z.strictObject({ type: z.literal(WrapperActionType.Snapshot) }),
+  z.strictObject({ type: z.literal(WrapperActionType.Enter), sessionId: z.string().min(1).max(512) }),
 ]);
 
 export async function startClaude(
@@ -46,6 +48,7 @@ export async function startClaude(
       : randomUUID();
 
   delete process.env.CLAUDE_REMOTE_LAUNCH_ID;
+  const pane = tmuxPane(process.env);
   const manager = new PtySessionManager({ args, ...(launch ? { executable: launch.executable } : {}) });
   let remote: RemotePtyBinding | undefined;
   let socket: Socket | undefined;
@@ -74,6 +77,8 @@ export async function startClaude(
         wrapperId,
         sourceVersion: 'local-claude',
         ...(cmux ? { cmux } : {}),
+        // In tmux (a Linux VM) the wrapper reads its own screen, as cmux does on macOS.
+        ...(!cmux && pane ? { screen: true } : {}),
       }),
     );
 
@@ -112,7 +117,9 @@ export async function startClaude(
         try {
           const action = actionSchema.parse(message.action);
 
-          if (action.type === WrapperActionType.Snapshot) {
+          if (action.type === WrapperActionType.Snapshot && !cmux && pane) {
+            result = { status: CommandStatus.Dispatched, text: await readTmuxScreen(pane) };
+          } else if (action.type === WrapperActionType.Snapshot) {
             if (!cmux || !cmuxClient || !config) {
               throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
             }
@@ -136,6 +143,8 @@ export async function startClaude(
 
             if (action.type === WrapperActionType.Prompt) {
               manager.sendPrompt(remote, action.text);
+            } else if (action.type === WrapperActionType.Enter) {
+              manager.pressEnter(remote);
             } else {
               manager.interrupt(remote);
             }
