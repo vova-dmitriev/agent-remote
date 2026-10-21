@@ -27,8 +27,13 @@ export function SessionsPage({ sessions, connected, loading, onSelect, onLoadPag
           {creation}
         </div>
       </div>
-      {connected ? <SessionSearch query={query} onQuery={setQuery} /> : null}
-      {connected ? <ProviderFilter value={filter.provider} onChange={filter.setProvider} /> : null}
+      {connected ? (
+        // One row, so the search costs the list no height: the field takes what the agent filter leaves.
+        <div className="flex items-start gap-[8px]">
+          <SessionSearch query={query} onQuery={setQuery} />
+          <ProviderFilter value={filter.provider} onChange={filter.setProvider} />
+        </div>
+      ) : null}
       {query.trim() && !shown.length ? (
         <p className={mutedTextClass + " px-[4px] py-[18px] text-center"} data-testid={SESSIONS_PAGE_IDS.noMatches}>
           {t("sidebarNoMatches", { query: query.trim() })}

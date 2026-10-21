@@ -107,8 +107,7 @@ for (const language of ['ru', 'en'] as const) {
       ).toBeLessThanOrEqual(2);
     }
 
-    // Header, title, the search and the provider filter fit above the first card.
-    expect((await cards.first().boundingBox())!.y).toBeLessThanOrEqual(200);
+    expect((await cards.first().boundingBox())!.y).toBeLessThanOrEqual(160);
 
     for (const card of await cards.all()) {
       const box = (await card.boundingBox())!;
