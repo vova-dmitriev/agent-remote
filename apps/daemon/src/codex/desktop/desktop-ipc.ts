@@ -62,8 +62,7 @@ export class DesktopIpcClient extends EventEmitter {
     socket.on('close', () => this.disconnect());
   }
   static async connect(path: string, timeoutMs = 5000) {
-    await verifyLocalSocket(path);
-    const socket = connect(path);
+    const socket = connect(await verifyLocalSocket(path));
     const client = new DesktopIpcClient(socket, timeoutMs);
     const timer = setTimeout(() => socket.destroy(new CodedError(ErrorCode.CODEX_TIMEOUT)), timeoutMs);
 
