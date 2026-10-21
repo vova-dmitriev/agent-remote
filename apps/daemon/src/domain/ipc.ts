@@ -9,6 +9,8 @@ export const IpcMessageType = {
   CodexResult: 'codex_result',
   DesktopResult: 'desktop_result',
   HookResult: 'hook_result',
+  /** The daemon holds a command for the owner's answer; the hook CLI waits longer for the result. */
+  HookHold: 'hook_hold',
   ReleaseHookSocket: 'release_hook_socket',
   ReleaseResult: 'release_result',
 } as const;

@@ -17,11 +17,11 @@ import { startDaemon } from './main.js';
 import { startClaude } from './cli/wrapper.js';
 import { CodedError, RULE_ANSWER_TIMEOUT_MS, hasErrorCode } from '@protocol';
 
-/** How long `remote hook` waits for the daemons: a permission prompt, or an owner answering a rule stop. */
-const HOOK_WAIT_MS: Partial<Record<string, number>> = {
-  [ClaudeHookEvent.PermissionRequest]: 50_000,
-  [ClaudeHookEvent.PreToolUse]: RULE_ANSWER_TIMEOUT_MS + 30_000,
-};
+/** How long `remote hook` waits for the daemons' first answer: a permission prompt waits, other hooks do not. */
+const HOOK_WAIT_MS: Partial<Record<string, number>> = { [ClaudeHookEvent.PermissionRequest]: 50_000 };
+
+/** Once a daemon holds a command for the owner's answer to a rule stop, the hook waits this long. */
+const RULE_HOLD_MS = RULE_ANSWER_TIMEOUT_MS + 30_000;
 
 /** Marks a hook Codex runs: `remote hook --agent=codex`. */
 const CODEX_HOOK_FLAG = `--agent=${HookAgent.Codex}`;
@@ -272,6 +272,7 @@ export async function runCli(argv = process.argv.slice(2)) {
             : hookCmuxSurface(process.env)),
         },
         HOOK_WAIT_MS[payload.hook_event_name] ?? 1500,
+        RULE_HOLD_MS,
       );
 
       process.stdout.write(JSON.stringify(output) + '\n');

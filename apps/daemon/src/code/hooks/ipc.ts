@@ -1,3 +1,4 @@
+import { IpcMessageType } from '../../domain/ipc.js';
 import { CodedError, ErrorCode } from '@protocol';
 import { connect, type Socket } from 'node:net';
 
@@ -51,20 +52,26 @@ export interface LocalReply {
   result?: { connected?: number };
 }
 
-/** One request over a local socket; aborting `signal` drops it, which the peer sees as a closed request. */
+/**
+ * One request over a local socket; aborting `signal` drops it, which the peer sees as a closed request. A peer that
+ * answers `hook_hold` first gets `holdMs` more for its real answer, so a slow answer never means a hung peer.
+ */
 export function requestLocal(
   path: string,
   frame: unknown,
   timeoutMs = 5000,
   signal?: AbortSignal,
+  holdMs?: number,
 ): Promise<LocalReply> {
   return new Promise((resolve, reject) => {
     const socket = connect(path);
 
-    const timer = setTimeout(() => {
+    const expire = () => {
       socket.destroy();
       reject(new CodedError(ErrorCode.IPC_TIMEOUT));
-    }, timeoutMs);
+    };
+
+    let timer = setTimeout(expire, timeoutMs);
 
     let settled = false;
 
@@ -88,6 +95,16 @@ export function requestLocal(
     socket.on('connect', () => writeFrame(socket, frame));
     socket.on('error', (error) => done(error));
     socket.on('close', () => done(new CodedError(ErrorCode.IPC_CLOSED)));
-    lineReader(socket, (value) => done(null, value));
+
+    lineReader(socket, (value) => {
+      if (holdMs && (value as LocalReply | null)?.type === IpcMessageType.HookHold) {
+        clearTimeout(timer);
+        timer = setTimeout(expire, holdMs);
+
+        return;
+      }
+
+      done(null, value);
+    });
   });
 }

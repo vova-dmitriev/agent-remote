@@ -355,6 +355,8 @@ export async function startHookServer(options: Options) {
           session: Session,
           agent: HookAgent,
         ) => {
+          // Tell the hook at once that this daemon is alive and waiting for the owner.
+          writeFrame(socket, { type: IpcMessageType.HookHold });
           socket.once('close', () => options.permissions.cancelSession(session.id, session.generation));
           options.monitor.emit(RuntimeEvent.Snapshot);
 

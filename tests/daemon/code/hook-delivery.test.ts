@@ -123,3 +123,33 @@ it("takes a daemon's settled answer even when it is empty, so an owner's allow b
   expect(output).toEqual({});
   await expect.poll(() => waiting.closed.length).toBe(1);
 });
+
+it('waits for a rule stop only after the daemon says it holds the command, and stays brief otherwise', async () => {
+  const path = join(dir, 'holding.sock');
+
+  const server = createServer((socket) =>
+    lineReader(socket, () => {
+      writeFrame(socket, { type: 'hook_hold' });
+
+      setTimeout(
+        () =>
+          !socket.destroyed &&
+          writeFrame(socket, { type: 'hook_result', output: { denied: true }, settled: true }),
+        400,
+      );
+    }),
+  );
+
+  await new Promise<void>((done) => server.listen(path, done));
+  servers.push(server);
+
+  const silent = await daemon('silent', {});
+  const frame = { type: 'hook', payload: { hook_event_name: 'PreToolUse' } };
+
+  expect(await deliverHook([{ path, token: 't' }], frame, 100, 5000)).toEqual({ denied: true });
+
+  const started = Date.now();
+
+  expect(await deliverHook([{ path: silent.path, token: 't' }], frame, 100, 5000)).toEqual({});
+  expect(Date.now() - started).toBeLessThan(1000);
+});

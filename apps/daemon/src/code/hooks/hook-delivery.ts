@@ -57,6 +57,8 @@ export function deliverHook(
   targets: HookTarget[],
   frame: Record<string, unknown>,
   timeoutMs: number,
+  /** How long to wait once a daemon says it holds the command for the owner. */
+  holdMs?: number,
 ): Promise<Record<string, unknown>> {
   const controller = new AbortController();
   let left = targets.length;
@@ -67,7 +69,7 @@ export function deliverHook(
     }
 
     for (const target of targets) {
-      void requestLocal(target.path, { ...frame, token: target.token }, timeoutMs, controller.signal)
+      void requestLocal(target.path, { ...frame, token: target.token }, timeoutMs, controller.signal, holdMs)
         .then(
           (reply) => ({
             output: reply.output && typeof reply.output === 'object' ? reply.output : {},
