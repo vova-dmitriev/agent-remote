@@ -3,6 +3,7 @@ import { test, publishMessages } from '../support/relay/relay-fixture.js';
 import { identity } from '../support/relay/identity.js';
 import { byTestId } from '../support/ui/testid.js';
 import { jumpNear, railMarker } from '../support/ui/rail.js';
+import { scrollSettled } from '../support/ui/scroll-settled.js';
 import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
 import { SESSION_PAGE_IDS, SESSION_FEED_IDS } from '@/pages/session/config/test-ids.js';
 
@@ -12,7 +13,8 @@ test('Codex preserves a line inside a long message after a smooth rail jump and 
   await publishMessages(
     Array.from({ length: 500 }, (_, i) => ({
       id: 'codex-read-' + i,
-      role: 'assistant' as const,
+      // The odd messages are the owner's, which the rail marks: the long message 425 among them.
+      role: i % 2 ? ('user' as const) : ('assistant' as const),
       text: ('Paragraph ' + i + '. Synthetic conversation.\n\n').repeat(i === 425 ? 180 : 3),
       occurredAt: 1700000000000 + i,
     })),
@@ -41,12 +43,17 @@ test('Codex preserves a line inside a long message after a smooth rail jump and 
     .toBeLessThan(3);
 
   await feed.hover();
-  await page.mouse.wheel(0, 5435);
 
+  // Wheel into the long message, whose start is somewhere below the landed target.
   await expect
-    .poll(async () => await row.evaluate((node) => node.getBoundingClientRect().top))
+    .poll(async () => {
+      await page.mouse.wheel(0, 900);
+
+      return row.evaluate((node) => node.getBoundingClientRect().top);
+    })
     .toBeLessThan(0);
 
+  await scrollSettled(feed);
   const position = await row.evaluate((node) => node.getBoundingClientRect().top);
 
   await page.getByTestId(SESSION_PAGE_IDS.back).click();
@@ -76,7 +83,7 @@ test('a fresh Mini App restores the server bookmark without browser storage', as
   await publishMessages(
     Array.from({ length: 180 }, (_, i) => ({
       id: 'server-read-' + i,
-      role: 'assistant' as const,
+      role: i % 2 ? ('user' as const) : ('assistant' as const),
       text: ('Synthetic line ' + i + '\n\n').repeat(8),
       occurredAt: 1700000000000 + i,
     })),

@@ -85,21 +85,21 @@ it("replaces the window when a latest page shares no item with it, so missed pol
   expect(mergeSubagentPage(loaded, [])).toEqual(loaded)
 })
 
-it("gives tool lines no rail marker and maps a tool line being read to the nearest message", () => {
-  const items = [text("ask", 1), call("use-1", "tool-1", 2), call("use-2", "tool-2", 3), text("answer", 4)]
-  const rail = railEntries(items, [0, 100, 140, 180])
-  const plain = [text("x", 1)]
-  const starts = [0]
+it("marks only the owner's messages on the rail and maps whatever is being read to the owner's message before it", () => {
+  const you = (id: string, at: number) => text(id, at, { role: MessageRole.User })
+  const items = [you("ask", 1), call("use-1", "tool-1", 2), text("answer", 3), you("again", 4), text("reply", 5)]
+  const rail = railEntries(items, [0, 100, 140, 180, 220])
 
-  expect(rail.messages.map((message) => message.id)).toEqual(["ask", "answer"])
+  expect(rail.messages.map((message) => message.id)).toEqual(["ask", "again"])
   expect(rail.starts).toEqual([0, 180])
-  expect(railEntries(plain, starts)).toEqual({ messages: plain, starts })
-  expect(railEntries(plain, starts).messages).toBe(plain)
-  expect(railActiveId(items, "use-2")).toBe("ask")
-  expect(railActiveId([call("use-0", "tool-0", 0), ...items], "use-0")).toBe("ask")
-  expect(railActiveId(items, "answer")).toBe("answer")
+  expect(railActiveId(items, "use-1")).toBe("ask")
+  expect(railActiveId(items, "answer")).toBe("ask")
+  expect(railActiveId(items, "again")).toBe("again")
+  expect(railActiveId(items, "reply")).toBe("again")
+  // Before the owner's first message, the first one after it.
+  expect(railActiveId([text("intro", 0), ...items], "intro")).toBe("ask")
   expect(railActiveId(items, null)).toBeNull()
-  expect(railActiveId([call("only", "tool", 1)], "only")).toBeNull()
+  expect(railActiveId([text("only", 1)], "only")).toBeNull()
 })
 
 it("shows each tool call once with the outcome of its loaded result", () => {

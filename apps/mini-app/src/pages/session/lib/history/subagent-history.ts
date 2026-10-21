@@ -1,6 +1,7 @@
 import {
   EventType,
   HistoryDirection,
+  MessageRole,
   ToolActivityPhase,
   historySchema,
   type EventEnvelope,
@@ -69,20 +70,23 @@ export function oldestCursor(messages: readonly HistoryMessage[]) {
   return messages.find((message) => message.historyCursor)?.historyCursor
 }
 
-/** Conversation messages only, with their feed offsets: tool activity lines get no navigation marker. */
+/** The rail marks the owner's messages, like Codex: the turns the owner asked for, not every answer or tool line. */
+const isMarked = (message: HistoryMessage) => message.role === MessageRole.User && !message.tool
+
+/** The owner's messages with their feed offsets: answers and tool activity lines get no navigation marker. */
 export function railEntries(messages: HistoryMessage[], starts: readonly number[]) {
-  if (!messages.some((message) => message.tool)) return { messages, starts }
-  const kept = messages.flatMap((message, index) => (message.tool ? [] : [index]))
+  const kept = messages.flatMap((message, index) => (isMarked(message) ? [index] : []))
 
   return { messages: kept.map((index) => messages[index]!), starts: kept.map((index) => starts[index] ?? 0) }
 }
 
-/** The marker to highlight for the item being read: a tool line maps to the nearest conversation message before it, else after it. */
+/** The marker to highlight for the item being read: the owner's message before it, else the first one after it. */
 export function railActiveId(messages: readonly HistoryMessage[], activeId: string | null) {
   const index = messages.findIndex((message) => message.id === activeId)
 
-  if (index < 0 || !messages[index]!.tool) return activeId
-  const before = messages.slice(0, index).findLast((message) => !message.tool)
+  if (index < 0) return activeId
+  if (isMarked(messages[index]!)) return activeId
+  const before = messages.slice(0, index).findLast(isMarked)
 
-  return (before ?? messages.slice(index + 1).find((message) => !message.tool))?.id ?? null
+  return (before ?? messages.slice(index + 1).find(isMarked))?.id ?? null
 }

@@ -18,7 +18,7 @@ test('reading stays anchored through the 500-message cap and earlier message gro
 
   const messages = Array.from({ length: 500 }, (_, index) => ({
     id: 'capped-' + index,
-    role: 'assistant' as const,
+    role: index % 2 ? ('assistant' as const) : ('user' as const),
     text: 'Synthetic capped message ' + index,
     occurredAt: now + index,
   }));

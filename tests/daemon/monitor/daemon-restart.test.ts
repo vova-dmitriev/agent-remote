@@ -335,3 +335,47 @@ it('keeps a pin across restarts and shows it only on the pinned session of the s
       .every(({ session }) => session.pinned === undefined),
   ).toBe(true);
 });
+
+it('hides a restored native record once a live session runs the same conversation', () => {
+  const f = fixture(),
+    first = f.open();
+
+  first.monitor.ingestHook({ hook_event_name: 'SessionStart', session_id: 'shared-conversation' }, 'native');
+  const restoredId = first.monitor.findClaude('native', 'shared-conversation')!.id;
+
+  first.store.close();
+
+  const restarted = f.open();
+
+  restarted.adapters.register(
+    new SourceAdapter({
+      connectorId: 'live-terminal',
+      kind: 'claude-code-cli',
+      transport: 'pty',
+      sourceVersion: 'test',
+      state: 'ready',
+      reason: null,
+      capabilities: {
+        observe: true,
+        history: true,
+        prompt: true,
+        interrupt: true,
+        permission: false,
+        terminalSnapshot: false,
+      },
+    }),
+  );
+
+  expect(restarted.monitor.snapshot().sessions.map((session) => session.id)).toEqual([restoredId]);
+
+  // The same conversation, now live in a terminal the companion runs: the app lists it once, live.
+  restarted.monitor.ingestHook(
+    { hook_event_name: 'SessionStart', session_id: 'shared-conversation' },
+    'live-terminal',
+  );
+
+  const live = restarted.monitor.findClaude('live-terminal', 'shared-conversation')!;
+
+  expect(live.binding).toBe('verified');
+  expect(restarted.monitor.snapshot().sessions.map((session) => session.id)).toEqual([live.id]);
+});

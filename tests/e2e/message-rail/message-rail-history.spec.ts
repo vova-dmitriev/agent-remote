@@ -69,7 +69,8 @@ test('with history beyond both ends, a later page loads while an earlier one is 
 
   const short = Array.from({ length: 330 }, (_, index) => ({
     id: 'short-' + index,
-    role: 'assistant' as const,
+    // Every other message is the owner's: the rail marks those.
+    role: index % 2 ? ('assistant' as const) : ('user' as const),
     text: 'Short ' + index,
     occurredAt: 1700000000000 + index,
   }));

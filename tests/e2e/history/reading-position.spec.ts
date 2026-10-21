@@ -12,7 +12,7 @@ test('restores the exact reading line after back, new messages and a Mini App re
   await publishMessages(
     Array.from({ length: 80 }, (_, index) => ({
       id: 'read-' + index,
-      role: 'assistant' as const,
+      role: index % 2 ? ('assistant' as const) : ('user' as const),
       text:
         'Synthetic reading message ' + index + '\n\n' + ('Paragraph ' + index + '. ').repeat((index % 4) + 1),
       occurredAt: 1700000000000 + index,
@@ -94,7 +94,7 @@ for (const sessionId of ['terminal-session', 'codex-desktop-session']) {
     await publishMessages(
       Array.from({ length: 100 }, (_, index) => ({
         id: 'wheel-read-' + index,
-        role: 'assistant' as const,
+        role: index % 2 ? ('assistant' as const) : ('user' as const),
         text: ('Synthetic paragraph ' + index + '.\n\n').repeat((index % 7) + 6),
         occurredAt: 1700000000000 + index,
       })),
@@ -129,7 +129,8 @@ for (const sessionId of ['terminal-session', 'codex-desktop-session']) {
     expect(id).toBeTruthy();
     expect(id).not.toBe('wheel-read-99');
     const row = byTestId(page, SESSION_FEED_IDS.virtualRow, { 'message-id': id! });
-    const marker = railMarker(page, id!);
+    // The rail marks the owner's messages (even numbers here): the current marker is the one before the read line.
+    const marker = railMarker(page, id!.replace(/\d+$/, (number) => String(Number(number) - (Number(number) % 2))));
     const position = await row.evaluate((node) => node.getBoundingClientRect().top);
 
     await expect(marker).toHaveAttribute('aria-current', 'true');
@@ -144,7 +145,7 @@ for (const sessionId of ['terminal-session', 'codex-desktop-session']) {
     await expect(marker).toHaveAttribute('aria-current', 'true');
 
     await expect(
-      railMarker(page, 'wheel-read-99'),
+      railMarker(page, 'wheel-read-98'),
     ).not.toHaveAttribute('aria-current', 'true');
 
     await page.reload();
@@ -158,7 +159,7 @@ for (const sessionId of ['terminal-session', 'codex-desktop-session']) {
     await expect(marker).toHaveAttribute('aria-current', 'true');
 
     await expect(
-      railMarker(page, 'wheel-read-99'),
+      railMarker(page, 'wheel-read-98'),
     ).not.toHaveAttribute('aria-current', 'true');
   });
 }

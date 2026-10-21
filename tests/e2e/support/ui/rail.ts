@@ -46,15 +46,43 @@ export async function expectActiveMessage(page: Page, messageId: string) {
 }
 
 /**
- * Jumps through the rail to the target that covers a message and returns the message the jump lands on.
- * Markers regroup while rows are measured, so the target is read and activated in one step.
+ * Jumps through the rail to the target that covers a message, or, for an answer the rail does not mark, the owner's
+ * message before it, else after it (ids end in their position), and returns the message the jump lands on. Markers regroup while
+ * rows are measured, so the target is read and activated in one step.
  */
 export async function jumpNear(page: Page, messageId: string) {
-  return railMarker(page, messageId).evaluate((node: HTMLElement) => {
-    node.click();
+  let landed: string | null = null;
 
-    return node.dataset.messageId!;
-  });
+  // Markers appear and regroup while the feed renders: retry until one covers the message or an earlier one.
+  await expect
+    .poll(async () => {
+      landed = await page.getByTestId(SESSION_FEED_IDS.marker).evaluateAll((markers: HTMLElement[], id: string) => {
+        const match = /^(.*?)(\d+)$/.exec(id);
+        const prefix = match ? match[1]! : id;
+
+        const start = match ? Number(match[2]) : 0;
+        // The owner's message before it, else the first one after it, as the rail marks the current message.
+        const order = [...Array.from({ length: start + 1 }, (_, step) => start - step), ...Array.from({ length: 50 }, (_, step) => start + step + 1)];
+
+        for (const index of order) {
+          const candidate = match ? prefix + index : id;
+          const node = markers.find((marker) => marker.dataset.messageIds!.split(' ').includes(candidate));
+
+          if (node) {
+            node.click();
+
+            return node.dataset.messageId!;
+          }
+        }
+
+        return null;
+      }, messageId);
+
+      return landed;
+    })
+    .not.toBeNull();
+
+  return landed!;
 }
 
 /** Synthetic messages of uneven length, so measuring rows moves later markers. */

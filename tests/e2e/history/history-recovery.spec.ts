@@ -64,9 +64,11 @@ test('history HTTP loads the latest page first and fetches older messages on dem
 }) => {
   const now = Date.now();
 
-  const messages = Array.from({ length: 205 }, (_, index) =>
-    message('paged-' + index, 'Paged message ' + index, now + index),
-  );
+  // The owner's messages: the rail marks each one, so its markers list every loaded message.
+  const messages = Array.from({ length: 205 }, (_, index) => ({
+    ...message('paged-' + index, 'Paged message ' + index, now + index),
+    role: 'user' as const,
+  }));
 
   const pages: string[] = [];
 

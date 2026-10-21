@@ -20,6 +20,7 @@ function feed(count: number, scrollTop: number) {
       occurredAt: index,
     })),
     starts: Array.from({ length: count }, (_, index) => index * ROW),
+    loaded: count,
     total,
     viewport: {
       scrollTop: Math.min(scrollTop, Math.max(0, total - VIEWPORT)),

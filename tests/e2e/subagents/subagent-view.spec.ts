@@ -35,7 +35,8 @@ test('opens a running subagent with its tool calls in the session layout, update
   await expect(page.getByTestId(TOOL_ACTIVITY_IDS.detail)).toHaveText('npm test -- parser');
   await expect(page.getByTestId(TOOL_ACTIVITY_IDS.root)).toHaveAttribute('data-tool-phase', 'started');
   await expect(byTestId(page, SESSION_FEED_IDS.message, { 'message-id': 'agent-prompt' })).toBeVisible();
-  await expect(page.getByTestId(SESSION_FEED_IDS.marker)).toHaveCount(2);
+  // The task the subagent was given is the one message on its rail; its answers are not marked.
+  await expect(page.getByTestId(SESSION_FEED_IDS.marker)).toHaveCount(1);
 
   const task = (await page.getByTestId(SUBAGENT_VIEW_IDS.task).boundingBox())!;
   const feed = (await page.getByTestId(SESSION_FEED_IDS.frame).boundingBox())!;

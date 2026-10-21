@@ -37,7 +37,8 @@ export const MessageRail = memo(function MessageRail(props: MessageRailProps) {
       <nav
         className="group/rail absolute inset-y-0 left-0 w-[40px]"
         data-testid={SESSION_FEED_IDS.rail}
-        data-message-count={messages.length}
+        data-message-count={props.loaded}
+        data-marker-count={messages.length}
         data-active-message-id={rail.selectedId}
         aria-label={t("messageNavigation")}
       >

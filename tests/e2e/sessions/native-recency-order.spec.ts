@@ -16,7 +16,7 @@ test('a recent message beyond a large native history promotes the session withou
   const f=deviceFixture(),snapshot=sessionSnapshot(f.deviceId),source=snapshot.sessions[0]!;
 
   source.lastMessageAt=100;source.status='running';
-  const other={...source,id:'recent-short-history',title:'Synthetic recent short history',target:{...source.target,connectorId:'other'},lastMessageAt:200,status:'unknown' as const};
+  const other={...source,id:'recent-short-history',title:'Synthetic recent short history',claudeSessionId:'recent-short-history',target:{...source.target,connectorId:'other',claudeSessionId:'recent-short-history'},lastMessageAt:200,status:'unknown' as const};
 
   snapshot.sessions.push(other);
   f.sockets[0]!.send(JSON.stringify({type:'snapshot',snapshot,connectors:[]}));

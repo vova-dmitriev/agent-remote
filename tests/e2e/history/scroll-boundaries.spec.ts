@@ -8,7 +8,7 @@ import { SESSION_FEED_IDS } from '@/pages/session/config/test-ids.js';
 
 test('a marker in a short conversation does not offer an unnecessary bottom button', async ({ page }) => {
   await publishMessages([
-    { id: 'short-message', role: 'assistant', text: 'A short synthetic answer.', occurredAt: Date.now() },
+    { id: 'short-message', role: 'user', text: 'A short synthetic answer.', occurredAt: Date.now() },
   ]);
 
   await identity(page, '801');
@@ -26,11 +26,12 @@ for (const ending of ['Short final answer.', '']) {
     await publishMessages([
       ...Array.from({ length: 20 }, (_, index) => ({
         id: 'bottom-' + index,
-        role: 'assistant' as const,
+        // The rail marks the owner's messages: these are the owner's.
+        role: 'user' as const,
         text: ('Synthetic paragraph ' + index + '. ').repeat(60),
         occurredAt: 1700000000000 + index,
       })),
-      { id: 'bottom-final', role: 'assistant', text: ending, occurredAt: 1700000000020 },
+      { id: 'bottom-final', role: 'user', text: ending, occurredAt: 1700000000020 },
     ]);
 
     await identity(page, '801');

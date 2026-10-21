@@ -18,7 +18,7 @@ test('restarts the original native conversation on Mac and enables its input wit
   snapshot.permissions=[];snapshot.terminal=null;
   f.sockets[0]!.send(JSON.stringify({type:'snapshot',snapshot,connectors:[]}));
   await expect.poll(async()=> (await f.relay.db.pool.query("SELECT data->'capabilities'->>'restartSession' AS flag FROM sessions WHERE id='terminal-session'")).rows[0]?.flag).toBe('true');
-  await publishMessages(Array.from({length:80},(_,index)=>({id:'restart-read-'+index,role:'assistant' as const,text:'Synthetic restart reading line '+index+'\n\n'+('Paragraph '+index+'. ').repeat(4),occurredAt:1700000000000+index})));
+  await publishMessages(Array.from({length:80},(_,index)=>({id:'restart-read-'+index,role:index%2?('assistant' as const):('user' as const),text:'Synthetic restart reading line '+index+'\n\n'+('Paragraph '+index+'. ').repeat(4),occurredAt:1700000000000+index})));
   await page.emulateMedia({reducedMotion:'reduce'});
   await identity(page,'801','ru');
   await page.goto('/');

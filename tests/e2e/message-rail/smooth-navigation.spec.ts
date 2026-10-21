@@ -8,7 +8,7 @@ import { SESSION_FEED_IDS } from '@/pages/session/config/test-ids.js';
 
 test('animates explicit navigation and keeps the clicked marker preview closed', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
-  await publishMessages(Array.from({ length: 100 }, (_, index) => ({ id: 'smooth-' + index, role: 'assistant' as const, text: 'Synthetic row ' + index + '. '.repeat(20), occurredAt: 1700000000000 + index })));
+  await publishMessages(Array.from({ length: 100 }, (_, index) => ({ id: 'smooth-' + index, role: index % 2 ? ('assistant' as const) : ('user' as const), text: 'Synthetic row ' + index + '. '.repeat(20), occurredAt: 1700000000000 + index })));
   await identity(page, '801');
   await page.goto('/');
   await byTestId(page, SESSION_CARD_IDS.root, { 'session-id': 'terminal-session' }).click();
@@ -40,7 +40,7 @@ test('animates explicit navigation and keeps the clicked marker preview closed',
 
 test('reduced motion still reaches the target and dismisses a clicked preview', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await publishMessages(Array.from({ length: 35 }, (_, index) => ({ id: 'reduced-' + index, role: 'assistant' as const, text: 'Synthetic row ' + index, occurredAt: 1700000000000 + index })));
+  await publishMessages(Array.from({ length: 35 }, (_, index) => ({ id: 'reduced-' + index, role: index % 2 ? ('assistant' as const) : ('user' as const), text: 'Synthetic row ' + index, occurredAt: 1700000000000 + index })));
   await identity(page, '801');
   await page.goto('/');
   await byTestId(page, SESSION_CARD_IDS.root, { 'session-id': 'terminal-session' }).click();

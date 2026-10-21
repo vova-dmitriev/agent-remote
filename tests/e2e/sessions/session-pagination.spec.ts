@@ -19,9 +19,13 @@ test('the mobile session list pages past sixty rows and keeps an older selection
   const sessions = Array.from({ length: 65 }, (_, index): Session => {
     const source = snapshot.sessions[index < snapshot.sessions.length ? index : 0]!;
 
+    const id = index < snapshot.sessions.length ? source.id : `paged-session-${index + 1}`;
+
+    // Each page row is its own conversation: the list shows one row per conversation.
     return {
       ...source,
-      id: index < snapshot.sessions.length ? source.id : `paged-session-${index + 1}`,
+      id,
+      ...(index < snapshot.sessions.length ? {} : { claudeSessionId: id, target: { ...source.target, claudeSessionId: id } as Session['target'] }),
       title: `Page session ${String(index + 1).padStart(2, '0')}`,
       lastMessageAt: 65 - index,
     };

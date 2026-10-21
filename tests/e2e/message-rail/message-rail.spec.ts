@@ -16,7 +16,7 @@ async function open(page: Page) {
   await byTestId(page, SESSION_CARD_IDS.root, { 'session-id': 'terminal-session' }).click();
 }
 
-test('the rail maps the whole loaded feed on its left and moves with the scrollbar', async ({ page }) => {
+test("the rail maps the owner's messages of the loaded feed on its left and moves with the scrollbar", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await publishMessages(conversation(60));
   await open(page);
@@ -46,11 +46,13 @@ test('the rail maps the whole loaded feed on its left and moves with the scrollb
   const tops = await markers.evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().top));
   const ids = await markers.evaluateAll((nodes) => nodes.flatMap((node) => node.getAttribute('data-message-ids')!.split(' ')));
 
-  expect(ids).toEqual(conversation(60).map((message) => message.id));
+  // Only the owner's messages are marked, in order.
+  expect(ids).toEqual(conversation(60).filter((message) => message.role === 'user').map((message) => message.id));
   expect(tops.length).toBeLessThanOrEqual(Math.floor(track.height / RAIL_HIT_SIZE));
   expect(tops.slice(1).every((top, index) => top - tops[index]! >= RAIL_HIT_SIZE - 0.5)).toBe(true);
   expect(tops[0]! - track.y).toBeLessThan(1);
-  expect(track.y + track.height - (tops.at(-1)! + RAIL_HIT_SIZE)).toBeLessThan(RAIL_HIT_SIZE);
+  // The last marked message is the owner's, above the final answer, so its marker sits inside the track's end.
+  expect(tops.at(-1)! + RAIL_HIT_SIZE).toBeLessThanOrEqual(track.y + track.height + 0.5);
 
   await feed.evaluate((node) => node.scrollTo({ top: node.scrollHeight }));
   await scrollSettled(feed);
@@ -143,7 +145,8 @@ test('a middle marker sits where its row sits in the scrollable content', async 
         .filter(([id]) => rows.has(id))
         .map(([id, y]) => Math.abs(y - track.y - (rows.get(id)! / scrollHeight) * track.height));
 
-      return offsets.length > 1 && Math.max(...offsets) < 1;
+      // Only the owner's messages are marked, so fewer marked rows are rendered at once.
+      return offsets.length > 0 && Math.max(...offsets) < 1;
     })
     .toBe(true);
 });

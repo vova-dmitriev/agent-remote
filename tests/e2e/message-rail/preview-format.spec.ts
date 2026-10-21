@@ -9,7 +9,7 @@ import { MARKDOWN_IDS } from '@/shared/ui/markdown/test-ids.js';
 
 test('marker previews render Markdown and native envelopes without leaking metadata or moving the feed', async ({ page }) => {
   await publishMessages([
-    { id: 'rich', role: 'assistant', text: '**Ready**\n\n- First\n- Second\n\n```ts\nconst answer = 42;\n```\n\n[Review](https://example.test/pr/1)', occurredAt: 1700000000000 },
+    { id: 'rich', role: 'user', text: '**Ready**\n\n- First\n- Second\n\n```ts\nconst answer = 42;\n```\n\n[Review](https://example.test/pr/1)', occurredAt: 1700000000000 },
     { id: 'paste', role: 'user', text: '<pasted_content id="synthetic">\n**PR ready**\n\n[Review](https://example.test/pr/1)\n</pasted_content>', occurredAt: 1700000000001 },
     { id: 'task', role: 'user', text: '<task-notification><task-id>private-id</task-id><tool-use-id>tool_demo</tool-use-id><output-file>/tmp/internal.log</output-file><status>completed</status><summary>**Review complete**</summary><result>- No blockers\n- Tests passed</result></task-notification>', occurredAt: 1700000000002 },
   ]);

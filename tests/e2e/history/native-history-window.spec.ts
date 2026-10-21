@@ -14,7 +14,8 @@ import type { HistoryRead } from '@protocol';
 
 const row = (i: number) =>
   JSON.stringify({
-    type: 'assistant',
+    // Every other row is the owner's, which the rail marks.
+    type: i % 2 ? 'assistant' : 'user',
     sessionId: 'source',
     uuid: 'native-' + i,
     timestamp: new Date(1700000000000 + i).toISOString(),

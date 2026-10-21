@@ -75,6 +75,7 @@ export function SessionFeed({
         <MessageRail
           {...map}
           {...railEntries(messages, map.starts)}
+          loaded={messages.length}
           activeId={railActiveId(messages, activeId)}
           jump={jump}
           older={edges.older}

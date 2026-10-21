@@ -5,7 +5,10 @@ import type { RailGroup, RailViewport } from "@/pages/session/lib/rail-layout"
 import type { useMessagePreview } from "@/pages/session/model/use-message-preview"
 
 export interface MessageRailProps {
+  /** The messages the rail marks: the owner's. */
   messages: HistoryMessage[]
+  /** How many messages the feed has loaded, marked or not. */
+  loaded: number
   /** Virtual offset of every loaded message. */
   starts: readonly number[]
   /** Virtual size of the whole loaded feed. */

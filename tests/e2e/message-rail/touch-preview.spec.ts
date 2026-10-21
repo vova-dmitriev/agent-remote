@@ -25,7 +25,7 @@ test('a tap on a rail tick previews its message first; a tap on the preview goes
   const feed = page.getByTestId(SESSION_FEED_IDS.root);
   const preview = page.getByTestId(SESSION_FEED_IDS.preview);
   // A marker may cover several messages; it previews and goes to its first.
-  const marker = railMarker(page, 'touch-2');
+  const marker = railMarker(page, 'touch-3');
   const first = (await marker.getAttribute('data-message-id'))!;
   const target = byTestId(page, SESSION_FEED_IDS.message, { 'message-id': first });
   const before = await feed.evaluate((node) => node.scrollTop);
@@ -42,7 +42,7 @@ test('a tap on a rail tick previews its message first; a tap on the preview goes
   await expect(preview).toHaveCount(0);
 
   // A tap elsewhere closes a preview without going anywhere.
-  const other = railMarker(page, 'touch-40');
+  const other = railMarker(page, 'touch-41');
 
   await other.tap();
   await expect(preview).toHaveAttribute('data-message-id', (await other.getAttribute('data-message-id'))!);

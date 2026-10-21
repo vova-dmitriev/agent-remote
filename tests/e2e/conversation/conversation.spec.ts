@@ -3,7 +3,7 @@ import { test, publishMessages } from '../support/relay/relay-fixture.js';
 import { conversation } from '../support/fixtures/conversation-fixtures.js';
 import { identity } from '../support/relay/identity.js';
 import { byTestId } from '../support/ui/testid.js';
-import { expectLoadedMessages, railMarker } from '../support/ui/rail.js';
+import { expectLoadedMessages, jumpNear } from '../support/ui/rail.js';
 import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
 import { SESSION_PAGE_IDS, SESSION_FEED_IDS } from '@/pages/session/config/test-ids.js';
 import { MARKDOWN_IDS } from '@/shared/ui/markdown/test-ids.js';
@@ -106,7 +106,8 @@ test('Markdown is safe, code copies exactly and localized controls follow langua
   await identity(page, '801');
   await page.goto('/');
   await byTestId(page, SESSION_CARD_IDS.root, { 'session-id': 'terminal-session' }).click();
-  await railMarker(page, 'navigation-1').click();
+  // The answer has no marker of its own: the jump goes to the question before it.
+  await jumpNear(page, 'navigation-1');
   const message = byTestId(page, SESSION_FEED_IDS.message, { 'message-id': 'navigation-1' });
 
   await expect(message.getByTestId(MARKDOWN_IDS.codeBlock)).toHaveAttribute('data-language', 'typescript');
@@ -121,7 +122,7 @@ test('Markdown is safe, code copies exactly and localized controls follow langua
 
   await expect(message.getByTestId(MARKDOWN_IDS.copyStatus)).toHaveText('Скопировано');
   await setSessionLanguage(page, 'en', 'terminal-session');
-  await railMarker(page, 'navigation-1').click();
+  await jumpNear(page, 'navigation-1');
   await message.getByTestId(MARKDOWN_IDS.copyCode).click();
   await expect(message.getByTestId(MARKDOWN_IDS.copyStatus)).toHaveText('Copied');
   expect(await page.evaluate(() => Reflect.get(window, 'markdownExecuted'))).toBeUndefined();

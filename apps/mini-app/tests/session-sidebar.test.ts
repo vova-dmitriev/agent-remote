@@ -9,6 +9,7 @@ import { SessionStatusTone, ProviderFilterValue } from "../src/entities/session/
 import { sessionStatusTone } from "../src/entities/session/lib/status-tone.js"
 import { sessionFolder, sessionPath } from "../src/entities/session/lib/labels.js"
 import { sessionsAwaitingInput, sortByRecency } from "../src/entities/session/lib/selectors.js"
+import { mergeSessionPages } from "../src/entities/session/model/pagination/merge-pages.js"
 import { filterSessions, matchParts } from "../src/widgets/session-sidebar/lib/sidebar-search.js"
 import { groupByRecency } from "../src/widgets/session-sidebar/lib/sidebar-groups.js"
 import { relativeTime } from "../src/widgets/session-sidebar/lib/sidebar-format.js"
@@ -143,4 +144,12 @@ it("puts a session created from the app at its creation time until it has messag
 
   expect(sortByRecency([older, created]).map((session) => session.id)).toEqual([chat.id, terminal.id])
   expect(groupByRecency([created], NOW).map((section) => section.group)).toEqual([SidebarGroup.Today])
+})
+
+it("lists a conversation once though an older catalog page knows it under an earlier session id", () => {
+  const live = at(terminal, 1)
+  const stale = { ...live, id: "earlier-terminal-session", title: "Earlier binding", lastMessageAt: NOW - 90 * MINUTE }
+  const other = at(chat, 20)
+
+  expect(mergeSessionPages([live], [stale, other]).map((session) => session.id)).toEqual([terminal.id, chat.id])
 })

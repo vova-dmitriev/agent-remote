@@ -27,7 +27,8 @@ test('one readable preview follows hovered and focused markers without changing 
   await expect(page.getByTestId(SESSION_FEED_IDS.preview)).toHaveCount(0);
   // A merged marker previews and jumps to its first message.
   await expectSettledRail(page);
-  const marker = railMarker(page, 'preview-498');
+  // The owner's messages are the odd ones here, and only they are marked.
+  const marker = railMarker(page, 'preview-499');
   const target = (await marker.getAttribute('data-message-id'))!;
   const author = (id: string) => (Number(id.split('-').at(-1)) % 2 ? 'Ты' : 'Claude');
   const feed = page.getByTestId(SESSION_FEED_IDS.root);

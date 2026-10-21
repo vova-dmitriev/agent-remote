@@ -34,7 +34,13 @@ for (const language of ['ru', 'en'] as const) {
     await publishSnapshot((snapshot) => {
       const original = snapshot.sessions.find((session) => session.target.kind === 'codex-desktop')!;
 
-      snapshot.sessions.push({ ...original, id: 'second-desktop-session', title: 'Synthetic second thread' });
+      // A second thread: its own conversation, which the list shows as its own row.
+      snapshot.sessions.push({
+        ...original,
+        id: 'second-desktop-session',
+        title: 'Synthetic second thread',
+        target: { ...original.target, threadId: 'second-thread' } as typeof original.target,
+      });
     }, connectors);
 
     await identity(page, '801', language);
