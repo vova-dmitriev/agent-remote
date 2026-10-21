@@ -17,6 +17,7 @@ import { WebSocket } from 'ws';
 import { MESSAGING } from '../app/relay-config.js';
 import { CommandRepository } from '../commands/repositories/audit.js';
 import { ContinuityProxy } from '../continuity/proxy.js';
+import { SessionListSource } from '../sessions/catalog/session-list.js';
 import { DeviceRequests } from '../sessions/device-requests.js';
 import { ContinuityService } from '../continuity/service.js';
 import { DeviceState } from '../devices/device-state.js';
@@ -57,6 +58,7 @@ export class DeviceSocket {
     @Inject(SourceHistory) private readonly sourceHistory: SourceHistory,
     @Inject(ProfileProxy) private readonly profileProxy: ProfileProxy,
     @Inject(ContinuityProxy) private readonly continuityProxy: ContinuityProxy,
+    @Inject(SessionListSource) private readonly sessionList: SessionListSource,
     @Inject(DeviceRequests) private readonly requests: DeviceRequests,
     @Inject(Notifier) private readonly notifier: Notifier,
   ) {}
@@ -77,6 +79,7 @@ export class DeviceSocket {
       profileProxy,
       continuityProxy,
       requests,
+      sessionList,
       notifier,
     } = this;
 
@@ -145,6 +148,7 @@ export class DeviceSocket {
                 profileProxy.disconnect(previous);
                 continuityProxy.disconnect(previous);
                 requests.disconnect(previous);
+                sessionList.disconnect(previous);
               }
 
               previous?.socket.close(SocketCloseCode.Replaced, SocketCloseReason.Replaced);
@@ -157,6 +161,12 @@ export class DeviceSocket {
                 ...(frame.protocolVersion === undefined ? {} : { protocolVersion }),
               });
             });
+
+            return;
+          }
+
+          if (frame.type === FrameType.SessionListResult) {
+            sessionList.accept(connection, frame);
 
             return;
           }
@@ -177,6 +187,7 @@ export class DeviceSocket {
             frame.type === FrameType.FileResult ||
             frame.type === FrameType.AnalyticsResult ||
             frame.type === FrameType.RulesResult ||
+            frame.type === FrameType.SkillsResult ||
             frame.type === FrameType.SessionModelResult
           ) {
             requests.accept(connection, frame);
@@ -385,6 +396,7 @@ export class DeviceSocket {
 
       if (connection) {
         requests.disconnect(connection);
+        sessionList.disconnect(connection);
 
         void offline(connection).catch((error: unknown) =>
           logWarning(DEVICE_SOCKET_CONTEXT, error, ServerErrorCode.DEVICE_OFFLINE_FAILED),

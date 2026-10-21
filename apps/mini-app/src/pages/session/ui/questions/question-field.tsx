@@ -22,14 +22,32 @@ export function QuestionField({ question, choice, disabled, choose }: QuestionFi
       {question.options?.map((option, index) => (
         <label className={optionClass} key={option.label}>
           <input
-            type="radio"
+            type={question.multiSelect ? "checkbox" : "radio"}
             className={radioClass}
             name={id}
             data-testid={USER_INPUT_IDS.option}
             data-question-id={question.id}
             data-option-label={option.label}
-            checked={choice?.kind === QuestionChoiceKind.Option && choice.value === option.label}
-            onChange={() => choose({ kind: QuestionChoiceKind.Option, value: option.label })}
+            checked={
+              question.multiSelect
+                ? choice?.kind === QuestionChoiceKind.MultipleOptions && choice.value.includes(option.label)
+                : choice?.kind === QuestionChoiceKind.Option && choice.value === option.label
+            }
+            onChange={() => {
+              if (!question.multiSelect) {
+                choose({ kind: QuestionChoiceKind.Option, value: option.label })
+
+                return
+              }
+
+              const selected = choice?.kind === QuestionChoiceKind.MultipleOptions ? choice.value : []
+
+              const next = selected.includes(option.label)
+                ? selected.filter((label) => label !== option.label)
+                : [...selected, option.label]
+
+              choose({ kind: QuestionChoiceKind.MultipleOptions, value: next })
+            }}
             aria-describedby={option.description ? id + "-description-" + index : undefined}
           />
           <span>

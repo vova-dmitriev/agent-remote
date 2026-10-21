@@ -23,6 +23,7 @@ import { sourceAvailable } from "../lib/availability"
 
 export interface SessionState {
   snapshot: AppSnapshot | null
+  selectedListedSession: Session | null
   connection: Connection
   selectedId: string | null
   history: { sessionId: string; status: HistoryStatus } | null
@@ -33,6 +34,7 @@ export interface SessionState {
 }
 export const initialState = (): SessionState => ({
   snapshot: null,
+  selectedListedSession: null,
   connection: ConnectionStatus.Connecting,
   selectedId: null,
   history: null,
@@ -51,6 +53,9 @@ export function reduceSessionState(
 
   if (message.type === FrameType.Snapshot) {
     const changed = state.deviceId !== message.deviceId || state.snapshot?.cursor.streamId !== message.snapshot.cursor.streamId
+    const selectedInSnapshot = message.snapshot.sessions.some((session) => session.id === state.selectedId)
+    const selectedFromCatalog = !changed && state.selectedListedSession?.id === state.selectedId
+    const selectedId = selectedInSnapshot || selectedFromCatalog ? state.selectedId : null
 
     return {
       ...state,
@@ -60,7 +65,8 @@ export function reduceSessionState(
       messages: changed ? {} : state.messages,
       history: changed ? null : state.history,
       messageVersions: changed ? {} : state.messageVersions,
-      selectedId: message.snapshot.sessions.some((s) => s.id === state.selectedId) ? state.selectedId : null,
+      selectedId,
+      selectedListedSession: selectedInSnapshot || changed || !selectedId ? null : state.selectedListedSession,
     }
   }
 

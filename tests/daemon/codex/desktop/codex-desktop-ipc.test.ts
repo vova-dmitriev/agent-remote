@@ -18,7 +18,7 @@ afterEach(async () => {
   }
 });
 
-async function fixture(options: { oversizedMethod?: string } = {}) {
+async function fixture(options: { oversizedMethod?: string; steerTurnId?: string } = {}) {
   const dir = await mkdtemp(join(tmpdir(), 'codex-ipc-'));
 
   await chmod(dir, 0o700);
@@ -69,13 +69,21 @@ async function fixture(options: { oversizedMethod?: string } = {}) {
             '"}}',
           );
         } else if (frame.type === 'request') {
+          let result: unknown = { ok: true };
+
+          if (frame.method === 'initialize') {
+            result = { clientId: 'remote-client' };
+          } else if (frame.method === 'thread-follower-steer-turn' && options.steerTurnId) {
+            result = { turnId: options.steerTurnId };
+          }
+
           send({
             type: 'response',
             requestId: frame.requestId,
             method: frame.method,
             handledByClientId: 'owner',
             resultType: 'success',
-            result: frame.method === 'initialize' ? { clientId: 'remote-client' } : { ok: true },
+            result,
           });
         }
       }
@@ -120,6 +128,35 @@ it('uses framed private IPC and an exact desktop owner for discovery/commands', 
     targetClientId: 'owner',
     version: 4,
     method: 'thread-follower-interrupt-turn',
+  });
+});
+
+it('round-trips a Send now steer to the exact owner over the controlled desktop socket', async () => {
+  const f = await fixture({ steerTurnId: 'busy-turn' });
+
+  expect(await f.client.owner('thread')).toBe('owner');
+
+  await expect(
+    f.client.request(
+      'thread-follower-steer-turn',
+      {
+        conversationId: 'thread',
+        expectedTurnId: 'busy-turn',
+        input: [{ type: 'text', text: 'synthetic immediate prompt' }],
+        restoreMessage: {
+          text: 'synthetic immediate prompt',
+          context: { prompt: 'synthetic immediate prompt' },
+        },
+      },
+      'owner',
+    ),
+  ).resolves.toEqual({ turnId: 'busy-turn' });
+
+  expect(f.frames.at(-1)).toMatchObject({
+    sourceClientId: 'remote-client',
+    targetClientId: 'owner',
+    method: 'thread-follower-steer-turn',
+    params: { conversationId: 'thread', expectedTurnId: 'busy-turn' },
   });
 });
 

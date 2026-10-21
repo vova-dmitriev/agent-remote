@@ -1,4 +1,4 @@
-import { FrameType } from '@protocol';
+import { FrameType, UNVERSIONED_RELAY_PROTOCOL } from '@protocol';
 import { RuntimeEvent } from '../domain/runtime.js';
 import { EventReplay } from '../monitor/replay.js';
 import type { Monitor } from '../monitor/monitor.js';
@@ -14,6 +14,8 @@ import { RuntimeProfileRelay } from '../profiles/runtime/router/relay.js';
 import type { DeviceFrame } from '@protocol';
 import type { EventEmitter } from 'node:events';
 import { logDebug } from '../diagnostics/log.js';
+import { snapshotForProtocol } from './snapshot-compatibility.js';
+import { sessionWithReadCapabilities } from '../domain/ports/history/read-capabilities.js';
 
 type RelayEndpoint = EventEmitter & { send(frame: DeviceFrame): boolean };
 
@@ -40,6 +42,7 @@ export class RelayLink {
   readonly profileRelay: RuntimeProfileRelay;
   readonly replay: EventReplay;
   private epoch: string | undefined;
+  private protocolVersion = UNVERSIONED_RELAY_PROTOCOL;
   private pendingSnapshot = false;
   private lastSnapshotAt = 0;
 
@@ -61,7 +64,10 @@ export class RelayLink {
       (event) => relay.send({ type: FrameType.Event, event }),
     );
 
-    relay.on(RuntimeEvent.Online, (epoch?: string) => this.handleOnline(epoch));
+    relay.on(RuntimeEvent.Online, (epoch?: string, protocolVersion?: number) =>
+      this.handleOnline(epoch, protocolVersion),
+    );
+
     relay.on(RuntimeEvent.Offline, () => this.handleOffline());
   }
 
@@ -79,18 +85,16 @@ export class RelayLink {
       this.lastSnapshotAt = Date.now();
 
       if (this.online) {
-        const current = monitor.snapshot();
+        const current = snapshotForProtocol(monitor.snapshot(), this.protocolVersion);
 
-        for (const session of current.sessions) {
-          if (readers.has(session.id)) {
-            session.capabilities.historyWindow = true;
-
-            // Only this daemon reads subagent transcripts; an older one would reject the request frame.
-            if (session.claudeSessionId) {
-              session.capabilities.subagentHistory = true;
-            }
-          }
-        }
+        current.sessions = current.sessions.map((session) =>
+          sessionWithReadCapabilities(
+            session,
+            readers.has(session.id),
+            monitor.hasSubagentHistory(session.id, session.generation) ||
+              (readers.has(session.id) && !!session.claudeSessionId),
+          ),
+        );
 
         relay.send({
           type: FrameType.Snapshot,
@@ -117,8 +121,9 @@ export class RelayLink {
     }
   };
 
-  private handleOnline(epoch?: string) {
+  private handleOnline(epoch?: string, protocolVersion?: number) {
     this.epoch = epoch;
+    this.protocolVersion = protocolVersion ?? UNVERSIONED_RELAY_PROTOCOL;
     this.online = true;
     this.deps.dispatcher.setConnection(true);
     this.snapshot();

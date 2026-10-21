@@ -33,6 +33,9 @@ import {
   ATTACHMENT_EXPORT_EXPIRY_MARGIN_MS,
   ATTACHMENT_MAX_EXPORTED_DESCRIPTORS,
   ATTACHMENT_REQUEST_TIMEOUT_MS,
+  ATTACHMENT_PENDING_RETRY_DELAY_MS,
+  ATTACHMENT_PENDING_RETRY_LIMIT,
+  ATTACHMENT_ERROR_RESPONSE_MAX_BYTES,
 } from './limits.js';
 import { AttachmentHistory } from './content/history.js';
 import { nativeImageMime } from './content/image-content.js';
@@ -64,9 +67,14 @@ export class AttachmentService {
   >();
   private exporting = new Map<string, Promise<AttachmentDescriptor>>();
   private retrying?: Promise<void>;
+  private retryTimer?: ReturnType<typeof setTimeout>;
+  private retryPublisher?: (session: Session, message: HistoryMessage) => void;
   private exportWindow = { since: Date.now(), used: 0 };
   private metadataQueue: Promise<unknown> = Promise.resolve();
-  private pending = new Map<string, { session: Session; message: HistoryMessage; media: NativeMedia[] }>();
+  private pending = new Map<
+    string,
+    { session: Session; message: HistoryMessage; media: NativeMedia[]; retries: number; autoRetry: boolean }
+  >();
   private queue: Promise<unknown> = Promise.resolve();
   private readonly maintenance: ReturnType<typeof setInterval>;
   constructor(private options: Options) {
@@ -319,7 +327,8 @@ export class AttachmentService {
     let text = restored.text;
 
     let total = 0,
-      retry = false;
+      retry = false,
+      autoRetry = false;
 
     for (const [index, item] of media.slice(0, MAX_ATTACHMENTS).entries()) {
       if (!current()) {
@@ -352,13 +361,20 @@ export class AttachmentService {
         }
       } catch (error) {
         retry ||= RETRYABLE_ATTACHMENT_ERRORS.has(errorCode(error) ?? '');
+        autoRetry ||= errorCode(error) === ErrorCode.STALE_SESSION;
       }
     }
 
     const key = JSON.stringify([session.id, message.id]);
 
     if (retry) {
-      this.pending.set(key, { session: structuredClone(session), message, media });
+      this.pending.set(key, {
+        session: structuredClone(session),
+        message,
+        media,
+        retries: this.pending.get(key)?.retries ?? 0,
+        autoRetry: autoRetry || this.pending.get(key)?.autoRetry === true,
+      });
 
       while (
         this.pending.size > ATTACHMENT_MAX_PENDING_EXPORTS ||
@@ -369,22 +385,59 @@ export class AttachmentService {
       ) {
         this.pending.delete(this.pending.keys().next().value!);
       }
+
+      this.schedulePendingRetry();
     } else {
       this.pending.delete(key);
     }
 
     return attachments.length ? { ...restored, text, attachments } : restored;
   }
+  private schedulePendingRetry() {
+    if (
+      this.closed ||
+      this.retrying ||
+      this.retryTimer ||
+      !this.retryPublisher ||
+      ![...this.pending.values()].some(
+        (item) => item.autoRetry && item.retries < ATTACHMENT_PENDING_RETRY_LIMIT,
+      )
+    ) {
+      return;
+    }
+
+    this.retryTimer = setTimeout(() => {
+      delete this.retryTimer;
+      const retry = this.retryPublisher;
+
+      if (retry && !this.closed) {
+        void this.retryExports(retry).catch((error: unknown) => logDebug('attachments/service', error));
+      }
+    }, ATTACHMENT_PENDING_RETRY_DELAY_MS);
+
+    this.retryTimer.unref();
+  }
   retryExports(publish: (session: Session, message: HistoryMessage) => void): Promise<void> {
+    this.retryPublisher = publish;
+
     if (this.retrying) {
       return this.retrying;
     }
 
     const run = (async () => {
       for (const item of [...this.pending.values()]) {
-        if (this.options.current && !this.options.current(item.session)) {
-          this.pending.delete(JSON.stringify([item.session.id, item.message.id]));
+        const key = JSON.stringify([item.session.id, item.message.id]);
+
+        if (
+          (this.options.current && !this.options.current(item.session)) ||
+          (item.autoRetry && item.retries >= ATTACHMENT_PENDING_RETRY_LIMIT)
+        ) {
+          this.pending.delete(key);
           continue;
+        }
+
+        if (item.autoRetry) {
+          item.retries++;
         }
 
         const message = await this.normalize(item.session, item.message, item.media);
@@ -400,6 +453,14 @@ export class AttachmentService {
     void run
       .finally(() => {
         delete this.retrying;
+
+        for (const [key, item] of this.pending) {
+          if (item.autoRetry && item.retries >= ATTACHMENT_PENDING_RETRY_LIMIT) {
+            this.pending.delete(key);
+          }
+        }
+
+        this.schedulePendingRetry();
       })
       .catch((error: unknown) => logDebug('attachments/service', error));
 
@@ -587,7 +648,18 @@ export class AttachmentService {
     }
 
     if (!response.ok) {
-      await response.body?.cancel();
+      let code: unknown;
+
+      try {
+        const body = await boundedBody(response, ATTACHMENT_ERROR_RESPONSE_MAX_BYTES);
+
+        code = (JSON.parse(body.toString('utf8')) as { code?: unknown }).code;
+      } catch {} // ignore: malformed error responses stay generic transfer failures.
+
+      if (code === ErrorCode.STALE_SESSION) {
+        throw new CodedError(ErrorCode.STALE_SESSION);
+      }
+
       throw new CodedError(
         response.status === HttpStatus.NotFound || response.status === HttpStatus.Gone
           ? AttachmentErrorCode.Unavailable
@@ -637,6 +709,13 @@ export class AttachmentService {
   async close() {
     this.closed = true;
     clearInterval(this.maintenance);
+
+    if (this.retryTimer) {
+      clearTimeout(this.retryTimer);
+    }
+
+    delete this.retryTimer;
+    delete this.retryPublisher;
     await this.queue;
     await this.metadataQueue;
     await this.retrying?.catch((error: unknown) => logDebug('attachments/service', error));

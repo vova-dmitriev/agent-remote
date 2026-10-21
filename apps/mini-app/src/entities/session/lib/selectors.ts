@@ -4,7 +4,10 @@ import { agentName } from "./labels"
 import type { SessionState } from "../model/session-state"
 
 export function selectedSession(state: SessionState) {
-  return state.snapshot?.sessions.find((session) => session.id === state.selectedId)
+  return (
+    state.snapshot?.sessions.find((session) => session.id === state.selectedId) ??
+    (state.selectedListedSession?.id === state.selectedId ? state.selectedListedSession : undefined)
+  )
 }
 
 type Permissions = AppSnapshot["permissions"] | undefined

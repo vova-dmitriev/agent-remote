@@ -95,6 +95,24 @@ it('delivers the exact structured answer once even while the source is running',
   expect(device.frames.filter((frame) => frame.type === 'command')).toHaveLength(1);
 });
 
+it('relays validated multi-select answers without collapsing them to one choice', async () => {
+  const device = await connect();
+
+  pending.questions[0]!.multiSelect = true;
+
+  pending.questions[0]!.options = [
+    { label: 'Dark', description: '' },
+    { label: 'Light', description: '' },
+  ];
+
+  await save();
+
+  const input = command({ style: { answers: ['Dark', 'Light'] } });
+
+  expect((await fixture.relay.command(fixture.principal, input)).status).toBe('accepted');
+  expect((await device.next('command')).command.action).toEqual(input.action);
+});
+
 it('rejects another owner and invalid question answers before dispatch', async () => {
   const device = await connect();
   const other = await fixture.relay.auth.authenticate(fixture.otherToken);

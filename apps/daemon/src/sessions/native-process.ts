@@ -1,4 +1,5 @@
 import { CodedError, ErrorCode, NativeRestartState } from '@protocol';
+import type { NativeProcess } from '../domain/ports/native/process.js';
 import { NativePidDomain, NativeProcessKind } from '../domain/runtime.js';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -23,7 +24,7 @@ const nativeRecord = z.object({
   kind: z.literal(NativeProcessKind.Interactive),
 });
 
-export type NativeProcess = Pick<z.infer<typeof nativeRecord>, 'pid' | 'sessionId' | 'cwd' | 'procStart'>;
+export type { NativeProcess } from '../domain/ports/native/process.js';
 export type NativeProcessInspection =
   | { state: typeof NativeRestartState.Available; process: NativeProcess }
   | { state: typeof NativeRestartState.Missing | typeof NativeRestartState.Ambiguous };

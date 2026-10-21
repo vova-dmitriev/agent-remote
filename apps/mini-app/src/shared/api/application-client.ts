@@ -19,11 +19,19 @@ import type {
   RulesRequest,
   SessionRemoval,
   ModelChoice,
+  SessionSkills,
+  ProviderFilterValue,
+  Session,
 } from "@protocol"
 import type { AttachmentAccess } from "./attachment-access"
 import type { Device, HistoryPageSkip } from "./types"
 
 export interface ApplicationOperations {
+  listSessions?(
+    deviceId: string,
+    provider: ProviderFilterValue,
+    cursor?: string,
+  ): Promise<{ sessions: Session[]; nextCursor: string | null }>
   getPreferences(): Promise<AccountPreferences>
   savePreferences(patch: PreferencePatch): Promise<AccountPreferences>
   renameSession(sessionId: string, title: string, generation: string): Promise<unknown>
@@ -71,6 +79,7 @@ export interface ApplicationPersistence {
 }
 
 export interface ApplicationClient extends ApplicationOperations {
+  sessionSkills?: (sessionId: string, generation: string) => Promise<SessionSkills>
   profiles?: (deviceId: string) => ExecutionProfileAccess
   continuity?: (deviceId: string) => ContinuityAccess
   profileRouting?: (deviceId: string) => ProfileRoutingAccess

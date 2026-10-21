@@ -52,3 +52,34 @@ it('allows custom answers only for free-form questions and requires every questi
     'INVALID_USER_INPUT',
   );
 });
+
+it('validates bounded multi-select answers only for questions that enable them', () => {
+  const multi = {
+    questions: [
+      {
+        ...request.questions[0]!,
+        multiSelect: true,
+        options: [
+          { label: 'Dark', description: '' },
+          { label: 'Light', description: '' },
+        ],
+      },
+    ],
+  };
+
+  expect(validateUserInputAnswers(multi, { style: { answers: ['Dark', 'Light'] } })).toEqual({
+    style: { answers: ['Dark', 'Light'] },
+  });
+
+  expect(() => validateUserInputAnswers(request, { style: { answers: ['Dark', 'Dark'] } })).toThrow(
+    'INVALID_USER_INPUT',
+  );
+
+  expect(() => validateUserInputAnswers(multi, { style: { answers: ['Dark', 'Unknown'] } })).toThrow(
+    'INVALID_USER_INPUT',
+  );
+
+  expect(() => validateUserInputAnswers(multi, { style: { answers: ['Dark', 'Light', 'Dark'] } })).toThrow(
+    'INVALID_USER_INPUT',
+  );
+});

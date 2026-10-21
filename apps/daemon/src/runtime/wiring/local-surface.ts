@@ -41,7 +41,14 @@ export async function startLocalSurface(deps: LocalSurfaceDeps) {
     ...(deps.models ? { models: deps.models } : {}),
     analytics: deps.analytics,
     rules: deps.rules,
-    history: (request) => (readers.has(request.sessionId) ? readers.page(request) : Promise.resolve(null)),
+    history: (request) => {
+      if (request.agentId && deps.monitor.hasSubagentHistory(request.sessionId, request.generation)) {
+        return deps.monitor.readSubagentHistory(request);
+      }
+
+      return readers.has(request.sessionId) ? readers.page(request) : Promise.resolve(null);
+    },
+    hasHistoryReader: (sessionId) => readers.has(sessionId),
   });
 
   const localServer = await startLocalServer({

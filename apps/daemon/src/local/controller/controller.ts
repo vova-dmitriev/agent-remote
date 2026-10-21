@@ -1,6 +1,7 @@
 import { DOCUMENT_OPERATIONS, documentOperation } from './documents.js';
 import { localHistory } from './history.js';
 import { LocalPersistence } from './persistence.js';
+import { localSnapshot } from './snapshot.js';
 import {
   CodedError,
   type CommandResult,
@@ -12,7 +13,6 @@ import {
   type ServerFrame,
 } from '@protocol';
 import { RuntimeEvent } from '../../domain/runtime.js';
-import { LocalDocumentKind } from '../state/values.js';
 import type { LocalPrincipal } from '../grants/types.js';
 import type { LocalControllerOptions } from './types.js';
 
@@ -69,24 +69,8 @@ export class LocalController {
 
   snapshot(principal: LocalPrincipal, selected: string | null = null): ServerFrame {
     this.assertCurrent(principal);
-    const snapshot = this.options.monitor.snapshot();
 
-    snapshot.sessions = snapshot.sessions.map((source) => {
-      const title = this.options.documents.get(principal.ownerId, source.id, LocalDocumentKind.Title).value;
-
-      return typeof title === 'string' ? { ...source, title } : source;
-    });
-
-    if (snapshot.terminal?.sessionId !== selected) {
-      snapshot.terminal = null;
-    }
-
-    return {
-      type: FrameType.Snapshot,
-      deviceId: this.options.deviceId,
-      snapshot,
-      connectors: this.options.adapters.list(snapshot.sessions),
-    };
+    return localSnapshot(this.options, principal.ownerId, selected);
   }
 
   subscribe(principal: LocalPrincipal, notify: (frame: ServerFrame) => void, selected: () => string | null) {

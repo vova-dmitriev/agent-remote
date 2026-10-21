@@ -10,6 +10,7 @@ import {
   type ModelChoice,
   type ServerFrame,
   type SessionFile,
+  type SessionSkills,
 } from '@protocol';
 import { Fault } from '../http/errors/fault.js';
 import type { WebSocket } from 'ws';
@@ -21,6 +22,7 @@ export type DeviceResult = Extract<
       | typeof FrameType.FileResult
       | typeof FrameType.AnalyticsResult
       | typeof FrameType.RulesResult
+      | typeof FrameType.SkillsResult
       | typeof FrameType.SessionModelResult;
   }
 >;
@@ -81,6 +83,21 @@ export class DeviceRequests {
     }));
   }
 
+  async skills(connection: DeviceConnection, sessionId: string, generation: string) {
+    const result = await this.request<SessionSkills>(connection, FrameType.SkillsResult, (requestId) => ({
+      type: FrameType.SkillsRequest,
+      requestId,
+      sessionId,
+      generation,
+    }));
+
+    if (result.sessionId !== sessionId || result.generation !== generation) {
+      throw new Fault(ErrorCode.INVALID_FRAME);
+    }
+
+    return result;
+  }
+
   private request<T>(
     connection: DeviceConnection,
     answer: DeviceResult['type'],
@@ -132,6 +149,8 @@ export class DeviceRequests {
       pending.resolve(reply.report);
     } else if ('choice' in reply) {
       pending.resolve(reply.choice);
+    } else if ('skills' in reply) {
+      pending.resolve(reply.skills);
     } else {
       pending.resolve(reply.rules);
     }

@@ -1,5 +1,5 @@
 import { afterEach, expect, it } from "vitest"
-import { CommandActionType, CommandStatus, ErrorCode, SessionStatus } from "@protocol"
+import { CommandActionType, ErrorCode, SessionStatus } from "@protocol"
 import { PromptStatus } from "@/entities/session"
 import { PromptDeliveryMode } from "@/features/send-command/config/values"
 import { cleanupPromptOutboxFixtures, fixture, tick } from "./prompt-outbox-fixture"
@@ -93,21 +93,46 @@ it("sends a selected queued message now during work without releasing older queu
   expect(send.mock.calls.map(([command]) => command.commandId)).toEqual(["second", "first"])
 })
 
-it("does not force through an uncertain receipt, waiting question, lost source or connection", async () => {
+it("lets Send now bypass a different prompt with an unresolved receipt", async () => {
+  const { store, enqueue, dispatcher, send } = fixture(SessionStatus.Running)
+
+  enqueue("uncertain")
+  enqueue("send-now")
+  store.getState().updatePrompt("uncertain", PromptStatus.Unknown)
+
+  expect(dispatcher.canSendNow("send-now")).toBe(true)
+  await dispatcher.sendNow("send-now")
+
+  expect(send).toHaveBeenCalledTimes(1)
+
+  expect(send.mock.calls[0]![0]).toMatchObject({
+    commandId: "send-now",
+    action: { text: "send-now", delivery: "immediate" },
+  })
+
+  expect(store.getState().outbox.map((item) => [item.command.commandId, item.status])).toEqual([["uncertain", PromptStatus.Unknown]])
+})
+
+it("never retries the uncertain command and still guards Send now by session, source and connection", async () => {
   const { store, enqueue, update, dispatcher, send } = fixture(SessionStatus.Running)
 
   enqueue("uncertain")
   enqueue("later")
   store.getState().updatePrompt("uncertain", PromptStatus.Unknown)
-  expect(dispatcher.canSendNow("later")).toBe(false)
+  expect(dispatcher.canSendNow("later")).toBe(true)
   await dispatcher.sendNow("later")
-  expect(send).not.toHaveBeenCalled()
-  store.getState().finishPrompt({ commandId: "uncertain", status: CommandStatus.Dispatched })
+  expect(send).toHaveBeenCalledTimes(1)
+  expect(send.mock.calls[0]![0]).toMatchObject({ commandId: "later", action: { delivery: "immediate" } })
+  expect(dispatcher.canSendNow("uncertain")).toBe(false)
+
+  enqueue("waiting")
   update(SessionStatus.WaitingInput, 2)
-  await dispatcher.sendNow("later")
-  expect(send).not.toHaveBeenCalled()
+  expect(dispatcher.canSendNow("waiting")).toBe(false)
+  await dispatcher.sendNow("waiting")
+  expect(send).toHaveBeenCalledTimes(1)
+
   update(SessionStatus.Running, 3)
   store.getState().runtime.clear()
-  await dispatcher.sendNow("later")
-  expect(send).not.toHaveBeenCalled()
+  await dispatcher.sendNow("waiting")
+  expect(send).toHaveBeenCalledTimes(1)
 })

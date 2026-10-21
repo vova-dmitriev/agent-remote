@@ -8,4 +8,7 @@ export const SESSIONS_PAGE_IDS = {
   list: "sessions-page-list",
   empty: "sessions-page-empty",
   loading: "sessions-page-loading",
+  pageLoading: "sessions-page-loading-more",
+  pageRetry: "sessions-page-retry",
+  pageMore: "sessions-page-more",
 } as const

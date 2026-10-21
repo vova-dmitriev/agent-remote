@@ -48,6 +48,7 @@ import { CodexRpcError } from '../rpc/rpc-client.js';
 import { CodexModelReader } from '../history/model-reader.js';
 import { type UserInputBroker } from '../../commands/user-input-broker.js';
 import { CodexSubagents } from './subagents.js';
+import { CodexSubagentPages } from '../history/subagent-pages.js';
 import { CodexUserInputs } from './user-inputs.js';
 import { CodexApprovals } from './approvals.js';
 import { historyTurnTimes, messageTime, turnTime } from '../history/history-times.js';
@@ -218,6 +219,35 @@ export async function bindCodex(options: CodexBindingOptions, deps: Dependencies
   };
 
   const subagents = new CodexSubagents();
+
+  const subagentPages =
+    options.kind === TargetKind.CodexCli ||
+    (options.kind === TargetKind.CodexDesktop && typeof rpc.readSubagentItems === 'function')
+      ? new CodexSubagentPages(
+          session.id,
+          session.generation,
+          rpc,
+          subagents,
+          () =>
+            !closed &&
+            monitor.session(session.id)?.generation === session.generation &&
+            monitor.session(session.id)?.binding === BindingState.Verified &&
+            monitor.session(session.id)?.integrationState === IntegrationState.Ready &&
+            monitor.binding(session.id) === binding,
+          (threadId, params) =>
+            options.kind === TargetKind.CodexDesktop
+              ? (rpc.readSubagentItems?.(threadId, params) ??
+                Promise.reject(new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE)))
+              : rpc.request(CodexMethod.ThreadItemsList, { ...object(params), threadId }),
+        )
+      : undefined;
+
+  const unregisterSubagentHistory = subagentPages
+    ? monitor.registerSubagentHistoryReader(session.id, session.generation, (request) =>
+        subagentPages.page(request),
+      )
+    : undefined;
+
   const changes = new CodexFileChanges();
 
   session.changes = changes.value();
@@ -624,6 +654,7 @@ export async function bindCodex(options: CodexBindingOptions, deps: Dependencies
     }
 
     closed = true;
+    unregisterSubagentHistory?.();
     clearInterval(modelTimer);
     queuedMedia.length = 0;
     queuedBytes = 0;

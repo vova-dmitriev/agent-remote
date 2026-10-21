@@ -1,4 +1,4 @@
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import type { WebSocket } from 'ws';
 import { databaseFixture } from '../../helpers/relay/database.js';
 import { SourceHistory } from '@server/history/source.js';
@@ -26,7 +26,8 @@ it('authorizes native page requests and fences responses by owner, device, epoch
         epoch: 'epoch',
         device: { id: 'device', owner_id: 'owner' },
       },
-      sent: ServerFrame[] = [];
+      sent: ServerFrame[] = [],
+      live = new Map([['device', connection]]);
 
     let dispatch!: () => void;
 
@@ -34,16 +35,12 @@ it('authorizes native page requests and fences responses by owner, device, epoch
       dispatch = resolve;
     });
 
-    const source = new SourceHistory(
-      new HistoryRepository(fixture.db),
-      new Map([['device', connection]]),
-      (_socket, frame) => {
-        sent.push(frame);
-        dispatch();
+    const source = new SourceHistory(new HistoryRepository(fixture.db), live, (_socket, frame) => {
+      sent.push(frame);
+      dispatch();
 
-        return true;
-      },
-    );
+      return true;
+    });
 
     await expect(source.page({ userId: 'foreign' } as Principal, 'session')).rejects.toThrow('NOT_FOUND');
     expect(sent).toHaveLength(0);
@@ -69,6 +66,10 @@ it('authorizes native page requests and fences responses by owner, device, epoch
       source.accept({ ...connection, ...changed }, item);
     }
 
+    live.set('device', { ...connection, epoch: 'replacement' });
+    source.accept(connection, item);
+    live.set('device', connection);
+
     source.accept(connection, { ...item, generation: 'stale' });
     source.accept(connection, { ...item, sessionId: 'other' });
     source.accept(connection, item);
@@ -87,6 +88,73 @@ it('authorizes native page requests and fences responses by owner, device, epoch
     expect(result?.events.map((event) => event.payload)).toEqual([message]);
     expect(result?.nextCursor).toBe('source:cursor');
     expect(result?.afterCursor).toBeNull();
+    source.close();
+  } finally {
+    await fixture.close();
+  }
+});
+
+it('routes a subagent page when only subagentHistory is available', async () => {
+  const fixture = await databaseFixture();
+
+  try {
+    await fixture.db.pool.query("INSERT INTO users(id,telegram_id,created_at) VALUES('owner','9998',0)");
+
+    await fixture.db.pool.query(
+      "INSERT INTO devices(id,owner_id,token_hash,generation) VALUES('device','owner','hash','g')",
+    );
+
+    await fixture.db.pool.query(
+      "INSERT INTO sessions(owner_id,device_id,id,data) VALUES('owner','device','session',$1)",
+      [JSON.stringify({ generation: 'g', capabilities: { subagentHistory: true } })],
+    );
+
+    const connection = {
+        socket: {} as WebSocket,
+        epoch: 'epoch',
+        device: { id: 'device', owner_id: 'owner' },
+      },
+      live = new Map([['device', connection]]),
+      sent: ServerFrame[] = [];
+
+    const source = new SourceHistory(new HistoryRepository(fixture.db), live, (_socket, frame) => {
+      sent.push(frame);
+
+      return true;
+    });
+
+    const result = source.page(
+      { userId: 'owner' } as Principal,
+      'session',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      false,
+      'child-thread',
+    );
+
+    await vi.waitFor(() => expect(sent).toHaveLength(1));
+
+    expect(sent[0]).toMatchObject({
+      type: 'history_read',
+      sessionId: 'session',
+      generation: 'g',
+      agentId: 'child-thread',
+    });
+
+    const request = sent[0] as HistoryRead;
+
+    source.accept(connection, {
+      type: 'history_done',
+      requestId: request.requestId,
+      sessionId: 'session',
+      generation: 'g',
+      before: null,
+      after: null,
+    });
+
+    expect((await result)?.events).toEqual([]);
     source.close();
   } finally {
     await fixture.close();

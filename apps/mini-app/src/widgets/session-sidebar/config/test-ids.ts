@@ -14,6 +14,8 @@ export const SESSION_SIDEBAR_IDS = {
   rowTitle: "session-sidebar-row-title",
   rowPin: "session-sidebar-row-pin",
   pinError: "session-sidebar-pin-error",
+  pageLoading: "session-sidebar-page-loading",
+  pageRetry: "session-sidebar-page-retry",
   empty: "session-sidebar-empty",
   emptyClear: "session-sidebar-empty-clear",
   resize: "session-sidebar-resize",

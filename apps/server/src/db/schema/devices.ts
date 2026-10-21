@@ -61,6 +61,29 @@ export const sessions = pgTable(
   (table) => [primaryKey({ columns: [table.ownerId, table.deviceId, table.id] }), toDevice(table)],
 );
 
+export const sessionCatalog = pgTable(
+  'session_catalog',
+  {
+    ...ownedDevice,
+    id: text('id').notNull(),
+    deviceGeneration: text('device_generation'),
+    provider: text('provider').notNull(),
+    recencyAt: epoch('recency_at').notNull(),
+    data: jsonb('data').notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.ownerId, table.deviceId, table.id] }),
+    toDevice(table),
+    index('session_catalog_page').on(
+      table.ownerId,
+      table.deviceId,
+      table.provider,
+      table.recencyAt.desc(),
+      table.id,
+    ),
+  ],
+);
+
 export const sessionLabels = pgTable(
   'session_labels',
   { ...ownedDevice, sourceKey: text('source_key').notNull(), title: text('title').notNull() },

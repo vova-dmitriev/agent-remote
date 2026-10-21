@@ -1,3 +1,4 @@
+import { skillsEN } from "./skills"
 import { accountsEN } from "./accounts"
 import { sessionControlsEN } from "./session-controls"
 import { viewerEN } from "./viewer"
@@ -7,6 +8,7 @@ import { usageEN } from "./usage"
 import { rulesEN } from "./rules"
 
 export const en = {
+  ...skillsEN,
   ...accountsEN,
   ...extensionEN,
   ...viewerEN,
@@ -39,6 +41,9 @@ export const en = {
   footer: "Your session and context stay on your Mac.",
   sessionsTitle: "Your sessions",
   sessionsSubtitle: "Pick up where you left off.",
+  sessionPagesLoading: "Loading older sessions…",
+  sessionPagesRetry: "Retry loading sessions",
+  sessionPagesMore: "Scroll for older sessions",
   macConnected: "Mac connected",
   connectSession: "Connect a Claude or Codex session on your Mac to see it here.",
   selectedChat: "Selected chat",
@@ -96,7 +101,7 @@ export const en = {
   sessionActions: "Session actions",
   observeOnly: "Observation only",
   send: "Send ↑",
-  userInputTitle: "Question from Codex",
+  userInputTitle: "Question",
   userInputOther: "Other answer",
   userInputCustom: "Your answer",
   userInputSkip: "Skip",

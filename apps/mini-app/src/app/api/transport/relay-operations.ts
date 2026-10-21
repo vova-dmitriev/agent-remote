@@ -8,17 +8,46 @@ import {
   sessionFileSchema,
   analyticsReportSchema,
   rulesReplySchema,
+  sessionSkillsSchema,
+  sessionSchema,
+  CodedError,
+  ErrorCode,
   type RulesRequest,
   type AnalyticsPeriod,
   type PreferencePatch,
   type ReadingPosition,
   type SessionRemoval,
   type ModelChoice,
+  type ProviderFilterValue,
+  SessionListLimits,
 } from "@protocol"
+import { z } from "zod"
 import type { ApplicationOperations, Device } from "@/shared/api"
 import { RelayCommandOperations } from "./relay-command-operations"
 
 export abstract class RelayOperations extends RelayCommandOperations implements ApplicationOperations {
+  async listSessions(deviceId: string, provider: ProviderFilterValue, cursor?: string) {
+    const query = new URLSearchParams({ provider })
+
+    if (cursor) query.set("cursor", cursor)
+
+    return z
+      .strictObject({
+        sessions: z.array(sessionSchema).max(SessionListLimits.PageSize),
+        nextCursor: z.string().max(SessionListLimits.CursorLength).nullable(),
+      })
+      .parse(await this.request(`/devices/${encodeURIComponent(deviceId)}/sessions?${query}`))
+  }
+
+  async sessionSkills(sessionId: string, generation: string) {
+    const query = new URLSearchParams({ generation })
+    const result = sessionSkillsSchema.parse(await this.request(`/sessions/${encodeURIComponent(sessionId)}/skills?${query}`))
+
+    if (result.sessionId !== sessionId || result.generation !== generation) throw new CodedError(ErrorCode.INVALID_FRAME)
+
+    return result
+  }
+
   protected routingAccess(deviceId: string, current: () => boolean) {
     return new BoundProfileRoutingClient(
       deviceId,

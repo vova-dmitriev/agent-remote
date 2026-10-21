@@ -23,6 +23,8 @@ export function SessionSidebar({
   now: fixedNow,
   awaitingIds = NO_SESSIONS,
   onOpen,
+  onLoadPage,
+  pageScope,
   onTogglePin,
   pinFailed = false,
   onExpand,
@@ -33,7 +35,18 @@ export function SessionSidebar({
 }: SessionSidebarProps) {
   const { t } = useTranslation()
   const now = useSidebarClock(fixedNow)
-  const model = useSessionSidebar({ sessions, activeId, now, collapsed, onOpen, onTogglePin, onExpand })
+
+  const model = useSessionSidebar({
+    sessions,
+    activeId,
+    now,
+    collapsed,
+    onOpen,
+    ...(onLoadPage ? { onLoadPage } : {}),
+    ...(pageScope !== undefined ? { pageScope } : {}),
+    onTogglePin,
+    onExpand,
+  })
 
   if (collapsed) {
     return (
@@ -98,6 +111,10 @@ export function SessionSidebar({
         onTogglePin={onTogglePin}
         onKeyDown={model.onKeyDown}
         onClear={model.clear}
+        onLoadMore={model.loadMore}
+        pagesLoading={model.pagesLoading}
+        pagesFailed={model.pagesFailed}
+        onRetryPages={model.retryPages}
       />
     </aside>
   )

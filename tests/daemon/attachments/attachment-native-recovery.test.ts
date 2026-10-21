@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { HttpStatus } from '@protocol';
+import { ErrorCode, HttpStatus } from '@protocol';
 import { createHash } from 'node:crypto';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -46,7 +46,7 @@ afterEach(async () => {
   }
 });
 
-async function fixture() {
+async function fixture(current?: () => boolean) {
   const directory = await mkdtemp(join(tmpdir(), 'native-recovery-'));
 
   cleanup.push(() => rm(directory, { recursive: true, force: true }));
@@ -57,6 +57,7 @@ async function fixture() {
     deviceToken: 'synthetic',
     directory,
     fetch: fetcher,
+    ...(current ? { current: () => current() } : {}),
   });
 
   cleanup.push(() => service.close());
@@ -93,6 +94,59 @@ it('retries native images after the upload response stream disconnects', async (
 
   await f.service.retryExports((_session, restored) => published.push(restored));
   expect(published).toEqual([{ ...message, text: 'Review', attachments: [descriptor] }]);
+});
+
+it('retries a stale-generation export after the relay session snapshot catches up', async () => {
+  const f = await fixture(() => true);
+
+  f.fetcher
+    .mockResolvedValueOnce(
+      new Response(JSON.stringify({ code: ErrorCode.STALE_SESSION }), { status: HttpStatus.Conflict }),
+    )
+    .mockResolvedValueOnce(new Response(JSON.stringify(descriptor)));
+
+  const published: unknown[] = [];
+
+  await f.service.retryExports((_session, restored) => published.push(restored));
+  expect(await f.service.normalize(session, message, nativeClaudeMedia(source))).toEqual(message);
+
+  await vi.waitFor(
+    () => expect(published).toEqual([{ ...message, text: 'Review', attachments: [descriptor] }]),
+    { timeout: 4000 },
+  );
+
+  expect(f.fetcher).toHaveBeenCalledTimes(2);
+});
+
+it('cancels a scheduled stale-generation retry after its session generation changes', async () => {
+  let current = true;
+  const f = await fixture(() => current);
+
+  const stale = () =>
+    new Response(JSON.stringify({ code: ErrorCode.STALE_SESSION }), { status: HttpStatus.Conflict });
+
+  f.fetcher.mockImplementation(async () => stale());
+  expect(await f.service.normalize(session, message, nativeClaudeMedia(source))).toEqual(message);
+  await f.service.retryExports(() => {});
+  current = false;
+
+  await new Promise((resolve) => setTimeout(resolve, 1200));
+  expect(f.fetcher).toHaveBeenCalledTimes(2);
+});
+
+it('cancels the scheduled pending-export timer when the service closes', async () => {
+  const f = await fixture(() => true);
+
+  const stale = () =>
+    new Response(JSON.stringify({ code: ErrorCode.STALE_SESSION }), { status: HttpStatus.Conflict });
+
+  f.fetcher.mockImplementation(async () => stale());
+  expect(await f.service.normalize(session, message, nativeClaudeMedia(source))).toEqual(message);
+  await f.service.retryExports(() => {});
+  await f.service.close();
+
+  await new Promise((resolve) => setTimeout(resolve, 1200));
+  expect(f.fetcher).toHaveBeenCalledTimes(2);
 });
 
 it('coalesces uploads for concurrent live and paginated reads of the same native message', async () => {

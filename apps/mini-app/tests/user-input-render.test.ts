@@ -8,7 +8,7 @@ import { createLanguageInstance } from "../src/shared/lib/i18n"
 import { AnswerQuestion } from "../src/pages/session/ui/questions/answer-question"
 import { QuestionField } from "../src/pages/session/ui/questions/question-field"
 import { USER_INPUT_IDS } from "../src/pages/session/config/test-ids"
-import { freeformQuestion, questionRequest } from "../src/pages/session/ui/questions/fixtures"
+import { choiceQuestion, freeformQuestion, questionRequest } from "../src/pages/session/ui/questions/fixtures"
 
 it("starts with no selected option and disables explicit Send", () => {
   const html = renderToStaticMarkup(
@@ -47,4 +47,24 @@ it("masks secret custom answers and safely renders the question Markdown", () =>
   expect(html).toContain('autoComplete="off"')
   expect(html).toContain("<strong>Secret</strong>")
   expect(html).not.toContain("<script>")
+})
+
+it("renders Claude multi-select options as checkboxes", () => {
+  const html = renderToStaticMarkup(
+    createElement(
+      I18nextProvider,
+      { i18n: createLanguageInstance(Language.En) },
+      createElement(QuestionField, {
+        question: {
+          ...choiceQuestion,
+          multiSelect: true,
+        },
+        disabled: false,
+        choose: () => undefined,
+      }),
+    ),
+  )
+
+  expect(html).toContain('type="checkbox"')
+  expect(html.match(/type="checkbox"/g)).toHaveLength(2)
 })

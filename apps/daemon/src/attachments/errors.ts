@@ -15,6 +15,7 @@ export const RETRYABLE_ATTACHMENT_ERRORS: ReadonlySet<string> = new Set([
   AttachmentErrorCode.Unavailable,
   AttachmentErrorCode.TransferFailed,
   AttachmentErrorCode.RateLimited,
+  ErrorCode.STALE_SESSION,
 ]);
 export const ATTACHMENT_VALIDATION_ERRORS: ReadonlySet<string> = new Set([
   AttachmentErrorCode.TooLarge,

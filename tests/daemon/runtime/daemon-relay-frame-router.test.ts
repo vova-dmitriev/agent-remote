@@ -6,9 +6,25 @@ function harness(page: () => Promise<unknown> = async () => ({ messages: [], bef
   const deps = {
     relay: { send: vi.fn((_frame: { type: string }) => true) },
     profileRelay: { receive: vi.fn(async () => {}) },
-    readers: { page: vi.fn(page) },
+    readers: { page: vi.fn(page), has: vi.fn(() => false), registerLazy: vi.fn() },
+    store: { nativeSession: vi.fn(() => undefined) },
     replay: { acknowledge: vi.fn() },
-    monitor: { select: vi.fn(), snapshot: vi.fn(() => ({ sessions: [] })) },
+    monitor: {
+      select: vi.fn(),
+      snapshot: vi.fn(() => ({ sessions: [] })),
+      sessionPage: vi.fn(() => ({ sessions: [{ id: 's1' }], nextCursor: 'next', hasMore: true })),
+      readSubagentHistory: vi.fn(page),
+      hasSubagentHistory: vi.fn(() => false),
+    },
+    skills: {
+      list: vi.fn(async (sessionId: string, generation: string) => ({
+        sessionId,
+        generation,
+        supported: true,
+        truncated: false,
+        skills: [],
+      })),
+    },
     adapters: { list: vi.fn(() => []) },
     dispatcher: { dispatch: vi.fn(async () => ({ commandId: 'c1', sessionId: 's1' })) },
   };
@@ -40,6 +56,59 @@ it('streams history items and completes the request', async () => {
 
   expect(deps.relay.send).toHaveBeenLastCalledWith(
     expect.objectContaining({ requestId: 'r', before: 'b', after: 'a' }),
+  );
+});
+
+it('routes child history through the registered child reader, never the parent transcript reader', async () => {
+  const { deps, router } = harness(async () => ({
+    messages: ['child-message'],
+    before: 'older',
+    after: null,
+  }));
+
+  deps.monitor.hasSubagentHistory.mockReturnValue(true);
+
+  await router.route(
+    frame({
+      type: FrameType.HistoryRead,
+      requestId: 'child-read',
+      sessionId: 's',
+      generation: 'g',
+      agentId: 'child',
+    }),
+  );
+
+  expect(deps.readers.page).not.toHaveBeenCalled();
+
+  expect(deps.monitor.readSubagentHistory).toHaveBeenCalledWith(
+    expect.objectContaining({ sessionId: 's', generation: 'g', agentId: 'child' }),
+  );
+
+  expect(deps.relay.send.mock.calls.map(([sent]) => sent.type)).toEqual([
+    FrameType.HistoryItem,
+    FrameType.HistoryDone,
+  ]);
+});
+
+it('keeps Claude child history on its transcript reader when no Codex reader is registered', async () => {
+  const { deps, router } = harness(async () => ({ messages: ['claude-child'], before: null, after: null }));
+
+  deps.monitor.hasSubagentHistory.mockReturnValue(false);
+
+  await router.route(
+    frame({
+      type: FrameType.HistoryRead,
+      requestId: 'claude-child-read',
+      sessionId: 's',
+      generation: 'g',
+      agentId: 'claude-agent-id',
+    }),
+  );
+
+  expect(deps.monitor.readSubagentHistory).not.toHaveBeenCalled();
+
+  expect(deps.readers.page).toHaveBeenCalledWith(
+    expect.objectContaining({ sessionId: 's', generation: 'g', agentId: 'claude-agent-id' }),
   );
 });
 
@@ -147,4 +216,63 @@ it('answers a model switch with the choice it took, or with the code of the refu
       reply: { ok: false, code: ErrorCode.CAPABILITY_UNAVAILABLE },
     },
   ]);
+});
+
+it('routes bounded session pages and generation-bound skills requests', async () => {
+  const { deps, router } = harness();
+  const skills = { sessionId: 's1', generation: 'g1', supported: true, truncated: false, skills: [] };
+
+  await router.route(
+    frame({ type: FrameType.SessionListRead, requestId: 'r1', provider: 'Claude', cursor: 'old' }),
+  );
+
+  await router.route(
+    frame({ type: FrameType.SkillsRequest, requestId: 'r2', sessionId: 's1', generation: 'g1' }),
+  );
+
+  expect(deps.monitor.sessionPage).toHaveBeenCalledWith('Claude', 'old');
+  expect(deps.skills.list).toHaveBeenCalledWith('s1', 'g1');
+
+  expect(deps.relay.send.mock.calls.map(([sent]) => sent)).toEqual([
+    {
+      type: FrameType.SessionListResult,
+      requestId: 'r1',
+      reply: { ok: true, page: { sessions: [{ id: 's1' }], nextCursor: 'next' } },
+    },
+    { type: FrameType.SkillsResult, requestId: 'r2', reply: { ok: true, skills } },
+  ]);
+});
+
+it('returns a bounded error reply when a session page cursor is invalid', async () => {
+  const { deps, router } = harness();
+
+  deps.monitor.sessionPage.mockImplementationOnce(() => {
+    throw new CodedError(ErrorCode.STALE_SESSION);
+  });
+
+  await router.route(
+    frame({ type: FrameType.SessionListRead, requestId: 'r1', provider: 'Claude', cursor: 'bad' }),
+  );
+
+  expect(deps.relay.send).toHaveBeenCalledWith({
+    type: FrameType.SessionListResult,
+    requestId: 'r1',
+    reply: { ok: false, code: ErrorCode.STALE_SESSION },
+  });
+});
+
+it('returns stale-generation failures for skills without leaking the native error', async () => {
+  const { deps, router } = harness();
+
+  deps.skills.list.mockRejectedValueOnce(new CodedError(ErrorCode.STALE_SESSION));
+
+  await router.route(
+    frame({ type: FrameType.SkillsRequest, requestId: 'r1', sessionId: 's1', generation: 'stale' }),
+  );
+
+  expect(deps.relay.send).toHaveBeenCalledWith({
+    type: FrameType.SkillsResult,
+    requestId: 'r1',
+    reply: { ok: false, code: ErrorCode.STALE_SESSION },
+  });
 });

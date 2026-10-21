@@ -99,4 +99,29 @@ describe('UserInputBroker', () => {
     expect(writes).toBe(1);
     broker.close();
   });
+
+  it('runs cancellation callbacks only for the matching session generation', () => {
+    const broker = new UserInputBroker();
+    const cancelled: string[] = [];
+    const old = { ...request(), requestId: 'old', generation: 'old-generation' };
+    const current = { ...request(), requestId: 'current', generation: 'current-generation' };
+
+    broker.open(
+      old,
+      () => undefined,
+      () => cancelled.push('old'),
+    );
+
+    broker.open(
+      current,
+      () => undefined,
+      () => cancelled.push('current'),
+    );
+
+    broker.cancelSession('s', 'old-generation');
+
+    expect(cancelled).toEqual(['old']);
+    expect(broker.pending().map(({ requestId }) => requestId)).toEqual(['current']);
+    broker.close();
+  });
 });

@@ -1,3 +1,4 @@
+import { skillsRU } from "./skills"
 import { accountsRU } from "./accounts"
 import { sessionControlsRU } from "./session-controls"
 import { viewerRU } from "./viewer"
@@ -8,6 +9,7 @@ import { rulesRU } from "./rules"
 import type { Dictionary } from "../types"
 
 export const ru = {
+  ...skillsRU,
   ...accountsRU,
   ...extensionRU,
   ...viewerRU,
@@ -40,6 +42,9 @@ export const ru = {
   footer: "Сессия и контекст остаются на твоём Mac.",
   sessionsTitle: "Твои сессии",
   sessionsSubtitle: "Продолжай с того места, где остановился.",
+  sessionPagesLoading: "Загружаем старые сессии…",
+  sessionPagesRetry: "Повторить загрузку сессий",
+  sessionPagesMore: "Прокрути, чтобы увидеть старые сессии",
   macConnected: "Mac подключён",
   connectSession: "Подключи сессию Claude или Codex на Mac, чтобы увидеть её здесь.",
   selectedChat: "Выбранный чат",
@@ -96,7 +101,7 @@ export const ru = {
   sessionActions: "Действия сессии",
   observeOnly: "Только наблюдение",
   send: "Отправить ↑",
-  userInputTitle: "Вопрос от Codex",
+  userInputTitle: "Вопрос",
   userInputOther: "Другой ответ",
   userInputCustom: "Ваш ответ",
   userInputSkip: "Пропустить",

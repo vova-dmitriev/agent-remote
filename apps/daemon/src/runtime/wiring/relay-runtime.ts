@@ -13,6 +13,7 @@ import type {
 } from '../../domain/ports/session-names.js';
 import type { AnalyticsPort } from '../../analytics/collector.js';
 import type { RulesPort } from '../../rules/service.js';
+import { SessionSkillsService } from '../../skills/service.js';
 
 type RelayRuntimeDeps = RelayLinkDeps & {
   desktopBridge: BridgeClient;
@@ -30,11 +31,13 @@ type RelayRuntimeDeps = RelayLinkDeps & {
 export function createRelayRuntime(deps: RelayRuntimeDeps) {
   const { relay, monitor, adapters, readers, dispatcher, inputEnabled } = deps;
   const link = new RelayLink(deps);
+  const skills = new SessionSkillsService(monitor, deps.nativeProcesses);
 
   const router = new RelayFrameRouter({
     relay,
     profileRelay: link.profileRelay,
     readers,
+    store: deps.store,
     replay: link.replay,
     monitor,
     adapters,
@@ -44,6 +47,7 @@ export function createRelayRuntime(deps: RelayRuntimeDeps) {
     models: deps.models,
     analytics: deps.analytics,
     rules: deps.rules,
+    skills,
   });
 
   relay.on(RuntimeEvent.Frame, (frame: ServerFrame) => void router.route(frame));

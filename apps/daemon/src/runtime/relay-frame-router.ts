@@ -2,6 +2,7 @@ import { type DeviceFrame, ErrorCode, errorCode, FrameType, hasErrorCode, type S
 import type { Monitor } from '../monitor/monitor.js';
 import type { EventReplay } from '../monitor/replay.js';
 import type { TranscriptSources } from '../monitor/history.js';
+import type { LocalStore } from '../monitor/store.js';
 import type { AdapterRegistry } from '../adapters/registry.js';
 import type { Dispatcher } from '../commands/dispatcher.js';
 import type { RuntimeProfileRelay } from '../profiles/runtime/router/relay.js';
@@ -14,11 +15,14 @@ import { logDebug } from '../diagnostics/log.js';
 import { readSessionFile } from '../files/session-files.js';
 import type { AnalyticsPort } from '../analytics/collector.js';
 import type { RulesPort } from '../rules/service.js';
+import type { SessionSkillsService } from '../skills/service.js';
+import { SessionCatalogRouter } from './session-catalog-router.js';
 
 export type RelayFrameRouterDeps = {
   relay: { send(frame: DeviceFrame): boolean };
   profileRelay: RuntimeProfileRelay;
   readers: TranscriptSources;
+  store: LocalStore;
   replay: EventReplay;
   monitor: Monitor;
   adapters: AdapterRegistry;
@@ -29,6 +33,7 @@ export type RelayFrameRouterDeps = {
   /** Absent when the usage store could not open. */
   analytics?: AnalyticsPort | undefined;
   rules?: RulesPort | undefined;
+  skills: SessionSkillsService;
 };
 
 /** A reply's error code: the protocol's own, else a generic failure (daemon-only codes stay on the Mac). */
@@ -36,10 +41,24 @@ const codeOf = (error: unknown) =>
   Object.values(ErrorCode).find((code) => code === errorCode(error)) ?? ErrorCode.REQUEST_FAILED;
 
 export class RelayFrameRouter {
-  constructor(private readonly deps: RelayFrameRouterDeps) {}
+  private readonly sessionCatalog: SessionCatalogRouter;
+
+  constructor(private readonly deps: RelayFrameRouterDeps) {
+    this.sessionCatalog = new SessionCatalogRouter(
+      deps.relay,
+      deps.monitor,
+      deps.skills,
+      deps.readers,
+      deps.store,
+    );
+  }
 
   async route(frame: ServerFrame): Promise<void> {
     const { relay, profileRelay, replay, monitor, adapters, dispatcher } = this.deps;
+
+    if (await this.sessionCatalog.route(frame)) {
+      return;
+    }
 
     if (frame.type === FrameType.ProfilesRequest || frame.type === FrameType.ProfilesCancel) {
       await profileRelay.receive(frame);
@@ -131,7 +150,12 @@ export class RelayFrameRouter {
     const { relay, readers } = this.deps;
 
     try {
-      const page = await readers.page(frame);
+      const codexReader =
+        frame.agentId && this.deps.monitor.hasSubagentHistory(frame.sessionId, frame.generation);
+
+      const page = codexReader
+        ? await this.deps.monitor.readSubagentHistory(frame)
+        : await readers.page(frame);
 
       for (const message of page.messages) {
         if (

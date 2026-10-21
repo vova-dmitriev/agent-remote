@@ -13,6 +13,7 @@ import {
 interface Entry {
   request: PendingUserInput;
   answer: (answers: UserInputAnswers) => void | Promise<void>;
+  cancelled?: () => void;
   timer: ReturnType<typeof setTimeout>;
 }
 /** Ephemeral native questions. Expiry and cancellation never answer the owning application. */
@@ -25,7 +26,7 @@ export class UserInputBroker {
     this.maxWaitMs = positiveInteger(options.maxWaitMs ?? 30 * 60_000, 'MAX_WAIT');
     this.maxPending = positiveInteger(options.maxPending ?? 100, 'MAX_PENDING');
   }
-  open(source: PendingUserInput, answer: Entry['answer']): void {
+  open(source: PendingUserInput, answer: Entry['answer'], cancelled?: Entry['cancelled']): void {
     if (this.closed) {
       throw new CodedError(DaemonErrorCode.BROKER_CLOSED);
     }
@@ -49,7 +50,7 @@ export class UserInputBroker {
     const timer = setTimeout(() => this.cancel(request.requestId), request.expiresAt - Date.now());
 
     timer.unref();
-    this.entries.set(request.requestId, { request, answer, timer });
+    this.entries.set(request.requestId, { request, answer, ...(cancelled ? { cancelled } : {}), timer });
     this.options.changed?.();
   }
   async submit(requestId: string, generation: string, raw: unknown): Promise<void> {
@@ -66,7 +67,8 @@ export class UserInputBroker {
 
     const answers = validateUserInputAnswers(entry.request, raw);
 
-    this.cancel(requestId);
+    this.take(requestId);
+    this.options.changed?.();
 
     try {
       await entry.answer(answers);
@@ -93,14 +95,13 @@ export class UserInputBroker {
     return [...this.entries.values()].map((entry) => structuredClone(entry.request));
   }
   cancel(requestId: string): void {
-    const entry = this.entries.get(requestId);
+    const entry = this.take(requestId);
 
     if (!entry) {
       return;
     }
 
-    clearTimeout(entry.timer);
-    this.entries.delete(requestId);
+    entry.cancelled?.();
     this.options.changed?.();
   }
   cancelSession(sessionId: string, generation: string): void {
@@ -118,5 +119,15 @@ export class UserInputBroker {
   close(): void {
     this.closed = true;
     this.clear();
+  }
+  private take(requestId: string): Entry | undefined {
+    const entry = this.entries.get(requestId);
+
+    if (entry) {
+      clearTimeout(entry.timer);
+      this.entries.delete(requestId);
+    }
+
+    return entry;
   }
 }

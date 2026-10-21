@@ -1,6 +1,7 @@
 import { DaemonErrorCode } from '../../error-codes.js';
 import { shellQuote as quote } from '../../shell/index.js';
 import { ClaudeHookEvent, ClaudeHookType } from '../../domain/claude.js';
+import { CLAUDE_QUESTION_TIMEOUT_MS } from './input/user-questions.js';
 import { HookAgent } from '../../domain/ipc.js';
 import { readFile, writeFile, copyFile, rename, mkdir } from 'node:fs/promises';
 import { dirname, isAbsolute } from 'node:path';
@@ -18,6 +19,7 @@ const claudeEvents = [
   ClaudeHookEvent.PostToolUse,
   ClaudeHookEvent.PostToolUseFailure,
   ClaudeHookEvent.PermissionRequest,
+  ClaudeHookEvent.Notification,
   ClaudeHookEvent.SubagentStart,
   ClaudeHookEvent.SubagentStop,
 ];
@@ -26,10 +28,12 @@ const claudeEvents = [
  * A PreToolUse hook may hold a command while the owner answers a rule stop (10 minutes); Claude runs the command
  * when a hook times out, so the hook's own deadline comes first.
  */
-const HOOK_TIMEOUT_SECONDS: Partial<Record<string, number>> = {
+const CLAUDE_HOOK_TIMEOUT_SECONDS: Partial<Record<string, number>> = {
   [ClaudeHookEvent.PermissionRequest]: 60,
-  [ClaudeHookEvent.PreToolUse]: RULE_ANSWER_TIMEOUT_MS / 1000 + 60,
+  [ClaudeHookEvent.PreToolUse]: Math.max(RULE_ANSWER_TIMEOUT_MS, CLAUDE_QUESTION_TIMEOUT_MS) / 1000 + 60,
 };
+
+const CODEX_PRETOOL_TIMEOUT_SECONDS = RULE_ANSWER_TIMEOUT_MS / 1000 + 60;
 
 type Settings = {
   hooks?: Record<string, Array<{ hooks?: Array<{ command?: string }> }>>;
@@ -104,12 +108,15 @@ export async function installHooks(path: string, entry: string, agent: HookAgent
   const flag = agent === HookAgent.Claude ? '' : ` --agent=${agent}`;
 
   for (const event of EVENTS[agent]) {
+    const timeout =
+      agent === HookAgent.Codex ? CODEX_PRETOOL_TIMEOUT_SECONDS : (CLAUDE_HOOK_TIMEOUT_SECONDS[event] ?? 5);
+
     (data.hooks[event] ??= []).push({
       hooks: [
         {
           type: ClaudeHookType.Command,
           command: `${quote(process.execPath)} ${quote(entry)} hook${flag} ${marker}`,
-          timeout: HOOK_TIMEOUT_SECONDS[event] ?? 5,
+          timeout,
         } as { command: string },
       ],
     });

@@ -128,4 +128,7 @@ export class CodexSubagents {
   values(): SubagentInfo[] {
     return [...this.agents.values()];
   }
+  has(id: string): boolean {
+    return this.agents.has(id);
+  }
 }

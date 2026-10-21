@@ -128,19 +128,42 @@ export class DesktopCodexClient extends EventEmitter {
     }
 
     if (method === CodexMethod.ThreadItemsList) {
-      return {
-        data: turns
-          .flatMap((turn) =>
-            (turn.items as unknown[]).map((item) => ({
-              turnId: turn.id,
-              item,
-              occurredAt: desktopItemTime(turn, item),
-            })),
-          )
-          .slice(-500)
-          .reverse(),
-        nextCursor: null,
-      };
+      const requestedLimit = input.limit;
+
+      const limit =
+        typeof requestedLimit === 'number' && Number.isInteger(requestedLimit)
+          ? Math.max(1, Math.min(100, requestedLimit))
+          : 100;
+
+      const requestedCursor = input.cursor;
+      let offset = 0;
+
+      if (requestedCursor !== undefined) {
+        offset =
+          typeof requestedCursor === 'string' && /^\d{1,4}$/.test(requestedCursor)
+            ? Number(requestedCursor)
+            : NaN;
+      }
+
+      if (!Number.isSafeInteger(offset) || offset < 0 || offset > 500) {
+        throw new CodedError(ErrorCode.INVALID_CURSOR);
+      }
+
+      const items = turns
+        .flatMap((turn) =>
+          (turn.items as unknown[]).map((item) => ({
+            turnId: turn.id,
+            item,
+            occurredAt: desktopItemTime(turn, item),
+          })),
+        )
+        .slice(-500)
+        .reverse();
+
+      const data = items.slice(offset, offset + limit);
+      const next = offset + data.length;
+
+      return { data, nextCursor: next < items.length ? String(next) : null };
     }
 
     if (method === CodexMethod.TurnStart) {
@@ -234,6 +257,36 @@ export class DesktopCodexClient extends EventEmitter {
     }
 
     throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
+  }
+  async readSubagentItems(threadId: string, params: unknown): Promise<unknown> {
+    const owner = await this.ipc.owner(threadId);
+
+    if (!owner || owner !== this.ownerId) {
+      throw new CodedError(ErrorCode.NOT_FOUND);
+    }
+
+    const child = await DesktopCodexClient.attach(this.ipc, threadId);
+
+    try {
+      if ((await this.ipc.owner(threadId)) !== this.ownerId) {
+        throw new CodedError(ErrorCode.NOT_FOUND);
+      }
+
+      const input = object(params);
+
+      const result = await child.request(CodexMethod.ThreadItemsList, {
+        ...input,
+        threadId,
+      });
+
+      if ((await this.ipc.owner(threadId)) !== this.ownerId) {
+        throw new CodedError(ErrorCode.NOT_FOUND);
+      }
+
+      return result;
+    } finally {
+      await child.close();
+    }
   }
   respond(id: string | number, result: unknown) {
     const request = this.pending.get(id);

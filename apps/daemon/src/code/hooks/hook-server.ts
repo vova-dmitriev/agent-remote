@@ -2,6 +2,7 @@ import { DaemonErrorCode } from '../../error-codes.js';
 import { RuleGuard, ruleHookOutput, type RuleStop } from '../../rules/check.js';
 import {
   AttachmentMode,
+  BindingState,
   CodedError,
   CommandStatus,
   ConnectorId,
@@ -9,13 +10,14 @@ import {
   ErrorCode,
   IntegrationState,
   TargetKind,
+  SessionStatus,
   type Session,
 } from '@protocol';
 
 import { DesktopMode } from '../../domain/desktop.js';
 import { HookAgent, IpcMessageType, PrimaryHookMessageTypes, WrapperActionType } from '../../domain/ipc.js';
 import { RuntimeEvent, SourceVersion } from '../../domain/runtime.js';
-import { ClaudeHookEvent } from '../../domain/claude.js';
+import { ClaudeAskUserQuestionTool, ClaudeHookEvent } from '../../domain/claude.js';
 import { attachmentPrompt } from '../../attachments/content/input.js';
 import { codexConnectionSchema, type CodexConnection } from '../../domain/codex/connection.js';
 import { cmuxContextSchema, cmuxSurfaceSchema, type CmuxContext } from '../../cmux/context.js';
@@ -26,6 +28,12 @@ import { z } from 'zod';
 import { type HookEnvelope, type MonitorPort, hookSchema } from '../../domain/ports/monitor.js';
 import { SourceAdapter, type AdapterRegistry, type DispatchReceipt } from '../../adapters/registry.js';
 import { PermissionBroker, permissionHookOutput } from '../../commands/permission-broker.js';
+import type { UserInputBroker } from '../../commands/user-input-broker.js';
+import {
+  claudePendingQuestions,
+  claudeQuestionHookOutput,
+  CLAUDE_QUESTION_TIMEOUT_MS,
+} from './input/user-questions.js';
 import { bindHookSocket } from './hook-socket.js';
 import { lineReader, writeFrame } from './ipc.js';
 import { logDebug } from '../../diagnostics/log.js';
@@ -45,6 +53,7 @@ interface Options extends HookSocketOptions {
   monitor: MonitorPort;
   adapters: AdapterRegistry;
   permissions: PermissionBroker;
+  userInputs?: UserInputBroker;
   /** Stops shell commands an owner's rule covers; works whether or not remote permissions are on. */
   rules?: RuleGuard;
   inputEnabled: boolean;
@@ -272,6 +281,7 @@ export async function startHookServer(options: Options) {
                   history: true,
                   prompt: options.inputEnabled,
                   interrupt: options.inputEnabled,
+                  userInput: options.inputEnabled,
                   permission: options.permissionsEnabled,
                   terminalSnapshot: !!message.cmux,
                   ...(options.inputEnabled
@@ -436,6 +446,96 @@ export async function startHookServer(options: Options) {
 
         if (stop) {
           await answerRule(stop, hook, session, HookAgent.Claude);
+        } else if (
+          hook.hook_event_name === ClaudeHookEvent.PreToolUse &&
+          hook.tool_name === ClaudeAskUserQuestionTool &&
+          hook.tool_use_id &&
+          options.inputEnabled &&
+          session.capabilities.userInput &&
+          options.userInputs
+        ) {
+          const requestId = randomUUID();
+          const questions = claudePendingQuestions(hook.tool_input, requestId);
+
+          if (questions) {
+            const generation = session.generation;
+            const openedBinding = options.monitor.binding(session.id);
+
+            if (!openedBinding || openedBinding.generation !== generation || !openedBinding.localProof) {
+              writeFrame(socket, {
+                type: IpcMessageType.HookResult,
+                output: claudeQuestionHookOutput(hook.tool_input, {}, questions),
+              });
+
+              socket.end();
+
+              return;
+            }
+
+            writeFrame(socket, { type: IpcMessageType.HookHold });
+
+            const output = await new Promise<unknown>((resolve) => {
+              try {
+                options.userInputs!.open(
+                  {
+                    requestId,
+                    sessionId: session.id,
+                    generation,
+                    turnId: hook.tool_use_id!,
+                    itemId: hook.tool_use_id!,
+                    questions,
+                    isBlocking: true,
+                    expiresAt: Date.now() + CLAUDE_QUESTION_TIMEOUT_MS,
+                  },
+                  async (answers) => {
+                    const current = options.monitor.session(session.id);
+                    const binding = options.monitor.binding(session.id);
+
+                    if (
+                      !current ||
+                      current.generation !== generation ||
+                      current.binding !== BindingState.Verified ||
+                      current.integrationState !== IntegrationState.Ready ||
+                      current.status !== SessionStatus.WaitingInput ||
+                      !current.capabilities.userInput ||
+                      binding?.generation !== generation ||
+                      binding?.localProof !== openedBinding?.localProof
+                    ) {
+                      resolve(claudeQuestionHookOutput(hook.tool_input, {}, questions));
+
+                      return;
+                    }
+
+                    resolve(claudeQuestionHookOutput(hook.tool_input, answers, questions));
+                  },
+                  () => resolve(claudeQuestionHookOutput(hook.tool_input, {}, questions)),
+                );
+
+                socket.once('close', () => options.userInputs!.cancel(requestId));
+
+                if (!options.monitor.setNativeUserInputPending(session.id, generation)) {
+                  options.userInputs!.cancel(requestId);
+                }
+
+                if (socket.destroyed) {
+                  options.userInputs!.cancel(requestId);
+                }
+
+                options.monitor.emit(RuntimeEvent.Snapshot);
+              } catch {
+                resolve(claudeQuestionHookOutput(hook.tool_input, {}, questions));
+              }
+            });
+
+            if (!socket.destroyed) {
+              writeFrame(socket, { type: IpcMessageType.HookResult, output });
+              options.monitor.acceptNativeUserInput(session.id, generation);
+            }
+
+            socket.end();
+
+            return;
+          }
         } else if (hook.hook_event_name === ClaudeHookEvent.PermissionRequest && options.permissionsEnabled) {
           const answer = options.permissions.open({
             requestId: randomUUID(),

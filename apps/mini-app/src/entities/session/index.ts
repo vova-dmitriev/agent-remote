@@ -15,6 +15,7 @@ export { SessionCard } from "./ui/session-card"
 export { sourceTextClass } from "./ui/session-class"
 export { SessionCardSkeleton } from "./ui/session-card-skeleton"
 export { SessionAvailability } from "./ui/session-availability/session-availability"
+export { useSessionPages, type SessionPageLoader } from "./model/pagination/use-session-pages"
 
 export { readyPrompts, samePromptSource, canSendQueuedNow } from "./model/store/outbox/state"
 export type { QueuedPrompt } from "./model/store/outbox/types"

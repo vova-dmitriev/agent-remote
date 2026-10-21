@@ -7,6 +7,7 @@ import {
   DeviceStatus,
   ErrorCode,
   type EventEnvelope,
+  type HistoryRead,
   type SessionChanges,
   type SessionUsage,
   type RateLimit,
@@ -14,6 +15,7 @@ import {
   historySchema,
   IntegrationState,
   MAX_DEVICE_SESSIONS,
+  ProviderFilterValue,
   NativeRestartState,
   noCapabilities,
   PermissionDecision,
@@ -27,7 +29,7 @@ import {
   AgentProvider,
   type AgentModel,
 } from '@protocol';
-import { ClaudeHookEvent } from '../domain/claude.js';
+import { ClaudeHookEvent, ClaudeNotificationType } from '../domain/claude.js';
 import { RuntimeEvent, ModelOrigin } from '../domain/runtime.js';
 import { boundSnapshotChanges } from '../codex/binding/file-changes.js';
 import { currentToolStep, clearCurrentStep } from '../activity/current-step.js';
@@ -44,7 +46,12 @@ import { SourceAdapter, type Binding, type AdapterRegistry } from '../adapters/r
 import { type UserInputBroker } from '../commands/user-input-broker.js';
 import { type PermissionBroker } from '../commands/permission-broker.js';
 import { type LocalStore } from './store.js';
-import { hookSchema, type HookEnvelope, type MonitorPort } from '../domain/ports/monitor.js';
+import {
+  hookSchema,
+  type HookEnvelope,
+  type MonitorPort,
+  type SubagentHistoryPage,
+} from '../domain/ports/monitor.js';
 
 /** Hooks a subagent fires for its own work. With `agent_id` they describe that child, never the parent turn. */
 const SUBAGENT_ACTIVITY_HOOKS: readonly ClaudeHookEvent[] = [
@@ -67,6 +74,10 @@ interface Options {
 export class Monitor extends EventEmitter implements MonitorPort {
   private sessions = new Map<string, Session>();
   private bindings = new Map<string, Binding>();
+  private subagentHistoryReaders = new Map<
+    string,
+    { generation: string; read: (request: HistoryRead) => Promise<SubagentHistoryPage> }
+  >();
   private restored = new Set<string>();
   private restarting = new Set<string>();
   private retiredNative = new Set<string>();
@@ -86,7 +97,7 @@ export class Monitor extends EventEmitter implements MonitorPort {
     this.pins = this.options.store.pinnedSessions();
     this.hidden = this.options.store.hiddenSessions();
 
-    for (const { session: saved } of this.options.store.nativeSessions().slice(0, MAX_DEVICE_SESSIONS)) {
+    for (const { session: saved } of this.options.store.nativeSessions()) {
       const adapter = this.options.adapters.get(saved.target.connectorId);
 
       if (
@@ -338,6 +349,15 @@ export class Monitor extends EventEmitter implements MonitorPort {
       this.options.userInputs?.cancelSession(session.id, session.generation);
     }
 
+    if (
+      hook.hook_event_name === ClaudeHookEvent.Notification &&
+      hook.notification_type === ClaudeNotificationType.IdlePrompt
+    ) {
+      session.status = SessionStatus.Idle;
+      clearCurrentStep(session);
+      this.options.userInputs?.cancelSession(session.id, session.generation);
+    }
+
     if (hook.hook_event_name === ClaudeHookEvent.PreToolUse) {
       session.status = SessionStatus.Running;
 
@@ -350,6 +370,10 @@ export class Monitor extends EventEmitter implements MonitorPort {
         (candidateValue) => candidateValue === hook.hook_event_name,
       )
     ) {
+      if (session.status === SessionStatus.WaitingInput) {
+        session.status = SessionStatus.Running;
+      }
+
       clearCurrentStep(session, hook.tool_use_id ?? hook.tool_name);
     } else if (
       [
@@ -431,6 +455,8 @@ export class Monitor extends EventEmitter implements MonitorPort {
       )
     ) {
       this.options.store.saveManagedSession(session, transcriptPath);
+    } else {
+      this.options.store.saveListedSession(session);
     }
   }
   managedRegistration(
@@ -556,70 +582,10 @@ export class Monitor extends EventEmitter implements MonitorPort {
     return true;
   }
   canCreateSession() {
-    const visible = this.visible();
-
-    return (
-      visible.length < MAX_DEVICE_SESSIONS ||
-      visible.some(
-        (session) =>
-          session.status === SessionStatus.Ended ||
-          session.integrationState === IntegrationState.Disconnected ||
-          (this.restored.has(session.id) &&
-            session.binding === BindingState.Unverified &&
-            session.target.connectorId === ConnectorId.Native),
-      )
-    );
+    return true;
   }
   private makeRoom() {
-    const visible = this.visible();
-
-    if (visible.length < MAX_DEVICE_SESSIONS) {
-      return;
-    }
-
-    const oldest = (candidates: Session[]) => candidates.sort((a, b) => a.lastEventAt - b.lastEventAt)[0];
-    const sessions = visible.filter((session) => !this.restarting.has(session.id));
-
-    const retired =
-      oldest(
-        sessions.filter(
-          (s) => s.status === SessionStatus.Ended || s.integrationState === IntegrationState.Disconnected,
-        ),
-      ) ??
-      oldest(
-        sessions.filter(
-          (s) =>
-            this.restored.has(s.id) &&
-            s.binding === BindingState.Unverified &&
-            s.target.connectorId === ConnectorId.Native &&
-            s.target.kind === TargetKind.ClaudeCodeCli,
-        ),
-      );
-
-    if (!retired) {
-      throw new CodedError(ErrorCode.SESSION_QUOTA);
-    }
-
-    this.options.permissions.cancelSession(retired.id, retired.generation);
-    this.options.userInputs?.cancelSession(retired.id, retired.generation);
-    const adapter = this.options.adapters.get(retired.target.connectorId);
-
-    if (adapter instanceof SourceAdapter) {
-      adapter.unbind(retired.target);
-    }
-
-    this.sessions.delete(retired.id);
-    this.nativeModels.delete(retired.id);
-    this.nativeModelRevisions.delete(retired.id);
-    this.transcriptModels.delete(retired.id);
-    this.restored.delete(retired.id);
-    this.options.store.removeNativeSession(retired.id);
-    this.bindings.delete(retired.id);
-
-    if (this.selectedId === retired.id) {
-      this.selectedId = null;
-      this.terminal = null;
-    }
+    // SessionListLimits bounds snapshots and pages, not discovery or creation.
   }
   addDesktop(session: Session, binding: Binding) {
     const previous = this.sessions.get(session.id);
@@ -638,6 +604,7 @@ export class Monitor extends EventEmitter implements MonitorPort {
 
     this.sessions.set(session.id, session);
     this.bindings.set(session.id, binding);
+    this.options.store.saveListedSession(session);
     this.emit(RuntimeEvent.Snapshot);
   }
   session(id: string) {
@@ -836,14 +803,88 @@ export class Monitor extends EventEmitter implements MonitorPort {
   binding(id: string) {
     return this.bindings.get(id);
   }
+  registerSubagentHistoryReader(
+    id: string,
+    generation: string,
+    reader: (request: HistoryRead) => Promise<SubagentHistoryPage>,
+  ) {
+    const registration = { generation, read: reader };
+
+    this.subagentHistoryReaders.set(id, registration);
+
+    return () => {
+      if (this.subagentHistoryReaders.get(id) === registration) {
+        this.subagentHistoryReaders.delete(id);
+      }
+    };
+  }
+  hasSubagentHistory(id: string, generation: string) {
+    const session = this.sessions.get(id),
+      registration = this.subagentHistoryReaders.get(id);
+
+    return !!(
+      session &&
+      session.generation === generation &&
+      session.binding === BindingState.Verified &&
+      session.integrationState === IntegrationState.Ready &&
+      registration?.generation === generation
+    );
+  }
+  async readSubagentHistory(request: HistoryRead) {
+    const registration = this.subagentHistoryReaders.get(request.sessionId);
+
+    if (!this.hasSubagentHistory(request.sessionId, request.generation) || !registration) {
+      throw new CodedError(ErrorCode.SESSION_UNAVAILABLE);
+    }
+
+    return registration.read(request);
+  }
   findClaude(connectorId: string, claudeSessionId: string) {
     return [...this.sessions.values()].find(
       (s) => s.target.connectorId === connectorId && s.claudeSessionId === claudeSessionId,
     );
   }
+  setNativeUserInputPending(id: string, generation: string) {
+    const session = this.sessions.get(id);
+
+    if (
+      !session ||
+      session.generation !== generation ||
+      session.binding !== BindingState.Verified ||
+      session.integrationState !== IntegrationState.Ready ||
+      !session.capabilities.userInput
+    ) {
+      return false;
+    }
+
+    session.status = SessionStatus.WaitingInput;
+    this.emit(RuntimeEvent.Snapshot);
+
+    return true;
+  }
+  acceptNativeUserInput(id: string, generation: string) {
+    const session = this.sessions.get(id);
+
+    if (
+      !session ||
+      session.generation !== generation ||
+      session.status !== SessionStatus.WaitingInput ||
+      session.binding !== BindingState.Verified ||
+      session.integrationState !== IntegrationState.Ready
+    ) {
+      return false;
+    }
+
+    session.status = SessionStatus.Running;
+    this.emit(RuntimeEvent.Snapshot);
+
+    return true;
+  }
   invalidate(connectorId: string) {
     for (const session of this.sessions.values()) {
       if (session.target.connectorId === connectorId) {
+        this.subagentHistoryReaders.delete(session.id);
+
         session.subagents = session.subagents?.map((agent) =>
           [SubagentStatus.Queued, SubagentStatus.Running, SubagentStatus.WaitingInput].some(
             (candidateValue) => candidateValue === agent.status,
@@ -911,17 +952,69 @@ export class Monitor extends EventEmitter implements MonitorPort {
     return event;
   }
   snapshot(): AppSnapshot {
+    const visible = this.visible();
+
+    const sorted = visible.sort(
+      (left, right) =>
+        (right.lastMessageAt ?? right.createdAt ?? 0) - (left.lastMessageAt ?? left.createdAt ?? 0) ||
+        left.id.localeCompare(right.id),
+    );
+
+    const selected = this.selectedId ? sorted.find((session) => session.id === this.selectedId) : undefined;
+    const recent = sorted.slice(0, MAX_DEVICE_SESSIONS);
+    const includesSelected = selected !== undefined && !recent.some((session) => session.id === selected.id);
+    const sessions = includesSelected ? [...sorted.slice(0, MAX_DEVICE_SESSIONS - 1), selected] : recent;
+    // Keep page cursors attached to the contiguous recency prefix. The selected older row is emitted as an exception;
+    // the next page may repeat it, and the client deduplicates by ID, but must not skip the sessions before it.
+    const pagePrefix = includesSelected ? sorted.slice(0, MAX_DEVICE_SESSIONS - 1) : sessions;
+
+    const anchor = (provider: ProviderFilterValue) =>
+      pagePrefix
+        .filter(
+          (session) =>
+            provider === ProviderFilterValue.All ||
+            (provider === ProviderFilterValue.Codex
+              ? session.target.kind.startsWith('codex-')
+              : !session.target.kind.startsWith('codex-')),
+        )
+        .sort(
+          (left, right) =>
+            (right.lastMessageAt ?? right.createdAt ?? 0) - (left.lastMessageAt ?? left.createdAt ?? 0) ||
+            left.id.localeCompare(right.id),
+        )
+        .at(-1);
+
+    const seed = (provider: ProviderFilterValue) =>
+      this.options.store.sessionPageSeed(provider, anchor(provider));
+
+    const generations = new Map(sessions.map((session) => [session.id, session]));
+
+    const permissions = this.options.permissions.pending().filter((pending) => {
+      return generations.get(pending.sessionId)?.generation === pending.generation;
+    });
+
+    const userInputs = (this.options.userInputs?.pending() ?? []).filter((pending) => {
+      const session = generations.get(pending.sessionId);
+
+      return session?.generation === pending.generation && session.capabilities.userInput;
+    });
+
     return structuredClone(
       boundSnapshotChanges({
         sessions: boundSubagentSnapshots(
-          this.visible().map((session) =>
+          sessions.map((session) =>
             this.pins.has(session.id) ? { ...session, pinned: true as const } : session,
           ),
         ),
+        sessionPages: {
+          all: seed(ProviderFilterValue.All),
+          claude: seed(ProviderFilterValue.Claude),
+          codex: seed(ProviderFilterValue.Codex),
+        },
         deviceStatus: DeviceStatus.Online,
         cursor: this.options.store.cursor(),
-        permissions: this.options.permissions.pending(),
-        userInputs: this.options.userInputs?.pending() ?? [],
+        permissions,
+        userInputs,
         terminal: this.terminal,
         ...(this.rateLimits.length ? { rateLimits: this.rateLimits } : {}),
         ...(this.providerModels.size
@@ -929,5 +1022,33 @@ export class Monitor extends EventEmitter implements MonitorPort {
           : {}),
       }),
     );
+  }
+  sessionPage(provider: ProviderFilterValue, cursor?: string) {
+    const page = this.options.store.sessionPage(provider, cursor);
+
+    return {
+      ...page,
+      sessions: page.sessions.map((listed) => {
+        const live = this.sessions.get(listed.id);
+
+        if (live) {
+          return { ...live, ...(this.pins.has(live.id) ? { pinned: true as const } : {}) };
+        }
+
+        return {
+          ...listed,
+          binding: BindingState.Unverified,
+          capabilities: {
+            ...listed.capabilities,
+            observe: true,
+            prompt: false,
+            interrupt: false,
+            permission: false,
+            restartSession: false,
+            createSession: false,
+          },
+        };
+      }),
+    };
   }
 }

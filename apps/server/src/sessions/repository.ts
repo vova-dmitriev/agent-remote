@@ -3,6 +3,7 @@ import { and, eq, isNull, sql } from 'drizzle-orm';
 import type { PoolClient } from 'pg';
 import { ormOn, type Database } from '../db/database.js';
 import { devices, sessionActivity, sessionLabels, sessions } from '../db/schema/index.js';
+import { saveSessionCatalog } from './catalog/session-catalog-repository.js';
 
 const ownedSession = (ownerId: string, deviceId: string, sessionId: string) =>
   and(eq(sessions.ownerId, ownerId), eq(sessions.deviceId, deviceId), eq(sessions.id, sessionId))!;
@@ -44,6 +45,15 @@ export class SessionRepository {
       .select({ session_id: sessionActivity.sessionId, last_message_at: sessionActivity.lastMessageAt })
       .from(sessionActivity)
       .where(and(eq(sessionActivity.ownerId, ownerId), eq(sessionActivity.deviceId, deviceId)));
+  }
+
+  async activeDevice(ownerId: string, deviceId: string) {
+    const [row] = await this.db.orm
+      .select({ generation: devices.generation })
+      .from(devices)
+      .where(and(eq(devices.ownerId, ownerId), eq(devices.id, deviceId), isNull(devices.revokedAt)));
+
+    return row;
   }
 
   /** Locks an owned session on a live device. */
@@ -101,6 +111,8 @@ export class SessionRepository {
   /** Replaces a device's stored sessions with its snapshot's. */
   async replaceAll(tx: PoolClient, ownerId: string, deviceId: string, snapshot: readonly Session[]) {
     const orm = ormOn(tx);
+
+    await saveSessionCatalog(orm, ownerId, deviceId, snapshot);
 
     await orm.delete(sessions).where(and(eq(sessions.ownerId, ownerId), eq(sessions.deviceId, deviceId)));
 

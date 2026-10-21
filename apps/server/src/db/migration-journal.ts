@@ -12,6 +12,7 @@ export const MigrationVersion = {
   CommandAuditCreatedAt: '008_command_audit_created_at',
   NotificationPayload: '009_notification_payload',
   TelegramActions: '010_telegram_actions',
+  SessionCatalog: '011_session_catalog',
 } as const;
 export type MigrationVersion = (typeof MigrationVersion)[keyof typeof MigrationVersion];
 export const MigrationError = {
@@ -39,6 +40,7 @@ const legacyTables: Record<MigrationVersion, readonly string[]> = {
   [MigrationVersion.CommandAuditCreatedAt]: [],
   [MigrationVersion.NotificationPayload]: [],
   [MigrationVersion.TelegramActions]: [],
+  [MigrationVersion.SessionCatalog]: ['session_catalog'],
 };
 
 const digest = (sql: string) => createHash('sha256').update(sql).digest('hex');

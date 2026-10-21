@@ -49,3 +49,5 @@ export * from './analytics/schemas.js';
 export * from './analytics/prices.js';
 export * from './rules/values.js';
 export * from './rules/schemas.js';
+export * from './skills/schemas.js';
+export * from './skills/values.js';

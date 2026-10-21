@@ -51,4 +51,31 @@ describe("questionAnswers", () => {
     expect(questionAnswers([questions[1]!], { token: { kind: QuestionChoiceKind.Custom, value: " " } })).toBeNull()
     expect(questionAnswers([questions[1]!], { stale: { kind: QuestionChoiceKind.Custom, value: "answer" } })).toBeNull()
   })
+
+  it("keeps Claude multi-select choices as separate validated labels", () => {
+    const multiSelect: UserInputQuestion = {
+      id: "tools",
+      header: "Tools",
+      question: "Which tools should be enabled?",
+      isOther: false,
+      isSecret: false,
+      multiSelect: true,
+      options: [
+        { label: "Read", description: "Inspect files" },
+        { label: "Write", description: "Edit files" },
+      ],
+    }
+
+    expect(
+      questionAnswers([multiSelect], {
+        tools: { kind: QuestionChoiceKind.MultipleOptions, value: ["Read", "Write"] },
+      }),
+    ).toEqual({ tools: { answers: ["Read", "Write"] } })
+
+    expect(
+      questionAnswers([multiSelect], {
+        tools: { kind: QuestionChoiceKind.MultipleOptions, value: ["Read", "Unknown"] },
+      }),
+    ).toBeNull()
+  })
 })

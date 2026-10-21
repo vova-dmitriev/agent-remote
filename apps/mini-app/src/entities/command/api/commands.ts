@@ -1,4 +1,4 @@
-import { CommandActionType, CommandStatus, ErrorCode, HttpStatus, type ClientCommand, type CommandResult } from "@protocol"
+import { CommandActionType, CommandStatus, ErrorCode, HttpStatus, PromptDelivery, type ClientCommand, type CommandResult } from "@protocol"
 import { COMMAND_PENDING_LIMIT, COMMAND_RECEIPT_LIMIT } from "./command-constants"
 import type { CommandRequest } from "./commands.types"
 
@@ -66,23 +66,26 @@ export class CommandSubmission {
     }
   }
   async send(command: ClientCommand): Promise<CommandResult> {
-    const existing = this.pending.get(command.commandId)
+    const sameCommand = this.pending.get(command.commandId)
 
-    if (existing && intent(existing) !== intent(command)) throw new Error(ErrorCode.COMMAND_PENDING_STATUS)
+    if (sameCommand && intent(sameCommand) !== intent(command)) throw new Error(ErrorCode.COMMAND_PENDING_STATUS)
     const known = this.receipts.get(command.commandId)
 
     if (known && [CommandStatus.Dispatched, CommandStatus.Rejected].some((candidateValue) => candidateValue === known.status)) return known
     const key = lane(command)
-    const pending = [...this.pending.values()].find((value) => lane(value) === key)
+    const lanePending = [...this.pending.values()].find((value) => lane(value) === key)
+    const immediate = command.action.type === CommandActionType.Prompt && command.action.delivery === PromptDelivery.Immediate
+    const sameIntent = lanePending && intent(lanePending) === intent(command) ? lanePending : undefined
 
-    if (this.active.has(key) || (pending && intent(pending) !== intent(command))) throw new Error(ErrorCode.COMMAND_PENDING_STATUS)
-    if (!pending && this.pending.size >= COMMAND_PENDING_LIMIT) throw new Error(ErrorCode.COMMAND_QUEUE_FULL)
-    const attempted = pending ?? structuredClone(command)
+    if (this.active.has(key) || (lanePending && !sameCommand && !sameIntent && !immediate))
+      throw new Error(ErrorCode.COMMAND_PENDING_STATUS)
+    if (!sameCommand && !sameIntent && this.pending.size >= COMMAND_PENDING_LIMIT) throw new Error(ErrorCode.COMMAND_QUEUE_FULL)
+    const attempted = sameCommand ?? sameIntent ?? structuredClone(command)
 
     this.active.add(key)
 
     try {
-      if (pending) {
+      if (sameCommand || sameIntent) {
         try {
           const result = await this.request("GET", "/commands/" + encodeURIComponent(attempted.commandId))
 

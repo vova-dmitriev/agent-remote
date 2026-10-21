@@ -3,7 +3,7 @@ import { Pool } from 'pg';
 import { WebSocket } from 'ws';
 import { randomBytes, randomUUID, createHash } from 'node:crypto';
 import { initData } from '../../../helpers/relay/telegram.js';
-import type { ClientCommand, HistoryMessage } from '@protocol';
+import { RELAY_PROTOCOL, FrameType, type AppSnapshot, type ClientCommand, type HistoryMessage } from '@protocol';
 import { sessionSnapshot } from '../fixtures/session-fixtures.js';
 import { commandOutcome, setCommandOutcome } from '../../runtime/command-outcome.js';
 import { appOrigin, relaySocketOrigin, relayPort } from '../../runtime/app-origin.js';
@@ -33,7 +33,7 @@ let deviceToken: string;
 let heartbeat: ReturnType<typeof setInterval>;
 const sha = (s: string) => createHash('sha256').update(s).digest('hex');
 
-async function startRelay() {
+async function startRelay(protocolVersion: number = RELAY_PROTOCOL.Current) {
   sockets.length = 0;
   delivered.length = 0;
   setCommandOutcome('dispatched');
@@ -63,12 +63,13 @@ async function startRelay() {
 
   deviceId = device.deviceId;
   deviceToken = device.token;
+  let snap: AppSnapshot = sessionSnapshot(deviceId);
   const ws = new WebSocket(`${relaySocketOrigin}/ws/device`);
 
   sockets.push(ws);
 
   await new Promise<void>((resolve, reject) => {
-    ws.on('open', () => ws.send(JSON.stringify({ type: 'auth', token: device.token })));
+    ws.on('open', () => ws.send(JSON.stringify({ type: 'auth', token: device.token, protocolVersion })));
     ws.on('error', reject);
 
     ws.on('message', (raw) => {
@@ -91,10 +92,17 @@ async function startRelay() {
           }),
         );
       }
+
+      if (frame.type === FrameType.SessionRename && typeof frame.sessionId === 'string' && typeof frame.title === 'string') {
+        snap = {
+          ...snap,
+          sessions: snap.sessions.map((session) => (session.id === frame.sessionId ? { ...session, title: frame.title } : session)),
+        };
+
+        ws.send(JSON.stringify({ type: FrameType.Snapshot, snapshot: snap, connectors: [] }));
+      }
     });
   });
-
-  const snap = sessionSnapshot(deviceId);
 
   ws.send(JSON.stringify({ type: 'snapshot', snapshot: snap, connectors: [] }));
   heartbeat = setInterval(() => sockets[0]?.send(JSON.stringify({ type: 'heartbeat' })), 5000);
@@ -172,11 +180,12 @@ async function stopRelay() {
   await pool.end();
 }
 
-export const test = base.extend<{ relayRuntime: undefined }>({
+export const test = base.extend<{ relayRuntime: undefined; relayProtocolVersion: number }>({
+  relayProtocolVersion: [RELAY_PROTOCOL.Current, { option: true }],
   relayRuntime: [
-    async ({ browserName: _browserName }, use) => {
+    async ({ browserName: _browserName, relayProtocolVersion }, use) => {
       try {
-        await startRelay();
+        await startRelay(relayProtocolVersion);
         await use(undefined);
       } finally {
         await stopRelay();

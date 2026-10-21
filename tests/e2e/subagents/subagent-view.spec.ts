@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test';
+import { TargetKind } from '@protocol';
 import { test } from '../support/relay/relay-fixture.js';
 import { identity } from '../support/relay/identity.js';
 import { byTestId } from '../support/ui/testid.js';
@@ -49,6 +50,39 @@ test('opens a running subagent with its tool calls in the session layout, update
   await page.getByTestId(SUBAGENT_VIEW_IDS.back).click();
   await expect(page.getByTestId(SESSION_PAGE_IDS.root)).toBeVisible();
   await expectNoSubagentRead(page);
+});
+
+test('opens and pages a Codex CLI child transcript without merging it into the parent feed', async ({ page }) => {
+  const transcript = Array.from({ length: 130 }, (_, index) => ({
+    id: 'codex-child-' + index,
+    role: index % 2 ? 'assistant' as const : 'user' as const,
+    text: 'Synthetic Codex child item ' + index,
+    occurredAt: at(index),
+    historyCursor: 'position:' + index,
+  }));
+
+  const { session, agentBeforeReads } = serveHistory(transcript, {
+    paginated: true,
+    agentId: 'thread-child-01',
+    targetKind: TargetKind.CodexCli,
+  });
+
+  await openSubagent(page, session.id, undefined, 'thread-child-01');
+  await expect(byTestId(page, SESSION_FEED_IDS.message, { 'message-id': 'codex-child-129' })).toBeVisible();
+  await expect(byTestId(page, SESSION_FEED_IDS.message, { 'message-id': 'codex-child-0' })).toHaveCount(0);
+
+  await byTestId(page, SESSION_FEED_IDS.railCap, { direction: 'before' }).click();
+  await expect.poll(agentBeforeReads).toBe(1);
+
+  await page.getByTestId(SESSION_FEED_IDS.root).evaluate((element) => {
+    element.scrollTop = 0;
+  });
+
+  await expect(byTestId(page, SESSION_FEED_IDS.message, { 'message-id': 'codex-child-0' })).toBeVisible();
+
+  await page.getByTestId(SUBAGENT_VIEW_IDS.back).click();
+  await expect(page.getByTestId(SESSION_PAGE_IDS.root)).toBeVisible();
+  await expect(byTestId(page, SESSION_FEED_IDS.message, { 'message-id': 'codex-child-129' })).toHaveCount(0);
 });
 
 test('follows new tool lines while the reader is at the bottom', async ({ page }) => {

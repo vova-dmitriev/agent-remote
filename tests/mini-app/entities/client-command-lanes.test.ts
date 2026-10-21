@@ -75,6 +75,33 @@ it('checks exact pending IDs without reposting on missing status and retries onl
   expect(calls.slice(-2)).toEqual(['GET /commands/other', 'POST other']);
 });
 
+it('allows explicit immediate input past an unresolved prompt but keeps each command ID idempotent', async () => {
+  const calls: string[] = [];
+
+  const client = new CommandSubmission(async (method, path, body) => {
+    calls.push(`${method} ${method === 'POST' ? body!.commandId : path}`);
+
+    if (method === 'GET') {
+      return { commandId: path.split('/').at(-1)!, status: 'accepted' };
+    }
+
+    return { commandId: body!.commandId, status: 'accepted' };
+  });
+
+  await client.send(prompt('uncertain'));
+
+  const immediate = {
+    ...prompt('send-now'),
+    action: { type: 'prompt' as const, text: 'send-now', delivery: 'immediate' as const },
+  };
+
+  await client.send(immediate);
+  await client.send(immediate);
+
+  expect(calls).toEqual(['POST uncertain', 'POST send-now', 'GET /commands/send-now']);
+  await expect(client.send(prompt('ordinary'))).rejects.toThrow('COMMAND_PENDING_STATUS');
+});
+
 it('keeps a terminal receipt monotonic when an older status check completes later', async () => {
   let finish!: (result: CommandResult) => void;
 

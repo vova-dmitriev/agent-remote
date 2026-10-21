@@ -12,16 +12,19 @@ import {
   MAX_DEVICE_CONNECTORS,
   MAX_DEVICE_SESSIONS,
   NativeRestartState,
+  SessionListLimits,
   SessionRemoval,
   SessionStatus,
   StatusConfidence,
 } from './values.js';
 import { ConnectorTransport, FrameType, MessageRole, TargetKind } from '../connection/values.js';
+import { ProviderFilterValue } from '../connection/host.js';
 import { AttachmentMode } from '../history/values.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import { z } from 'zod';
 import { sessionChangesSchema, sessionFileQuerySchema, sessionFileSchema } from './file-changes.js';
 import { permissionRuleSchema, rulesReplySchema, rulesRequestSchema } from '../rules/schemas.js';
+import { skillsRequestFrameSchema, skillsResultFrameSchema } from '../skills/frames.js';
 import {
   analyticsQuerySchema,
   analyticsReportSchema,
@@ -282,6 +285,22 @@ export const connectorSchema = z.strictObject({
 });
 export const snapshotSchema = z.strictObject({
   sessions: z.array(sessionSchema).max(MAX_DEVICE_SESSIONS),
+  sessionPages: z
+    .strictObject({
+      all: z.strictObject({
+        cursor: z.string().max(SessionListLimits.DeviceCursorLength).nullable(),
+        hasMore: z.boolean(),
+      }),
+      claude: z.strictObject({
+        cursor: z.string().max(SessionListLimits.DeviceCursorLength).nullable(),
+        hasMore: z.boolean(),
+      }),
+      codex: z.strictObject({
+        cursor: z.string().max(SessionListLimits.DeviceCursorLength).nullable(),
+        hasMore: z.boolean(),
+      }),
+    })
+    .optional(),
   deviceStatus: z.enum(DeviceStatus),
   cursor: cursorSchema,
   permissions: z.array(permissionSchema).max(100),
@@ -342,7 +361,29 @@ export const continuityResultFrameSchema = z.strictObject({
     z.strictObject({ ok: z.literal(false), code: z.enum(ErrorCode) }),
   ]),
 });
+export const sessionListReadFrameSchema = z.strictObject({
+  type: z.literal(FrameType.SessionListRead),
+  requestId: z.uuid(),
+  provider: z.enum(ProviderFilterValue),
+  cursor: z.string().max(SessionListLimits.DeviceCursorLength).optional(),
+});
+export const sessionListResultFrameSchema = z.strictObject({
+  type: z.literal(FrameType.SessionListResult),
+  requestId: z.uuid(),
+  reply: z.discriminatedUnion('ok', [
+    z.strictObject({
+      ok: z.literal(true),
+      page: z.strictObject({
+        sessions: z.array(sessionSchema).max(SessionListLimits.PageSize),
+        nextCursor: z.string().max(SessionListLimits.DeviceCursorLength).nullable(),
+      }),
+    }),
+    z.strictObject({ ok: z.literal(false), code: z.enum(ErrorCode) }),
+  ]),
+});
 export const deviceFrameSchema = z.discriminatedUnion('type', [
+  skillsResultFrameSchema,
+  sessionListResultFrameSchema,
   z.strictObject({
     type: z.literal(FrameType.ProfilesResult),
     requestId: z.uuid(),
@@ -410,6 +451,8 @@ export const deviceFrameSchema = z.discriminatedUnion('type', [
   continuityResultFrameSchema,
 ]);
 export const serverFrameSchema = z.discriminatedUnion('type', [
+  skillsRequestFrameSchema,
+  sessionListReadFrameSchema,
   z.strictObject({ type: z.literal(FrameType.ProfilesCancel), requestId: z.uuid(), epoch: id }),
   z.strictObject({
     type: z.literal(FrameType.ProfilesRequest),

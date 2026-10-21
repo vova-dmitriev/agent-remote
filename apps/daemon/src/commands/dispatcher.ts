@@ -130,6 +130,7 @@ export class Dispatcher {
     }
 
     let result: CommandResult;
+    let escapedSession: Session | undefined;
 
     try {
       if (!authorize()) {
@@ -146,6 +147,8 @@ export class Dispatcher {
 
       const session = this.options.monitor.session(command.sessionId),
         binding = this.options.monitor.binding(command.sessionId);
+
+      escapedSession = session;
 
       if (
         command.target.deviceId !== this.options.deviceId ||
@@ -385,6 +388,14 @@ export class Dispatcher {
           : CommandStatus.Rejected,
         code: /^[A-Z_]+$/.test(code) ? code : ErrorCode.ADAPTER_FAILED,
       };
+    }
+
+    if (
+      command.action.type === CommandActionType.Escape &&
+      escapedSession &&
+      [CommandStatus.Dispatched, CommandStatus.Unknown].some((status) => status === result.status)
+    ) {
+      this.options.userInputs?.cancelSession(escapedSession.id, escapedSession.generation);
     }
 
     try {

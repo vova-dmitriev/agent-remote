@@ -14,6 +14,10 @@ export const ClaudeHookEvent = {
   Notification: 'Notification',
 } as const;
 
+export const ClaudeNotificationType = { IdlePrompt: 'idle_prompt' } as const;
+export const ClaudeAskUserQuestionTool = 'AskUserQuestion';
+export const ClaudeHookDecision = { Allow: 'allow', Deny: 'deny' } as const;
+
 export type ClaudeHookEvent = (typeof ClaudeHookEvent)[keyof typeof ClaudeHookEvent];
 
 export const ClaudeRecordType = {

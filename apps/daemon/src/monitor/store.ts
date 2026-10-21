@@ -12,7 +12,8 @@ import {
   type EventEnvelope,
   FrameType,
   type HistoryRead,
-  MAX_DEVICE_SESSIONS,
+  SessionListLimits,
+  ProviderFilterValue,
   type Session,
   sessionSchema,
   SessionStatus,
@@ -26,6 +27,12 @@ import Sqlite from 'better-sqlite3';
 import { chmodSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
+import {
+  hasListedSessionAfter,
+  pageListedSessions,
+  saveListedSession,
+  sessionListCursor,
+} from './session-list-page.js';
 
 type ManagedRow = { data: string; transcript_path: string | null };
 
@@ -62,6 +69,12 @@ export class LocalStore implements LocalStorePort {
     this.db.exec(
       'CREATE TABLE IF NOT EXISTS managed_sessions(device_id TEXT NOT NULL,id TEXT NOT NULL,connector_id TEXT NOT NULL,data TEXT NOT NULL,transcript_path TEXT,PRIMARY KEY(device_id,id),UNIQUE(device_id,connector_id));',
     );
+
+    this.db.exec(
+      "CREATE TABLE IF NOT EXISTS listed_sessions(device_id TEXT NOT NULL,id TEXT NOT NULL,provider TEXT NOT NULL,recency_at INTEGER NOT NULL,data TEXT NOT NULL,PRIMARY KEY(device_id,id)); CREATE INDEX IF NOT EXISTS listed_sessions_recency ON listed_sessions(device_id,recency_at DESC,id ASC); CREATE INDEX IF NOT EXISTS listed_sessions_provider_recency ON listed_sessions(device_id,provider,recency_at DESC,id ASC); CREATE INDEX IF NOT EXISTS native_sessions_recency ON native_sessions(device_id,CAST(COALESCE(json_extract(data,'$.lastMessageAt'),json_extract(data,'$.createdAt'),0) AS INTEGER) DESC,id ASC);",
+    );
+
+    this.backfillListedNativeSessions();
 
     this.recoverCommands();
 
@@ -111,6 +124,22 @@ export class LocalStore implements LocalStorePort {
           : 'DELETE FROM session_pins WHERE device_id=? AND id=?',
       )
       .run(this.deviceId, id);
+  }
+  saveListedSession(session: Session) {
+    saveListedSession(this.db, this.deviceId, session);
+  }
+  sessionPage(provider: ProviderFilterValue, cursor?: string) {
+    return pageListedSessions(this.db, this.deviceId, provider, cursor);
+  }
+  sessionPageSeed(provider: ProviderFilterValue, anchor?: Session) {
+    if (!anchor) {
+      return { cursor: null, hasMore: this.sessionPage(provider).sessions.length > 0 };
+    }
+
+    const cursor = sessionListCursor(this.deviceId, provider, anchor);
+    const hasMore = hasListedSessionAfter(this.db, this.deviceId, provider, anchor);
+
+    return { cursor: hasMore ? cursor : null, hasMore };
   }
   cursor(): Cursor {
     return {
@@ -194,6 +223,8 @@ export class LocalStore implements LocalStorePort {
         JSON.stringify(session),
         transcriptPath ?? null,
       );
+
+    this.saveListedSession(session);
   }
   managedRegistration(connectorId: string): NativeSessionRegistration | undefined {
     const row = this.db
@@ -215,8 +246,7 @@ export class LocalStore implements LocalStorePort {
           saved?.session.target.kind === TargetKind.Cmux &&
           saved.session.target.surfaceId === saved.session.target.connectorId,
       )
-      .sort((a, b) => b.session.lastEventAt - a.session.lastEventAt)
-      .slice(0, MAX_DEVICE_SESSIONS);
+      .sort((a, b) => b.session.lastEventAt - a.session.lastEventAt);
   }
   private managed(row: ManagedRow, connectorId: string): NativeSessionRegistration | undefined {
     try {
@@ -267,11 +297,15 @@ export class LocalStore implements LocalStorePort {
       transcript_path=COALESCE(excluded.transcript_path,native_sessions.transcript_path)`,
       )
       .run(this.deviceId, session.id, JSON.stringify(session), transcriptPath ?? null);
+
+    this.saveListedSession(session);
   }
   nativeSessions(): NativeSessionRegistration[] {
     const rows = this.db
-      .prepare('SELECT data,transcript_path FROM native_sessions WHERE device_id=?')
-      .all(this.deviceId) as { data: string; transcript_path: string | null }[];
+      .prepare(
+        `SELECT data,transcript_path FROM native_sessions WHERE device_id=? ORDER BY CAST(COALESCE(json_extract(data,'$.lastMessageAt'),json_extract(data,'$.createdAt'),0) AS INTEGER) DESC,id ASC LIMIT ?`,
+      )
+      .all(this.deviceId, SessionListLimits.PageSize) as { data: string; transcript_path: string | null }[];
 
     const registrations: NativeSessionRegistration[] = [];
 
@@ -295,10 +329,72 @@ export class LocalStore implements LocalStorePort {
       } catch {} // ignore: invalid local metadata must not grant a source or command binding.
     }
 
-    return registrations.sort((a, b) => b.session.lastEventAt - a.session.lastEventAt);
+    return registrations;
+  }
+  nativeSession(id: string): NativeSessionRegistration | undefined {
+    const row = this.db
+      .prepare('SELECT data,transcript_path FROM native_sessions WHERE device_id=? AND id=?')
+      .get(this.deviceId, id) as { data: string; transcript_path: string | null } | undefined;
+
+    if (!row) {
+      return undefined;
+    }
+
+    try {
+      const session = sessionSchema.parse(JSON.parse(row.data));
+
+      if (
+        session.target.deviceId !== this.deviceId ||
+        session.target.connectorId !== ConnectorId.Native ||
+        session.target.kind !== TargetKind.ClaudeCodeCli ||
+        session.claudeSessionId !== session.target.claudeSessionId
+      ) {
+        return undefined;
+      }
+
+      return { session, ...(row.transcript_path ? { transcriptPath: row.transcript_path } : {}) };
+    } catch {
+      return undefined;
+    }
   }
   removeNativeSession(id: string) {
     this.db.prepare('DELETE FROM native_sessions WHERE device_id=? AND id=?').run(this.deviceId, id);
+    this.db.prepare('DELETE FROM listed_sessions WHERE device_id=? AND id=?').run(this.deviceId, id);
+  }
+  private backfillListedNativeSessions() {
+    const marker = this.db.prepare('SELECT value FROM metadata WHERE key=?').get('listedNativeBackfill') as
+      { value: string } | undefined;
+
+    if (marker?.value === '1') {
+      return;
+    }
+
+    const backfill = this.db.transaction(() => {
+      const rows = this.db
+        .prepare('SELECT id,data,transcript_path FROM native_sessions WHERE device_id=?')
+        .all(this.deviceId) as { id: string; data: string; transcript_path: string | null }[];
+
+      for (const row of rows) {
+        try {
+          const session = sessionSchema.parse(JSON.parse(row.data));
+
+          if (
+            session.target.deviceId === this.deviceId &&
+            session.target.connectorId === ConnectorId.Native &&
+            session.target.kind === TargetKind.ClaudeCodeCli &&
+            session.claudeSessionId === session.target.claudeSessionId
+          ) {
+            this.saveListedSession(session);
+          }
+        } catch {} // ignore: invalid persisted metadata must not prevent startup or create a history binding.
+      }
+
+      this.db
+        .prepare('INSERT OR REPLACE INTO metadata(key,value) VALUES(?,?)')
+        .run('listedNativeBackfill', '1');
+    });
+
+    backfill();
   }
   acknowledgedCursor(): Cursor {
     const current = this.cursor();

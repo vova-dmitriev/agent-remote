@@ -66,6 +66,7 @@ export function cmuxAttacher(options: CmuxAttachOptions) {
               prompt: options.inputEnabled,
               interrupt: options.inputEnabled,
               permission: options.permissionsEnabled,
+              userInput: options.inputEnabled,
               terminalSnapshot: true,
               ...(options.inputEnabled
                 ? { attachments: { images: AttachmentMode.Reference, files: AttachmentMode.Reference } }

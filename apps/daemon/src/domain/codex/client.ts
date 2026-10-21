@@ -11,6 +11,8 @@ export interface RpcFrame {
 
 export interface CodexClient extends EventEmitter {
   request(method: string, params: unknown): Promise<unknown>;
+  /** Desktop native clients may provide a bounded, owner-verified child-thread read. */
+  readSubagentItems?(threadId: string, params: unknown): Promise<unknown>;
   respond(id: string | number, result: unknown): void | Promise<void>;
   reject?(id: string | number): void;
   pendingRequests?(): RpcFrame[];

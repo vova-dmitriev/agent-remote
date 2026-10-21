@@ -1,6 +1,6 @@
 import { useEffect, useEffectEvent, useMemo, useRef, useState, type KeyboardEvent } from "react"
-import type { Session } from "@protocol"
-import { useProviderFilter } from "@/entities/session"
+import { ProviderFilterValue, type Session } from "@protocol"
+import { useProviderFilter, useSessionPages } from "@/entities/session"
 import { useStableCallback } from "@/shared/lib/hooks"
 import { SidebarKey } from "../config/values"
 import { createSectionsMemo } from "../lib/sidebar-sections"
@@ -12,19 +12,32 @@ interface SidebarModelOptions {
   now: number
   collapsed: boolean
   onOpen: (session: Session) => void
+  onLoadPage?: (provider: ProviderFilterValue, cursor?: string) => Promise<{ sessions: Session[]; nextCursor: string | null }>
+  pageScope?: string | null
   onTogglePin?: ((session: Session) => void) | undefined
   onExpand: () => void
 }
 
 /** Local interaction state for the sidebar: search, provider chips, keyboard cursor and the ⌘K shortcut. */
-export function useSessionSidebar({ sessions, activeId, now, collapsed, onOpen, onTogglePin, onExpand }: SidebarModelOptions) {
+export function useSessionSidebar({
+  sessions,
+  activeId,
+  now,
+  collapsed,
+  onOpen,
+  onLoadPage,
+  pageScope,
+  onTogglePin,
+  onExpand,
+}: SidebarModelOptions) {
   const [query, setQuery] = useState("")
   const { provider, setProvider } = useProviderFilter()
+  const pages = useSessionPages({ snapshot: sessions, scope: pageScope ?? null, provider, loadPage: onLoadPage })
   const [cursorId, setCursorId] = useState<string | null>(null)
   const searchRef = useRef<HTMLInputElement | null>(null)
   const focusRequested = useRef(false)
   const [sectionsFor] = useState(createSectionsMemo)
-  const sections = sectionsFor({ sessions, query, provider, now })
+  const sections = sectionsFor({ sessions: pages.sessions, query, provider, now })
   const order = useMemo(() => sections.flatMap((section) => section.sessions), [sections])
   const cursor = order.find((session) => session.id === cursorId) ?? (query.trim() ? order[0] : undefined)
 
@@ -114,6 +127,10 @@ export function useSessionSidebar({ sessions, activeId, now, collapsed, onOpen, 
     },
     provider,
     setProvider,
+    loadMore: pages.loadMore,
+    retryPages: pages.retry,
+    pagesLoading: pages.loading,
+    pagesFailed: pages.failed,
     sections,
     order,
     cursorId: cursor?.id ?? null,

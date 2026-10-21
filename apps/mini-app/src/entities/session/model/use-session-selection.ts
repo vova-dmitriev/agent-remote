@@ -27,6 +27,7 @@ export function useSessionSelection() {
     setState((s) => ({
       ...s,
       selectedId: session.id,
+      selectedListedSession: session,
       history: { sessionId: session.id, status: HistoryStatus.Loading },
       messages: { ...s.messages, [session.id]: [] },
       messageVersions: { ...s.messageVersions, [session.id]: {} },
@@ -103,7 +104,7 @@ export function useSessionSelection() {
   function back(deviceId: string | null) {
     ++selection.current
     selected.current = null
-    setState((s) => ({ ...s, selectedId: null, history: null }))
+    setState((s) => ({ ...s, selectedId: null, selectedListedSession: null, history: null }))
     if (deviceId) runtime.client?.selectTarget(deviceId, null)
   }
 

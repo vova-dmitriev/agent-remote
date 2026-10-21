@@ -1,4 +1,5 @@
 import { expect, type Page } from '@playwright/test';
+import { TargetKind } from '@protocol';
 import { deviceFixture } from '../relay/relay-fixture.js';
 import { sessionSnapshot } from './session-fixtures.js';
 import { identity } from '../relay/identity.js';
@@ -32,19 +33,38 @@ export const baseTranscript = (): HistoryMessage[] => [
 ];
 
 /** Answers the relay's history reads as a device would: the parent transcript is empty, the subagent's is `transcript`. */
-export function serveHistory(transcript: HistoryMessage[], options: { unavailable?: boolean } = {}) {
+export function serveHistory(
+  transcript: HistoryMessage[],
+  options: { unavailable?: boolean; paginated?: boolean; agentId?: string; targetKind?: TargetKind } = {},
+) {
   const f = deviceFixture(),
     ws = f.sockets[0]!,
     snapshot = sessionSnapshot(f.deviceId),
     session = snapshot.sessions[0]!,
     reads: HistoryRead[] = [];
 
+  const agentId = options.agentId ?? AGENT;
+
   session.capabilities.historyWindow = true;
   session.capabilities.subagentHistory = true;
+
+  if (options.targetKind === TargetKind.CodexCli || options.targetKind === TargetKind.CodexDesktop) {
+    session.target = {
+      kind: options.targetKind,
+      deviceId: session.target.deviceId,
+      connectorId: options.targetKind,
+      threadId: 'thread-parent-01',
+    };
+
+    session.claudeSessionId = null;
+  } else if (options.targetKind) {
+    session.target.kind = options.targetKind;
+  }
+
   session.status = 'running';
 
   session.subagents = [
-    { id: AGENT, name: 'Reviewer', task: 'Review synthetic parser', status: 'running', updatedAt: 1 },
+    { id: agentId, name: 'Reviewer', task: 'Review synthetic parser', status: 'running', updatedAt: 1 },
     { id: 'synthetic-tests', name: 'Tests', status: 'completed', updatedAt: 1 },
   ];
 
@@ -61,14 +81,28 @@ export function serveHistory(transcript: HistoryMessage[], options: { unavailabl
       return;
     }
 
-    for (const message of frame.agentId === AGENT ? transcript.slice(-100) : [])
+    const selected = frame.agentId === agentId
+      ? options.paginated && frame.direction === 'before'
+        ? transcript.slice(0, 30)
+        : transcript.slice(-100)
+      : [];
+
+    const before = options.paginated && frame.agentId === agentId && frame.direction !== 'before' ? 'older-page' : null;
+
+    for (const message of selected)
       ws.send(JSON.stringify({ type: 'history_item', ...reply, message }));
-    ws.send(JSON.stringify({ type: 'history_done', ...reply, before: null, after: null }));
+    ws.send(JSON.stringify({ type: 'history_done', ...reply, before, after: null }));
   });
 
   ws.send(JSON.stringify({ type: 'snapshot', snapshot, connectors: [] }));
 
-  return { f, snapshot, session, agentReads: () => reads.filter((read) => read.agentId).length };
+  return {
+    f,
+    snapshot,
+    session,
+    agentReads: () => reads.filter((read) => read.agentId).length,
+    agentBeforeReads: () => reads.filter((read) => read.agentId && read.direction === 'before').length,
+  };
 }
 
 export const backButtonVisible = (page: Page) =>
@@ -76,14 +110,14 @@ export const backButtonVisible = (page: Page) =>
     () => (window as unknown as { Telegram: { WebApp: { BackButton: { visible: boolean } } } }).Telegram.WebApp.BackButton.visible,
   );
 
-export async function openSubagent(page: Page, sessionId: string, prepare?: () => Promise<void>) {
+export async function openSubagent(page: Page, sessionId: string, prepare?: () => Promise<void>, agentId = AGENT) {
   await identity(page, '801', 'en');
   await prepare?.();
   await page.clock.install();
   await page.goto('/');
   await byTestId(page, SESSION_CARD_IDS.root, { 'session-id': sessionId }).click();
   await page.getByTestId(SUBAGENT_IDS.toggle).click();
-  await byTestId(page, SUBAGENT_IDS.open, { 'agent-id': AGENT }).click();
+  await byTestId(page, SUBAGENT_IDS.open, { 'agent-id': agentId }).click();
 }
 
 /** Jumps past every poll delay (including backoff) and confirms that no subagent read leaves the page. */

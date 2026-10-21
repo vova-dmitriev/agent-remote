@@ -9,6 +9,11 @@ import { DeviceService } from '../devices/service.js';
 import { HistoryRepository } from '../history/repository.js';
 import { SourceHistory } from '../history/source.js';
 import { ProfileProxy } from '../profiles/transport/proxy.js';
+import { Database } from '../db/database.js';
+import { SessionRepository } from '../sessions/repository.js';
+import { SessionCatalogRepository } from '../sessions/catalog/session-catalog-repository.js';
+import { SessionListSource } from '../sessions/catalog/session-list.js';
+import { SessionLabels } from '../sessions/labels.js';
 import { DeviceRequests } from '../sessions/device-requests.js';
 import { AppSocket } from './app-socket.js';
 import { DeviceSocket } from './device-socket.js';
@@ -45,11 +50,17 @@ import { RelayHub } from './relay-hub.js';
       inject: [RelayHub],
       useFactory: (hub: RelayHub) => new DeviceRequests(hub.send),
     },
+    {
+      provide: SessionListSource,
+      inject: [SessionRepository, Database, RelayHub, SessionLabels],
+      useFactory: (sessions: SessionRepository, db: Database, hub: RelayHub, labels: SessionLabels) =>
+        new SessionListSource(sessions, new SessionCatalogRepository(db), hub, labels),
+    },
     AppSocket,
     DeviceSocket,
     MaintenanceService,
   ],
-  exports: [RelayHub, SourceHistory, ProfileProxy, ContinuityProxy, DeviceRequests],
+  exports: [RelayHub, SourceHistory, ProfileProxy, ContinuityProxy, DeviceRequests, SessionListSource],
 })
 export class RealtimeModule implements OnApplicationBootstrap {
   constructor(

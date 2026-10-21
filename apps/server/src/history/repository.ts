@@ -2,7 +2,14 @@ import { EventType, HISTORY_PAGE_MESSAGES, type EventEnvelope } from '@protocol'
 import { and, asc, eq, gt, isNull, sql, type SQL } from 'drizzle-orm';
 import type { PoolClient } from 'pg';
 import { ormOn, type Database } from '../db/database.js';
-import { devices, events, notificationOutbox, sessionActivity, sessions } from '../db/schema/index.js';
+import {
+  devices,
+  events,
+  notificationOutbox,
+  sessionActivity,
+  sessionCatalog,
+  sessions,
+} from '../db/schema/index.js';
 import { HISTORY_WINDOW_AFTER_MESSAGES, HISTORY_WINDOW_BEFORE_MESSAGES } from './limits.js';
 
 export interface HistoryRow extends Record<string, unknown> {
@@ -141,7 +148,27 @@ export class HistoryRepository {
       .innerJoin(devices, and(eq(devices.id, sessions.deviceId), eq(devices.ownerId, sessions.ownerId)))
       .where(and(eq(sessions.ownerId, ownerId), eq(sessions.id, sessionId), isNull(devices.revokedAt)));
 
-    return row;
+    if (row) {
+      return row;
+    }
+
+    const [catalog] = await this.db.orm
+      .select({ device_id: sessionCatalog.deviceId, history_revision: devices.historyRevision })
+      .from(sessionCatalog)
+      .innerJoin(
+        devices,
+        and(eq(devices.id, sessionCatalog.deviceId), eq(devices.ownerId, sessionCatalog.ownerId)),
+      )
+      .where(
+        and(
+          eq(sessionCatalog.ownerId, ownerId),
+          eq(sessionCatalog.id, sessionId),
+          eq(sessionCatalog.deviceGeneration, devices.generation),
+          isNull(devices.revokedAt),
+        ),
+      );
+
+    return catalog;
   }
 
   /** An owned session on a live device, with its stored data. */
@@ -152,7 +179,39 @@ export class HistoryRepository {
       .innerJoin(devices, and(eq(devices.id, sessions.deviceId), eq(devices.ownerId, sessions.ownerId)))
       .where(and(eq(sessions.ownerId, ownerId), eq(sessions.id, sessionId), isNull(devices.revokedAt)));
 
-    return row as SourceSessionRow | undefined;
+    if (row) {
+      return row as SourceSessionRow;
+    }
+
+    const [catalog] = await this.db.orm
+      .select({ device_id: sessionCatalog.deviceId, data: sessionCatalog.data })
+      .from(sessionCatalog)
+      .innerJoin(
+        devices,
+        and(eq(devices.id, sessionCatalog.deviceId), eq(devices.ownerId, sessionCatalog.ownerId)),
+      )
+      .where(
+        and(
+          eq(sessionCatalog.ownerId, ownerId),
+          eq(sessionCatalog.id, sessionId),
+          eq(sessionCatalog.deviceGeneration, devices.generation),
+          isNull(devices.revokedAt),
+        ),
+      );
+
+    if (!catalog) {
+      return undefined;
+    }
+
+    const data = catalog.data as SourceSessionRow['data'];
+
+    return {
+      device_id: catalog.device_id,
+      data: {
+        ...data,
+        capabilities: { ...data.capabilities, historyWindow: false, subagentHistory: false },
+      },
+    };
   }
 
   /** The latest revision of a message by its payload id. */

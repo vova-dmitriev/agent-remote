@@ -59,10 +59,6 @@ export function canSendQueuedNow(state: SessionStoreState, id: string) {
     samePromptSource(item, state, lease.epoch) &&
     canQueuePrompt(state.session.connection, state.session.snapshot?.deviceStatus ?? DeviceStatus.Offline, session) &&
     canDeliverPrompt(session.status, PromptDelivery.Immediate) &&
-    !state.outbox.some(
-      (entry) =>
-        entry.command.sessionId === session.id &&
-        [PromptStatus.Sending, PromptStatus.Accepted, PromptStatus.Unknown].some((status) => entry.status === status),
-    )
+    !state.outbox.some((entry) => entry.command.sessionId === session.id && entry.status === PromptStatus.Sending)
   )
 }

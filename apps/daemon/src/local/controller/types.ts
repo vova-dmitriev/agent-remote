@@ -38,6 +38,7 @@ export interface LocalControllerOptions {
   history?: (
     request: HistoryRead,
   ) => Promise<{ messages: HistoryMessage[]; before: string | null; after: string | null } | null>;
+  hasHistoryReader?: (sessionId: string) => boolean;
   media?: {
     execute(principal: LocalPrincipal, action: LocalAction): Promise<unknown>;
     close(): Promise<void>;

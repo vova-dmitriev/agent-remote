@@ -13,6 +13,7 @@ export const userInputQuestionSchema = z.strictObject({
   question: z.string().min(1).max(16384),
   isOther: z.boolean(),
   isSecret: z.boolean(),
+  multiSelect: z.boolean().optional(),
   options: z
     .array(z.strictObject({ label: z.string().min(1).max(1024), description: z.string().max(4096) }))
     .min(1)
@@ -32,8 +33,8 @@ export const userInputAnswersSchema = z.preprocess(
     return value;
   },
   z
-    .record(id, z.strictObject({ answers: z.array(z.string().min(1).max(8192)).length(1) }))
-    .refine((value) => Object.keys(value).length <= 3),
+    .record(id, z.strictObject({ answers: z.array(z.string().min(1).max(8192)).min(1).max(20) }))
+    .refine((value) => Object.keys(value).length <= 4),
 );
 export const pendingUserInputSchema = z.strictObject({
   requestId: id,
@@ -44,7 +45,7 @@ export const pendingUserInputSchema = z.strictObject({
   questions: z
     .array(userInputQuestionSchema)
     .min(1)
-    .max(3)
+    .max(4)
     .refine((questions) => new Set(questions.map((question) => question.id)).size === questions.length),
   isBlocking: z.boolean(),
   expiresAt: z.number().int().nonnegative().safe(),
@@ -75,11 +76,20 @@ export function validateUserInputAnswers(
   }
 
   for (const question of request.questions) {
-    const value = Object.hasOwn(answers, question.id) ? answers[question.id]?.answers[0] : undefined;
+    const values = Object.hasOwn(answers, question.id) ? answers[question.id]?.answers : undefined;
 
     if (
-      !value?.trim() ||
-      (!question.isOther && question.options && !question.options.some((option) => option.label === value))
+      !values?.length ||
+      (!question.multiSelect && values.length !== 1) ||
+      values.some((value) => !value.trim()) ||
+      new Set(values).size !== values.length ||
+      (question.options &&
+        values.some((value) => !question.options!.some((option) => option.label === value)) &&
+        !(
+          question.isOther &&
+          values.length === 1 &&
+          !question.options.some((option) => option.label === values[0])
+        ))
     ) {
       throw new Error(ErrorCode.INVALID_USER_INPUT);
     }

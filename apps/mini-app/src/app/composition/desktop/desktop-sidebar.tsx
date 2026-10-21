@@ -3,6 +3,7 @@ import { ConnectionStatus, DeviceStatus, type Session } from "@protocol"
 import { useSessionStore, useSessionsAwaitingInput } from "@/entities/session"
 import { usePinSession } from "@/features/pin-session"
 import { SessionSidebar } from "@/widgets/session-sidebar"
+import { useSessionPageLoader } from "@/app/model/session-pages/use-session-page-loader"
 import type { DesktopSidebarProps } from "./desktop-layout.types"
 
 const NO_SESSIONS: Session[] = []
@@ -22,11 +23,14 @@ export const DesktopSidebar = memo(function DesktopSidebar({
   onResetWidth,
 }: DesktopSidebarProps) {
   const sessions = useSessionStore((state) => state.session.snapshot?.sessions) ?? NO_SESSIONS
+  const deviceId = useSessionStore((state) => state.session.deviceId)
+  const streamId = useSessionStore((state) => state.session.snapshot?.cursor.streamId) ?? null
   const selectedId = useSessionStore((state) => state.session.selectedId)
   const online = useSessionStore((state) => state.session.connection === ConnectionStatus.Online)
   const deviceOnline = useSessionStore((state) => state.session.snapshot?.deviceStatus === DeviceStatus.Online)
   const awaitingIds = useSessionsAwaitingInput()
   const pins = usePinSession(sessions)
+  const pageLoader = useSessionPageLoader(deviceId, streamId)
 
   return (
     <SessionSidebar
@@ -36,6 +40,8 @@ export const DesktopSidebar = memo(function DesktopSidebar({
       deviceOnline={online && deviceOnline}
       awaitingIds={awaitingIds}
       onOpen={onOpen}
+      pageScope={pageLoader.scope}
+      onLoadPage={pageLoader.loadPage}
       onTogglePin={pins.toggle}
       pinFailed={pins.failed}
       onExpand={onExpand}

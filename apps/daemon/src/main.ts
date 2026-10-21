@@ -52,7 +52,7 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
     permissions = new PermissionBroker(),
     userInputs = new UserInputBroker({ changed: () => monitor.emit(RuntimeEvent.Snapshot) });
 
-  registerNativeAdapter(adapters, permissionsEnabled);
+  registerNativeAdapter(adapters, permissionsEnabled, inputEnabled);
 
   const monitor = new Monitor({
     deviceId: config.deviceId,
@@ -151,6 +151,7 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
     monitor,
     adapters,
     permissions,
+    userInputs,
     inputEnabled,
     permissionsEnabled,
     codex,

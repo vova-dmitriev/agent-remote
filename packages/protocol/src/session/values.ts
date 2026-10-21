@@ -37,7 +37,8 @@ export const SessionStatus = {
 export type SessionStatus = (typeof SessionStatus)[keyof typeof SessionStatus];
 
 /** How many sessions one device reports at once: every open terminal and thread on a busy Mac. */
-export const MAX_DEVICE_SESSIONS = 30;
+export const SessionListLimits = { PageSize: 30, DeviceCursorLength: 1024, CursorLength: 4096 } as const;
+export const MAX_DEVICE_SESSIONS = SessionListLimits.PageSize;
 
 /** A connector per cmux surface or terminal session in use, plus the native, Codex and desktop ones. */
 export const MAX_DEVICE_CONNECTORS = MAX_DEVICE_SESSIONS + 20;

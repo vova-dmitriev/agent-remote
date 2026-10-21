@@ -34,8 +34,9 @@ describe('local installation', () => {
 
     expect(installed.hooks.Stop).toHaveLength(2);
     expect(installed.permissions).toEqual(original.permissions);
-    // A rule stop holds the command up to 10 minutes; Claude would run it if the hook timed out first.
-    expect(installed.hooks.PreToolUse.at(-1).hooks[0].timeout).toBe(660);
+    // A remote question may wait 30 minutes; the hook itself must not time out first.
+    expect(installed.hooks.PreToolUse.at(-1).hooks[0].timeout).toBe(1860);
+    expect(installed.hooks.Notification).toHaveLength(1);
     expect(installed.hooks.PermissionRequest.at(-1).hooks[0].timeout).toBe(60);
     await uninstallHooks(path);
     expect(JSON.parse(await readFile(path, 'utf8'))).toEqual(original);

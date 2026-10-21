@@ -220,7 +220,7 @@ function restoredAtQuota() {
   return { ...f.open(), originals };
 }
 
-it('makes room for a fresh source by retiring the oldest untouched restored native session', () => {
+it('keeps a fresh source when the bounded snapshot is full', () => {
   const { monitor, store, originals } = restoredAtQuota();
 
   expect(() =>
@@ -229,12 +229,22 @@ it('makes room for a fresh source by retiring the oldest untouched restored nati
 
   expect(monitor.snapshot().sessions).toHaveLength(MAX_DEVICE_SESSIONS);
   expect(monitor.findClaude('native', 'fresh')?.binding).toBe('verified');
-  expect(monitor.session(originals[0]!.id)).toBeUndefined();
-  expect(store.nativeSessions().some(({ session }) => session.id === originals[0]!.id)).toBe(false);
+  expect(monitor.session(originals[0]!.id)).toBeDefined();
+  const listed = store.sessionPage('all');
+  const pages = [listed];
+
+  while (pages.at(-1)!.nextCursor) {
+    pages.push(store.sessionPage('all', pages.at(-1)!.nextCursor!));
+  }
+
+  expect(pages.flatMap((page) => page.sessions).some((session) => session.claudeSessionId === 'fresh')).toBe(
+    true,
+  );
+
   expect(store.nativeSessions()).toHaveLength(MAX_DEVICE_SESSIONS);
 });
 
-it('protects a restored source that receives any fresh hook from fallback eviction', () => {
+it('does not evict restored sources when admitting another source', () => {
   const { monitor, originals } = restoredAtQuota();
 
   monitor.ingestHook({ hook_event_name: 'PostToolUse', session_id: 'saved-0' }, 'native');
@@ -244,10 +254,10 @@ it('protects a restored source that receives any fresh hook from fallback evicti
   ).not.toThrow();
 
   expect(monitor.session(originals[0]!.id)).toBeDefined();
-  expect(monitor.session(originals[1]!.id)).toBeUndefined();
+  expect(monitor.session(originals[1]!.id)).toBeDefined();
 });
 
-it('does not evict verified active native or managed sessions to admit a new source', () => {
+it('keeps verified active native and managed sessions when admitting a new source', () => {
   const { monitor, adapters } = fixture().open();
   const descriptor = adapters.get('native')!.descriptor();
 
@@ -264,9 +274,10 @@ it('does not evict verified active native or managed sessions to admit a new sou
 
   expect(() =>
     monitor.ingestHook({ hook_event_name: 'SessionStart', session_id: 'fresh' }, 'native'),
-  ).toThrow('SESSION_QUOTA');
+  ).not.toThrow();
 
-  expect(monitor.snapshot().sessions.map((session) => session.id)).toEqual(originalIds);
+  expect(originalIds.every((id) => monitor.session(id))).toBe(true);
+  expect(monitor.snapshot().sessions).toHaveLength(MAX_DEVICE_SESSIONS);
 });
 
 it('allows managed session creation to reclaim restored observers instead of blocking at the quota', () => {
@@ -277,7 +288,7 @@ it('allows managed session creation to reclaim restored observers instead of blo
     first.monitor.ingestHook({ hook_event_name: 'SessionStart', session_id: 'source-' + i }, 'native');
   }
 
-  expect(first.monitor.canCreateSession()).toBe(false);
+  expect(first.monitor.canCreateSession()).toBe(true);
   first.store.close();
   const restarted = f.open();
 

@@ -1,5 +1,6 @@
 export const QuestionChoiceKind = {
   Option: "option",
+  MultipleOptions: "multiple-options",
   Custom: "custom",
 } as const
 

@@ -114,6 +114,14 @@ it('claims send-now before async dispatch and prevents edits or removal', async 
 
   immediate.action.delivery = PromptDelivery.Immediate;
   f.persistence.claim(immediate, f.principal);
+
+  expect(
+    await f.persistence.execute(f.principal, { operation: LocalOperation.QueueGet, sessionId: f.session.id }),
+  ).toEqual({
+    revision: 1,
+    intents: [command(f, 'send-now')],
+  });
+
   await expect(save(f, 1, [])).rejects.toThrow('LOCAL_REVISION_CONFLICT');
   const changed = command(f, 'send-now');
 
@@ -126,6 +134,17 @@ it('claims send-now before async dispatch and prevents edits or removal', async 
 
   f.persistence.queue.kick();
   await expect.poll(() => f.delivered).toEqual(['send-now']);
+
+  await expect
+    .poll(() =>
+      f.persistence.execute(f.principal, { operation: LocalOperation.QueueGet, sessionId: f.session.id }),
+    )
+    .toEqual({ revision: 2, intents: [] });
+
+  f.monitor.emit(RuntimeEvent.Snapshot);
+  f.persistence.queue.kick();
+  await new Promise(setImmediate);
+  expect(f.delivered).toEqual(['send-now']);
 });
 
 it('clears only a matching draft atomically with a newly acknowledged queue intent', async () => {

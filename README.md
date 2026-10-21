@@ -12,7 +12,7 @@ These screenshots come exclusively from English Storybook stories with synthetic
 
 <img src="docs/screenshots/conversation.png" width="430" alt="English Codex conversation using synthetic Storybook messages" />
 
-The Mini App includes provider filters, session creation and renaming, bounded history, saved reading positions, message navigation, questions and approvals, subagent activity, editable queued prompts, file attachments, an image viewer and available native file-edit patches. Connector capabilities determine which controls are available. Telegram's unsent prompt queue remains in memory and is lost when that app closes or reloads. The Chrome host persists acknowledged drafts and queued intents in the local companion.
+The Mini App includes provider filters, session creation and renaming, bounded history, saved reading positions, message navigation, questions and approvals, subagent activity, editable queued prompts, file attachments, an image viewer and available native file-edit patches. The session list starts with 30 recent sessions and loads older pages as you scroll. Claude Code questions support single or multiple choices; the slash menu discovers invocable skills from the verified native session’s configuration. Connector capabilities determine which controls are available. Telegram's unsent prompt queue remains in memory and is lost when that app closes or reloads. The Chrome host persists acknowledged drafts and queued intents in the local companion.
 
 <img src="docs/screenshots/accounts.png" width="700" alt="English Accounts and keys page showing two synthetic OpenAI subscriptions and an API profile" />
 

@@ -55,6 +55,7 @@ export class MessageTracker {
 }
 export class TranscriptSources {
   private sources = new Map<string, Source>();
+  private lazySources = new Map<string, { generation: string; path: string; claudeSessionId: string }>();
   constructor(
     private allowedRoot: string,
     private transform?: (
@@ -127,6 +128,8 @@ export class TranscriptSources {
       agents: new Map(),
     });
 
+    this.lazySources.delete(sessionId);
+
     // First observation or restore: list children that started before this process saw the session.
     void this.refreshSubagents(sessionId);
 
@@ -137,10 +140,29 @@ export class TranscriptSources {
     return reader;
   }
   has(id: string) {
-    return this.sources.has(id);
+    return this.sources.has(id) || this.lazySources.has(id);
+  }
+  /** Registers a local catalog transcript path without opening or scanning it until a history request arrives. */
+  registerLazy(id: string, generation: string, path: string, claudeSessionId: string) {
+    const current = this.sources.get(id);
+
+    if (current?.generation === generation) {
+      return;
+    }
+
+    this.lazySources.set(id, { generation, path, claudeSessionId });
   }
   async page(request: HistoryRead) {
-    const source = this.sources.get(request.sessionId);
+    let source = this.sources.get(request.sessionId);
+
+    if (!source) {
+      const lazy = this.lazySources.get(request.sessionId);
+
+      if (lazy?.generation === request.generation) {
+        this.open(request.sessionId, lazy.generation, lazy.path, lazy.claudeSessionId);
+        source = this.sources.get(request.sessionId);
+      }
+    }
 
     if (!source || source.generation !== request.generation) {
       throw new CodedError(ErrorCode.SESSION_UNAVAILABLE);
@@ -282,6 +304,8 @@ export class TranscriptSources {
     }
   }
   delete(id: string, expectedReader?: TranscriptReader): boolean {
+    this.lazySources.delete(id);
+
     if (expectedReader && this.sources.get(id)?.reader !== expectedReader) {
       return false;
     }

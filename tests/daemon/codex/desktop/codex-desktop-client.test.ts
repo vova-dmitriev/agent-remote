@@ -121,6 +121,142 @@ it('bounds repeated desktop snapshots to the same 500-item window as history', a
   await client.close();
 });
 
+it('reads only an owner-verified child thread from Desktop Codex through a bounded item list request', async () => {
+  class ChildIpc extends EventEmitter {
+    following: Array<[string, boolean]> = [];
+    async owner(threadId: string) {
+      return threadId === 'foreign-child' ? 'other-owner' : 'owner';
+    }
+    broadcast(_method: string, params: Data) {
+      const threadId = String(params.conversationId);
+
+      this.following.push([threadId, Boolean(params.following)]);
+
+      if (params.following) {
+        const items =
+          threadId === 'child'
+            ? Array.from({ length: 110 }, (_, index) => ({
+                id: 'reply-' + index,
+                type: 'agentMessage',
+                text: 'synthetic child reply ' + index,
+              }))
+            : [];
+
+        this.emit('broadcast', {
+          method: 'thread-stream-state-changed',
+          version: 11,
+          sourceClientId: 'owner',
+          params: {
+            conversationId: threadId,
+            hostId: 'local',
+            change: {
+              type: 'snapshot',
+              revision: 1,
+              conversationState: {
+                id: threadId,
+                turns: [{ turnId: 'child-turn', status: 'completed', items }],
+              },
+            },
+          },
+        });
+      }
+    }
+    async request() {
+      return {};
+    }
+  }
+
+  const ipc = new ChildIpc();
+  const parent = await DesktopCodexClient.attach(ipc as unknown as DesktopIpcClient, 'parent');
+
+  const result = (await parent.readSubagentItems('child', { limit: 100, sortDirection: 'desc' })) as {
+    data: Data[];
+    nextCursor: string;
+  };
+
+  expect(result.data).toHaveLength(100);
+  expect(result.data[0]).toMatchObject({ turnId: 'child-turn', item: { id: 'reply-109' } });
+  expect(result.nextCursor).toBe('100');
+
+  const earlier = (await parent.readSubagentItems('child', {
+    limit: 100,
+    sortDirection: 'desc',
+    cursor: result.nextCursor,
+  })) as { data: Data[]; nextCursor: null };
+
+  expect(earlier.data).toHaveLength(10);
+  expect(earlier.data[0]).toMatchObject({ turnId: 'child-turn', item: { id: 'reply-9' } });
+  expect(earlier.nextCursor).toBeNull();
+
+  expect(ipc.following).toEqual([
+    ['parent', true],
+    ['child', true],
+    ['child', false],
+    ['child', true],
+    ['child', false],
+  ]);
+
+  await expect(parent.readSubagentItems('foreign-child', { limit: 100 })).rejects.toThrow('NOT_FOUND');
+  await parent.close();
+});
+
+it('discards child items if Desktop ownership changes while the page is pending', async () => {
+  class ReassignedIpc extends EventEmitter {
+    private childOwnerReads = 0;
+    async owner(threadId: string) {
+      if (threadId !== 'child') {
+        return 'owner';
+      }
+
+      this.childOwnerReads++;
+
+      return this.childOwnerReads < 4 ? 'owner' : 'other-owner';
+    }
+    broadcast(_method: string, params: Data) {
+      if (!params.following) {
+        return;
+      }
+
+      const threadId = String(params.conversationId);
+
+      this.emit('broadcast', {
+        method: 'thread-stream-state-changed',
+        version: 11,
+        sourceClientId: 'owner',
+        params: {
+          conversationId: threadId,
+          hostId: 'local',
+          change: {
+            type: 'snapshot',
+            revision: 1,
+            conversationState: {
+              id: threadId,
+              turns: [
+                {
+                  turnId: 'turn',
+                  status: 'completed',
+                  items: [{ id: 'item', type: 'agentMessage', text: 'synthetic' }],
+                },
+              ],
+            },
+          },
+        },
+      });
+    }
+    async request() {
+      return {};
+    }
+  }
+
+  const parent = await DesktopCodexClient.attach(
+    new ReassignedIpc() as unknown as DesktopIpcClient,
+    'parent',
+  );
+
+  await expect(parent.readSubagentItems('child', { limit: 100 })).rejects.toThrow('NOT_FOUND');
+  await parent.close();
+});
+
 it('does not publish an answered approval again before the owning app removes it', async () => {
   const { ipc, client } = await fixture();
   const requests: unknown[] = [];

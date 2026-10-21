@@ -12,16 +12,14 @@ import { loadConfig, localSecret, socketPath, stateDirectory } from './config.js
 import { readRelayStatus, relayStatusIsLive } from './diagnostics/relay-status.js';
 import { requestLocal } from './code/hooks/ipc.js';
 import { deliverHook, hookTargets } from './code/hooks/hook-delivery.js';
+import { hookHoldTimeoutMs } from './code/hooks/input/hook-timeout.js';
 import { installHooks, uninstallHooks } from './code/hooks/install-hooks.js';
 import { startDaemon } from './main.js';
 import { startClaude } from './cli/wrapper.js';
-import { CodedError, RULE_ANSWER_TIMEOUT_MS, hasErrorCode } from '@protocol';
+import { CodedError, hasErrorCode } from '@protocol';
 
 /** How long `remote hook` waits for the daemons' first answer: a permission prompt waits, other hooks do not. */
 const HOOK_WAIT_MS: Partial<Record<string, number>> = { [ClaudeHookEvent.PermissionRequest]: 50_000 };
-
-/** Once a daemon holds a command for the owner's answer to a rule stop, the hook waits this long. */
-const RULE_HOLD_MS = RULE_ANSWER_TIMEOUT_MS + 30_000;
 
 /** Marks a hook Codex runs: `remote hook --agent=codex`. */
 const CODEX_HOOK_FLAG = `--agent=${HookAgent.Codex}`;
@@ -259,6 +257,7 @@ export async function runCli(argv = process.argv.slice(2)) {
       }
 
       const payload = JSON.parse(input);
+      const agent = args.includes(CODEX_HOOK_FLAG) ? HookAgent.Codex : HookAgent.Claude;
 
       // The CLI daemon and a desktop companion both watch this Mac's sessions; the first decision answers.
       const output = await deliverHook(
@@ -266,13 +265,13 @@ export async function runCli(argv = process.argv.slice(2)) {
         {
           type: IpcMessageType.Hook,
           payload,
-          ...(args.includes(CODEX_HOOK_FLAG) ? { agent: HookAgent.Codex } : {}),
+          ...(agent === HookAgent.Codex ? { agent } : {}),
           ...(process.env.CLAUDE_REMOTE_WRAPPER_ID
             ? { wrapperId: process.env.CLAUDE_REMOTE_WRAPPER_ID }
             : hookCmuxSurface(process.env)),
         },
         HOOK_WAIT_MS[payload.hook_event_name] ?? 1500,
-        RULE_HOLD_MS,
+        hookHoldTimeoutMs(payload, agent),
       );
 
       process.stdout.write(JSON.stringify(output) + '\n');

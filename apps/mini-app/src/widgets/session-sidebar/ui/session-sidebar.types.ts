@@ -1,6 +1,6 @@
 import type { KeyboardEvent, Ref } from "react"
-import type { Session } from "@protocol"
-import type { ProviderFilterValue } from "@/entities/session"
+import type { ProviderFilterValue, Session } from "@protocol"
+import type { SessionPageLoader } from "@/entities/session"
 
 export interface SessionSidebarProps {
   sessions: Session[]
@@ -12,6 +12,8 @@ export interface SessionSidebarProps {
   /** Sessions with a pending permission or question; they wear the attention tone. */
   awaitingIds?: ReadonlySet<string>
   onOpen: (session: Session) => void
+  onLoadPage?: SessionPageLoader | undefined
+  pageScope?: string | null
   /** Pins or unpins a session; rows offer it only when given. */
   onTogglePin?: (session: Session) => void
   /** The last pin change failed. */

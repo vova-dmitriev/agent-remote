@@ -95,14 +95,14 @@ it('keeps a hidden session out of the lists across restarts until its next messa
   expect(second.monitor.snapshot().sessions.map((session) => session.id)).toEqual([id]);
 });
 
-it('does not count hidden sessions against the device session limit', () => {
+it('keeps session creation available when the bounded snapshot is full', () => {
   const { monitor } = open(':memory:');
 
   for (let index = 0; index < MAX_DEVICE_SESSIONS; index++) {
     monitor.ingestHook({ hook_event_name: 'SessionStart', session_id: 'synthetic-' + index }, 'native');
   }
 
-  expect(monitor.canCreateSession()).toBe(false);
+  expect(monitor.canCreateSession()).toBe(true);
 
   monitor.hide(monitor.findClaude('native', 'synthetic-0')!.id);
 

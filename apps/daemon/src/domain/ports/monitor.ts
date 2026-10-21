@@ -4,6 +4,8 @@ import {
   type AgentProvider,
   type AppSnapshot,
   type EventEnvelope,
+  type HistoryRead,
+  type HistoryMessage,
   type PermissionDecision,
   type Session,
   sessionSchema,
@@ -26,10 +28,17 @@ export const hookSchema = z.object({
   tool_use_id: z.string().min(1).max(512).optional(),
   tool_name: z.string().max(512).optional(),
   tool_input: z.unknown().optional(),
+  notification_type: z.string().max(128).optional(),
   /** Claude Code's permission mode for this session, e.g. `bypassPermissions`. */
   permission_mode: sessionSchema.shape.permissionMode.optional(),
 });
 export type HookEnvelope = z.infer<typeof hookSchema>;
+
+export interface SubagentHistoryPage {
+  messages: HistoryMessage[];
+  before: string | null;
+  after: string | null;
+}
 
 /** Session state owned by the monitor, as seen by the modules that feed it. */
 export interface MonitorPort extends EventEmitter {
@@ -49,6 +58,8 @@ export interface MonitorPort extends EventEmitter {
   ): NativeSessionRegistration | undefined;
   restoreManaged(saved: Session): void;
   findClaude(connectorId: string, claudeSessionId: string): Session | undefined;
+  setNativeUserInputPending(id: string, generation: string): boolean;
+  acceptNativeUserInput(id: string, generation: string): boolean;
   addDesktop(session: Session, binding: Binding): void;
   invalidate(connectorId: string): void;
   setSessionTitle(id: string, title: string | undefined): boolean;
@@ -56,6 +67,13 @@ export interface MonitorPort extends EventEmitter {
   hide(id: string, at?: number): boolean;
   setProviderModels(provider: AgentProvider, models: AgentModel[]): void;
   setSubagents(id: string, agents: Session['subagents']): void;
+  registerSubagentHistoryReader(
+    id: string,
+    generation: string,
+    reader: (request: HistoryRead) => Promise<SubagentHistoryPage>,
+  ): () => void;
+  hasSubagentHistory(id: string, generation: string): boolean;
+  readSubagentHistory(request: HistoryRead): Promise<SubagentHistoryPage>;
   settleSubagentPermission(sessionId: string, agentId: string, decision: PermissionDecision): void;
   setSessionModel(
     id: string,

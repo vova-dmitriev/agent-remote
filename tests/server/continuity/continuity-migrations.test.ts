@@ -142,6 +142,7 @@ describe('ordered PostgreSQL migration journal', () => {
       '008_command_audit_created_at',
       '009_notification_payload',
       '010_telegram_actions',
+      '011_session_catalog',
     ]);
 
     expect(
@@ -166,6 +167,7 @@ describe('ordered PostgreSQL migration journal', () => {
       '008_command_audit_created_at',
       '009_notification_payload',
       '010_telegram_actions',
+      '011_session_catalog',
     ]);
 
     expect(

@@ -13,6 +13,30 @@ export interface SidebarListProps {
   onTogglePin?: ((session: Session) => void) | undefined
   onKeyDown: (event: KeyboardEvent<HTMLElement>) => void
   onClear: () => void
+  onLoadMore?: () => void
+  pagesLoading?: boolean
+  pagesFailed?: boolean
+  onRetryPages?: () => void
+}
+
+export interface SidebarGroupsProps {
+  sections: SidebarSection[]
+  activeId: string | null
+  cursorId: string | null
+  query: string
+  now: number
+  awaitingIds: ReadonlySet<string>
+  onOpen: (session: Session) => void
+  onTogglePin?: ((session: Session) => void) | undefined
+  onKeyDown: (event: KeyboardEvent<HTMLElement>) => void
+  onLoadMore?: () => void
+  label: string
+}
+
+export interface SidebarPageStatusProps {
+  loading: boolean
+  failed: boolean
+  onRetry?: (() => void) | undefined
 }
 
 export interface SidebarRowProps {

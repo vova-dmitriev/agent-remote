@@ -7,6 +7,7 @@ import type { Monitor } from '../../monitor/monitor.js';
 import { MessageTracker, type TranscriptSources } from '../../monitor/history.js';
 import type { AdapterRegistry } from '../../adapters/registry.js';
 import type { PermissionBroker } from '../../commands/permission-broker.js';
+import type { UserInputBroker } from '../../commands/user-input-broker.js';
 import { hasErrorCode } from '@protocol';
 import { DaemonErrorCode } from '../../error-codes.js';
 import { startHookServer, type HookSocketOptions } from '../../code/hooks/hook-server.js';
@@ -30,6 +31,7 @@ type HookWiringDeps = {
   monitor: Monitor;
   adapters: AdapterRegistry;
   permissions: PermissionBroker;
+  userInputs?: UserInputBroker;
   inputEnabled: boolean;
   permissionsEnabled: boolean;
   codex: CodexManager;
@@ -61,6 +63,7 @@ export async function startHookWiring(deps: HookWiringDeps) {
       monitor,
       adapters,
       permissions: deps.permissions,
+      ...(deps.userInputs ? { userInputs: deps.userInputs } : {}),
       rules: new RuleGuard({ store: new RulesStore(), permissions: deps.permissions, monitor }),
       inputEnabled,
       permissionsEnabled,

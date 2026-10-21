@@ -453,17 +453,31 @@ describe('relay subagent history route', () => {
       const headers = { authorization: 'Bearer ' + f.token };
       const url = (query: string) => f.origin + '/sessions/' + f.session.id + '/events?' + query;
 
-      // Supported daemon without a live history window: no fallback to the session cache.
+      // The child reader is independent of the parent's history window, and never uses its cache.
       await f.publish(device, {
         ...f.session,
         capabilities: { ...f.session.capabilities, subagentHistory: true },
       });
 
-      const unwindowed = await fetch(url(HistoryQueryKey.AgentId + '=' + AGENT), { headers });
+      const childRead = fetch(url(HistoryQueryKey.AgentId + '=' + AGENT), { headers });
+      const childRequest = await device.next(FrameType.HistoryRead);
 
-      expect(unwindowed.status).toBe(404);
-      expect(await unwindowed.json()).toMatchObject({ code: ErrorCode.NOT_FOUND });
-      expect(device.frames.filter((frame) => frame.type === FrameType.HistoryRead)).toHaveLength(0);
+      expect(childRequest).toMatchObject({ direction: HistoryDirection.Latest, agentId: AGENT });
+
+      device.send({
+        type: FrameType.HistoryDone,
+        requestId: childRequest.requestId,
+        sessionId: childRequest.sessionId,
+        generation: childRequest.generation,
+        before: null,
+        after: null,
+      });
+
+      const unwindowed = await childRead;
+
+      expect(unwindowed.status).toBe(200);
+      expect(await unwindowed.json()).toEqual([]);
+      expect(device.frames.filter((frame) => frame.type === FrameType.HistoryRead)).toHaveLength(1);
 
       // A window around a message the subagent transcript does not contain: no fallback either.
       await f.publish(device, {

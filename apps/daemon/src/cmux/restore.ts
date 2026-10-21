@@ -1,4 +1,4 @@
-import { MAX_DEVICE_SESSIONS, TargetKind, type CmuxTarget } from '@protocol';
+import { TargetKind, type CmuxTarget } from '@protocol';
 import { ClaudeHookEvent } from '../domain/claude.js';
 import type { NativeSessionRegistration } from '../domain/ports/local-store.js';
 import type { MonitorPort } from '../domain/ports/monitor.js';
@@ -68,7 +68,7 @@ interface CmuxDiscoverDeps {
  * daemon held the hooks. A notification-type hook adds each one without a turn-end event, so nothing is announced.
  */
 export async function discoverCmuxSessions(deps: CmuxDiscoverDeps) {
-  for (const process of (await deps.live()).slice(0, MAX_DEVICE_SESSIONS)) {
+  for (const process of await deps.live()) {
     const known = deps.monitor
       .snapshot()
       .sessions.some(

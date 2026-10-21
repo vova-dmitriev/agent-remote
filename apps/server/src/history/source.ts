@@ -85,7 +85,7 @@ export class SourceHistory {
       }
     }
 
-    if (!row.data.capabilities?.historyWindow || !connection) {
+    if ((agentId === undefined && !row.data.capabilities?.historyWindow) || !connection) {
       if (
         [before, after].some(
           (value) => typeof value === 'string' && value.startsWith(HISTORY_SOURCE_CURSOR_PREFIX),
@@ -204,6 +204,7 @@ export class SourceHistory {
     const pending = this.pending.get(frame.requestId);
 
     if (
+      this.live.get(connection.device.id) !== connection ||
       !pending ||
       pending.deviceId !== connection.device.id ||
       pending.ownerId !== connection.device.owner_id ||
