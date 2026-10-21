@@ -24,6 +24,7 @@ export const LocalOperation = {
   Rename: 'rename',
   Pin: 'pin',
   File: 'file',
+  Analytics: 'analytics',
   ReadingGet: 'reading_get',
   ReadingSave: 'reading_save',
   Logout: 'logout',

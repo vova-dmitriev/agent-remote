@@ -49,6 +49,8 @@ export const FrameType = {
   SessionRename: 'session_rename',
   FileRequest: 'file_request',
   FileResult: 'file_result',
+  AnalyticsRequest: 'analytics_request',
+  AnalyticsResult: 'analytics_result',
   Ack: 'ack',
 } as const;
 

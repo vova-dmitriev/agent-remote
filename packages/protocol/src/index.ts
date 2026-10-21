@@ -44,3 +44,6 @@ export * from './profile/profile-access.js';
 export * from './credentials/profile-auth-url.js';
 export * from './profile/profile-quota.js';
 export * from './profile/profile-routing.js';
+export * from './analytics/values.js';
+export * from './analytics/schemas.js';
+export * from './analytics/prices.js';

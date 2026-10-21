@@ -9,6 +9,7 @@ import { MAX_ATTACHMENT_BYTES, attachmentsSchema } from '../history/attachments.
 import { profileRequestSchema } from '../profile/profile-access.js';
 import { subagentIdSchema } from '../session/subagents.js';
 import { sessionFileQuerySchema } from '../session/file-changes.js';
+import { analyticsQuerySchema } from '../analytics/schemas.js';
 
 const id = z.string().min(1).max(512);
 const attachmentId = z.uuid();
@@ -48,6 +49,7 @@ export const localActionSchema = z.discriminatedUnion('operation', [
     generation: id,
     ...sessionFileQuerySchema.shape,
   }),
+  z.strictObject({ ...operation(LocalOperation.Analytics), ...analyticsQuerySchema.shape }),
   z.strictObject({ ...operation(LocalOperation.ReadingGet), ...session }),
   z.strictObject({
     ...operation(LocalOperation.ReadingSave),
