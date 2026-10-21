@@ -1,5 +1,7 @@
 import { mkdir, readdir, access } from 'node:fs/promises';
 import { join } from 'node:path';
+import { homedir } from 'node:os';
+import { trustProjectsRoot } from './claude-trust.js';
 import { z } from 'zod';
 import { CodedError, ErrorCode } from '@protocol';
 import { MULTI_USER_VARIABLE, saveConfig, validateRelayUrl } from '../../config.js';
@@ -127,12 +129,23 @@ export async function runSupervisor() {
   }
 
   const { spawn } = await import('node:child_process');
+  const projectsRoot = process.env.REMOTE_PROJECTS_ROOT;
+
+  // Before any daemon starts a Claude session: trust the projects root, so no project stops at Claude's question.
+  if (projectsRoot) {
+    // Claude Code keeps `.claude.json` in its config directory when one is set, else in the home directory.
+    const configPath = join(process.env.CLAUDE_CONFIG_DIR ?? homedir(), '.claude.json');
+
+    await trustProjectsRoot(configPath, projectsRoot).catch((error: unknown) =>
+      logDebug('cli/supervisor', error),
+    );
+  }
 
   const supervisor = new Supervisor({
     relayUrl: validateRelayUrl(process.env.REMOTE_RELAY_URL ?? 'http://127.0.0.1:3000'),
     operatorToken,
     usersRoot: process.env.REMOTE_USERS_ROOT ?? '/data/users',
-    projectsRoot: process.env.REMOTE_PROJECTS_ROOT,
+    projectsRoot,
     start: (_home, env) =>
       spawn(process.execPath, [process.argv[1]!, CliCommand.Start], { env, stdio: 'inherit' }),
   });
