@@ -2,7 +2,7 @@ import { ErrorCode, FrameType, HttpStatus, RELAY_PROTOCOL, RelayProtocolFeature 
 import { expect, it } from 'vitest';
 import { attachmentRelayFixture } from '../../helpers/relay/attachment-relay.js';
 
-it("sends a model switch only to the owner's live device that speaks it, for the current generation", async () => {
+it("asks the owner's live device to switch the model of the current generation and returns its answer", async () => {
   const f = await attachmentRelayFixture();
 
   const choose = async (token: string, body: unknown) => {
@@ -20,7 +20,7 @@ it("sends a model switch only to the owner's live device that speaks it, for the
 
   try {
     const old = f.connect('/ws/device', f.deviceToken, {
-      protocolVersion: RelayProtocolFeature.ModelChoice - 1,
+      protocolVersion: RelayProtocolFeature.ModelSwitchReply - 1,
     });
 
     await old.next(FrameType.Authenticated);
@@ -41,13 +41,35 @@ it("sends a model switch only to the owner's live device that speaks it, for the
       HttpStatus.BadRequest,
     );
 
-    expect(await choose(f.token, current)).toEqual({ status: HttpStatus.Ok, body: { choice } });
+    // The relay waits for the device: a switch the session takes, then one it refuses.
+    const taken = choose(f.token, current);
+    const request = await device.next(FrameType.SessionModel);
 
-    expect(await device.next(FrameType.SessionModel)).toEqual({
+    expect(request).toEqual({
       type: FrameType.SessionModel,
+      requestId: expect.any(String),
       sessionId: f.session.id,
       choice,
     });
+
+    device.send({
+      type: FrameType.SessionModelResult,
+      requestId: request.requestId,
+      reply: { ok: true, choice },
+    });
+
+    expect(await taken).toEqual({ status: HttpStatus.Ok, body: { choice } });
+
+    const refused = choose(f.token, current);
+    const second = await device.next(FrameType.SessionModel);
+
+    device.send({
+      type: FrameType.SessionModelResult,
+      requestId: second.requestId,
+      reply: { ok: false, code: ErrorCode.CAPABILITY_UNAVAILABLE },
+    });
+
+    expect((await refused).body).toEqual({ code: ErrorCode.CAPABILITY_UNAVAILABLE });
   } finally {
     await f.close();
   }

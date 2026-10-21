@@ -40,6 +40,25 @@ test('switches a Codex session to another model and effort from its header', asy
   ]);
 });
 
+test("says why the device refused a model switch and keeps the session's model", async ({ page }) => {
+  const snapshot = sessionSnapshot('desktop-e2e-device');
+
+  snapshot.models = [{ provider: 'codex', models: [{ id: 'synthetic-fast', efforts: [] }] }];
+  await installDesktopBridge(page, 'desktop-e2e-device', snapshot);
+  await page.goto('/desktop.html');
+  await byTestId(page, SESSION_SIDEBAR_IDS.row, { 'session-id': 'codex-cli-session' }).click();
+  await page.evaluate(() => ((window as unknown as { modelRefused: boolean }).modelRefused = true));
+
+  const model = page.getByTestId(SWITCH_MODEL_IDS.model.trigger);
+  const before = await model.getAttribute('data-value');
+
+  await model.click();
+  await byTestId(page, SWITCH_MODEL_IDS.modelOption, { value: 'synthetic-fast' }).click();
+
+  await expect(page.getByTestId(SWITCH_MODEL_IDS.error)).toContainText('Couldn’t switch the model:');
+  await expect(model).toHaveAttribute('data-value', before ?? '');
+});
+
 test('offers no model chips when the device lists no models', async ({ page }) => {
   await installDesktopBridge(page, 'desktop-e2e-device', sessionSnapshot('desktop-e2e-device'));
   await page.goto('/desktop.html');

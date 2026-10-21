@@ -178,18 +178,16 @@ export class SessionsController {
     return { mode: body.mode };
   }
 
-  /** Switches an owned session to another model on its live device; the session's next turn uses it. */
+  /**
+   * Switches an owned session to another model on its live device and waits for the device's answer, so a session
+   * that cannot switch (one that takes no typed input, say) says so instead of failing silently.
+   */
   @Put('model')
   async model(@CurrentPrincipal() p: Principal, @Param('id') id: string, @Body() input: unknown) {
     const body = sessionModelChoiceSchema.parse(input);
+    const connection = await this.liveDevice(p, id, body.generation, RelayProtocolFeature.ModelSwitchReply);
 
-    await this.sendToDevice(p, id, body.generation, RelayProtocolFeature.ModelChoice, {
-      type: FrameType.SessionModel,
-      sessionId: id,
-      choice: body.choice,
-    });
-
-    return { choice: body.choice };
+    return { choice: await this.requests.switchModel(connection, id, body.choice) };
   }
 
   /** Sends a frame about an owned live session of this generation to its device, if the device speaks it. */
@@ -198,11 +196,17 @@ export class SessionsController {
     id: string,
     generation: string,
     feature: number,
-    frame: Extract<
-      ServerFrame,
-      { type: typeof FrameType.SessionPin | typeof FrameType.SessionRemove | typeof FrameType.SessionModel }
-    >,
+    frame: Extract<ServerFrame, { type: typeof FrameType.SessionPin | typeof FrameType.SessionRemove }>,
   ) {
+    const connection = await this.liveDevice(p, id, generation, feature);
+
+    if (!this.hub.send(connection.socket, frame)) {
+      throw new Fault(ErrorCode.DEVICE_OFFLINE);
+    }
+  }
+
+  /** The live connection of the owner's device that runs this generation of the session, if it speaks the feature. */
+  private async liveDevice(p: Principal, id: string, generation: string, feature: number) {
     const session = await this.sessions.live(p.userId, id);
 
     if (!session) {
@@ -223,9 +227,7 @@ export class SessionsController {
       throw new Fault(ErrorCode.CAPABILITY_UNAVAILABLE);
     }
 
-    if (!this.hub.send(connection.socket, frame)) {
-      throw new Fault(ErrorCode.DEVICE_OFFLINE);
-    }
+    return connection;
   }
 
   /**

@@ -62,10 +62,22 @@ export class RelayFrameRouter {
         logDebug('runtime/relay-frame-router', error);
       });
     } else if (frame.type === FrameType.SessionModel) {
-      // Like renames, the relay sends model switches only for its owner's sessions on this device.
-      await this.deps.models?.switch(frame.sessionId, frame.choice).catch((error: unknown) => {
-        logDebug('runtime/relay-frame-router', error);
-      });
+      // Like renames, the relay sends model switches only for its owner's sessions on this device; it waits for the
+      // answer, so the owner sees a switch the session could not take.
+      const models = this.deps.models;
+
+      const reply = models
+        ? await models.switch(frame.sessionId, frame.choice).then(
+            () => ({ ok: true as const, choice: frame.choice }),
+            (error: unknown) => {
+              logDebug('runtime/relay-frame-router', error);
+
+              return { ok: false as const, code: codeOf(error) };
+            },
+          )
+        : { ok: false as const, code: ErrorCode.CAPABILITY_UNAVAILABLE };
+
+      relay.send({ type: FrameType.SessionModelResult, requestId: frame.requestId, reply });
     } else if (frame.type === FrameType.SessionRename) {
       await this.deps.names.rename(frame.sessionId, frame.title).catch((error: unknown) => {
         logDebug('runtime/relay-frame-router', error);

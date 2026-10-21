@@ -176,7 +176,8 @@ export class DeviceSocket {
           if (
             frame.type === FrameType.FileResult ||
             frame.type === FrameType.AnalyticsResult ||
-            frame.type === FrameType.RulesResult
+            frame.type === FrameType.RulesResult ||
+            frame.type === FrameType.SessionModelResult
           ) {
             requests.accept(connection, frame);
 

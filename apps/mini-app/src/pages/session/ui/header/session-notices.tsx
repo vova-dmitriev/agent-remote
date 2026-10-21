@@ -12,9 +12,9 @@ export function SessionNotices({ session, remove, switchModel }: SessionNoticesP
 
   return (
     <>
-      {switchModel?.failed ? (
+      {switchModel?.error ? (
         <p className={noticeVariants()} role="alert" data-testid={SWITCH_MODEL_IDS.error}>
-          {t("modelSwitchFailed")}
+          {t("modelSwitchFailed", { reason: feedbackText(switchModel.error, t) })}
         </p>
       ) : null}
       {remove?.failed ? (

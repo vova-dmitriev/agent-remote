@@ -124,3 +124,27 @@ it('sends only the result for commands without a session', async () => {
 
   expect(deps.relay.send.mock.calls.map(([sent]) => sent.type)).toEqual([FrameType.CommandResult]);
 });
+
+it('answers a model switch with the choice it took, or with the code of the refusal', async () => {
+  const { deps } = harness();
+  const choice = { model: 'synthetic-model' };
+
+  const switches = vi
+    .fn<() => Promise<void>>()
+    .mockResolvedValueOnce(undefined)
+    .mockRejectedValueOnce(new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE));
+
+  const router = new RelayFrameRouter({ ...deps, models: { switch: switches } } as never);
+
+  await router.route(frame({ type: FrameType.SessionModel, requestId: 'r1', sessionId: 's', choice }));
+  await router.route(frame({ type: FrameType.SessionModel, requestId: 'r2', sessionId: 's', choice }));
+
+  expect(deps.relay.send.mock.calls.map(([sent]) => sent)).toEqual([
+    { type: FrameType.SessionModelResult, requestId: 'r1', reply: { ok: true, choice } },
+    {
+      type: FrameType.SessionModelResult,
+      requestId: 'r2',
+      reply: { ok: false, code: ErrorCode.CAPABILITY_UNAVAILABLE },
+    },
+  ]);
+});

@@ -126,7 +126,10 @@ export async function installDesktopBridge(
 
           // Like the companion: the session shows its new model; a test reads `modelSwitches`.
           if (operation === operations.model) {
-            const record = window as unknown as { modelSwitches?: unknown[] };
+            const record = window as unknown as { modelSwitches?: unknown[]; modelRefused?: boolean };
+
+            if (record.modelRefused) return { ...base, ok: false, code: values.unavailable };
+
             const choice = request.action.choice!;
 
             record.modelSwitches = [...(record.modelSwitches ?? []), { sessionId: request.action.sessionId, choice }];

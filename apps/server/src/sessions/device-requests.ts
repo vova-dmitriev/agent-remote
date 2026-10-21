@@ -7,6 +7,7 @@ import {
   type DeviceFrame,
   ErrorCode,
   FrameType,
+  type ModelChoice,
   type ServerFrame,
   type SessionFile,
 } from '@protocol';
@@ -15,7 +16,13 @@ import type { WebSocket } from 'ws';
 
 export type DeviceResult = Extract<
   DeviceFrame,
-  { type: typeof FrameType.FileResult | typeof FrameType.AnalyticsResult | typeof FrameType.RulesResult }
+  {
+    type:
+      | typeof FrameType.FileResult
+      | typeof FrameType.AnalyticsResult
+      | typeof FrameType.RulesResult
+      | typeof FrameType.SessionModelResult;
+  }
 >;
 
 /** The part of a live device connection a request uses. */
@@ -34,7 +41,7 @@ interface PendingRequest {
 const REQUEST_TIMEOUT_MS = 15_000;
 const MAX_PENDING = 64;
 
-/** Asks the device that runs a session for something only the Mac has: a changed file, the usage report. */
+/** Asks the device that runs a session for something only the Mac has: a changed file, the usage report, a switch. */
 export class DeviceRequests {
   private readonly pending = new Map<string, PendingRequest>();
 
@@ -62,6 +69,15 @@ export class DeviceRequests {
       type: FrameType.RulesRequest,
       requestId,
       request,
+    }));
+  }
+
+  switchModel(connection: DeviceConnection, sessionId: string, choice: ModelChoice) {
+    return this.request<ModelChoice>(connection, FrameType.SessionModelResult, (requestId) => ({
+      type: FrameType.SessionModel,
+      requestId,
+      sessionId,
+      choice,
     }));
   }
 
@@ -114,6 +130,8 @@ export class DeviceRequests {
       pending.resolve(reply.file);
     } else if ('report' in reply) {
       pending.resolve(reply.report);
+    } else if ('choice' in reply) {
+      pending.resolve(reply.choice);
     } else {
       pending.resolve(reply.rules);
     }

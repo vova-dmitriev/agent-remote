@@ -359,6 +359,14 @@ export const deviceFrameSchema = z.discriminatedUnion('type', [
     ]),
   }),
   z.strictObject({
+    type: z.literal(FrameType.SessionModelResult),
+    requestId: z.uuid(),
+    reply: z.discriminatedUnion('ok', [
+      z.strictObject({ ok: z.literal(true), choice: modelChoiceSchema }),
+      z.strictObject({ ok: z.literal(false), code: z.enum(ErrorCode) }),
+    ]),
+  }),
+  z.strictObject({
     type: z.literal(FrameType.RulesResult),
     requestId: z.uuid(),
     reply: z.discriminatedUnion('ok', [
@@ -430,7 +438,12 @@ export const serverFrameSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal(FrameType.Select), sessionId: id.nullable() }),
   z.strictObject({ type: z.literal(FrameType.SessionPin), sessionId: id, pinned: z.boolean() }),
   z.strictObject({ type: z.literal(FrameType.SessionRemove), sessionId: id, mode: z.enum(SessionRemoval) }),
-  z.strictObject({ type: z.literal(FrameType.SessionModel), sessionId: id, choice: modelChoiceSchema }),
+  z.strictObject({
+    type: z.literal(FrameType.SessionModel),
+    requestId: z.uuid(),
+    sessionId: id,
+    choice: modelChoiceSchema,
+  }),
   z.strictObject({
     type: z.literal(FrameType.SessionRename),
     sessionId: id,
