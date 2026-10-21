@@ -1,3 +1,4 @@
+import { PointerKind } from "@/shared/lib/pointer"
 import { useEffect, useRef, useState, type PointerEvent } from "react"
 
 export function useStatusDetails() {
@@ -17,13 +18,13 @@ export function useStatusDetails() {
   }
 
   function onPointerEnter(event: PointerEvent) {
-    if (event.pointerType !== "mouse") return
+    if (event.pointerType !== PointerKind.Mouse) return
     cancelClose()
     setOpen(true)
   }
 
   function onPointerLeave(event: PointerEvent) {
-    if (event.pointerType !== "mouse" || pinned.current || focused.current) return
+    if (event.pointerType !== PointerKind.Mouse || pinned.current || focused.current) return
     cancelClose()
     timer.current = setTimeout(() => setOpen(false), 120)
   }

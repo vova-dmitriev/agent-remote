@@ -11,4 +11,7 @@ export const SESSIONS_PAGE_IDS = {
   pageLoading: "sessions-page-loading-more",
   pageRetry: "sessions-page-retry",
   pageMore: "sessions-page-more",
+  search: "sessions-page-search",
+  searchClear: "sessions-page-search-clear",
+  noMatches: "sessions-page-no-matches",
 } as const

@@ -33,6 +33,7 @@ export const SESSION_FEED_IDS = {
   marker: "session-feed-marker",
   railTick: "session-feed-rail-tick",
   preview: "session-feed-preview",
+  previewOpen: "session-feed-preview-open",
   previewAuthor: "session-feed-preview-author",
   previewText: "session-feed-preview-text",
   previewTime: "session-feed-preview-time",

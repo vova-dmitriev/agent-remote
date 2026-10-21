@@ -91,10 +91,6 @@ export function SessionPage({
         </div>
         <SessionModelChips session={session} state={state} controller={switchModel} />
         <SessionRulesBadge session={session} state={state} onOpen={onOpenRules} />
-        <RateLimits
-          limits={providerLimits(state.snapshot?.rateLimits ?? [], usageProvider(session.target.kind))}
-          agent={agentName(session)}
-        />
         <SessionAvailability key={session.id + ":availability:" + session.generation} available={observed} />
         <SessionMenu
           key={session.id + ":" + session.generation}
@@ -106,11 +102,18 @@ export function SessionPage({
           onRemoved={onBack}
         />
       </div>
-      <p className="mt-[15px] text-[11px] text-muted-foreground session:mt-[5px] session:flex-none session:text-[10px] session:short:hidden">
-        {t("updatedAt", { time: new Date(session.lastEventAt).toLocaleTimeString(language) })} ·{" "}
-        {t(session.statusConfidence === StatusConfidence.Inferred ? "inferredStatus" : "observedStatus")}
-        <SessionUsage usage={session.usage} />
-      </p>
+      {/* The plan limits sit at the right of the status line, so the header leaves the title its room. */}
+      <div className="mt-[15px] flex items-center gap-[8px] session:mt-[5px] session:flex-none">
+        <p className="min-w-0 flex-1 text-[11px] text-muted-foreground session:text-[10px] session:short:hidden">
+          {t("updatedAt", { time: new Date(session.lastEventAt).toLocaleTimeString(language) })} ·{" "}
+          {t(session.statusConfidence === StatusConfidence.Inferred ? "inferredStatus" : "observedStatus")}
+          <SessionUsage usage={session.usage} />
+        </p>
+        <RateLimits
+          limits={providerLimits(state.snapshot?.rateLimits ?? [], usageProvider(session.target.kind))}
+          agent={agentName(session)}
+        />
+      </div>
       <SessionNotices session={session} remove={remove} switchModel={switchModel} />
       {session.capabilities.terminalSnapshot ? (
         <div className="mt-[28px] flex gap-[24px] border-b border-border session:mt-[4px] session:flex-none session:gap-[18px] session:short:mt-[3px]">

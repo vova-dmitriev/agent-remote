@@ -1,5 +1,5 @@
 import type { Session } from "@protocol"
-import { agentName, filterByProvider, sessionFolder, sessionTitle, type ProviderFilterValue } from "@/entities/session"
+import { filterByProvider, matchesSessionQuery, sessionTitle, type ProviderFilterValue } from "@/entities/session"
 
 export interface MatchPart {
   text: string
@@ -13,19 +13,12 @@ export function rowTitle(session: Session): string | null {
   return sessionTitle(session, ROW_ID_FALLBACK_LENGTH)
 }
 
-/** Title, project, model and provider name are searchable; the provider makes "codex" / "claude" useful queries. */
-function containsQuery(session: Session, needle: string): boolean {
-  const haystack = [rowTitle(session), sessionFolder(session), session.model, agentName(session)].filter(Boolean).join("\n")
-
-  return haystack.toLowerCase().includes(needle)
-}
-
 export function filterSessions(sessions: Session[], query: string, provider: ProviderFilterValue): Session[] {
   const needle = query.trim().toLowerCase()
 
   const byProvider = filterByProvider(sessions, provider)
 
-  return needle ? byProvider.filter((session) => containsQuery(session, needle)) : byProvider
+  return needle ? byProvider.filter((session) => matchesSessionQuery(session, needle)) : byProvider
 }
 
 /** Splits text into plain and matching parts, case-insensitively, for every occurrence of the query. */

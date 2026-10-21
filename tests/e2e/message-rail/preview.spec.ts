@@ -80,6 +80,9 @@ test('one readable preview follows hovered and focused markers without changing 
   const feedBox = (await feed.boundingBox())!;
 
   await feed.click({ position: { x: feedBox.width - 10, y: 10 } });
+  // A touch screen previews on the first tap and goes to the message on the second.
+  await marker.tap();
+  await expect(preview).toHaveAttribute('data-message-id', target);
   await marker.tap();
   await expect(byTestId(page, SESSION_FEED_IDS.message, { 'message-id': target })).toBeVisible();
 });

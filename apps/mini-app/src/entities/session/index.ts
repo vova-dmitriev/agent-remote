@@ -6,7 +6,15 @@ export { useSessionStoreApi, useSessionStore } from "./model/context/use-session
 export { SessionProvider } from "./ui/provider/session-provider"
 export { sourceNames, connectorStates, sessionTitle, agentName, sessionFolder, sessionPath } from "./lib/labels"
 export { sourceAvailable, sourceObserved, sessionStatusLabel } from "./lib/availability"
-export { selectedSession, sessionPermissions, sessionUserInputs, filterByProvider, sessionRecency, sortByRecency } from "./lib/selectors"
+export {
+  selectedSession,
+  sessionPermissions,
+  sessionUserInputs,
+  filterByProvider,
+  sessionRecency,
+  sortByRecency,
+  matchesSessionQuery,
+} from "./lib/selectors"
 export { useSessionsAwaitingInput } from "./model/use-sessions-awaiting-input"
 export { sessionStatusTone } from "./lib/status-tone"
 export { useProviderFilter } from "./model/use-provider-filter"

@@ -24,3 +24,8 @@ export interface SessionsPageListProps {
   onLoadMore: () => void
   onRetry: () => void
 }
+
+export interface SessionSearchProps {
+  query: string
+  onQuery: (query: string) => void
+}

@@ -1,3 +1,4 @@
+import { PointerKind } from "@/shared/lib/pointer"
 import { useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type PointerEvent } from "react"
 import { RAIL_HIT_SIZE, RAIL_TICK_GAP } from "@/pages/session/config/message-navigation"
 import { nearestGroup, railGroupOf, railGroups } from "@/pages/session/lib/rail-layout"
@@ -83,7 +84,7 @@ export function useMessageRail({ messages, starts, total, viewport, activeId, ju
   function onPointerMove(event: PointerEvent<HTMLElement>) {
     const node = track.current
 
-    if (event.pointerType === "touch" || !node) return
+    if (event.pointerType === PointerKind.Touch || !node) return
     setPointer(event.clientY - node.getBoundingClientRect().top)
   }
 

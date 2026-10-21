@@ -1,4 +1,5 @@
-export const PreviewSource = { Hover: "hover", Focus: "focus" } as const
+/** What shows a marker preview: the mouse, keyboard focus, or a tap (touch screens preview before they jump). */
+export const PreviewSource = { Hover: "hover", Focus: "focus", Touch: "touch" } as const
 
 export type PreviewSource = (typeof PreviewSource)[keyof typeof PreviewSource]
 

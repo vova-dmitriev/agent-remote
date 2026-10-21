@@ -1,3 +1,5 @@
+import { PointerKind } from "@/shared/lib/pointer"
+import { useRef } from "react"
 import { MessageRole } from "@protocol"
 import { useTranslation } from "@/shared/lib/hooks"
 import { Button } from "@/shared/ui/button"
@@ -25,6 +27,8 @@ export function RailMarker({
   onKeyDown,
 }: RailMarkerProps) {
   const { t } = useTranslation()
+  /** The pointer of the press that ends in a click: a mouse jumps at once, a finger previews first. */
+  const tap = useRef("")
   const message = messages[group.first]!
   const top = group.center - gap / 2
   const members = messages.slice(group.first, group.last + 1)
@@ -58,7 +62,17 @@ export function RailMarker({
         focus.leave(event)
         preview.hide(PreviewSource.Focus)
       }}
-      onClick={() => {
+      onPointerDown={(event) => {
+        tap.current = event.pointerType
+      }}
+      onClick={(event) => {
+        // A touch screen has no hover: the first tap previews the message, a second tap (or a tap on it) goes there.
+        if (tap.current !== PointerKind.Mouse && tap.current !== "" && preview.message?.id !== message.id) {
+          preview.show(message.id, event.currentTarget, PreviewSource.Touch)
+
+          return
+        }
+
         preview.dismiss(message.id)
         jump(message.id)
       }}

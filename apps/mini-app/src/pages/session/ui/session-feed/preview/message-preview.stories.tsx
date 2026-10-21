@@ -17,6 +17,7 @@ const meta = {
     anchor: document.body,
     keep: () => undefined,
     leave: () => undefined,
+    open: () => undefined,
   },
 } satisfies Meta<typeof MessagePreview>
 

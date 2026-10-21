@@ -1,6 +1,6 @@
 import { SessionStatus, type AppSnapshot, type Session } from "@protocol"
 import { ProviderFilterValue } from "../config/session-values"
-import { agentName } from "./labels"
+import { agentName, sessionFolder, sessionTitle } from "./labels"
 import type { SessionState } from "../model/session-state"
 
 export function selectedSession(state: SessionState) {
@@ -66,4 +66,20 @@ export function sessionsAwaitingInput(
   }
 
   return ids
+}
+
+/** Untitled sessions are searched by their whole source id, as the lists show it. */
+const SEARCH_ID_LENGTH = 64
+
+/** Whether a session matches a search: its title, project, model or agent ("codex", "claude") contain the query. */
+export function matchesSessionQuery(session: Session, query: string): boolean {
+  const needle = query.trim().toLowerCase()
+
+  if (!needle) return true
+
+  return [sessionTitle(session, SEARCH_ID_LENGTH), sessionFolder(session), session.model, agentName(session)]
+    .filter(Boolean)
+    .join("\n")
+    .toLowerCase()
+    .includes(needle)
 }

@@ -1,3 +1,4 @@
+import { PointerKind } from "@/shared/lib/pointer"
 import { useEffect, useRef, type PointerEvent } from "react"
 import { VIEWER_WHEEL_SENSITIVITY } from "../config/viewer"
 import type { Point } from "../lib/image-transform"
@@ -18,7 +19,7 @@ export function useImageGestures(model: Model) {
   }
 
   const down = (event: PointerEvent<HTMLDivElement>) => {
-    if (event.pointerType === "mouse" && event.button !== 0) return
+    if (event.pointerType === PointerKind.Mouse && event.button !== 0) return
     event.preventDefault()
     event.currentTarget.setPointerCapture(event.pointerId)
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY })

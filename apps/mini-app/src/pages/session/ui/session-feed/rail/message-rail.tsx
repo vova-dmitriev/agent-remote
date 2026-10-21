@@ -86,6 +86,17 @@ export const MessageRail = memo(function MessageRail(props: MessageRailProps) {
           agent={agent}
           keep={preview.keep}
           leave={() => preview.hide(PreviewSource.Hover)}
+          open={
+            // Only a tapped preview is a way to its message; the mouse's preview stays a tooltip.
+            preview.target.source === PreviewSource.Touch
+              ? () => {
+                  const target = preview.message!.id
+
+                  preview.dismiss(target)
+                  jump(target)
+                }
+              : undefined
+          }
         />
       ) : null}
     </>

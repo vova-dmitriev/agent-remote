@@ -1,9 +1,10 @@
+import { PointerKind } from "@/shared/lib/pointer"
 import { useCallback, useEffect, useId, useRef, useState } from "react"
 import type { HistoryMessage } from "@protocol"
 import { PreviewSource } from "../config/message-navigation"
 import { previewDismissal } from "../lib/message-navigation"
 
-type Target = { id: string; node: HTMLElement }
+type Target = { id: string; node: HTMLElement; source?: PreviewSource }
 
 export function useMessagePreview(messages: HistoryMessage[]) {
   const id = useId()
@@ -23,11 +24,11 @@ export function useMessagePreview(messages: HistoryMessage[]) {
     gate.current ??= previewDismissal()
 
     if (!gate.current.allows(messageId, source)) return
-    const next = { id: messageId, node }
+    const next = { id: messageId, node, source }
 
     if (source === PreviewSource.Focus) focused.current = next
     else hovered.current = next
-    setTarget((current) => (current?.id === messageId && current.node === node ? current : next))
+    setTarget((current) => (current?.id === messageId && current.node === node && current.source === source ? current : next))
   }
 
   function hide(source: PreviewSource) {
@@ -57,10 +58,23 @@ export function useMessagePreview(messages: HistoryMessage[]) {
       if (event.key === "Escape") dismiss()
     }
 
-    document.addEventListener("keydown", onKeyDown)
+    // On a touch screen a tap outside the preview and its marker closes it; another marker's tap opens its own.
+    const onPointerDown = (event: PointerEvent) => {
+      const node = event.target instanceof Node ? event.target : null
 
-    return () => document.removeEventListener("keydown", onKeyDown)
-  }, [target, dismiss])
+      if (event.pointerType === PointerKind.Mouse || !node) return
+      if (target.node.contains(node) || document.getElementById(id)?.contains(node)) return
+      dismiss()
+    }
+
+    document.addEventListener("keydown", onKeyDown)
+    document.addEventListener("pointerdown", onPointerDown)
+
+    return () => {
+      document.removeEventListener("keydown", onKeyDown)
+      document.removeEventListener("pointerdown", onPointerDown)
+    }
+  }, [target, dismiss, id])
 
   useEffect(() => () => clearTimeout(timer.current), [])
   const message = target ? messages.find((item) => item.id === target.id) : undefined
