@@ -1,24 +1,27 @@
-import { ConnectionStatus, DeviceStatus, HistoryStatus } from "@protocol"
-import { AccountsPage } from "@/pages/accounts"
+import { ConnectionStatus, HistoryStatus } from "@protocol"
+import { DevicePage } from "./device-page"
 import { SignInPage } from "@/pages/sign-in"
 import { useState } from "react"
 import { SessionFilePage, SessionLoading, SessionPage, SubagentPage } from "@/pages/session"
 import type { ApplicationContentProps } from "./application-content.types"
 
-export function ApplicationContent({ model, accounts, subagent, back, closeAccounts, home, sessionBack = true }: ApplicationContentProps) {
+export function ApplicationContent({
+  model,
+  accounts,
+  usage,
+  subagent,
+  back,
+  closeAccounts,
+  home,
+  sessionBack = true,
+}: ApplicationContentProps) {
   const { state, selected, selection, commands } = model
   // The open file belongs to one session; switching sessions closes it.
   const [file, setFile] = useState<{ sessionId: string; path: string } | null>(null)
 
   if (state.connection === ConnectionStatus.Expired) return <SignInPage />
-  if (accounts && state.deviceId)
-    return (
-      <AccountsPage
-        deviceId={state.deviceId}
-        online={state.connection === ConnectionStatus.Online && state.snapshot?.deviceStatus === DeviceStatus.Online}
-        onBack={closeAccounts}
-      />
-    )
+  if ((accounts || usage) && state.deviceId)
+    return <DevicePage usage={usage} deviceId={state.deviceId} state={state} onBack={closeAccounts} />
   if (!selected) return model.linkPending ? <SessionLoading /> : home
   if (subagent.agentId)
     return (

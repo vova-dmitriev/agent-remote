@@ -1,0 +1,16 @@
+export const USAGE_PAGE_IDS = {
+  root: "usage-page",
+  back: "usage-back",
+  period: "usage-period",
+  totals: "usage-totals",
+  cost: "usage-cost",
+  importing: "usage-importing",
+  empty: "usage-empty",
+  failed: "usage-failed",
+  retry: "usage-retry",
+  limits: "usage-limits",
+  section: "usage-section",
+  row: "usage-row",
+  daily: "usage-daily",
+  day: "usage-day",
+} as const

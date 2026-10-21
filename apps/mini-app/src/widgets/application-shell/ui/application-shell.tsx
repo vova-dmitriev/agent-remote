@@ -12,6 +12,7 @@ export function ApplicationShell({
   onHome,
   onLogout,
   onAccounts,
+  onUsage,
   children,
   compact = false,
   chrome = true,
@@ -30,6 +31,7 @@ export function ApplicationShell({
           onHome={onHome}
           onLogout={onLogout}
           onAccounts={onAccounts}
+          onUsage={onUsage}
           className="min-h-[36px] border-b border-border pb-[8px] tiny:flex-wrap"
         />
       ) : null}

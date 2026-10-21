@@ -3,6 +3,7 @@ import { sessionControlsRU } from "./session-controls"
 import { viewerRU } from "./viewer"
 import { activityRU } from "./activity"
 import { extensionRU } from "./extension"
+import { usageRU } from "./usage"
 import type { Dictionary } from "../types"
 
 export const ru = {
@@ -11,6 +12,7 @@ export const ru = {
   ...viewerRU,
   ...activityRU,
   ...sessionControlsRU,
+  ...usageRU,
   sessionOnline: "Сессия онлайн",
   sessionOffline: "Сессия недоступна",
   sessionTooLarge: "Сессия слишком большая для показа",
@@ -187,12 +189,4 @@ export const ru = {
   attachmentConflict: "Не удалось повторить загрузку. Удалите файл и прикрепите заново.",
   attachmentInvalid: "Не удалось прикрепить файл. Удалите его и выберите подходящий файл.",
   attachmentBusy: "Сервис загрузки занят. Повторите чуть позже.",
-  changes: "Изменения",
-  changesRecorded: "Правки из этой сессии. Каждая запись показывает патч одного изменения файла.",
-  changesUnavailable: "Этот источник не передаёт патчи изменённых файлов.",
-  changesEmpty: "В доступной истории сессии пока нет завершённых изменений файлов.",
-  changesLimited: "Показана часть правок. Некоторые патчи или более ранние изменения пропущены.",
-  changeAdded: "Добавлен",
-  changeDeleted: "Удалён",
-  changeUpdated: "Изменён",
 } satisfies Dictionary

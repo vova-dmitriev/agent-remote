@@ -13,6 +13,7 @@ import {
 import { feedbackText } from "@/shared/lib/i18n"
 import { useTranslation } from "@/shared/lib/hooks"
 import { SessionTitle } from "@/features/rename-session"
+import { RateLimits, SessionUsage, providerLimits, usageProvider } from "@/entities/usage"
 import { SessionComposer, SessionActions } from "@/features/send-command"
 import { Button } from "@/shared/ui/button"
 import { noticeVariants } from "@/shared/ui/notice"
@@ -44,6 +45,7 @@ export function SessionPage({
 }: SessionPageProps) {
   const { t, language } = useTranslation()
   const observed = sessionObserved(state, session)
+  const deviceStatus = state.snapshot?.deviceStatus ?? DeviceStatus.Offline
 
   return (
     <section className="session:flex session:min-h-0 session:flex-1 session:flex-col" data-testid={SESSION_PAGE_IDS.root}>
@@ -82,18 +84,23 @@ export function SessionPage({
             </p>
           </div>
         </div>
+        <RateLimits
+          limits={providerLimits(state.snapshot?.rateLimits ?? [], usageProvider(session.target.kind))}
+          agent={agentName(session)}
+        />
         <SessionAvailability key={session.id + ":availability:" + session.generation} available={observed} />
         <SessionActions
           key={session.id + ":" + session.generation}
           session={session}
           controller={controller}
           connection={state.connection}
-          deviceStatus={state.snapshot?.deviceStatus ?? DeviceStatus.Offline}
+          deviceStatus={deviceStatus}
         />
       </div>
       <p className="mt-[15px] text-[11px] text-muted-foreground session:mt-[5px] session:flex-none session:text-[10px] session:short:hidden">
         {t("updatedAt", { time: new Date(session.lastEventAt).toLocaleTimeString(language) })} ·{" "}
         {t(session.statusConfidence === StatusConfidence.Inferred ? "inferredStatus" : "observedStatus")}
+        <SessionUsage usage={session.usage} />
       </p>
       {session.errorCode ? (
         <p className={noticeVariants()} role="alert" data-testid={SESSION_PAGE_IDS.sourceError}>
@@ -140,12 +147,7 @@ export function SessionPage({
       <SessionPermissions session={session} state={state} controller={controller} />
       <UserInputRequests session={session} state={state} controller={controller} />
       <SessionActivity session={session} available={observed} />
-      <SessionComposer
-        controller={controller}
-        session={session}
-        connection={state.connection}
-        deviceStatus={state.snapshot?.deviceStatus ?? DeviceStatus.Offline}
-      />
+      <SessionComposer controller={controller} session={session} connection={state.connection} deviceStatus={deviceStatus} />
     </section>
   )
 }

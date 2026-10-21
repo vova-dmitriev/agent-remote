@@ -13,6 +13,8 @@ import type {
   ContinuityAccess,
   ProfileRoutingAccess,
   SessionFile,
+  AnalyticsPeriod,
+  AnalyticsReport,
 } from "@protocol"
 import type { AttachmentAccess } from "./attachment-access"
 import type { Device, HistoryPageSkip } from "./types"
@@ -25,6 +27,8 @@ export interface ApplicationOperations {
   pinSession(sessionId: string, generation: string, pinned: boolean): Promise<unknown>
   /** The text of a file the session changed, read on its device. */
   readSessionFile(sessionId: string, generation: string, path: string): Promise<SessionFile>
+  /** Token usage, cost and plan limits counted on the device. */
+  usageReport(deviceId: string, period: AnalyticsPeriod): Promise<AnalyticsReport>
   claimDevice(code: string): Promise<unknown>
   revokeDevice(deviceId: string): Promise<unknown>
   getReadingPosition(sessionId: string): Promise<ReadingPositionResponse>

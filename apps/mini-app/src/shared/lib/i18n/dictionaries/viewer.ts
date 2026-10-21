@@ -9,6 +9,14 @@ export const viewerEN = {
   fileBack: "Back to the session",
   fileRetry: "Try again",
   fileTruncated: "Showing the first 200 KB of the file.",
+  changes: "Changes",
+  changesRecorded: "Recorded native edits from this session. Each entry shows the patch from one file edit.",
+  changesUnavailable: "This source does not provide native file patches.",
+  changesEmpty: "No completed file edits are available in the retained session history.",
+  changesLimited: "Showing a limited set of recorded edits. Some patches or earlier changes were omitted.",
+  changeAdded: "Added",
+  changeDeleted: "Deleted",
+  changeUpdated: "Updated",
 } as const
 
 export const viewerRU = {
@@ -22,4 +30,12 @@ export const viewerRU = {
   fileBack: "Назад к сессии",
   fileRetry: "Повторить",
   fileTruncated: "Показаны первые 200 КБ файла.",
+  changes: "Изменения",
+  changesRecorded: "Правки из этой сессии. Каждая запись показывает патч одного изменения файла.",
+  changesUnavailable: "Этот источник не передаёт патчи изменённых файлов.",
+  changesEmpty: "В доступной истории сессии пока нет завершённых изменений файлов.",
+  changesLimited: "Показана часть правок. Некоторые патчи или более ранние изменения пропущены.",
+  changeAdded: "Добавлен",
+  changeDeleted: "Удалён",
+  changeUpdated: "Изменён",
 } as const

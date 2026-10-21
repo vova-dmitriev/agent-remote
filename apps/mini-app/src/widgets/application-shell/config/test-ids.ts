@@ -10,4 +10,5 @@ export const SHELL_IDS = {
   settings: "application-shell-settings",
   settingsMenu: "application-shell-settings-menu",
   accounts: "application-shell-accounts",
+  usage: "application-shell-usage",
 } as const

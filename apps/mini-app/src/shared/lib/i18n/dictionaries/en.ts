@@ -3,6 +3,7 @@ import { sessionControlsEN } from "./session-controls"
 import { viewerEN } from "./viewer"
 import { activityEN } from "./activity"
 import { extensionEN } from "./extension"
+import { usageEN } from "./usage"
 
 export const en = {
   ...accountsEN,
@@ -10,6 +11,7 @@ export const en = {
   ...viewerEN,
   ...activityEN,
   ...sessionControlsEN,
+  ...usageEN,
   sessionOnline: "Session online",
   sessionOffline: "Session unavailable",
   sessionTooLarge: "Session too large to mirror",
@@ -188,12 +190,4 @@ export const en = {
   attachmentConflict: "This upload could not be reused. Remove the file and attach it again.",
   attachmentInvalid: "This file could not be attached. Remove it and select a valid file.",
   attachmentBusy: "Uploads are busy. Retry shortly.",
-  changes: "Changes",
-  changesRecorded: "Recorded native edits from this session. Each entry shows the patch from one file edit.",
-  changesUnavailable: "This source does not provide native file patches.",
-  changesEmpty: "No completed file edits are available in the retained session history.",
-  changesLimited: "Showing a limited set of recorded edits. Some patches or earlier changes were omitted.",
-  changeAdded: "Added",
-  changeDeleted: "Deleted",
-  changeUpdated: "Updated",
 } as const

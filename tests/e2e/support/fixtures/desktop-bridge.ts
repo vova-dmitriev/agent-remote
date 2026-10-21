@@ -13,7 +13,7 @@ interface FakeBridgeOptions {
     result: string;
     version: number;
     snapshot: string;
-    operations: Record<'devices' | 'select' | 'history' | 'preferences' | 'reading' | 'draft' | 'queue' | 'pin' | 'file', string>;
+    operations: Record<'devices' | 'select' | 'history' | 'preferences' | 'reading' | 'draft' | 'queue' | 'pin' | 'file' | 'analytics', string>;
     unavailable: string;
   };
 }
@@ -50,6 +50,7 @@ export async function installDesktopBridge(
         queue: LocalOperation.QueueGet,
         pin: LocalOperation.Pin,
         file: LocalOperation.File,
+        analytics: LocalOperation.Analytics,
       },
       unavailable: ErrorCode.CAPABILITY_UNAVAILABLE,
     },
@@ -89,7 +90,7 @@ export async function installDesktopBridge(
         },
         request: async (request: {
           requestId: string;
-          action: { operation: string; agentId?: string; sessionId?: string; pinned?: boolean; path?: string };
+          action: { operation: string; agentId?: string; sessionId?: string; pinned?: boolean; path?: string; period?: string };
         }) => {
           const base = { kind: values.result, version: values.version, requestId: request.requestId, leaseId, epoch };
           const { operation, agentId } = request.action;
@@ -99,6 +100,16 @@ export async function installDesktopBridge(
           // A changed file as the companion reads it from the Mac: synthetic Markdown.
           if (operation === operations.file) {
             return { ...base, ok: true, data: { path: request.action.path, content: '# Synthetic notes\n\n**Formatted** body.', truncated: false } };
+          }
+
+          // Usage as the companion counts it; a test sets `usageReport` before the app asks.
+          if (operation === operations.analytics) {
+            const usage = window as unknown as { usageReport?: unknown; usageReads?: string[] };
+            const report = usage.usageReport;
+
+            usage.usageReads = [...(usage.usageReads ?? []), request.action.period ?? ''];
+
+            return report ? { ...base, ok: true, data: report } : { ...base, ok: false, code: values.unavailable };
           }
 
           if (operation === operations.pin) {

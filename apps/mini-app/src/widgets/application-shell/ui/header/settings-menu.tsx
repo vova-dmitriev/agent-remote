@@ -1,4 +1,4 @@
-import { KeyRound, Settings } from "lucide-react"
+import { ChartColumn, KeyRound, Settings } from "lucide-react"
 import { useTranslation } from "@/shared/lib/hooks"
 import { Button } from "@/shared/ui/button"
 import { DropdownItem, DropdownMenu, DropdownTrigger, MenuContent, menuItemClass } from "@/shared/ui/dropdown"
@@ -6,7 +6,7 @@ import { SHELL_IDS } from "@/widgets/application-shell/config/test-ids"
 import type { SettingsMenuProps } from "./header.types"
 
 /** Header gear menu; app-level destinations that do not belong in the session list. */
-export function SettingsMenu({ onAccounts }: SettingsMenuProps) {
+export function SettingsMenu({ onAccounts, onUsage }: SettingsMenuProps) {
   const { t } = useTranslation()
 
   return (
@@ -28,6 +28,12 @@ export function SettingsMenu({ onAccounts }: SettingsMenuProps) {
           <KeyRound aria-hidden="true" size={17} />
           <span>{t("accountsTitle")}</span>
         </DropdownItem>
+        {onUsage ? (
+          <DropdownItem className={menuItemClass} data-testid={SHELL_IDS.usage} onSelect={onUsage}>
+            <ChartColumn aria-hidden="true" size={17} />
+            <span>{t("usageTitle")}</span>
+          </DropdownItem>
+        ) : null}
       </MenuContent>
     </DropdownMenu>
   )

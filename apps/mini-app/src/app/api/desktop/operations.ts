@@ -5,6 +5,8 @@ import {
   accountPreferencesSchema,
   readingPositionSchema,
   sessionFileSchema,
+  analyticsReportSchema,
+  type AnalyticsPeriod,
   type PreferencePatch,
   type ReadingPosition,
 } from "@protocol"
@@ -36,6 +38,11 @@ export class DesktopOperations {
 
   async readSessionFile(sessionId: string, generation: string, path: string) {
     return sessionFileSchema.parse(await this.connection.request({ operation: LocalOperation.File, sessionId, generation, path }))
+  }
+
+  /** The companion's own device: the report is counted on this Mac. */
+  async usageReport(_deviceId: string, period: AnalyticsPeriod) {
+    return analyticsReportSchema.parse(await this.connection.request({ operation: LocalOperation.Analytics, period }))
   }
 
   async getReadingPosition(sessionId: string) {

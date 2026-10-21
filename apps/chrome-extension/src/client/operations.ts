@@ -5,6 +5,8 @@ import {
   accountPreferencesSchema,
   readingPositionSchema,
   sessionFileSchema,
+  analyticsReportSchema,
+  type AnalyticsPeriod,
   type PreferencePatch,
   type ReadingPosition,
 } from '@protocol';
@@ -52,6 +54,13 @@ export class ExtensionOperations {
   async readSessionFile(sessionId: string, generation: string, path: string) {
     return sessionFileSchema.parse(
       await this.connection.request({ operation: LocalOperation.File, sessionId, generation, path }),
+    );
+  }
+
+  /** The paired companion's device: the report is counted on that Mac. */
+  async usageReport(_deviceId: string, period: AnalyticsPeriod) {
+    return analyticsReportSchema.parse(
+      await this.connection.request({ operation: LocalOperation.Analytics, period }),
     );
   }
 
