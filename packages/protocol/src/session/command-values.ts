@@ -21,6 +21,8 @@ export type CommandActionType = (typeof CommandActionType)[keyof typeof CommandA
 
 export const PermissionDecision = {
   Allow: 'allow',
+  /** Allow, and let the same command through without asking from now on (a rule stop only). */
+  AllowAlways: 'allow_always',
   Deny: 'deny',
   Local: 'local',
 } as const;
@@ -47,6 +49,7 @@ export type CapabilityKey = (typeof CapabilityKey)[keyof typeof CapabilityKey];
 
 export const RemotePermissionDecision = {
   Allow: PermissionDecision.Allow,
+  AllowAlways: PermissionDecision.AllowAlways,
   Deny: PermissionDecision.Deny,
 } as const;
 export type RemotePermissionDecision =

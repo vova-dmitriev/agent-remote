@@ -20,6 +20,7 @@ import { AttachmentMode } from '../history/values.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import { z } from 'zod';
 import { sessionChangesSchema, sessionFileQuerySchema, sessionFileSchema } from './file-changes.js';
+import { permissionRuleSchema, rulesReplySchema, rulesRequestSchema } from '../rules/schemas.js';
 import {
   analyticsQuerySchema,
   analyticsReportSchema,
@@ -107,6 +108,8 @@ export const sessionSchema = z
     currentActivity: sessionActivitySchema.optional(),
     changes: sessionChangesSchema.optional(),
     usage: sessionUsageSchema.optional(),
+    /** The agent's own permission mode as its hooks report it, e.g. `bypassPermissions`. */
+    permissionMode: z.string().min(1).max(64).optional(),
     subagents: z.array(subagentSchema).max(50).optional(),
     model: z
       .string()
@@ -233,6 +236,8 @@ export const permissionSchema = z.strictObject({
   toolName: id,
   input: z.unknown(),
   expiresAt: time,
+  /** Present when an owner's rule stopped the command rather than the agent asking. */
+  rule: permissionRuleSchema.optional(),
 });
 /** Readers strip fields added by a newer writer instead of rejecting the history frame. */
 export const historySchema = z.object({
@@ -336,6 +341,14 @@ export const deviceFrameSchema = z.discriminatedUnion('type', [
     ]),
   }),
   z.strictObject({
+    type: z.literal(FrameType.RulesResult),
+    requestId: z.uuid(),
+    reply: z.discriminatedUnion('ok', [
+      z.strictObject({ ok: z.literal(true), rules: rulesReplySchema }),
+      z.strictObject({ ok: z.literal(false), code: z.enum(ErrorCode) }),
+    ]),
+  }),
+  z.strictObject({
     type: z.literal(FrameType.AnalyticsResult),
     requestId: z.uuid(),
     reply: z.discriminatedUnion('ok', [
@@ -417,6 +430,11 @@ export const serverFrameSchema = z.discriminatedUnion('type', [
     type: z.literal(FrameType.AnalyticsRequest),
     requestId: z.uuid(),
     ...analyticsQuerySchema.shape,
+  }),
+  z.strictObject({
+    type: z.literal(FrameType.RulesRequest),
+    requestId: z.uuid(),
+    request: rulesRequestSchema,
   }),
 ]);
 export type Target = z.infer<typeof targetSchema>;

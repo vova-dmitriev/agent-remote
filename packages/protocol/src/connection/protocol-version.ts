@@ -14,7 +14,7 @@
  * `protocolVersion`, so such relays must be upgraded before daemons that send it (see docs/desktop.md).
  * The relay strips unknown `Auth` fields from now on, so a later field never repeats that.
  */
-export const RELAY_PROTOCOL = { Current: 6, MinimumSupported: 1 } as const;
+export const RELAY_PROTOCOL = { Current: 7, MinimumSupported: 1 } as const;
 
 /** The first version that carries each later frame change; gate on the negotiated version. */
 export const RelayProtocolFeature = {
@@ -26,6 +26,8 @@ export const RelayProtocolFeature = {
   SessionFiles: 5,
   /** Session `usage` and `rateLimits` on the snapshot, the relay's `AnalyticsRequest` and the device's `AnalyticsResult`. */
   Analytics: 6,
+  /** Session `permissionMode`, permission `rule`, `allow_always`, and the relay's `RulesRequest` / device's `RulesResult`. */
+  Rules: 7,
 } as const;
 
 /** The version of a daemon that sends no `protocolVersion`. */

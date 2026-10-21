@@ -51,6 +51,8 @@ export const FrameType = {
   FileResult: 'file_result',
   AnalyticsRequest: 'analytics_request',
   AnalyticsResult: 'analytics_result',
+  RulesRequest: 'rules_request',
+  RulesResult: 'rules_result',
   Ack: 'ack',
 } as const;
 

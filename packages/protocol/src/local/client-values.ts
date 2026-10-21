@@ -25,6 +25,7 @@ export const LocalOperation = {
   Pin: 'pin',
   File: 'file',
   Analytics: 'analytics',
+  Rules: 'rules',
   ReadingGet: 'reading_get',
   ReadingSave: 'reading_save',
   Logout: 'logout',
