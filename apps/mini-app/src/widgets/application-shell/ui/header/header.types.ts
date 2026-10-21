@@ -2,9 +2,11 @@ import type { ReactNode } from "react"
 import type { Connection } from "@/shared/api"
 
 export interface SettingsMenuProps {
-  onAccounts: () => void
+  onAccounts?: (() => void) | undefined
   onUsage?: (() => void) | undefined
   onRules?: (() => void) | undefined
+  /** Signs out after the owner confirms; the menu's last item. */
+  onLogout: () => void
 }
 
 export interface ShellHeaderProps {

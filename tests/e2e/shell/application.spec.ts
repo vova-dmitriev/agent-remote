@@ -13,7 +13,7 @@ import {
 import { SIGN_IN_IDS } from '@/pages/sign-in/config/test-ids.js';
 import { COMMAND_IDS } from '@/features/send-command/config/test-ids.js';
 import { PAIR_DEVICE_IDS } from '@/features/pair-device/config/test-ids.js';
-import { SHELL_IDS } from '@/widgets/application-shell/config/test-ids.js';
+import { signOut } from '../support/ui/settings-menu.js';
 
 test('mobile app preserves context, renders terminal literally and dispatches prompt/permission', async ({
   page,
@@ -52,7 +52,7 @@ test('Desktop Chat omits terminal and permissions and logout clears all owner da
   await expect(page.getByTestId(SESSION_PAGE_IDS.terminal)).toHaveCount(0);
   await expect(page.getByTestId(PERMISSION_IDS.allow)).toHaveCount(0);
   await page.getByTestId(SESSION_PAGE_IDS.back).click();
-  await page.getByTestId(SHELL_IDS.logout).click();
+  await signOut(page);
   await expect(page.getByTestId(SIGN_IN_IDS.title)).toBeVisible();
   await expect(page.getByTestId(SESSION_CARD_IDS.root)).toHaveCount(0);
 });
@@ -100,7 +100,7 @@ test('logout prevents a delayed device response from restoring owner data', asyn
 
   await page.goto('/');
   await expect(page.getByTestId(SESSIONS_PAGE_IDS.loading)).toBeVisible();
-  await page.getByTestId(SHELL_IDS.logout).click();
+  await signOut(page);
   release();
   await expect(page.getByTestId(SIGN_IN_IDS.title)).toBeVisible();
   await expect(page.getByTestId(SESSION_CARD_IDS.root)).toHaveCount(0);

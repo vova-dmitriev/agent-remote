@@ -1,3 +1,4 @@
+import { useLayoutEffect } from "react"
 import { ArrowUp } from "lucide-react"
 import { useTranslation } from "@/shared/lib/hooks"
 import { Button } from "@/shared/ui/button"
@@ -20,6 +21,18 @@ export interface ComposerPromptProps {
 }
 
 export function ComposerPrompt({ controller, session, state, prompt, slash, t }: ComposerPromptProps) {
+  const input = slash.input
+
+  // The prompt grows with its lines up to its max height, then scrolls. CSS field-sizing does this only in newer
+  // WebKit (Telegram on macOS and iOS), so the height follows the content here.
+  useLayoutEffect(() => {
+    const node = input.current
+
+    if (!node) return
+    node.style.height = "auto"
+    node.style.height = `${node.scrollHeight}px`
+  }, [input, prompt])
+
   return (
     <div className="relative">
       {slash.open ? <SkillsMenu {...slash} /> : null}
@@ -67,6 +80,6 @@ const promptFrameClass =
   "rounded-[24px] border border-input bg-surface py-[10px] shadow-xs transition-[color,box-shadow] focus-within:ring-[3px] focus-within:ring-ring/50 short:py-[6px]"
 
 const promptClass =
-  "max-h-[66px] min-h-[24px] resize-none overflow-y-auto rounded-none border-0 bg-transparent p-0 pr-[50px] pl-[15px] text-[16px] leading-[24px] shadow-none focus-visible:ring-0 disabled:overflow-hidden short:max-h-[36px] short:min-h-[20px] short:pr-[48px] short:pl-[13px] short:leading-[20px]"
+  "max-h-[144px] min-h-[24px] resize-none overflow-y-auto rounded-none border-0 bg-transparent p-0 pr-[50px] pl-[15px] text-[16px] leading-[24px] shadow-none focus-visible:ring-0 disabled:overflow-hidden short:max-h-[60px] short:min-h-[20px] short:pr-[48px] short:pl-[13px] short:leading-[20px]"
 
 const promptWithAttachmentsClass = "pl-[46px] short:pl-[40px]"

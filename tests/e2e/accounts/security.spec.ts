@@ -6,9 +6,8 @@ import { ACCOUNTS_PAGE_IDS } from '@/pages/accounts/config/test-ids.js';
 import { PROFILE_MANAGE_IDS } from '@/pages/accounts/config/management/test-ids.js';
 import { PROFILE_ENROLL_IDS } from '@/pages/accounts/config/enrollment/test-ids.js';
 import { PROFILE_CARD_IDS } from '@/pages/accounts/config/profile/test-ids.js';
-import { SHELL_IDS } from '@/widgets/application-shell/config/test-ids.js';
 import { SIGN_IN_IDS } from '@/pages/sign-in/config/test-ids.js';
-import { openAccounts } from '../support/ui/settings-menu.js';
+import { openAccounts, signOut } from '../support/ui/settings-menu.js';
 
 test('refuses an untrusted Mac fingerprint before any key reaches native enrollment', async ({ page }) => {
   const companion = await profileCompanion();
@@ -54,7 +53,7 @@ test('logout cancels the in-flight Mac operation before verified credentials can
     await page.getByTestId(PROFILE_ENROLL_IDS.key).fill('synthetic-cancelled-secret');
     await page.getByTestId(PROFILE_ENROLL_IDS.submit).click();
     await checking;
-    await page.getByTestId(SHELL_IDS.logout).click();
+    await signOut(page);
     await expect(page.getByTestId(SIGN_IN_IDS.title)).toBeVisible();
     await expect.poll(() => companion.cancelledRequests.length).toBeGreaterThan(0);
     release();

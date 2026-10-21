@@ -61,15 +61,17 @@ test('selected chat gives the mobile viewport to history and keeps the composer 
   const user = byTestId(page, SESSION_FEED_IDS.message, { 'message-id': 'compact-user' });
 
   expect((await user.boundingBox())!.width).toBeLessThan((await feed.boundingBox())!.width * 0.9);
-  await expect(page.getByTestId(SHELL_IDS.logout)).toHaveCount(0);
+  await expect(page.getByTestId(SHELL_IDS.settings)).toHaveCount(0);
   await expect(page.getByTestId(LANGUAGE_SWITCHER_IDS.en)).toHaveCount(0);
   await prompt.fill('Draft remains while navigating');
   await page.getByTestId(SESSION_PAGE_IDS.back).click();
   await expect(page.getByTestId(SHELL_IDS.home)).toBeVisible();
   await byTestId(page, SESSION_CARD_IDS.root, { 'session-id': 'chat-session' }).click();
   await expect(prompt).toHaveValue('Draft remains while navigating');
+  // Five lines show at once; the prompt stops growing at six lines (144 px) and scrolls past them.
   await prompt.fill('One line\nTwo lines\nThree lines\nFour lines\nFive lines');
-  expect((await prompt.boundingBox())!.height).toBeLessThanOrEqual(100);
+  expect((await prompt.boundingBox())!.height).toBeGreaterThan(100);
+  expect((await prompt.boundingBox())!.height).toBeLessThanOrEqual(144);
   await prompt.fill('');
   expect((await prompt.boundingBox())!.height).toBeLessThanOrEqual(70);
   await page.setViewportSize({ width: viewport.width, height: 400 });
@@ -91,7 +93,7 @@ for (const language of ['ru', 'en'] as const) {
     await page.goto('/');
     const cards = page.getByTestId(SESSION_CARD_IDS.root);
     const connection = page.getByTestId(SHELL_IDS.connection);
-    const logout = page.getByTestId(SHELL_IDS.logout);
+    const logout = page.getByTestId(SHELL_IDS.settings);
     const languages = page.getByTestId(LANGUAGE_SWITCHER_IDS.root);
 
     await expect(cards).toHaveCount(4);

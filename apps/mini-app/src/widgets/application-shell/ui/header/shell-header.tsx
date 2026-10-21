@@ -9,7 +9,7 @@ import { SHELL_IDS } from "@/widgets/application-shell/config/test-ids"
 import { SettingsMenu } from "./settings-menu"
 import type { ShellHeaderProps } from "./header.types"
 
-/** App bar: brand, connection, language, theme, sign out and the settings menu. */
+/** App bar: brand, connection, language, theme and the settings menu, which ends with sign out. */
 export function ShellHeader({ connection, onHome, onLogout, onAccounts, onUsage, onRules, leading, className }: ShellHeaderProps) {
   const { t } = useTranslation()
   const host = useHost()
@@ -37,10 +37,7 @@ export function ShellHeader({ connection, onHome, onLogout, onAccounts, onUsage,
         ) : null}
         <LanguageSwitcher />
         <ThemeSwitcher />
-        <Button variant="link" className={cn(actionClass, "text-muted-foreground")} data-testid={SHELL_IDS.logout} onClick={onLogout}>
-          {t("logout")}
-        </Button>
-        {onAccounts ? <SettingsMenu onAccounts={onAccounts} onUsage={onUsage} onRules={onRules} /> : null}
+        <SettingsMenu onAccounts={onAccounts} onUsage={onUsage} onRules={onRules} onLogout={onLogout} />
       </div>
     </header>
   )

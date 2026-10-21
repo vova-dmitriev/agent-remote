@@ -124,7 +124,7 @@ test('session hides all preferences and logout; home restores them without losin
   await byTestId(page, SESSION_CARD_IDS.root, { 'session-id': 'terminal-session' }).click();
   await page.getByTestId(COMMAND_IDS.prompt).fill('Synthetic retained draft');
   await expect(page.getByTestId(LANGUAGE_SWITCHER_IDS.root)).toHaveCount(0);
-  await expect(page.getByTestId(SHELL_IDS.logout)).toHaveCount(0);
+  await expect(page.getByTestId(SHELL_IDS.settings)).toHaveCount(0);
   await expect(page.getByTestId(THEME_SWITCHER_IDS.root)).toHaveCount(0);
   await expect.poll(() => dark(page)).toBe(true);
 
@@ -135,7 +135,7 @@ test('session hides all preferences and logout; home restores them without losin
   });
 
   await page.getByTestId(SESSION_PAGE_IDS.back).click();
-  await expect(page.getByTestId(SHELL_IDS.logout)).toBeVisible();
+  await expect(page.getByTestId(SHELL_IDS.settings)).toBeVisible();
   await chooseLanguage(page, 'ru');
   await expect(page.getByTestId(THEME_SWITCHER_IDS.trigger)).toHaveAttribute('data-value', 'dark');
   await expect(page.getByTestId(THEME_SWITCHER_IDS.root)).toHaveAttribute('aria-label', 'Тема');

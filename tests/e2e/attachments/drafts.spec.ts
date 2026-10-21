@@ -3,11 +3,11 @@ import { test } from '../support/relay/relay-fixture.js';
 import { byTestId } from '../support/ui/testid.js';
 import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
 import { SESSION_PAGE_IDS } from '@/pages/session/config/test-ids.js';
-import { SHELL_IDS } from '@/widgets/application-shell/config/test-ids.js';
 import { setSessionLanguage } from '../support/ui/session-language.js';
 import { COMMAND_IDS } from '@/features/send-command/config/test-ids.js';
 import { UPLOAD_IDS } from '@/features/send-command/ui/attachments/test-ids.js';
 import { image, file, openAttachments } from './fixture.js';
+import { signOut } from '../support/ui/settings-menu.js';
 
 test('keeps attachment drafts scoped to a session across language and source changes', async ({ page }) => {
   await openAttachments(page);
@@ -89,7 +89,7 @@ test('aborts transfers and revokes local image URLs on logout', async ({ page })
   await page.getByTestId(UPLOAD_IDS.input).setInputFiles(image);
   await expect(page.getByTestId(UPLOAD_IDS.image)).toBeVisible();
   await page.getByTestId(SESSION_PAGE_IDS.back).click();
-  await page.getByTestId(SHELL_IDS.logout).click();
+  await signOut(page);
   await expect(page.getByTestId(UPLOAD_IDS.root)).toHaveCount(0);
 
   expect(Number(await page.evaluate(() => sessionStorage.getItem('synthetic-revoked-urls')))).toBeGreaterThan(

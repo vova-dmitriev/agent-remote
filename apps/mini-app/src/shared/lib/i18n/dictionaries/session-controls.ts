@@ -1,6 +1,9 @@
 /** App navigation: header settings menu and the desktop session sidebar. */
 const navigationEN = {
   settings: "Settings",
+  logoutConfirmTitle: "Sign out of Agent Remote?",
+  logoutConfirmText: "To come back, open the app from Telegram again.",
+  logoutCancel: "Cancel",
   sidebarSessions: "Sessions",
   sidebarResize: "Resize sidebar",
   sidebarDevice: "This Mac",
@@ -32,6 +35,9 @@ const navigationEN = {
 
 const navigationRU = {
   settings: "Настройки",
+  logoutConfirmTitle: "Выйти из Agent Remote?",
+  logoutConfirmText: "Чтобы вернуться, снова открой приложение из Telegram.",
+  logoutCancel: "Отмена",
   sidebarSessions: "Сессии",
   sidebarResize: "Изменить ширину боковой панели",
   sidebarDevice: "Этот Mac",
