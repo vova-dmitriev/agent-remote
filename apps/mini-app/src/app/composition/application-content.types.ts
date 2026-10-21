@@ -1,14 +1,17 @@
 import type { ReactNode } from "react"
 import type { useApplication } from "@/app/model/use-application"
 import type { useSubagentView } from "@/app/model/navigation/use-subagent-view"
+import type { DeviceView } from "@/app/model/navigation/values"
 
 export interface ApplicationContentProps {
   model: ReturnType<typeof useApplication>
-  accounts: boolean
-  usage: boolean
+  /** The device's settings page that is open, if any. */
+  device: DeviceView | null
+  rulesSession: string | null
+  openRules: (sessionId: string) => void
   subagent: ReturnType<typeof useSubagentView>
   back: () => void
-  /** Back from Accounts or Usage to the sessions. */
+  /** Back from a settings page to the sessions. */
   closeAccounts: () => void
   /** Shown while no session is selected: the session list, or the desktop placeholder / new-session pane. */
   home: ReactNode

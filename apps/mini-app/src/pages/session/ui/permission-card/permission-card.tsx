@@ -1,9 +1,11 @@
 import { PermissionDecision } from "@protocol"
 import { useTranslation } from "@/shared/lib/hooks"
+import { ruleLabel } from "@/entities/rule"
 import { Button } from "@/shared/ui/button"
 import { PERMISSION_IDS } from "@/pages/session/config/test-ids"
 import { useCountdown } from "@/pages/session/model/use-countdown"
 import { requestActionClass, requestActionsClass, requestHeadingClass } from "./permission-class"
+import { permissionText } from "./permission-text"
 import type { PermissionCardProps } from "./types"
 
 export function PermissionCard({ permission, disabled, decide }: PermissionCardProps) {
@@ -18,9 +20,11 @@ export function PermissionCard({ permission, disabled, decide }: PermissionCardP
     >
       <div className={requestHeadingClass}>
         <h2 className="text-[15px] session:short:text-[12px] session:short:leading-[1.25]" data-testid={PERMISSION_IDS.title}>
-          {t("permissionTitle", { tool: permission.toolName })}
+          {permission.rule
+            ? t("ruleStopTitle", { rule: ruleLabel(permission.rule, t) })
+            : t("permissionTitle", { tool: permission.toolName })}
         </h2>
-        <span className="text-[12px] text-primary" data-testid={PERMISSION_IDS.remaining}>
+        <span className="text-[12px] whitespace-nowrap text-primary" data-testid={PERMISSION_IDS.remaining}>
           {t("seconds", { count: remaining })}
         </span>
       </div>
@@ -28,7 +32,7 @@ export function PermissionCard({ permission, disabled, decide }: PermissionCardP
         className="max-h-[150px] overflow-auto session:short:max-h-[24px] session:short:text-[10px] session:short:leading-[1.2]"
         data-testid={PERMISSION_IDS.input}
       >
-        {JSON.stringify(permission.input, null, 2)}
+        {permissionText(permission)}
       </pre>
       <div className={requestActionsClass}>
         <Button
@@ -48,6 +52,17 @@ export function PermissionCard({ permission, disabled, decide }: PermissionCardP
         >
           {t("allowOnce")}
         </Button>
+        {permission.rule ? (
+          <Button
+            variant="outline"
+            className={requestActionClass}
+            data-testid={PERMISSION_IDS.allowAlways}
+            disabled={disabled || !remaining}
+            onClick={() => decide(PermissionDecision.AllowAlways)}
+          >
+            {t("allowAlways")}
+          </Button>
+        ) : null}
       </div>
     </section>
   )

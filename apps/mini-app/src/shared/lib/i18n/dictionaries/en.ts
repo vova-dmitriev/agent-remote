@@ -4,6 +4,7 @@ import { viewerEN } from "./viewer"
 import { activityEN } from "./activity"
 import { extensionEN } from "./extension"
 import { usageEN } from "./usage"
+import { rulesEN } from "./rules"
 
 export const en = {
   ...accountsEN,
@@ -12,6 +13,7 @@ export const en = {
   ...activityEN,
   ...sessionControlsEN,
   ...usageEN,
+  ...rulesEN,
   sessionOnline: "Session online",
   sessionOffline: "Session unavailable",
   sessionTooLarge: "Session too large to mirror",

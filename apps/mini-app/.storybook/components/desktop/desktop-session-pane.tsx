@@ -23,6 +23,7 @@ export function DesktopSessionPane({ session, sessions, onBack }: DesktopSession
     <div className="h-full [--tg-viewport-height:calc(100dvh-3rem)]">
       <ApplicationShell compact connection={ConnectionStatus.Online} result="" onHome={onBack} onLogout={() => {}}>
         <SessionPage
+          onOpenRules={() => {}}
           session={session}
           state={state}
           messages={messages}

@@ -10,6 +10,7 @@ export interface ApplicationShellProps {
   /** Opens Accounts & keys from the settings menu; the menu is hidden while no device can host accounts. */
   onAccounts?: (() => void) | undefined
   onUsage?: (() => void) | undefined
+  onRules?: (() => void) | undefined
   children: ReactNode
   compact?: boolean
   /** Header and footer; the desktop sidebar layout renders its own app bar. */

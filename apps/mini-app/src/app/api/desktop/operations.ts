@@ -6,6 +6,8 @@ import {
   readingPositionSchema,
   sessionFileSchema,
   analyticsReportSchema,
+  rulesReplySchema,
+  type RulesRequest,
   type AnalyticsPeriod,
   type PreferencePatch,
   type ReadingPosition,
@@ -41,6 +43,10 @@ export class DesktopOperations {
   }
 
   /** The companion's own device: the report is counted on this Mac. */
+  async rules(_deviceId: string, request: RulesRequest) {
+    return rulesReplySchema.parse(await this.connection.request({ operation: LocalOperation.Rules, request }))
+  }
+
   async usageReport(_deviceId: string, period: AnalyticsPeriod) {
     return analyticsReportSchema.parse(await this.connection.request({ operation: LocalOperation.Analytics, period }))
   }

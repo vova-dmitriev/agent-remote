@@ -6,6 +6,8 @@ import {
   readingPositionSchema,
   sessionFileSchema,
   analyticsReportSchema,
+  rulesReplySchema,
+  type RulesRequest,
   type AnalyticsPeriod,
   type PreferencePatch,
   type ReadingPosition,
@@ -54,6 +56,13 @@ export class ExtensionOperations {
   async readSessionFile(sessionId: string, generation: string, path: string) {
     return sessionFileSchema.parse(
       await this.connection.request({ operation: LocalOperation.File, sessionId, generation, path }),
+    );
+  }
+
+  /** The paired companion's device keeps the rules. */
+  async rules(_deviceId: string, request: RulesRequest) {
+    return rulesReplySchema.parse(
+      await this.connection.request({ operation: LocalOperation.Rules, request }),
     );
   }
 

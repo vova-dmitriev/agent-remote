@@ -13,7 +13,7 @@ interface FakeBridgeOptions {
     result: string;
     version: number;
     snapshot: string;
-    operations: Record<'devices' | 'select' | 'history' | 'preferences' | 'reading' | 'draft' | 'queue' | 'pin' | 'file' | 'analytics', string>;
+    operations: Record<'devices' | 'select' | 'history' | 'preferences' | 'reading' | 'draft' | 'queue' | 'pin' | 'file' | 'analytics' | 'rules', string>;
     unavailable: string;
   };
 }
@@ -51,6 +51,7 @@ export async function installDesktopBridge(
         pin: LocalOperation.Pin,
         file: LocalOperation.File,
         analytics: LocalOperation.Analytics,
+        rules: LocalOperation.Rules,
       },
       unavailable: ErrorCode.CAPABILITY_UNAVAILABLE,
     },
@@ -90,7 +91,7 @@ export async function installDesktopBridge(
         },
         request: async (request: {
           requestId: string;
-          action: { operation: string; agentId?: string; sessionId?: string; pinned?: boolean; path?: string; period?: string };
+          action: { operation: string; agentId?: string; sessionId?: string; pinned?: boolean; path?: string; period?: string; request?: unknown };
         }) => {
           const base = { kind: values.result, version: values.version, requestId: request.requestId, leaseId, epoch };
           const { operation, agentId } = request.action;
@@ -100,6 +101,15 @@ export async function installDesktopBridge(
           // A changed file as the companion reads it from the Mac: synthetic Markdown.
           if (operation === operations.file) {
             return { ...base, ok: true, data: { path: request.action.path, content: '# Synthetic notes\n\n**Formatted** body.', truncated: false } };
+          }
+
+          // Rules as the companion keeps them; a test sets `rulesReply` and reads `rulesRequests`.
+          if (operation === operations.rules) {
+            const rules = window as unknown as { rulesReply?: unknown; rulesRequests?: unknown[] };
+
+            rules.rulesRequests = [...(rules.rulesRequests ?? []), request.action.request];
+
+            return rules.rulesReply ? { ...base, ok: true, data: rules.rulesReply } : { ...base, ok: false, code: values.unavailable };
           }
 
           // Usage as the companion counts it; a test sets `usageReport` before the app asks.

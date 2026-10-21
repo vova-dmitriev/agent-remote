@@ -34,11 +34,12 @@ export function DesktopLayout({ model, view, subagent, back, logout, open }: Des
         onHome={back}
         onAccounts={onAccounts}
         onUsage={view.openUsage}
+        onRules={() => view.openRules()}
         onLogout={logout}
       />
       <div className="flex min-h-0 flex-1">
         <DesktopSidebar
-          accounts={view.accounts || view.usage}
+          accounts={view.device !== null}
           collapsed={sidebar.collapsed}
           onOpen={onOpen}
           onExpand={onExpand}
@@ -49,7 +50,7 @@ export function DesktopLayout({ model, view, subagent, back, logout, open }: Des
         />
         <div className="min-w-0 flex-1 overflow-y-auto [--tg-viewport-height:calc(100dvh-3rem)]">
           <ApplicationShell
-            compact={!!selected && !view.accounts && !view.usage}
+            compact={!!selected && !view.device}
             chrome={false}
             connection={state.connection}
             result={model.result}
@@ -59,8 +60,9 @@ export function DesktopLayout({ model, view, subagent, back, logout, open }: Des
             <CommandNotice error={model.error} busy={commands.busy} retry={() => void commands.retry()} />
             <ApplicationContent
               model={model}
-              accounts={view.accounts}
-              usage={view.usage}
+              device={view.device}
+              rulesSession={view.rulesSession}
+              openRules={view.openRules}
               subagent={subagent}
               back={back}
               closeAccounts={view.closeAccounts}

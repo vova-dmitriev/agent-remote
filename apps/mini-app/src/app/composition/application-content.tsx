@@ -7,8 +7,9 @@ import type { ApplicationContentProps } from "./application-content.types"
 
 export function ApplicationContent({
   model,
-  accounts,
-  usage,
+  device,
+  rulesSession,
+  openRules,
   subagent,
   back,
   closeAccounts,
@@ -20,8 +21,8 @@ export function ApplicationContent({
   const [file, setFile] = useState<{ sessionId: string; path: string } | null>(null)
 
   if (state.connection === ConnectionStatus.Expired) return <SignInPage />
-  if ((accounts || usage) && state.deviceId)
-    return <DevicePage usage={usage} deviceId={state.deviceId} state={state} onBack={closeAccounts} />
+  if (device && state.deviceId)
+    return <DevicePage page={device} deviceId={state.deviceId} state={state} rulesSession={rulesSession} onBack={closeAccounts} />
   if (!selected) return model.linkPending ? <SessionLoading /> : home
   if (subagent.agentId)
     return (
@@ -53,6 +54,7 @@ export function ApplicationContent({
       controller={commands}
       onOpenSubagent={subagent.readable ? (agentId) => subagent.open(selected.id, agentId) : undefined}
       onOpenFile={(path) => setFile({ sessionId: selected.id, path })}
+      onOpenRules={openRules}
     />
   )
 }

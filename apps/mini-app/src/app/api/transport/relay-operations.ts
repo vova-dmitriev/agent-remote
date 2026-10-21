@@ -7,6 +7,8 @@ import {
   readingPositionResponseSchema,
   sessionFileSchema,
   analyticsReportSchema,
+  rulesReplySchema,
+  type RulesRequest,
   type AnalyticsPeriod,
   type PreferencePatch,
   type ReadingPosition,
@@ -66,6 +68,12 @@ export abstract class RelayOperations extends RelayCommandOperations implements 
     const query = new URLSearchParams({ path })
 
     return sessionFileSchema.parse(await this.request("/sessions/" + encodeURIComponent(sessionId) + "/file?" + query))
+  }
+
+  async rules(deviceId: string, request: RulesRequest) {
+    return rulesReplySchema.parse(
+      await this.request("/devices/" + encodeURIComponent(deviceId) + "/rules", { method: "POST", body: JSON.stringify(request) }),
+    )
   }
 
   async usageReport(deviceId: string, period: AnalyticsPeriod) {

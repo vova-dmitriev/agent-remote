@@ -10,7 +10,7 @@ import { SettingsMenu } from "./settings-menu"
 import type { ShellHeaderProps } from "./header.types"
 
 /** App bar: brand, connection, language, theme, sign out and the settings menu. */
-export function ShellHeader({ connection, onHome, onLogout, onAccounts, onUsage, leading, className }: ShellHeaderProps) {
+export function ShellHeader({ connection, onHome, onLogout, onAccounts, onUsage, onRules, leading, className }: ShellHeaderProps) {
   const { t } = useTranslation()
   const host = useHost()
   const online = connection === ConnectionStatus.Online
@@ -40,7 +40,7 @@ export function ShellHeader({ connection, onHome, onLogout, onAccounts, onUsage,
         <Button variant="link" className={cn(actionClass, "text-muted-foreground")} data-testid={SHELL_IDS.logout} onClick={onLogout}>
           {t("logout")}
         </Button>
-        {onAccounts ? <SettingsMenu onAccounts={onAccounts} onUsage={onUsage} /> : null}
+        {onAccounts ? <SettingsMenu onAccounts={onAccounts} onUsage={onUsage} onRules={onRules} /> : null}
       </div>
     </header>
   )

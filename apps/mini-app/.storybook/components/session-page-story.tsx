@@ -21,6 +21,7 @@ export function SessionPageStory({
 
   return (
     <SessionPage
+      onOpenRules={() => {}}
       session={session}
       state={state}
       messages={messages}

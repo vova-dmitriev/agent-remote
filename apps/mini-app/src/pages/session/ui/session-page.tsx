@@ -24,6 +24,7 @@ import { SubagentPanel } from "./subagents/subagent-panel"
 import { UserInputRequests } from "./questions/requests/user-input-requests"
 import { SessionPermissions } from "./permission-card/session-permissions"
 import { SessionFeed } from "./session-feed/session-feed"
+import { SessionRulesBadge } from "./rules/session-rules-badge"
 import { SESSION_PAGE_IDS } from "../config/test-ids"
 import type { SessionPageProps } from "./session-page.types"
 
@@ -42,6 +43,7 @@ export function SessionPage({
   rename,
   onOpenSubagent,
   onOpenFile,
+  onOpenRules,
 }: SessionPageProps) {
   const { t, language } = useTranslation()
   const observed = sessionObserved(state, session)
@@ -84,6 +86,7 @@ export function SessionPage({
             </p>
           </div>
         </div>
+        <SessionRulesBadge session={session} state={state} onOpen={onOpenRules} />
         <RateLimits
           limits={providerLimits(state.snapshot?.rateLimits ?? [], usageProvider(session.target.kind))}
           agent={agentName(session)}

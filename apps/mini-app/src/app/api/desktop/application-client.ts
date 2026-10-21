@@ -155,6 +155,7 @@ export class DesktopApplicationClient implements ApplicationClient {
   pinSession = (sessionId: string, generation: string, pinned: boolean) => this.operations.pinSession(sessionId, generation, pinned)
   readSessionFile = (sessionId: string, generation: string, path: string) => this.operations.readSessionFile(sessionId, generation, path)
   usageReport = (deviceId: string, period: Parameters<ApplicationClient["usageReport"]>[1]) => this.operations.usageReport(deviceId, period)
+  rules = (deviceId: string, request: Parameters<ApplicationClient["rules"]>[1]) => this.operations.rules(deviceId, request)
   getReadingPosition = (sessionId: string) => this.operations.getReadingPosition(sessionId)
   saveReadingPosition = (sessionId: string, position: Parameters<ApplicationClient["saveReadingPosition"]>[1]) =>
     this.operations.saveReadingPosition(sessionId, position)

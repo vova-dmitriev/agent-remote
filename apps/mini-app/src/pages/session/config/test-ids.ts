@@ -17,6 +17,7 @@ export const PERMISSION_IDS = {
   remaining: "session-permission-remaining",
   input: "session-permission-input",
   allow: "session-permission-allow",
+  allowAlways: "session-permission-allow-always",
   deny: "session-permission-deny",
 } as const
 

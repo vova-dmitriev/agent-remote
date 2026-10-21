@@ -68,13 +68,15 @@ export function RemoteApplication() {
         onHome={back}
         onAccounts={model.devices.length && state.connection !== ConnectionStatus.Expired ? view.openAccounts : undefined}
         onUsage={view.openUsage}
+        onRules={() => view.openRules()}
         onLogout={logout}
       >
         <CommandNotice error={model.error} busy={commands.busy} retry={() => void commands.retry()} />
         <ApplicationContent
           model={model}
-          accounts={view.accounts}
-          usage={view.usage}
+          device={view.device}
+          rulesSession={view.rulesSession}
+          openRules={view.openRules}
           subagent={subagent}
           back={back}
           closeAccounts={view.closeAccounts}

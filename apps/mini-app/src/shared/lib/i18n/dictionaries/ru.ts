@@ -4,6 +4,7 @@ import { viewerRU } from "./viewer"
 import { activityRU } from "./activity"
 import { extensionRU } from "./extension"
 import { usageRU } from "./usage"
+import { rulesRU } from "./rules"
 import type { Dictionary } from "../types"
 
 export const ru = {
@@ -13,6 +14,7 @@ export const ru = {
   ...activityRU,
   ...sessionControlsRU,
   ...usageRU,
+  ...rulesRU,
   sessionOnline: "Сессия онлайн",
   sessionOffline: "Сессия недоступна",
   sessionTooLarge: "Сессия слишком большая для показа",

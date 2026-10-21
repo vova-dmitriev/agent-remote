@@ -22,4 +22,6 @@ export interface SessionPageProps {
   onOpenSubagent?: ((agentId: string) => void) | undefined
   /** Opens a changed file as it is now on the Mac. */
   onOpenFile?: ((path: string) => void) | undefined
+  /** Opens the Rules page on this session's tab. */
+  onOpenRules: (sessionId: string) => void
 }
