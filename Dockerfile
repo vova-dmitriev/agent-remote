@@ -15,6 +15,23 @@ COPY tests tests
 COPY eslint eslint
 COPY eslint.config.mjs playwright.config.ts playwright.extension.config.ts vitest.config.ts .prettierrc.json .prettierignore ./
 RUN npm run build
+
+# The agents of a shared Linux VM (compose.vm.yml): Claude Code, Codex and the supervisor with every user's daemon.
+# It comes before the relay's stage, so a plain `docker build .` still builds the relay.
+FROM node:22-bookworm-slim AS agents
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends tmux git ca-certificates openssh-client \
+    && rm -rf /var/lib/apt/lists/* \
+    && npm install --global @anthropic-ai/claude-code @openai/codex
+ENV NODE_ENV=production
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/apps/daemon/bin ./apps/daemon/bin
+COPY package.json ./package.json
+RUN node --check dist/apps/daemon/src/setup-cli.js && mkdir -p /data/users /data/projects && chown -R node:node /data
+USER node
+CMD ["node","apps/daemon/bin/remote.mjs","supervise"]
+
 FROM node:22-bookworm-slim
 WORKDIR /app
 ENV NODE_ENV=production HOST=0.0.0.0 PORT=3000

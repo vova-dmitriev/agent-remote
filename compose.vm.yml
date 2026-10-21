@@ -1,0 +1,42 @@
+# Agent Remote on one Linux VM for several users: the relay stack of compose.yml plus the agents.
+# Users only have clients (Telegram Mini App, Mac client, Chrome extension). See docs/vm-deploy.md.
+services:
+  redis:
+    extends: { file: compose.yml, service: redis }
+  postgres:
+    extends: { file: compose.yml, service: postgres }
+  relay:
+    extends: { file: compose.yml, service: relay }
+    environment:
+      REMOTE_OPERATOR_TOKEN: ${REMOTE_OPERATOR_TOKEN:?Set REMOTE_OPERATOR_TOKEN}
+      REMOTE_INPUT_ENABLED: ${REMOTE_INPUT_ENABLED:-1}
+      REMOTE_PERMISSIONS_ENABLED: ${REMOTE_PERMISSIONS_ENABLED:-1}
+  agents:
+    build: { context: ., target: agents }
+    # The relay's network: the daemons and the supervisor reach it as 127.0.0.1:3000, without TLS inside the VM.
+    network_mode: service:relay
+    environment:
+      REMOTE_OPERATOR_TOKEN: ${REMOTE_OPERATOR_TOKEN:?Set REMOTE_OPERATOR_TOKEN}
+      REMOTE_RELAY_URL: http://127.0.0.1:3000
+      REMOTE_USERS_ROOT: /data/users
+      REMOTE_PROJECTS_ROOT: /data/projects
+      REMOTE_INPUT_ENABLED: ${REMOTE_INPUT_ENABLED:-1}
+      REMOTE_PERMISSIONS_ENABLED: ${REMOTE_PERMISSIONS_ENABLED:-1}
+    volumes:
+      # ~/.claude, ~/.claude.json and ~/.codex: the one subscription every user's sessions share.
+      - agents_home:/home/node
+      - agents_data:/data
+    depends_on:
+      - relay
+    restart: unless-stopped
+  proxy:
+    extends: { file: compose.yml, service: proxy }
+    depends_on:
+      - relay
+volumes:
+  redis:
+  postgres:
+  caddy_data:
+  caddy_config:
+  agents_home:
+  agents_data:
