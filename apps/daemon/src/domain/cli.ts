@@ -5,6 +5,8 @@ export const CliCommand = {
   Pair: 'pair',
   Connect: 'connect',
   Start: 'start',
+  /** Runs a shared VM's per-user daemons. */
+  Supervise: 'supervise',
   Codex: 'codex',
   RestoreClaude: 'restore-claude',
   Claude: 'claude',

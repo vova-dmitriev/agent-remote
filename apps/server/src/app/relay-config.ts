@@ -8,6 +8,8 @@ export interface RelayConfig {
   inputEnabled?: boolean;
   permissionsEnabled?: boolean;
   staticDirectory?: string;
+  /** The bearer token of a shared VM's supervisor (REMOTE_OPERATOR_TOKEN); without it the operator endpoint is off. */
+  operatorToken?: string;
 }
 
 export const RELAY_CONFIG = Symbol('RELAY_CONFIG');

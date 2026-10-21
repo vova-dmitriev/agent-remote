@@ -1,4 +1,4 @@
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import { and, eq, isNull, notExists, sql } from 'drizzle-orm';
 import type { PoolClient } from 'pg';
 import { ormOn, type Database } from '../../db/database.js';
 import { devices, users } from '../../db/schema/index.js';
@@ -61,6 +61,18 @@ export class DeviceRepository {
   /** Serializes pairing for one owner. */
   async lockOwner(tx: PoolClient, ownerId: string) {
     await ormOn(tx).select({ id: users.id }).from(users).where(eq(users.id, ownerId)).for('update');
+  }
+
+  /** Users who have no active device: on a shared VM, those the supervisor has not given a daemon yet. */
+  async ownersWithoutDevice(tx: PoolClient): Promise<string[]> {
+    const active = ormOn(tx)
+      .select({ id: devices.id })
+      .from(devices)
+      .where(and(eq(devices.ownerId, users.id), isNull(devices.revokedAt)));
+
+    const rows = await ormOn(tx).select({ id: users.id }).from(users).where(notExists(active));
+
+    return rows.map((row) => row.id);
   }
 
   async hasActive(tx: PoolClient, ownerId: string): Promise<boolean> {

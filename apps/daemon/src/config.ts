@@ -31,9 +31,7 @@ export async function loadConfig() {
   return configSchema.parse(JSON.parse(await readFile(join(stateDirectory(), 'device.json'), 'utf8')));
 }
 
-export async function saveConfig(config: DaemonConfig) {
-  const dir = stateDirectory();
-
+export async function saveConfig(config: DaemonConfig, dir = stateDirectory()) {
   await mkdir(dir, { recursive: true, mode: 0o700 });
   const path = join(dir, 'device.json');
   const temp = path + '.' + randomBytes(8).toString('hex');
