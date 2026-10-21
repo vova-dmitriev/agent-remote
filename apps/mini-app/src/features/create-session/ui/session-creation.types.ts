@@ -9,6 +9,10 @@ export interface SessionCreationProps {
   create: (session: Session, provider: AgentProvider, execution?: ProfileExecution, model?: ModelChoice) => void
   /** The models the device's own sign-in of each agent offers. */
   models?: ProviderModels[]
+  /** The device's projects a session can start in without one there yet (a shared VM's projects root). */
+  projects?: readonly string[]
+  /** Starts a session in one of those projects through the device. */
+  createInProject?: (cwd: string, provider: AgentProvider, model?: ModelChoice) => Promise<unknown>
   profileData?: ProfileList
   /** Renders the form without its toggle, e.g. in the desktop "New session" pane. */
   inline?: boolean

@@ -11,6 +11,15 @@ import { CodedError } from '@protocol';
 /** The CLI default home; `~/.claude/settings.json` hooks post here when CLAUDE_REMOTE_HOME is unset. */
 export const defaultStateDirectory = () => join(homedir(), '.claude-remote');
 export const stateDirectory = () => process.env.CLAUDE_REMOTE_HOME ?? defaultStateDirectory();
+/** Set to `1` when this daemon is one of several users' daemons on a shared machine (a Linux VM). */
+export const MULTI_USER_VARIABLE = 'REMOTE_MULTI_USER';
+/**
+ * One of several users' daemons on a shared machine: it follows only the sessions it created, never the machine's
+ * shared Codex app-server or Codex Desktop. See docs/superpowers/specs/2026-10-21-linux-vm-multi-user-design.md.
+ */
+export const multiUserMode = () => process.env[MULTI_USER_VARIABLE] === '1';
+/** On a shared machine, the directory whose subdirectories are the projects users can start sessions in. */
+export const projectsRoot = () => process.env.REMOTE_PROJECTS_ROOT || undefined;
 export const configSchema = z.strictObject({
   relayUrl: z.url(),
   deviceId: z.string().min(1),
@@ -22,9 +31,7 @@ export async function loadConfig() {
   return configSchema.parse(JSON.parse(await readFile(join(stateDirectory(), 'device.json'), 'utf8')));
 }
 
-export async function saveConfig(config: DaemonConfig) {
-  const dir = stateDirectory();
-
+export async function saveConfig(config: DaemonConfig, dir = stateDirectory()) {
   await mkdir(dir, { recursive: true, mode: 0o700 });
   const path = join(dir, 'device.json');
   const temp = path + '.' + randomBytes(8).toString('hex');

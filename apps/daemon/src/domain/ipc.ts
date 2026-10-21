@@ -30,6 +30,8 @@ export const WrapperActionType = {
   Prompt: 'prompt',
   Interrupt: 'interrupt',
   Snapshot: 'snapshot',
+  /** Presses Enter in Claude's terminal, e.g. to confirm a dialog it opened. */
+  Enter: 'enter',
 } as const;
 
 export type WrapperActionType = (typeof WrapperActionType)[keyof typeof WrapperActionType];

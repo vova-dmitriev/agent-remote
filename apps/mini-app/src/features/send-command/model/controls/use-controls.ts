@@ -189,5 +189,7 @@ export function useControls(selected: Session | undefined) {
     busy: busySession !== null && (!selected || busySession === selected.id),
     ...controlState(pending.current.values(), selected?.id, runtime.epoch, selected?.generation),
     consumeCreatedSession: useCallback(() => setCreatedSessionId(null), []),
+    /** Opens a session started outside a command (in a device's project) once the snapshot has it. */
+    openCreatedSession: setCreatedSessionId,
   }
 }

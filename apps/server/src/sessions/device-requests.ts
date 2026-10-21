@@ -8,6 +8,7 @@ import {
   ErrorCode,
   FrameType,
   type ModelChoice,
+  type ProjectSession,
   type ServerFrame,
   type SessionFile,
   type SessionSkills,
@@ -23,7 +24,8 @@ export type DeviceResult = Extract<
       | typeof FrameType.AnalyticsResult
       | typeof FrameType.RulesResult
       | typeof FrameType.SkillsResult
-      | typeof FrameType.SessionModelResult;
+      | typeof FrameType.SessionModelResult
+      | typeof FrameType.SessionCreateResult;
   }
 >;
 
@@ -98,6 +100,14 @@ export class DeviceRequests {
     return result;
   }
 
+  createSession(connection: DeviceConnection, session: ProjectSession) {
+    return this.request<string>(connection, FrameType.SessionCreateResult, (requestId) => ({
+      type: FrameType.SessionCreate,
+      requestId,
+      session,
+    }));
+  }
+
   private request<T>(
     connection: DeviceConnection,
     answer: DeviceResult['type'],
@@ -151,6 +161,8 @@ export class DeviceRequests {
       pending.resolve(reply.choice);
     } else if ('skills' in reply) {
       pending.resolve(reply.skills);
+    } else if ('sessionId' in reply) {
+      pending.resolve(reply.sessionId);
     } else {
       pending.resolve(reply.rules);
     }

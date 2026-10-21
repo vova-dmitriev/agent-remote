@@ -7,6 +7,7 @@ import type { AdapterRegistry } from '../adapters/registry.js';
 import type { Dispatcher } from '../commands/dispatcher.js';
 import type { RuntimeProfileRelay } from '../profiles/runtime/router/relay.js';
 import type {
+  ProjectSessionsPort,
   SessionModelPort,
   SessionNamesPort,
   SessionRemovalPort,
@@ -30,6 +31,7 @@ export type RelayFrameRouterDeps = {
   names: SessionNamesPort;
   removal?: SessionRemovalPort | undefined;
   models?: SessionModelPort | undefined;
+  projects?: ProjectSessionsPort | undefined;
   /** Absent when the usage store could not open. */
   analytics?: AnalyticsPort | undefined;
   rules?: RulesPort | undefined;
@@ -97,6 +99,22 @@ export class RelayFrameRouter {
         : { ok: false as const, code: ErrorCode.CAPABILITY_UNAVAILABLE };
 
       relay.send({ type: FrameType.SessionModelResult, requestId: frame.requestId, reply });
+    } else if (frame.type === FrameType.SessionCreate) {
+      // The relay asks only its owner's device; the device starts sessions only in its listed projects.
+      const projects = this.deps.projects;
+
+      const reply = projects
+        ? await projects.create(frame.session).then(
+            (sessionId) => ({ ok: true as const, sessionId }),
+            (error: unknown) => {
+              logDebug('runtime/relay-frame-router', error);
+
+              return { ok: false as const, code: codeOf(error) };
+            },
+          )
+        : { ok: false as const, code: ErrorCode.CAPABILITY_UNAVAILABLE };
+
+      relay.send({ type: FrameType.SessionCreateResult, requestId: frame.requestId, reply });
     } else if (frame.type === FrameType.SessionRename) {
       await this.deps.names.rename(frame.sessionId, frame.title).catch((error: unknown) => {
         logDebug('runtime/relay-frame-router', error);

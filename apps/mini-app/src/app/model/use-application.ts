@@ -106,6 +106,7 @@ export function useApplication() {
     rename,
     remove,
     switchModel,
+    runtime,
     pairing,
     revoke,
     logout,

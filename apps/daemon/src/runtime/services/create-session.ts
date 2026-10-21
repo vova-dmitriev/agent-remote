@@ -14,6 +14,9 @@ import { type CodexManager } from './codex-manager.js';
 import { launchClaudeSession, validateProject } from '../../sessions/launch/launcher.js';
 import type { RuntimeProfiles } from './runtime-profiles.js';
 
+/** Where the daemon can start a Claude session in a terminal. */
+const CLAUDE_LAUNCH_PLATFORMS: ReadonlySet<NodeJS.Platform> = new Set(['darwin', 'linux']);
+
 type CreateAction = Extract<Command['action'], { type: typeof CommandActionType.CreateSession }>;
 
 interface CreateOptions {
@@ -62,7 +65,8 @@ async function launchSession(action: CreateAction, options: CreateOptions): Prom
     throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
   }
 
-  if (process.platform !== 'darwin') {
+  // Terminal on macOS, tmux on a Linux VM (see launchClaudeSession).
+  if (!CLAUDE_LAUNCH_PLATFORMS.has(process.platform)) {
     throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
   }
 

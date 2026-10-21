@@ -1,6 +1,19 @@
-import { Body, Controller, Delete, Get, Inject, Param, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Inject,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import {
   analyticsQuerySchema,
+  HttpStatus,
+  projectSessionSchema,
   rulesRequestSchema,
   DeviceStatus,
   ErrorCode,
@@ -106,6 +119,23 @@ export class DevicesController {
     const request = rulesRequestSchema.parse(body);
 
     return this.requests.rules(await this.liveDevice(p, id, RelayProtocolFeature.Rules), request);
+  }
+
+  /**
+   * Starts a session in one of the device's projects, for an owner with no session there yet (a shared VM); the
+   * device answers with the new session's id once it runs.
+   */
+  @Post(':id/sessions')
+  @HttpCode(HttpStatus.Ok)
+  async createSession(@CurrentPrincipal() p: Principal, @Param('id') id: string, @Body() body: unknown) {
+    const session = projectSessionSchema.parse(body);
+
+    return {
+      sessionId: await this.requests.createSession(
+        await this.liveDevice(p, id, RelayProtocolFeature.ProjectSessions),
+        session,
+      ),
+    };
   }
 
   @Get(':id/events')

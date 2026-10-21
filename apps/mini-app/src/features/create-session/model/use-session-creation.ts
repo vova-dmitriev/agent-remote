@@ -1,7 +1,11 @@
 import { useState } from "react"
-import { AgentProvider, BindingState, IntegrationState, SessionStatus, type Session } from "@protocol"
+import { AgentProvider, ErrorCode, type Session } from "@protocol"
 import type { ModelChoice, ProfileList, ProviderModels, ReasoningEffort } from "@protocol"
-import { resolveProfileLaunch, selectableProfiles } from "./profile-launch"
+import { projectChoice } from "./project-choice"
+import { resolveProfileLaunch, selectableProfiles, type ProfileExecution } from "./profile-launch"
+
+type CreateSession = (session: Session, provider: AgentProvider, execution?: ProfileExecution, model?: ModelChoice) => void
+type CreateInProject = (cwd: string, provider: AgentProvider, model?: ModelChoice) => Promise<unknown>
 
 export function useSessionCreation(
   sessions: Session[],
@@ -9,6 +13,7 @@ export function useSessionCreation(
   online: boolean,
   refreshing: boolean,
   nativeModels: ProviderModels[] = [],
+  projectPaths: readonly string[] = [],
 ) {
   const [open, setOpen] = useState(false)
   const [provider, updateProvider] = useState<AgentProvider>(AgentProvider.Codex)
@@ -16,24 +21,9 @@ export function useSessionCreation(
   const [profileId, setProfileId] = useState("")
   const [modelId, setModelId] = useState("")
   const [effort, setEffort] = useState<ReasoningEffort | "">("")
-  const seen = new Set<string>()
-
-  const projects = sessions.filter((session) => {
-    if (
-      !session.cwd ||
-      seen.has(session.cwd) ||
-      !session.capabilities.createSession ||
-      session.binding !== BindingState.Verified ||
-      session.integrationState !== IntegrationState.Ready ||
-      session.status === SessionStatus.Ended
-    )
-      return false
-    seen.add(session.cwd)
-
-    return true
-  })
-
-  const selected = projects.find((session) => session.id === projectId) ?? projects[0]
+  /** Why the device refused the last session in a project, as an error code. */
+  const [error, setError] = useState("")
+  const { projects, selected, selectedPath, projectOptions, projectValue, projectLabel } = projectChoice(sessions, projectPaths, projectId)
   const profiles = selectableProfiles(data, provider, online, refreshing)
   const launch = resolveProfileLaunch(data, provider, profileId, modelId, effort, online, refreshing)
   // The device's own sign-in offers its models in the snapshot; a profile lists its own.
@@ -43,6 +33,24 @@ export function useSessionCreation(
 
   const modelChoice: ModelChoice | undefined =
     native && selectedModel ? { model: selectedModel.id, ...(effort ? { effort } : {}) } : undefined
+
+  /** Starts the session beside the chosen one, or in the chosen project through the device. */
+  async function submit(create: CreateSession, createInProject: CreateInProject | undefined) {
+    if (selected) {
+      create(selected, provider, launch.execution ?? undefined, modelChoice)
+
+      return
+    }
+
+    if (!selectedPath || !createInProject) return
+    setError("")
+
+    try {
+      await createInProject(selectedPath, provider, modelChoice)
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : ErrorCode.REQUEST_FAILED)
+    }
+  }
 
   function setProvider(value: AgentProvider) {
     updateProvider(value)
@@ -68,7 +76,15 @@ export function useSessionCreation(
     setProvider,
     projects,
     selected,
+    selectedPath,
     setProjectId,
+    projectOptions,
+    projectValue,
+    projectLabel,
+    /** A project session runs on the device's own sign-in; a profile launch needs a session beside it. */
+    ready: selectedPath ? native : native || (launch.profileAvailable && !!launch.execution),
+    submit,
+    error,
     profiles,
     profile: launch.profile,
     profileAvailable: launch.profileAvailable,

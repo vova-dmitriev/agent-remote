@@ -8,7 +8,7 @@ import { cmuxContext, hookCmuxSurface } from './cmux/context.js';
 import { homedir } from 'node:os';
 import { join, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadConfig, localSecret, socketPath, stateDirectory } from './config.js';
+import { loadConfig, localSecret, multiUserMode, socketPath, stateDirectory } from './config.js';
 import { readRelayStatus, relayStatusIsLive } from './diagnostics/relay-status.js';
 import { requestLocal } from './code/hooks/ipc.js';
 import { deliverHook, hookTargets } from './code/hooks/hook-delivery.js';
@@ -83,15 +83,26 @@ export async function runCli(argv = process.argv.slice(2)) {
     return;
   }
 
+  if (command === CliCommand.Supervise) {
+    const { runSupervisor } = await import('./cli/supervisor/supervisor.js');
+
+    await runSupervisor();
+
+    return;
+  }
+
   if (command === CliCommand.Start) {
     const { claudeShellDirectory, refreshClaudeShellEntry } = await import('./cli/shell-integration.js');
 
-    // A stale terminal integration must not prevent the companion from starting.
-    await refreshClaudeShellEntry({ directory: claudeShellDirectory(), entry: sessionEntryPath() }).catch(
-      () => {
-        process.stderr.write(`${DaemonErrorCode.SHELL_INTEGRATION_REFRESH_FAILED}\n`);
-      },
-    );
+    // A stale terminal integration must not prevent the companion from starting. On a shared VM the shell's
+    // `claude` belongs to no single user's daemon, so it is left alone.
+    if (!multiUserMode()) {
+      await refreshClaudeShellEntry({ directory: claudeShellDirectory(), entry: sessionEntryPath() }).catch(
+        () => {
+          process.stderr.write(`${DaemonErrorCode.SHELL_INTEGRATION_REFRESH_FAILED}\n`);
+        },
+      );
+    }
 
     const daemon = await startDaemon().catch((error: unknown) => {
       if (hasErrorCode(error, DaemonErrorCode.HOOK_SOCKET_HELD_BY_COMPANION)) {

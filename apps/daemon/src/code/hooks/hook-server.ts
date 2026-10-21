@@ -76,6 +76,8 @@ const authenticated = z.object({
   ]),
   wrapperId: z.string().uuid().optional(),
   cmux: cmuxContextSchema.optional(),
+  /** A wrapper outside cmux that can read its own screen (tmux on a Linux VM). */
+  screen: z.boolean().optional(),
   cmuxSurface: cmuxSurfaceSchema.optional(),
   sourceVersion: z.string().max(128).optional(),
   mode: z.enum([DesktopMode.Chat, DesktopMode.Code]).optional(),
@@ -283,7 +285,7 @@ export async function startHookServer(options: Options) {
                   interrupt: options.inputEnabled,
                   userInput: options.inputEnabled,
                   permission: options.permissionsEnabled,
-                  terminalSnapshot: !!message.cmux,
+                  terminalSnapshot: !!message.cmux || message.screen === true,
                   ...(options.inputEnabled
                     ? { attachments: { images: AttachmentMode.Reference, files: AttachmentMode.Reference } }
                     : {}),
@@ -316,6 +318,16 @@ export async function startHookServer(options: Options) {
                   }
 
                   return response;
+                },
+                enter: async () => {
+                  const response = await call(id, {
+                    type: WrapperActionType.Enter,
+                    sessionId: wrappers.get(id)?.claudeSessionId ?? '',
+                  });
+
+                  if (response.status !== CommandStatus.Dispatched) {
+                    throw new CodedError(response.code ?? ErrorCode.WRAPPER_FAILED);
+                  }
                 },
                 screen: async () => {
                   const response = await call(id, { type: WrapperActionType.Snapshot });

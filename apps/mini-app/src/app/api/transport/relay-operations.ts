@@ -20,6 +20,8 @@ import {
   type ModelChoice,
   type ProviderFilterValue,
   SessionListLimits,
+  type ProjectSession,
+  projectSessionReplySchema,
 } from "@protocol"
 import { z } from "zod"
 import type { ApplicationOperations, Device } from "@/shared/api"
@@ -107,6 +109,12 @@ export abstract class RelayOperations extends RelayCommandOperations implements 
       method: "PUT",
       body: JSON.stringify({ choice, generation }),
     })
+  }
+
+  async createProjectSession(deviceId: string, session: ProjectSession) {
+    return projectSessionReplySchema.parse(
+      await this.request("/devices/" + encodeURIComponent(deviceId) + "/sessions", { method: "POST", body: JSON.stringify(session) }),
+    )
   }
 
   async readSessionFile(sessionId: string, _generation: string, path: string) {

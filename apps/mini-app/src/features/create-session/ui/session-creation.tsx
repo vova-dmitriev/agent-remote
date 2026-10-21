@@ -7,15 +7,25 @@ import { useSessionCreation } from "../model/use-session-creation"
 import { SessionCreationForm } from "./session-creation-form"
 import type { SessionCreationProps } from "./session-creation.types"
 
-export function SessionCreation({ sessions, disabled, online, create, profileData, models = [], inline = false }: SessionCreationProps) {
+export function SessionCreation({
+  sessions,
+  disabled,
+  online,
+  create,
+  profileData,
+  models = [],
+  projects = [],
+  createInProject,
+  inline = false,
+}: SessionCreationProps) {
   const { t } = useTranslation()
   const deviceId = sessions[0]?.target.deviceId ?? ""
   const profileQuery = useExecutionProfiles(deviceId, online)
   const data = profileData ?? profileQuery.data
   const checking = (profileQuery.isFetching || profileQuery.isError) && !profileData
-  const model = useSessionCreation(sessions, data, online, checking, models)
+  const model = useSessionCreation(sessions, data, online, checking, models, projects)
 
-  if (!model.selected) return null
+  if (!model.selected && !model.selectedPath) return null
 
   return (
     <div className="has-[form]:basis-full" data-testid={SESSION_CREATE_IDS.root}>
@@ -38,6 +48,7 @@ export function SessionCreation({ sessions, disabled, online, create, profileDat
           profilesUnavailable={!data || !data.available || profileQuery.isError}
           checkingProfiles={profileQuery.isFetching && !profileData}
           create={create}
+          createInProject={createInProject}
         />
       ) : null}
     </div>

@@ -7,6 +7,7 @@ import { RelayFrameRouter } from '../relay-frame-router.js';
 import { RelayLink, type RelayLinkDeps } from '../relay-link.js';
 import { SourcePoller, type DesktopBindingEntry } from '../source-poller.js';
 import type {
+  ProjectSessionsPort,
   SessionModelPort,
   SessionNamesPort,
   SessionRemovalPort,
@@ -23,6 +24,7 @@ type RelayRuntimeDeps = RelayLinkDeps & {
   names: SessionNamesPort;
   removal?: SessionRemovalPort;
   models?: SessionModelPort;
+  projects?: ProjectSessionsPort;
   analytics?: AnalyticsPort | undefined;
   rules?: RulesPort | undefined;
 };
@@ -45,6 +47,7 @@ export function createRelayRuntime(deps: RelayRuntimeDeps) {
     names: deps.names,
     removal: deps.removal,
     models: deps.models,
+    projects: deps.projects,
     analytics: deps.analytics,
     rules: deps.rules,
     skills,

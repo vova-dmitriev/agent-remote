@@ -100,6 +100,34 @@ export class DeviceService {
       return { deviceId, token };
     });
   }
+  /**
+   * Gives every user without an active device a new one, for a shared VM's supervisor to run that user's daemon
+   * with; returns each new device and its token once.
+   */
+  async provisionAll() {
+    const { devices } = this;
+
+    return devices.transaction(async (tx) => {
+      const issued: { ownerId: string; deviceId: string; deviceToken: string }[] = [];
+
+      for (const ownerId of await devices.ownersWithoutDevice(tx)) {
+        await devices.lockOwner(tx, ownerId);
+
+        if (await devices.hasActive(tx, ownerId)) {
+          continue;
+        }
+
+        const deviceId = randomUUID(),
+          deviceToken = secret();
+
+        await devices.insert(tx, deviceId, ownerId, hash(deviceToken), randomUUID());
+        issued.push({ ownerId, deviceId, deviceToken });
+      }
+
+      return issued;
+    });
+  }
+
   async revoke(p: Principal, id: string) {
     await this.owned(p, id);
     await this.devices.revoke(p.userId, id, Date.now());

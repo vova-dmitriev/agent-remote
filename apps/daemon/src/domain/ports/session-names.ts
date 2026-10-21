@@ -1,4 +1,4 @@
-import type { ModelChoice, SessionRemoval } from '@protocol';
+import type { ModelChoice, ProjectSession, SessionRemoval } from '@protocol';
 
 /** Renames sessions in their agents (Claude Code, Codex); see `SessionNames`. */
 export interface SessionNamesPort {
@@ -24,4 +24,9 @@ export interface CodexThreadArchive {
 /** Switches running sessions to another model; see `SessionModelSwitch`. */
 export interface SessionModelPort {
   switch(sessionId: string, choice: ModelChoice): Promise<void>;
+}
+
+/** Starts sessions in a shared machine's projects; see `ProjectSessions`. */
+export interface ProjectSessionsPort {
+  create(session: ProjectSession): Promise<string>;
 }

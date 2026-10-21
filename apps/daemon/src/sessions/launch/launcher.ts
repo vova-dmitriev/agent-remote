@@ -33,6 +33,11 @@ export async function validateProject(cwd: string): Promise<string> {
   }
 }
 
+/** The terminal multiplexer that hosts Claude sessions where there is no Terminal app. */
+export const TMUX = 'tmux';
+/** tmux session names of Claude sessions this daemon started, followed by the launch id. */
+const TMUX_SESSION_PREFIX = 'agent-remote-';
+
 export async function launchClaudeSession(options: {
   directory: string;
   cwd: string;
@@ -45,6 +50,8 @@ export async function launchClaudeSession(options: {
   cmux?: CmuxContext;
   launchCmux?: typeof launchInCmux;
   open?: (file: string, args: string[]) => Promise<unknown>;
+  /** Where the session runs: Terminal on macOS, a detached tmux session elsewhere (a Linux VM). */
+  platform?: NodeJS.Platform;
 }): Promise<string> {
   if (options.resumeId && !/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,511}$/.test(options.resumeId)) {
     throw new CodedError(DaemonErrorCode.INVALID_CLAUDE_ARGS);
@@ -90,10 +97,21 @@ export async function launchClaudeSession(options: {
         options.cmux,
         options.launchContext?.env ?? process.env,
       );
-    } else {
+    } else if ((options.platform ?? process.platform) === 'darwin') {
       await (options.open ?? ((file, args) => execute(file, args)))('/usr/bin/open', [
         '-a',
         'Terminal',
+        script,
+      ]);
+    } else {
+      // No Terminal app on a Linux VM: tmux gives the wrapper a terminal that outlives the daemon and whose screen
+      // the wrapper can read.
+      await (options.open ?? ((file, args) => execute(file, args)))(TMUX, [
+        'new-session',
+        '-d',
+        '-s',
+        TMUX_SESSION_PREFIX + id,
+        '/bin/sh',
         script,
       ]);
     }

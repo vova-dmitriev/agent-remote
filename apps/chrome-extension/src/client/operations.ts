@@ -13,6 +13,8 @@ import {
   type ReadingPosition,
   type SessionRemoval,
   type ModelChoice,
+  type ProjectSession,
+  projectSessionReplySchema,
 } from '@protocol';
 import { chromeApi } from '../config/chrome-api.js';
 import { ExtensionConfig } from '../config/values.js';
@@ -61,6 +63,12 @@ export class ExtensionOperations {
 
   switchSessionModel(sessionId: string, generation: string, choice: ModelChoice) {
     return this.connection.request({ operation: LocalOperation.Model, sessionId, generation, choice });
+  }
+
+  async createProjectSession(_deviceId: string, session: ProjectSession) {
+    return projectSessionReplySchema.parse(
+      await this.connection.request({ operation: LocalOperation.Create, session }),
+    );
   }
 
   async readSessionFile(sessionId: string, generation: string, path: string) {

@@ -1,5 +1,8 @@
 {$DOMAIN} {
   encode zstd gzip
+  # A shared VM's supervisor reaches the relay directly; the operator endpoint is never public.
+  @operator path /operator /operator/*
+  respond @operator 404
   reverse_proxy relay:3000
   header Strict-Transport-Security "max-age=31536000"
 }

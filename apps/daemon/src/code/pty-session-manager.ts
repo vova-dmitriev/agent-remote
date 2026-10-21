@@ -148,6 +148,10 @@ export class PtySessionManager {
     this.remote(binding).process.write('\x1b');
   }
 
+  pressEnter(binding: RemotePtyBinding): void {
+    this.remote(binding).process.write('\r');
+  }
+
   disconnectRemote(binding: PtyBinding): void {
     delete this.local(binding).remote;
   }

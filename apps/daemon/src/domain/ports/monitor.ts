@@ -66,6 +66,7 @@ export interface MonitorPort extends EventEmitter {
   setPinned(id: string, pinned: boolean): boolean;
   hide(id: string, at?: number): boolean;
   setProviderModels(provider: AgentProvider, models: AgentModel[]): void;
+  setProjects(paths: string[]): void;
   setSubagents(id: string, agents: Session['subagents']): void;
   registerSubagentHistoryReader(
     id: string,

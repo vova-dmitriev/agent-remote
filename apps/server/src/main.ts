@@ -40,6 +40,7 @@ async function main() {
     inputEnabled: process.env.REMOTE_INPUT_ENABLED === '1',
     permissionsEnabled: process.env.REMOTE_PERMISSIONS_ENABLED === '1',
     staticDirectory: resolve('dist/mini-app'),
+    ...(process.env.REMOTE_OPERATOR_TOKEN ? { operatorToken: process.env.REMOTE_OPERATOR_TOKEN } : {}),
   });
 
   const worker = new NotificationWorker(
