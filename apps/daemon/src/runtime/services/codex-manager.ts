@@ -228,7 +228,8 @@ export class CodexManager {
         }
 
         threadId = thread.id;
-      } catch {
+      } catch (error) {
+        logDebug('codex/create-session', error);
         throw new CodedError(ErrorCode.UNKNOWN_AFTER_WRITE);
       }
 
@@ -261,7 +262,11 @@ export class CodexManager {
 
           return session.id;
         }
-      } catch {} // ignore: a created thread must never be automatically created again.
+
+        logDebug('codex/create-session', new CodedError(ErrorCode.SESSION_UNAVAILABLE));
+      } catch (error) {
+        logDebug('codex/create-session', error); // a created thread must never be automatically created again.
+      }
 
       throw new CodedError(ErrorCode.UNKNOWN_AFTER_WRITE);
     });
