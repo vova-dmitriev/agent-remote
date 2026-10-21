@@ -1,6 +1,7 @@
-import { Controller, Delete, Get, Inject, Param, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Inject, Param, Post, Query, UseGuards } from '@nestjs/common';
 import {
   analyticsQuerySchema,
+  rulesRequestSchema,
   DeviceStatus,
   ErrorCode,
   FrameType,
@@ -79,6 +80,11 @@ export class DevicesController {
   async analytics(@CurrentPrincipal() p: Principal, @Param('id') id: string, @Query() query: unknown) {
     const { period } = analyticsQuerySchema.parse(query);
 
+    return this.requests.analytics(await this.liveDevice(p, id, RelayProtocolFeature.Analytics), period);
+  }
+
+  /** The owner's live connection to the device, if it speaks the feature: else offline or unavailable. */
+  private async liveDevice(p: Principal, id: string, feature: number) {
     await this.devices.owned(p, id);
 
     const connection = this.hub.live.get(id);
@@ -87,11 +93,19 @@ export class DevicesController {
       throw new Fault(ErrorCode.DEVICE_OFFLINE);
     }
 
-    if (connection.protocolVersion < RelayProtocolFeature.Analytics) {
+    if (connection.protocolVersion < feature) {
       throw new Fault(ErrorCode.CAPABILITY_UNAVAILABLE);
     }
 
-    return this.requests.analytics(connection, period);
+    return connection;
+  }
+
+  /** Lists or changes the owner's rules for the agents on the device; the device keeps them. */
+  @Post(':id/rules')
+  async rules(@CurrentPrincipal() p: Principal, @Param('id') id: string, @Body() body: unknown) {
+    const request = rulesRequestSchema.parse(body);
+
+    return this.requests.rules(await this.liveDevice(p, id, RelayProtocolFeature.Rules), request);
   }
 
   @Get(':id/events')

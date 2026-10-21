@@ -173,7 +173,11 @@ export class DeviceSocket {
             return;
           }
 
-          if (frame.type === FrameType.FileResult || frame.type === FrameType.AnalyticsResult) {
+          if (
+            frame.type === FrameType.FileResult ||
+            frame.type === FrameType.AnalyticsResult ||
+            frame.type === FrameType.RulesResult
+          ) {
             requests.accept(connection, frame);
 
             return;

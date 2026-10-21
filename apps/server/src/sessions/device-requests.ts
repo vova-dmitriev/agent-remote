@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto';
 import {
   type AnalyticsPeriod,
   type AnalyticsReport,
+  type RulesReply,
+  type RulesRequest,
   type DeviceFrame,
   ErrorCode,
   FrameType,
@@ -13,7 +15,7 @@ import type { WebSocket } from 'ws';
 
 export type DeviceResult = Extract<
   DeviceFrame,
-  { type: typeof FrameType.FileResult | typeof FrameType.AnalyticsResult }
+  { type: typeof FrameType.FileResult | typeof FrameType.AnalyticsResult | typeof FrameType.RulesResult }
 >;
 
 /** The part of a live device connection a request uses. */
@@ -52,6 +54,14 @@ export class DeviceRequests {
       type: FrameType.AnalyticsRequest,
       requestId,
       period,
+    }));
+  }
+
+  rules(connection: DeviceConnection, request: RulesRequest) {
+    return this.request<RulesReply>(connection, FrameType.RulesResult, (requestId) => ({
+      type: FrameType.RulesRequest,
+      requestId,
+      request,
     }));
   }
 
@@ -98,7 +108,15 @@ export class DeviceRequests {
     }
 
     this.take(frame.requestId);
-    pending.resolve(frame.type === FrameType.FileResult ? frame.reply.file : frame.reply.report);
+    const { reply } = frame;
+
+    if ('file' in reply) {
+      pending.resolve(reply.file);
+    } else if ('report' in reply) {
+      pending.resolve(reply.report);
+    } else {
+      pending.resolve(reply.rules);
+    }
   }
 
   disconnect(connection: DeviceConnection) {

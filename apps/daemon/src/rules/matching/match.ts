@@ -1,8 +1,8 @@
 import { isAbsolute, relative, resolve } from 'node:path';
 import { ReadyRule, RuleScopeKind, type Rule, type RuleScope } from '@protocol';
-import { logDebug } from '../diagnostics/log.js';
+import { logDebug } from '../../diagnostics/log.js';
 import { readyRule } from './ready-rules.js';
-import type { RulesFile, ScopeRules } from './store.js';
+import type { RulesFile, ScopeRules } from '../store.js';
 
 export interface RuleInForce {
   rule: Rule;

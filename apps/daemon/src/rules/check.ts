@@ -12,8 +12,8 @@ import { ClaudeHookEvent, ClaudePermissionMode, ClaudeShellTool } from '../domai
 import { CodexShellTool } from '../domain/codex/codex.js';
 import { HookAgent } from '../domain/ipc.js';
 import type { HookEnvelope } from '../domain/ports/monitor.js';
-import { matchCommand, rulesInForce, type RuleInForce } from './match.js';
-import { projectRoot } from './project.js';
+import { matchCommand, rulesInForce, type RuleInForce } from './matching/match.js';
+import { projectRoot } from './matching/project.js';
 import { emptyScope, type RulesStore } from './store.js';
 
 /** Tools whose input is a shell command. */

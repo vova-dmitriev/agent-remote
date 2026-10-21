@@ -6,6 +6,7 @@ import { LocalController } from '../../local/controller/controller.js';
 import type { LocalControllerOptions } from '../../local/controller/types.js';
 import type { TranscriptSources } from '../../monitor/history.js';
 import type { AnalyticsPort } from '../../analytics/collector.js';
+import type { RulesPort } from '../../rules/service.js';
 import { startLocalServer } from '../../local/server/server.js';
 
 type RuntimeConfiguration = Awaited<ReturnType<typeof runtimeConfiguration>>;
@@ -19,6 +20,7 @@ type LocalSurfaceDeps = Pick<
   localServices: LocalServices;
   readers: TranscriptSources;
   analytics: AnalyticsPort | undefined;
+  rules: RulesPort | undefined;
 };
 
 export async function startLocalSurface(deps: LocalSurfaceDeps) {
@@ -34,6 +36,7 @@ export async function startLocalSurface(deps: LocalSurfaceDeps) {
     dispatcher: deps.dispatcher,
     ...(deps.names ? { names: deps.names } : {}),
     analytics: deps.analytics,
+    rules: deps.rules,
     history: (request) => (readers.has(request.sessionId) ? readers.page(request) : Promise.resolve(null)),
   });
 

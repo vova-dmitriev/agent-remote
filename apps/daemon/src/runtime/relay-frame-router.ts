@@ -9,6 +9,7 @@ import type { SessionNamesPort } from '../domain/ports/session-names.js';
 import { logDebug } from '../diagnostics/log.js';
 import { readSessionFile } from '../files/session-files.js';
 import type { AnalyticsPort } from '../analytics/collector.js';
+import type { RulesPort } from '../rules/service.js';
 
 export type RelayFrameRouterDeps = {
   relay: { send(frame: DeviceFrame): boolean };
@@ -21,6 +22,7 @@ export type RelayFrameRouterDeps = {
   names: SessionNamesPort;
   /** Absent when the usage store could not open. */
   analytics?: AnalyticsPort | undefined;
+  rules?: RulesPort | undefined;
 };
 
 /** A reply's error code: the protocol's own, else a generic failure (daemon-only codes stay on the Mac). */
@@ -72,6 +74,18 @@ export class RelayFrameRouter {
         : { ok: false as const, code: ErrorCode.CAPABILITY_UNAVAILABLE };
 
       relay.send({ type: FrameType.AnalyticsResult, requestId: frame.requestId, reply });
+    } else if (frame.type === FrameType.RulesRequest) {
+      // The relay asks only its owner's device; rules belong to that owner.
+      const rules = this.deps.rules;
+
+      const reply = rules
+        ? await rules.apply(frame.request).then(
+            (result) => ({ ok: true as const, rules: result }),
+            (error: unknown) => ({ ok: false as const, code: codeOf(error) }),
+          )
+        : { ok: false as const, code: ErrorCode.CAPABILITY_UNAVAILABLE };
+
+      relay.send({ type: FrameType.RulesResult, requestId: frame.requestId, reply });
     } else if (frame.type === FrameType.Command) {
       const result = await dispatcher.dispatch(frame.command);
 

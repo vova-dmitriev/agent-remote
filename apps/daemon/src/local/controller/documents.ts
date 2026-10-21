@@ -15,6 +15,7 @@ export const DOCUMENT_OPERATIONS: ReadonlySet<LocalOperation> = new Set([
   LocalOperation.Pin,
   LocalOperation.File,
   LocalOperation.Analytics,
+  LocalOperation.Rules,
 ]);
 
 export function documentOperation(
@@ -97,6 +98,18 @@ export function documentOperation(
       }
 
       return options.analytics.report(action.period);
+
+    // Rules gate the owner's own agents.
+    case LocalOperation.Rules:
+      if (principal.ownerId !== options.ownerId) {
+        throw new CodedError(ErrorCode.ACCESS_DENIED);
+      }
+
+      if (!options.rules) {
+        throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
+      }
+
+      return options.rules.apply(action.request);
 
     default:
       throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);

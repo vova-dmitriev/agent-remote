@@ -4,6 +4,7 @@ import {
   ErrorCode,
   LocalOperation,
   ProfileRequestKind,
+  RuleAction,
   type AnalyticsReport,
   type AppSnapshot,
 } from '@protocol';
@@ -239,4 +240,20 @@ it('reports usage only to the device owner, and says so when the store is unavai
   await expect(without.controller.execute(without.principal, ask)).rejects.toThrow(
     ErrorCode.CAPABILITY_UNAVAILABLE,
   );
+});
+
+it('changes rules only for the device owner', async () => {
+  const rules = { apply: vi.fn(async () => ({ projects: [], session: null })) };
+  const f = localFixture(undefined, undefined, undefined, undefined, rules);
+
+  const ask = {
+    operation: LocalOperation.Rules,
+    request: { action: RuleAction.View, sessionId: null },
+  } as const;
+
+  fixtures.push(f);
+
+  await expect(f.controller.execute({ ...f.principal, ownerId: 'owner-other' }, ask)).rejects.toThrow();
+  expect(rules.apply).not.toHaveBeenCalled();
+  expect(await f.controller.execute(f.principal, ask)).toEqual({ projects: [], session: null });
 });

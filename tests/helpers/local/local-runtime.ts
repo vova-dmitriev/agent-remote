@@ -20,6 +20,7 @@ export function localFixture(
   profiles?: LocalControllerOptions['profiles'],
   names?: LocalControllerOptions['names'],
   analytics?: LocalControllerOptions['analytics'],
+  rules?: LocalControllerOptions['rules'],
 ) {
   const store = new LocalStore(':memory:', 'device-local');
   const database = new LocalDatabase(':memory:');
@@ -95,6 +96,7 @@ export function localFixture(
     ...(profiles ? { profiles } : {}),
     ...(names ? { names } : {}),
     analytics,
+    rules,
     ownerId: 'owner-local',
     deviceId: 'device-local',
     monitor,

@@ -32,6 +32,8 @@ import { runtimeConfiguration } from './local/bootstrap/configuration.js';
 import { openLocalServices } from './runtime/services/local-services.js';
 import { NoRelay } from './local/bootstrap/no-relay.js';
 import { startAnalytics } from './analytics/live.js';
+import { RulesService } from './rules/service.js';
+import { RulesStore } from './rules/store.js';
 
 export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {}) {
   const config = await runtimeConfiguration(stateDirectory()),
@@ -110,6 +112,8 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
 
   const names = new SessionNames({ monitor, adapters, readers, codex: () => codex });
 
+  const rules = new RulesService({ store: new RulesStore(), monitor });
+
   const analytics = startAnalytics(monitor, {
     path: join(stateDirectory(), 'analytics.sqlite'),
     claudeHomes: [claudeConfigDirectory()],
@@ -147,6 +151,7 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
     readers,
     names,
     analytics,
+    rules,
   }).catch(async (error: unknown) => {
     await hookServer.close();
     await analytics?.close();
@@ -175,6 +180,7 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
     nativeProcesses,
     names,
     analytics,
+    rules,
   });
 
   sourcePoller.start();

@@ -3,8 +3,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { ReadyRule, RuleScopeKind } from '@protocol';
 import { afterEach, beforeEach, expect, it } from 'vitest';
-import { matchCommand, rulesInForce } from '@daemon/rules/match.js';
-import { projectRoot } from '@daemon/rules/project.js';
+import { matchCommand, rulesInForce } from '@daemon/rules/matching/match.js';
+import { projectRoot } from '@daemon/rules/matching/project.js';
 import { RulesStore, emptyRules, type RulesFile } from '@daemon/rules/store.js';
 
 const ROOT = '/work/app';

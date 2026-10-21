@@ -9,6 +9,7 @@ import type { LocalPrincipal } from '../grants/types.js';
 import type { RuntimeProfilesPort } from '../../domain/ports/runtime-profiles.js';
 import type { SessionNamesPort } from '../../domain/ports/session-names.js';
 import type { AnalyticsPort } from '../../analytics/collector.js';
+import type { RulesPort } from '../../rules/service.js';
 
 export interface LocalControllerOptions {
   ownerId: string;
@@ -24,6 +25,8 @@ export interface LocalControllerOptions {
   names?: SessionNamesPort;
   /** The usage report; without it the app reports usage as unavailable. */
   analytics?: AnalyticsPort | undefined;
+  /** The owner's rules for agents' commands. */
+  rules?: RulesPort | undefined;
   history?: (
     request: HistoryRead,
   ) => Promise<{ messages: HistoryMessage[]; before: string | null; after: string | null } | null>;
