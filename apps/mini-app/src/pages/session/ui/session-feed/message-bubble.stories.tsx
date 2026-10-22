@@ -23,6 +23,15 @@ const meta = {
 export default meta
 export const Assistant: StoryObj<typeof meta> = {}
 export const User: StoryObj<typeof meta> = { args: { message: { ...meta.args.message, role: MessageRole.User } } }
+export const LongMessage: StoryObj<typeof meta> = {
+  args: {
+    message: {
+      ...meta.args.message,
+      id: "synthetic-long-answer",
+      text: Array.from({ length: 30 }, (_, line) => `Synthetic paragraph ${line + 1} of a long answer.`).join("\n\n"),
+    },
+  },
+}
 export const ToolCall: StoryObj<typeof meta> = {
   args: {
     message: {

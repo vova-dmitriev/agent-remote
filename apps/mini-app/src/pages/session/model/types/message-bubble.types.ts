@@ -6,3 +6,8 @@ export interface MessageBubbleProps {
   agent: AgentName
   sessionId?: string
 }
+
+export interface MessageTextProps {
+  id: string
+  text: string
+}

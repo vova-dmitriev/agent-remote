@@ -44,6 +44,7 @@ export const SESSION_FEED_IDS = {
   message: "session-feed-message",
   text: "session-feed-message-text",
   time: "session-feed-message-time",
+  fold: "session-feed-message-fold",
   empty: "session-feed-empty",
   loading: "session-feed-loading",
   skeletonMessage: "session-feed-skeleton-message",

@@ -34,6 +34,8 @@ export const viewerEN = {
   copySessionId: "Copy session ID",
   sessionIdCopied: "Session ID copied",
   sessionResumeId: "Session ID to continue",
+  expandMessage: "Show more",
+  collapseMessage: "Show less",
 } as const
 
 export const viewerRU = {
@@ -72,4 +74,6 @@ export const viewerRU = {
   copySessionId: "Скопировать ID сессии",
   sessionIdCopied: "ID сессии скопирован",
   sessionResumeId: "ID сессии, чтобы продолжить",
+  expandMessage: "Развернуть",
+  collapseMessage: "Свернуть",
 } as const
