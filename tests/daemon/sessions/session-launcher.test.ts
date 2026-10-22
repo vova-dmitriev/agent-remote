@@ -226,6 +226,7 @@ it('opens Codex in a terminal on the thread the app started', async () => {
       node: '/node',
       entry: '/remote.mjs',
       codexThreadId: 'thread-1',
+      codexHome: '/codex-home',
       cmuxCli: null,
       open: async (_file, args) => {
         scripts.push(await readFile(args[2]!, 'utf8'));
@@ -233,6 +234,7 @@ it('opens Codex in a terminal on the thread the app started', async () => {
     });
 
     expect(scripts[0]).toContain("exec '/node' '/remote.mjs' codex resume 'thread-1'\n");
+    expect(scripts[0]).toContain("until ls '/codex-home/sessions'/*/*/*/rollout-*-'thread-1'.jsonl");
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

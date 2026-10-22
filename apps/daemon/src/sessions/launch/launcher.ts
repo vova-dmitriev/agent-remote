@@ -9,6 +9,7 @@ import { promisify } from 'node:util';
 import { access, mkdir, realpath, stat, writeFile, rm } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { join, isAbsolute } from 'node:path';
+import { homedir } from 'node:os';
 import { type LaunchContext } from './launch-context.js';
 import { type CmuxContext } from '../../cmux/context.js';
 import { CMUX_APP_CLI, launchInCmux } from '../../cmux/launch.js';
@@ -70,6 +71,8 @@ export async function launchClaudeSession(options: {
   cmuxCli?: string | null;
   /** Opens Codex on this thread of the daemon's own app-server instead of Claude. */
   codexThreadId?: string;
+  /** Codex's home, where it records threads (`CODEX_HOME`, else ~/.codex). */
+  codexHome?: string;
 }): Promise<string> {
   if (options.resumeId && !/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,511}$/.test(options.resumeId)) {
     throw new CodedError(DaemonErrorCode.INVALID_CLAUDE_ARGS);
@@ -95,6 +98,15 @@ export async function launchClaudeSession(options: {
 
   const agent = options.codexThreadId ? ' codex resume ' + quote(options.codexThreadId) : claude;
 
+  // Codex records a new thread only with its first message, and resumes only a recorded one.
+  const recorded = options.codexThreadId
+    ? 'until ls ' +
+      quote(join(options.codexHome ?? process.env.CODEX_HOME ?? join(homedir(), '.codex'), 'sessions')) +
+      '/*/*/*/rollout-*-' +
+      quote(options.codexThreadId) +
+      '.jsonl >/dev/null 2>&1; do [ "$waiting" ] || echo \'Codex opens here after the first message.\'; waiting=1; sleep 1; done\n'
+    : '';
+
   await writeFile(
     script,
     '#!/bin/sh\ncd -- ' +
@@ -107,7 +119,9 @@ export async function launchClaudeSession(options: {
       id +
       '\nexport CLAUDE_REMOTE_HOME=' +
       quote(options.directory) +
-      '\nexec ' +
+      '\n' +
+      recorded +
+      'exec ' +
       quote(options.node) +
       ' ' +
       quote(options.entry) +
