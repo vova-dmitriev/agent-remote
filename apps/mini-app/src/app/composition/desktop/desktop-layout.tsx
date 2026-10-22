@@ -33,7 +33,7 @@ export function DesktopLayout({ model, view, subagent, back, logout, open }: Des
         onToggleSidebar={sidebar.toggle}
         onHome={back}
         onAccounts={onAccounts}
-        onUsage={view.openUsage}
+        onUsage={() => view.openUsage()}
         onRules={() => view.openRules()}
         onLogout={logout}
       />
@@ -61,8 +61,9 @@ export function DesktopLayout({ model, view, subagent, back, logout, open }: Des
             <ApplicationContent
               model={model}
               device={view.device}
-              rulesSession={view.rulesSession}
+              fromSession={view.fromSession}
               openRules={view.openRules}
+              openUsage={view.openUsage}
               subagent={subagent}
               back={back}
               closeAccounts={view.closeAccounts}

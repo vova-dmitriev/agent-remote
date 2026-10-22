@@ -37,7 +37,15 @@ export const rateLimitSchema = z.strictObject({
 /** Every window of every agent on the device; Claude and Codex have two each. */
 export const rateLimitsSchema = z.array(rateLimitSchema).max(8);
 
-export const analyticsQuerySchema = z.strictObject({ period: z.enum(AnalyticsPeriod) });
+const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/u);
+
+export const analyticsQuerySchema = z.strictObject({
+  period: z.enum(AnalyticsPeriod),
+  /** Only this agent session: Claude's session id or the Codex thread id. */
+  session: label.optional(),
+  /** Only this local day; the daily bars still show every day of the period. */
+  day: day.optional(),
+});
 
 export const analyticsReportSchema = z.strictObject({
   period: z.enum(AnalyticsPeriod),
@@ -51,7 +59,7 @@ export const analyticsReportSchema = z.strictObject({
   daily: z
     .array(
       z.strictObject({
-        day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u),
+        day,
         tokens: usageTokensSchema,
         costUsd: cost,
       }),

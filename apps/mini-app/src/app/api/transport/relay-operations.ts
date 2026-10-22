@@ -16,7 +16,7 @@ import {
   CodedError,
   ErrorCode,
   type RulesRequest,
-  type AnalyticsPeriod,
+  type AnalyticsQuery,
   type PreferencePatch,
   type ReadingPosition,
   type SessionRemoval,
@@ -162,8 +162,8 @@ export abstract class RelayOperations extends RelayCommandOperations implements 
     )
   }
 
-  async usageReport(deviceId: string, period: AnalyticsPeriod) {
-    const query = new URLSearchParams({ period })
+  async usageReport(deviceId: string, analytics: AnalyticsQuery) {
+    const query = new URLSearchParams(Object.entries(analytics).filter((entry): entry is [string, string] => entry[1] !== undefined))
 
     return analyticsReportSchema.parse(await this.request("/devices/" + encodeURIComponent(deviceId) + "/analytics?" + query))
   }

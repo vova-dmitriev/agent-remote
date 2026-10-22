@@ -12,7 +12,7 @@ import {
 } from "@/entities/session"
 import { useTranslation } from "@/shared/lib/hooks"
 import { SessionTitle } from "@/features/rename-session"
-import { RateLimits, SessionUsage, providerLimits, usageProvider } from "@/entities/usage"
+import { RateLimits, providerLimits, usageProvider } from "@/entities/usage"
 import { Button } from "@/shared/ui/button"
 import { cn } from "@/shared/lib/utils"
 import { SessionActivity } from "./activity/session-activity"
@@ -50,6 +50,7 @@ export function SessionPage({
   onOpenSubagent,
   onOpenFile,
   onOpenRules,
+  onOpenUsage,
 }: SessionPageProps) {
   const { t, language } = useTranslation()
   const observed = sessionObserved(state, session)
@@ -105,6 +106,7 @@ export function SessionPage({
           switchModel={switchModel}
           remove={remove}
           onRemoved={onBack}
+          onOpenUsage={onOpenUsage}
         />
       </div>
       {/* The plan limits sit at the right of the status line, so the header leaves the title its room. */}
@@ -112,7 +114,6 @@ export function SessionPage({
         <p className="min-w-0 flex-1 text-[11px] text-muted-foreground session:text-[10px] session:short:hidden">
           {t("updatedAt", { time: new Date(session.lastEventAt).toLocaleTimeString(language) })} ·{" "}
           {t(session.statusConfidence === StatusConfidence.Inferred ? "inferredStatus" : "observedStatus")}
-          <SessionUsage usage={session.usage} />
         </p>
         <RateLimits
           limits={providerLimits(state.snapshot?.rateLimits ?? [], usageProvider(session.target.kind))}

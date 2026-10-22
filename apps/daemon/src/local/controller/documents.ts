@@ -5,6 +5,7 @@ import { LocalDocumentKind } from '../state/values.js';
 import type { LocalPrincipal } from '../grants/types.js';
 import type { LocalControllerOptions } from './types.js';
 import { logDebug } from '../../diagnostics/log.js';
+import { analyticsFilter } from '../../analytics/report.js';
 
 /**
  * Operations on the owner's documents, labels, pins, removals, models, changed files and usage, answered by
@@ -144,7 +145,7 @@ export function documentOperation(
         throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
       }
 
-      return options.analytics.report(action.period);
+      return options.analytics.report({ period: action.period, ...analyticsFilter(action) });
 
     // Rules gate the owner's own agents.
     case LocalOperation.Rules:

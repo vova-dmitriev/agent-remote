@@ -9,13 +9,18 @@ import { USAGE_PAGE_IDS } from "../config/test-ids"
 import { USAGE_PERIODS } from "../config/values"
 import { useUsageReport } from "../model/use-usage-report"
 import { UsageReportView } from "./usage-report"
+import { UsageFilters } from "./filters/usage-filters"
+import { pickedSessionName, usageKey } from "../lib/labels"
 import type { UsagePageProps } from "./usage-page.types"
 
 /** Tokens, API-equivalent cost and plan limits, counted on the device from its agents' transcripts. */
-export function UsagePage({ deviceId, online, sessions, onBack }: UsagePageProps) {
+export function UsagePage({ deviceId, online, sessions, session, onBack }: UsagePageProps) {
   const { t } = useTranslation()
-  const { period, setPeriod, query } = useUsageReport(deviceId, online)
+  const { period, setPeriod, filter, pickDay, pickSession, query } = useUsageReport(deviceId, online, session && usageKey(session))
   const report = query.data
+  const picked = filter.session
+
+  const pickedName = pickedSessionName(picked, session, report?.bySession ?? [], sessions)
 
   return (
     <section data-testid={USAGE_PAGE_IDS.root} className="mx-auto grid w-full max-w-3xl gap-[16px] py-[16px]">
@@ -40,6 +45,12 @@ export function UsagePage({ deviceId, online, sessions, onBack }: UsagePageProps
           </Button>
         ))}
       </div>
+      <UsageFilters
+        session={pickedName}
+        day={filter.day}
+        onClearSession={() => pickSession(undefined)}
+        onClearDay={() => pickDay(undefined)}
+      />
       {query.isError ? (
         <div className="grid justify-items-start gap-[8px] text-[13px]" data-testid={USAGE_PAGE_IDS.failed}>
           <p>{feedbackText(query.error.message, t)}</p>
@@ -54,7 +65,16 @@ export function UsagePage({ deviceId, online, sessions, onBack }: UsagePageProps
           {t("usageEmpty")}
         </p>
       ) : null}
-      {report ? <UsageReportView report={report} sessions={sessions} /> : null}
+      {report ? (
+        <UsageReportView
+          report={report}
+          sessions={sessions}
+          day={filter.day}
+          session={picked}
+          pickDay={pickDay}
+          pickSession={pickSession}
+        />
+      ) : null}
     </section>
   )
 }

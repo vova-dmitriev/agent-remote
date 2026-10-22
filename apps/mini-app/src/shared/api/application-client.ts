@@ -14,7 +14,7 @@ import type {
   ContinuityAccess,
   ProfileRoutingAccess,
   SessionFile,
-  AnalyticsPeriod,
+  AnalyticsQuery,
   AnalyticsReport,
   RulesReply,
   RulesRequest,
@@ -48,7 +48,7 @@ export interface ApplicationOperations {
   /** The text of a file the session changed, read on its device. */
   readSessionFile(sessionId: string, generation: string, path: string): Promise<SessionFile>
   /** Token usage, cost and plan limits counted on the device. */
-  usageReport(deviceId: string, period: AnalyticsPeriod): Promise<AnalyticsReport>
+  usageReport(deviceId: string, query: AnalyticsQuery): Promise<AnalyticsReport>
   /** Lists or changes the owner's rules for agents' commands, kept on the device. */
   rules(deviceId: string, request: RulesRequest): Promise<RulesReply>
   claimDevice(code: string): Promise<unknown>

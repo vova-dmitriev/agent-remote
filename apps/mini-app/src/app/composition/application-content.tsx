@@ -8,8 +8,9 @@ import type { ApplicationContentProps } from "./application-content.types"
 export function ApplicationContent({
   model,
   device,
-  rulesSession,
+  fromSession,
   openRules,
+  openUsage,
   subagent,
   back,
   closeAccounts,
@@ -22,7 +23,7 @@ export function ApplicationContent({
 
   if (state.connection === ConnectionStatus.Expired) return <SignInPage />
   if (device && state.deviceId)
-    return <DevicePage page={device} deviceId={state.deviceId} state={state} rulesSession={rulesSession} onBack={closeAccounts} />
+    return <DevicePage page={device} deviceId={state.deviceId} state={state} fromSession={fromSession} onBack={closeAccounts} />
   if (!selected) return model.linkPending ? <SessionLoading /> : home
   if (subagent.agentId)
     return (
@@ -58,6 +59,7 @@ export function ApplicationContent({
       onOpenSubagent={subagent.readable ? (agentId) => subagent.open(selected.id, agentId) : undefined}
       onOpenFile={(path) => setFile({ sessionId: selected.id, path })}
       onOpenRules={openRules}
+      onOpenUsage={openUsage}
     />
   )
 }

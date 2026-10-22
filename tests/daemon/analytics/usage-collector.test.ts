@@ -25,7 +25,7 @@ const assistant = (id: string, output: number) =>
   }) + '\n';
 
 const output = async (collector: AnalyticsCollector) =>
-  (await collector.report(AnalyticsPeriod.Today)).totals.tokens.output;
+  (await collector.report({ period: AnalyticsPeriod.Today })).totals.tokens.output;
 
 it('reads appended lines once, waits for a line to finish, and re-reads a replaced file without double counting', async () => {
   const claude = join(directory, 'claude');
@@ -62,6 +62,6 @@ it('reads appended lines once, waits for a line to finish, and re-reads a replac
   await rename(transcript + '.next', transcript);
   await collector.pass();
   expect(await output(collector)).toBe(112);
-  expect((await collector.report(AnalyticsPeriod.Today)).importing).toBeNull();
+  expect((await collector.report({ period: AnalyticsPeriod.Today })).importing).toBeNull();
   await collector.close();
 });

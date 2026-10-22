@@ -43,13 +43,17 @@ const report = {
   ],
 }
 
-const meta = { component: UsageReportView, args: { report, sessions: [] } } satisfies Meta<typeof UsageReportView>
+const meta = {
+  component: UsageReportView,
+  args: { report, sessions: [], day: undefined, session: undefined, pickDay: () => undefined, pickSession: () => undefined },
+} satisfies Meta<typeof UsageReportView>
 
 export default meta
 type Story = StoryObj<typeof meta>
 
 export const Week: Story = {}
 export const Importing: Story = { args: { report: { ...report, importing: { done: 40, total: 263 } } } }
+export const PickedDayAndSession: Story = { args: { day: report.daily[3]!.day, session: "synthetic-session-1" } }
 export const NoLimits: Story = { args: { report: { ...report, rateLimits: [] } } }
 export const Dark: Story = { globals: { theme: ThemePreference.Dark } }
 export const English: Story = { globals: { language: Language.En } }

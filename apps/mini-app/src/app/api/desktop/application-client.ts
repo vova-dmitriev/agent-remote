@@ -165,7 +165,7 @@ export class DesktopApplicationClient implements ApplicationClient {
     this.operations.switchSessionModel(sessionId, generation, choice)
   createProjectSession = (deviceId: string, session: ProjectSession) => this.operations.createProjectSession(deviceId, session)
   readSessionFile = (sessionId: string, generation: string, path: string) => this.operations.readSessionFile(sessionId, generation, path)
-  usageReport = (deviceId: string, period: Parameters<ApplicationClient["usageReport"]>[1]) => this.operations.usageReport(deviceId, period)
+  usageReport = (deviceId: string, query: Parameters<ApplicationClient["usageReport"]>[1]) => this.operations.usageReport(deviceId, query)
   rules = (deviceId: string, request: Parameters<ApplicationClient["rules"]>[1]) => this.operations.rules(deviceId, request)
   getReadingPosition = (sessionId: string) => this.operations.getReadingPosition(sessionId)
   saveReadingPosition = (sessionId: string, position: Parameters<ApplicationClient["saveReadingPosition"]>[1]) =>

@@ -6,9 +6,3 @@ export const RATE_LIMIT_IDS = {
   detail: "rate-limits-detail",
   stale: "rate-limits-stale",
 } as const
-
-export const SESSION_USAGE_IDS = {
-  root: "session-usage",
-  tokens: "session-usage-tokens",
-  cost: "session-usage-cost",
-} as const

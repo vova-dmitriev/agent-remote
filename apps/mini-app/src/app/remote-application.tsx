@@ -67,7 +67,7 @@ export function RemoteApplication() {
         result={model.result}
         onHome={back}
         onAccounts={model.devices.length && state.connection !== ConnectionStatus.Expired ? view.openAccounts : undefined}
-        onUsage={view.openUsage}
+        onUsage={() => view.openUsage()}
         onRules={() => view.openRules()}
         onLogout={logout}
       >
@@ -75,8 +75,9 @@ export function RemoteApplication() {
         <ApplicationContent
           model={model}
           device={view.device}
-          rulesSession={view.rulesSession}
+          fromSession={view.fromSession}
           openRules={view.openRules}
+          openUsage={view.openUsage}
           subagent={subagent}
           back={back}
           closeAccounts={view.closeAccounts}

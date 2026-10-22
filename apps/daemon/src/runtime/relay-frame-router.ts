@@ -1,4 +1,5 @@
 import { type DeviceFrame, ErrorCode, errorCode, FrameType, hasErrorCode, type ServerFrame } from '@protocol';
+import { analyticsFilter } from '../analytics/report.js';
 import type { Monitor } from '../monitor/monitor.js';
 import type { EventReplay } from '../monitor/replay.js';
 import type { TranscriptSources } from '../monitor/history.js';
@@ -132,7 +133,7 @@ export class RelayFrameRouter {
       const analytics = this.deps.analytics;
 
       const reply = analytics
-        ? await analytics.report(frame.period).then(
+        ? await analytics.report({ period: frame.period, ...analyticsFilter(frame) }).then(
             (report) => ({ ok: true as const, report }),
             (error: unknown) => ({ ok: false as const, code: codeOf(error) }),
           )

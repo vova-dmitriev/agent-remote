@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import {
-  type AnalyticsPeriod,
+  type AnalyticsQuery,
   type AnalyticsReport,
   type RulesReply,
   type RulesRequest,
@@ -60,11 +60,11 @@ export class DeviceRequests {
     }));
   }
 
-  analytics(connection: DeviceConnection, period: AnalyticsPeriod) {
+  analytics(connection: DeviceConnection, query: AnalyticsQuery) {
     return this.request<AnalyticsReport>(connection, FrameType.AnalyticsResult, (requestId) => ({
       type: FrameType.AnalyticsRequest,
       requestId,
-      period,
+      ...query,
     }));
   }
 

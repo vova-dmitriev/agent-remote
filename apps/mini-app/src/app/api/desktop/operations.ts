@@ -8,7 +8,7 @@ import {
   analyticsReportSchema,
   rulesReplySchema,
   type RulesRequest,
-  type AnalyticsPeriod,
+  type AnalyticsQuery,
   type PreferencePatch,
   type ReadingPosition,
   type SessionRemoval,
@@ -63,8 +63,8 @@ export class DesktopOperations {
     return rulesReplySchema.parse(await this.connection.request({ operation: LocalOperation.Rules, request }))
   }
 
-  async usageReport(_deviceId: string, period: AnalyticsPeriod) {
-    return analyticsReportSchema.parse(await this.connection.request({ operation: LocalOperation.Analytics, period }))
+  async usageReport(_deviceId: string, query: AnalyticsQuery) {
+    return analyticsReportSchema.parse(await this.connection.request({ operation: LocalOperation.Analytics, ...query }))
   }
 
   async getReadingPosition(sessionId: string) {

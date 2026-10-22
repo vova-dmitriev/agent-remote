@@ -237,7 +237,7 @@ it('reports usage only to the device owner, and says so when the store is unavai
   await expect(f.controller.execute({ ...f.principal, ownerId: 'owner-other' }, ask)).rejects.toThrow();
   expect(analytics.report).not.toHaveBeenCalled();
   expect(await f.controller.execute(f.principal, ask)).toBe(report);
-  expect(analytics.report).toHaveBeenCalledWith(AnalyticsPeriod.Today);
+  expect(analytics.report).toHaveBeenCalledWith({ period: AnalyticsPeriod.Today });
 
   await expect(without.controller.execute(without.principal, ask)).rejects.toThrow(
     ErrorCode.CAPABILITY_UNAVAILABLE,

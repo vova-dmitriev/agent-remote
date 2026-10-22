@@ -122,3 +122,20 @@ it('sums a live session over all time, with the context it last reported', async
   expect(usages.has('missing')).toBe(false);
   store.close();
 });
+
+it("narrows the report to one session and one day, while the days stay the session's whole period", () => {
+  const store = filled();
+
+  const session = usageReport(store, AnalyticsPeriod.All, null, [], NOW, { session: 'session-b' });
+
+  expect(session.bySession.map((item) => item.key)).toEqual(['session-b']);
+  expect(session.byModel.map((item) => item.key)).toEqual(['synthetic-model']);
+  expect(session.daily.map((item) => item.day)).toEqual(['2026-10-20']);
+
+  const day = usageReport(store, AnalyticsPeriod.All, null, [], NOW, { day: '2026-10-21' });
+
+  expect(day.bySession.map((item) => item.key)).toEqual(['session-a']);
+  expect(day.totals.tokens.input).toBe(1_000_000);
+  expect(day.daily.map((item) => item.day)).toEqual(['2026-09-01', '2026-10-20', '2026-10-21']);
+  store.close();
+});

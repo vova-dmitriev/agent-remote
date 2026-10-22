@@ -91,9 +91,9 @@ export class DevicesController {
   /** The device's token usage, computed on the Mac; an offline device, or one too old to keep it, cannot answer. */
   @Get(':id/analytics')
   async analytics(@CurrentPrincipal() p: Principal, @Param('id') id: string, @Query() query: unknown) {
-    const { period } = analyticsQuerySchema.parse(query);
+    const analytics = analyticsQuerySchema.parse(query);
 
-    return this.requests.analytics(await this.liveDevice(p, id, RelayProtocolFeature.Analytics), period);
+    return this.requests.analytics(await this.liveDevice(p, id, RelayProtocolFeature.Analytics), analytics);
   }
 
   /** The owner's live connection to the device, if it speaks the feature: else offline or unavailable. */

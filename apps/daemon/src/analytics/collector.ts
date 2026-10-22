@@ -1,7 +1,7 @@
 import { constants } from 'node:fs';
 import { open, readdir, stat } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { AnalyticsPeriod, AnalyticsReport, RateLimit, SessionUsage } from '@protocol';
+import type { AnalyticsQuery, AnalyticsReport, RateLimit, SessionUsage } from '@protocol';
 import { logDebug } from '../diagnostics/log.js';
 import { claudeLimits } from './parsers/claude-limits.js';
 import { claudeUsageRow } from './parsers/claude-usage.js';
@@ -28,7 +28,7 @@ export interface CollectorOptions extends AnalyticsSources {
 
 /** What the app's surfaces ask of the collector. */
 export interface AnalyticsPort {
-  report(period: AnalyticsPeriod): Promise<AnalyticsReport>;
+  report(query: AnalyticsQuery): Promise<AnalyticsReport>;
 }
 
 const CHUNK_BYTES = 2 * 1024 * 1024;
@@ -81,8 +81,10 @@ export class AnalyticsCollector implements AnalyticsPort {
     return this.running;
   }
 
-  report(period: AnalyticsPeriod) {
-    return Promise.resolve(usageReport(this.store, period, this.importing, this.limits()));
+  report({ period, ...filter }: AnalyticsQuery) {
+    return Promise.resolve(
+      usageReport(this.store, period, this.importing, this.limits(), Date.now(), filter),
+    );
   }
 
   /** Every plan window the agents last reported: Claude's from its state file, Codex's from its rollouts. */

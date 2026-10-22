@@ -120,7 +120,10 @@ export async function installDesktopBridge(
             const usage = window as unknown as { usageReport?: unknown; usageReads?: string[] };
             const report = usage.usageReport;
 
-            usage.usageReads = [...(usage.usageReads ?? []), request.action.period ?? ''];
+            usage.usageReads = [
+              ...(usage.usageReads ?? []),
+              [request.action.period, request.action.session, (request.action as { day?: string }).day].filter((part) => typeof part === 'string').join(' '),
+            ];
 
             return report ? { ...base, ok: true, data: report } : { ...base, ok: false, code: values.unavailable };
           }

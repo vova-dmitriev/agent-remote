@@ -2,6 +2,7 @@ import { basename } from 'node:path';
 import {
   AnalyticsPeriod,
   UNKNOWN_USAGE_KEY,
+  type AnalyticsQuery,
   type AnalyticsReport,
   type SessionUsage,
   type UsageProvider,
@@ -64,26 +65,31 @@ export function usageReport(
   importing: AnalyticsReport['importing'],
   rateLimits: AnalyticsReport['rateLimits'],
   now = Date.now(),
+  filter: Omit<AnalyticsQuery, 'period'> = {},
 ): AnalyticsReport {
-  const since = [periodStart(period, now)];
+  // The days keep the whole period so another day can be picked; everything else narrows to the picked day too.
+  const sessionWhere = `at_ms >= ?${filter.session === undefined ? '' : ' AND session_id = ?'}`;
+  const sessionArgs = [periodStart(period, now), ...(filter.session === undefined ? [] : [filter.session])];
+  const where = sessionWhere + (filter.day === undefined ? '' : ' AND day = ?');
+  const since = [...sessionArgs, ...(filter.day === undefined ? [] : [filter.day])];
 
   const grouped = (column: string, limit: number) =>
     store.query(
-      `SELECT ${column} AS key, ${SUMS} FROM usage WHERE at_ms >= ? GROUP BY ${column} ORDER BY ${ORDER} LIMIT ${limit}`,
+      `SELECT ${column} AS key, ${SUMS} FROM usage WHERE ${where} GROUP BY ${column} ORDER BY ${ORDER} LIMIT ${limit}`,
       since,
     );
 
-  const [totals] = store.query(`SELECT ${SUMS} FROM usage WHERE at_ms >= ?`, since);
+  const [totals] = store.query(`SELECT ${SUMS} FROM usage WHERE ${where}`, since);
 
   const sessions = store.query(
     `SELECT session_id AS key, max(provider) AS provider, max(project) AS project, max(at_ms) AS last_at,
-       ${SUMS} FROM usage WHERE at_ms >= ? GROUP BY session_id ORDER BY last_at DESC LIMIT 100`,
+       ${SUMS} FROM usage WHERE ${where} GROUP BY session_id ORDER BY last_at DESC LIMIT 100`,
     since,
   );
 
   const days = store.query(
-    `SELECT day, ${SUMS} FROM usage WHERE at_ms >= ? GROUP BY day ORDER BY day DESC LIMIT 400`,
-    since,
+    `SELECT day, ${SUMS} FROM usage WHERE ${sessionWhere} GROUP BY day ORDER BY day DESC LIMIT 400`,
+    sessionArgs,
   );
 
   return {
@@ -101,6 +107,12 @@ export function usageReport(
     rateLimits,
   };
 }
+
+/** The session and day a request narrows its report to, without the keys it left out. */
+export const analyticsFilter = ({ session, day }: Omit<AnalyticsQuery, 'period'>) => ({
+  ...(session === undefined ? {} : { session }),
+  ...(day === undefined ? {} : { day }),
+});
 
 /** All-time usage of the sessions the app shows, with the context each last reported. */
 export function sessionUsages(

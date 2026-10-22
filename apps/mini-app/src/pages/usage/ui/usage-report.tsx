@@ -14,7 +14,7 @@ const AGENTS = [
   { provider: UsageProvider.Codex, name: AgentName.Codex },
 ] as const
 
-export function UsageReportView({ report, sessions }: UsageReportViewProps) {
+export function UsageReportView({ report, sessions, day, session, pickDay, pickSession }: UsageReportViewProps) {
   const { t, language } = useTranslation()
   const now = useLimitClock(undefined)
   const { tokens } = report.totals
@@ -62,10 +62,15 @@ export function UsageReportView({ report, sessions }: UsageReportViewProps) {
           })}
         </section>
       ) : null}
-      <UsageDaily days={report.daily} />
+      <UsageDaily days={report.daily} picked={day} onPick={pickDay} />
       <UsageRows section={UsageSection.Models} title="usageByModel" rows={report.byModel} />
       <UsageRows section={UsageSection.Projects} title="usageByProject" rows={report.byProject} />
-      <UsageRows section={UsageSection.Sessions} title="usageBySession" rows={sessionRows(report.bySession, sessions)} />
+      <UsageRows
+        section={UsageSection.Sessions}
+        title="usageBySession"
+        rows={sessionRows(report.bySession, sessions)}
+        pick={{ picked: session, onPick: pickSession }}
+      />
     </div>
   )
 }

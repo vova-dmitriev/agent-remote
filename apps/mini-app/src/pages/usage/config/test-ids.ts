@@ -13,4 +13,7 @@ export const USAGE_PAGE_IDS = {
   row: "usage-row",
   daily: "usage-daily",
   day: "usage-day",
+  dayDetail: "usage-day-detail",
+  filter: "usage-filter",
+  filterClear: "usage-filter-clear",
 } as const

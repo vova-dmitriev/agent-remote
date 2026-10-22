@@ -7,8 +7,10 @@ export interface ApplicationContentProps {
   model: ReturnType<typeof useApplication>
   /** The device's settings page that is open, if any. */
   device: DeviceView | null
-  rulesSession: string | null
+  /** The session the open device page was opened from. */
+  fromSession: string | null
   openRules: (sessionId: string) => void
+  openUsage: (sessionId: string) => void
   subagent: ReturnType<typeof useSubagentView>
   back: () => void
   /** Back from a settings page to the sessions. */

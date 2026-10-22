@@ -8,7 +8,7 @@ import {
   analyticsReportSchema,
   rulesReplySchema,
   type RulesRequest,
-  type AnalyticsPeriod,
+  type AnalyticsQuery,
   type PreferencePatch,
   type ReadingPosition,
   type SessionRemoval,
@@ -85,9 +85,9 @@ export class ExtensionOperations {
   }
 
   /** The paired companion's device: the report is counted on that Mac. */
-  async usageReport(_deviceId: string, period: AnalyticsPeriod) {
+  async usageReport(_deviceId: string, query: AnalyticsQuery) {
     return analyticsReportSchema.parse(
-      await this.connection.request({ operation: LocalOperation.Analytics, period }),
+      await this.connection.request({ operation: LocalOperation.Analytics, ...query }),
     );
   }
 

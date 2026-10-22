@@ -32,6 +32,8 @@ export interface SessionPageProps {
   onOpenFile?: ((path: string) => void) | undefined
   /** Opens the Rules page on this session's tab. */
   onOpenRules: (sessionId: string) => void
+  /** Opens the Usage page with this session picked. */
+  onOpenUsage?: ((sessionId: string) => void) | undefined
 }
 
 export interface SessionNoticesProps {
@@ -48,6 +50,8 @@ export interface SessionMenuProps {
   /** Switches the session's model; absent, the menu offers no models. */
   switchModel?: SwitchModelController | undefined
   onRemoved: () => void
+  /** Opens the Usage page with this session picked. */
+  onOpenUsage?: ((sessionId: string) => void) | undefined
 }
 
 export interface CopySessionIdItemProps {
