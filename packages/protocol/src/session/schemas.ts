@@ -4,6 +4,8 @@ import {
   CommandStatus,
   PromptDelivery,
   RemotePermissionDecision,
+  TERMINAL_INPUT_MAX_CHARS,
+  TerminalKey,
 } from './command-values.js';
 import {
   BindingState,
@@ -80,6 +82,8 @@ export const capabilitySchema = z.object({
   createSession: z.boolean().optional(),
   restartSession: z.boolean().optional(),
   terminalSnapshot: z.boolean(),
+  /** The Terminal tab can type into the session's terminal and press keys there. */
+  terminalInput: z.boolean().optional(),
   attachments: z
     .strictObject({ images: z.enum(AttachmentMode), files: z.literal(AttachmentMode.Reference) })
     .optional(),
@@ -224,6 +228,21 @@ export const actionSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal(CommandActionType.RestartSession) }),
   z.strictObject({ type: z.literal(CommandActionType.Escape) }),
   z.strictObject({ type: z.literal(CommandActionType.Interrupt) }),
+  z
+    .strictObject({
+      type: z.literal(CommandActionType.TerminalInput),
+      // Typed as is; control characters come only as keys.
+
+      text: z
+        .string()
+        .min(1)
+        .max(TERMINAL_INPUT_MAX_CHARS)
+        // eslint-disable-next-line no-control-regex -- Intentionally reject control characters at the wire boundary.
+        .regex(/^[^\u0000-\u001f\u007f]*$/u)
+        .optional(),
+      key: z.enum(TerminalKey).optional(),
+    })
+    .refine((action) => action.text !== undefined || action.key !== undefined, ErrorCode.INVALID_COMMAND),
   z.strictObject({
     type: z.literal(CommandActionType.Permission),
     requestId: id,

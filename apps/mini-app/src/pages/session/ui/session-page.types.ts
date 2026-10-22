@@ -56,3 +56,11 @@ export interface SessionMenuProps {
   /** Opens search in the chat; absent where the host cannot search. */
   onSearch?: (() => void) | undefined
 }
+
+export interface SessionInputProps {
+  tab: SessionTab
+  session: Session
+  controller: CommandController
+  connection: Connection
+  deviceStatus: DeviceStatus
+}

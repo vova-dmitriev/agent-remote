@@ -13,7 +13,7 @@ import { CmuxClient } from './client.js';
 import type { CmuxContext, CmuxSurface } from './context.js';
 import { prepareCmuxContext } from './launch.js';
 
-type Terminal = Pick<CmuxClient, 'pasteAndSubmit' | 'sendEscape' | 'sendEnter' | 'readScreen'>;
+type Terminal = Pick<CmuxClient, 'pasteAndSubmit' | 'sendEscape' | 'sendEnter' | 'readScreen' | 'type'>;
 
 export interface CmuxAttachOptions {
   adapters: AdapterRegistry;
@@ -68,6 +68,7 @@ export function cmuxAttacher(options: CmuxAttachOptions) {
               permission: options.permissionsEnabled,
               userInput: options.inputEnabled,
               terminalSnapshot: true,
+              terminalInput: options.inputEnabled,
               ...(options.inputEnabled
                 ? { attachments: { images: AttachmentMode.Reference, files: AttachmentMode.Reference } }
                 : {}),
@@ -91,6 +92,7 @@ export function cmuxAttacher(options: CmuxAttachOptions) {
               return { status: CommandStatus.Dispatched };
             },
             screen: (binding) => terminal.readScreen(binding.target as CmuxTarget),
+            terminal: (binding, input) => terminal.type(binding.target as CmuxTarget, input),
           },
         ),
       );

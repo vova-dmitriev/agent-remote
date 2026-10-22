@@ -286,6 +286,7 @@ export async function startHookServer(options: Options) {
                   userInput: options.inputEnabled,
                   permission: options.permissionsEnabled,
                   terminalSnapshot: !!message.cmux || message.screen === true,
+                  terminalInput: options.inputEnabled,
                   ...(options.inputEnabled
                     ? { attachments: { images: AttachmentMode.Reference, files: AttachmentMode.Reference } }
                     : {}),
@@ -323,6 +324,17 @@ export async function startHookServer(options: Options) {
                   const response = await call(id, {
                     type: WrapperActionType.Enter,
                     sessionId: wrappers.get(id)?.claudeSessionId ?? '',
+                  });
+
+                  if (response.status !== CommandStatus.Dispatched) {
+                    throw new CodedError(response.code ?? ErrorCode.WRAPPER_FAILED);
+                  }
+                },
+                terminal: async (_binding, input) => {
+                  const response = await call(id, {
+                    type: WrapperActionType.Terminal,
+                    sessionId: wrappers.get(id)?.claudeSessionId ?? '',
+                    ...input,
                   });
 
                   if (response.status !== CommandStatus.Dispatched) {

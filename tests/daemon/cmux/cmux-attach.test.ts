@@ -2,7 +2,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { TargetKind, type CmuxTarget } from '@protocol';
+import { TargetKind, TerminalKey, type CmuxTarget } from '@protocol';
 import { startHookServer } from '@daemon/code/hooks/hook-server.js';
 import { requestLocal } from '@daemon/code/hooks/ipc.js';
 import { localSecret, socketPath } from '@daemon/config.js';
@@ -56,6 +56,7 @@ async function harness(identified: CmuxSurface | 'fail') {
     sendEscape: vi.fn(async () => {}),
     sendEnter: vi.fn(async () => {}),
     readScreen: vi.fn(async () => 'screen'),
+    type: vi.fn(async () => {}),
   };
 
   const resolve = vi.fn(async () => {
@@ -116,6 +117,15 @@ it('attaches a cmux-started session to its surface so input works without a rest
 
   await adapter.interrupt(binding);
   expect(terminal.sendEscape).toHaveBeenCalledWith(session!.target as CmuxTarget);
+
+  // The Terminal tab types into the same surface and presses keys there.
+  expect(session!.capabilities.terminalInput).toBe(true);
+  await adapter.terminalInput(binding, { text: 'ls', key: TerminalKey.Enter });
+
+  expect(terminal.type).toHaveBeenCalledWith(session!.target as CmuxTarget, {
+    text: 'ls',
+    key: TerminalKey.Enter,
+  });
 });
 
 it('moves an observed-only session onto its surface instead of duplicating it', async () => {

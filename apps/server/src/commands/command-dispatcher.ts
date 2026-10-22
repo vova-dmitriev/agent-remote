@@ -41,6 +41,8 @@ function commandCapability(action: ClientCommand['action']['type']) {
       return CapabilityKey.CreateSession;
     case CommandActionType.RestartSession:
       return CapabilityKey.RestartSession;
+    case CommandActionType.TerminalInput:
+      return CapabilityKey.TerminalInput;
     default:
       return action;
   }

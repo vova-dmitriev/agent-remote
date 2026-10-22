@@ -32,6 +32,8 @@ export const WrapperActionType = {
   Snapshot: 'snapshot',
   /** Presses Enter in Claude's terminal, e.g. to confirm a dialog it opened. */
   Enter: 'enter',
+  /** Types into Claude's terminal and presses a key there, from the app's Terminal tab. */
+  Terminal: 'terminal',
 } as const;
 
 export type WrapperActionType = (typeof WrapperActionType)[keyof typeof WrapperActionType];

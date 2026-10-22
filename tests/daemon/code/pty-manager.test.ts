@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { spawn as spawnPty } from 'node-pty';
+import { TerminalKey } from '@protocol';
 import { PtySessionManager, type PtyProcess } from '@daemon/code/pty-session-manager.js';
 
 function fakePty() {
@@ -71,6 +72,21 @@ describe('PtySessionManager', () => {
     m.interrupt(remote);
     expect(children[0]!.writes.at(-1)).toBe('\x1b');
     expect(() => m.sendPrompt(remote, '\x1b[201~pwd')).toThrow('INVALID_PROMPT');
+  });
+
+  it('types the Terminal tab text as keystrokes and sends each key as its xterm sequence', () => {
+    const { m, children } = manager();
+    const binding = m.start({ id: 'typing', cwd: '/tmp' });
+    const remote = m.confirmSession(binding, 'typing-session');
+
+    m.type(remote, { text: 'git status', key: TerminalKey.Enter });
+    m.type(remote, { key: TerminalKey.Up });
+    m.type(remote, { key: TerminalKey.Interrupt });
+    expect(children[0]!.writes).toEqual(['git status', '\r', '\x1b[A', '\x03']);
+
+    expect(() => m.type({ ...remote, lease: 'old' }, { key: TerminalKey.Enter })).toThrow(
+      'STALE_PTY_BINDING',
+    );
   });
 
   it('keeps local terminal I/O alive on remote disconnect and revokes old leases', () => {

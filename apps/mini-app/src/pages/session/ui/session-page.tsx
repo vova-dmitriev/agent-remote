@@ -13,7 +13,6 @@ import {
 import { useTranslation } from "@/shared/lib/hooks"
 import { SessionTitle } from "@/features/rename-session"
 import { RateLimits, SessionUsage, providerLimits, usageProvider } from "@/entities/usage"
-import { SessionComposer } from "@/features/send-command"
 import { Button } from "@/shared/ui/button"
 import { cn } from "@/shared/lib/utils"
 import { SessionActivity } from "./activity/session-activity"
@@ -29,6 +28,7 @@ import { SessionModelChips } from "./header/session-model-chips"
 import { SESSION_PAGE_IDS } from "../config/test-ids"
 import { useFeedSources } from "../model/history/use-feed-sources"
 import { ChatSearch } from "./search/chat-search"
+import { SessionInput } from "./session-input"
 import type { SessionPageProps } from "./session-page.types"
 
 export function SessionPage({
@@ -164,7 +164,7 @@ export function SessionPage({
       <SessionPermissions session={session} state={state} controller={controller} />
       <UserInputRequests session={session} state={state} controller={controller} />
       <SessionActivity session={session} available={observed} />
-      <SessionComposer controller={controller} session={session} connection={state.connection} deviceStatus={deviceStatus} />
+      <SessionInput tab={tab} session={session} controller={controller} connection={state.connection} deviceStatus={deviceStatus} />
     </section>
   )
 }

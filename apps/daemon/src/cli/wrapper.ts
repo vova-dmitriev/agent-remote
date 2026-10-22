@@ -1,5 +1,12 @@
 import { readTmuxScreen, tmuxPane } from '../sessions/launch/tmux.js';
-import { CodedError, CommandStatus, ErrorCode, TargetKind } from '@protocol';
+import {
+  CodedError,
+  CommandStatus,
+  ErrorCode,
+  TargetKind,
+  TERMINAL_INPUT_MAX_CHARS,
+  TerminalKey,
+} from '@protocol';
 import { WrapperActionType, IpcMessageType } from '../domain/ipc.js';
 import { CmuxClient } from '../cmux/client.js';
 import { type CmuxContext } from '../cmux/context.js';
@@ -22,6 +29,12 @@ const actionSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal(WrapperActionType.Interrupt), sessionId: z.string().min(1).max(512) }),
   z.strictObject({ type: z.literal(WrapperActionType.Snapshot) }),
   z.strictObject({ type: z.literal(WrapperActionType.Enter), sessionId: z.string().min(1).max(512) }),
+  z.strictObject({
+    type: z.literal(WrapperActionType.Terminal),
+    sessionId: z.string().min(1).max(512),
+    text: z.string().max(TERMINAL_INPUT_MAX_CHARS).optional(),
+    key: z.enum(TerminalKey).optional(),
+  }),
 ]);
 
 export async function startClaude(
@@ -145,6 +158,8 @@ export async function startClaude(
               manager.sendPrompt(remote, action.text);
             } else if (action.type === WrapperActionType.Enter) {
               manager.pressEnter(remote);
+            } else if (action.type === WrapperActionType.Terminal) {
+              manager.type(remote, action);
             } else {
               manager.interrupt(remote);
             }

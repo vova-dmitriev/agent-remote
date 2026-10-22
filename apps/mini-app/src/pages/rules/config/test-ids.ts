@@ -19,3 +19,6 @@ export const RULES_PAGE_IDS = {
   empty: "rules-empty",
   failed: "rules-failed",
 } as const
+
+/** ARIA roles of the rules page's session tabs. */
+export const RulesTabRole = { Tab: "tab" } as const

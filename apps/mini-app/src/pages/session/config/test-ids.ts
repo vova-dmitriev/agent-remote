@@ -118,3 +118,11 @@ export const CHAT_SEARCH_IDS = {
   empty: "chat-search-empty",
   failed: "chat-search-failed",
 } as const
+
+export const TERMINAL_INPUT_IDS = {
+  root: "terminal-input",
+  text: "terminal-input-text",
+  send: "terminal-input-send",
+  key: "terminal-input-key",
+  error: "terminal-input-error",
+} as const

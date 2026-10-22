@@ -10,6 +10,7 @@ import {
   ConnectorTransport,
   type Session,
   type ModelChoice,
+  type TerminalKey,
   CodedError,
   ErrorCode,
 } from '@protocol';
@@ -48,7 +49,13 @@ export interface SessionAdapter {
   setModel(binding: Binding, choice: ModelChoice): Promise<void>;
   pressEnter(binding: Binding): Promise<boolean>;
   readScreen(binding: Binding): Promise<string>;
+  terminalInput(binding: Binding, input: TerminalInput): Promise<DispatchReceipt>;
   close(): Promise<void>;
+}
+/** Text to type into a session's terminal, then a key to press there; at least one of them. */
+export interface TerminalInput {
+  text?: string | undefined;
+  key?: TerminalKey | undefined;
 }
 type Driver = {
   prompt?: (
@@ -63,6 +70,8 @@ type Driver = {
   model?: (binding: Binding, choice: ModelChoice) => Promise<void>;
   /** Presses Enter in the session's terminal. */
   enter?: (binding: Binding) => Promise<void>;
+  /** Types into the session's terminal and presses a key there, from the app's Terminal tab. */
+  terminal?: (binding: Binding, input: TerminalInput) => Promise<void>;
 };
 export class SourceAdapter implements SessionAdapter {
   private bindings = new Map<string, Binding>();
@@ -133,6 +142,21 @@ export class SourceAdapter implements SessionAdapter {
     await this.driver.enter(binding);
 
     return true;
+  }
+  async terminalInput(binding: Binding, input: TerminalInput): Promise<DispatchReceipt> {
+    const current = this.bindings.get(JSON.stringify(binding.target));
+
+    if (!this.description.capabilities.terminalInput || !this.driver.terminal) {
+      throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
+    }
+
+    if (!current || current.localProof !== binding.localProof || current.generation !== binding.generation) {
+      throw new CodedError(ErrorCode.STALE_SESSION);
+    }
+
+    await this.driver.terminal(binding, input);
+
+    return { status: CommandStatus.Dispatched };
   }
   async readScreen(binding: Binding) {
     const current = this.bindings.get(JSON.stringify(binding.target));

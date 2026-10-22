@@ -1,9 +1,19 @@
 import { DaemonErrorCode } from '../error-codes.js';
-import { CodedError, ErrorCode, positiveInteger, validatePrompt } from '@protocol';
+import { CodedError, ErrorCode, positiveInteger, TerminalKey, validatePrompt } from '@protocol';
 
 import { randomUUID } from 'node:crypto';
 import { isAbsolute } from 'node:path';
 import { spawn as spawnPty } from 'node-pty';
+
+/** What each key the Terminal tab presses sends down an xterm PTY. */
+const TERMINAL_KEY_BYTES: Record<TerminalKey, string> = {
+  [TerminalKey.Enter]: '\r',
+  [TerminalKey.Escape]: '\x1b',
+  [TerminalKey.Tab]: '\t',
+  [TerminalKey.Up]: '\x1b[A',
+  [TerminalKey.Down]: '\x1b[B',
+  [TerminalKey.Interrupt]: '\x03',
+};
 
 export interface Disposable {
   dispose(): void;
@@ -150,6 +160,19 @@ export class PtySessionManager {
 
   pressEnter(binding: RemotePtyBinding): void {
     this.remote(binding).process.write('\r');
+  }
+
+  /** Types text as keystrokes, then presses a key, as someone at the terminal would. */
+  type(binding: RemotePtyBinding, input: { text?: string | undefined; key?: TerminalKey | undefined }): void {
+    const session = this.remote(binding);
+
+    if (input.text) {
+      session.process.write(input.text);
+    }
+
+    if (input.key) {
+      session.process.write(TERMINAL_KEY_BYTES[input.key]);
+    }
   }
 
   disconnectRemote(binding: PtyBinding): void {

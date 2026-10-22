@@ -24,7 +24,13 @@ function daemon(store: LocalStore, permissions: PermissionBroker) {
     inputEnabled: true,
     permissionsEnabled: false,
     resolve: async (surface: CmuxSurface) => ({ windowId: WINDOW, ...surface }),
-    terminal: { pasteAndSubmit: vi.fn(), sendEscape: vi.fn(), sendEnter: vi.fn(), readScreen: vi.fn() },
+    terminal: {
+      pasteAndSubmit: vi.fn(),
+      sendEscape: vi.fn(),
+      sendEnter: vi.fn(),
+      readScreen: vi.fn(),
+      type: vi.fn(),
+    },
   });
 
   return { attach, adapters, monitor: new Monitor({ deviceId: 'device', store, adapters, permissions }) };

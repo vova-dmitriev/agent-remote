@@ -24,6 +24,10 @@ export const viewerEN = {
   chatSearchCount: "Found: {{count}}",
   chatSearchEmpty: "Nothing found for “{{query}}”",
   chatSearchFailed: "Couldn’t search. Is the Mac online?",
+  terminalInput: "Terminal input",
+  terminalInputPlaceholder: "Type a command for the terminal",
+  terminalInputSend: "Send to the terminal with Enter",
+  terminalInputFailed: "Couldn’t reach the terminal. Is the Mac online?",
 } as const
 
 export const viewerRU = {
@@ -52,4 +56,8 @@ export const viewerRU = {
   chatSearchCount: "Найдено: {{count}}",
   chatSearchEmpty: "По запросу «{{query}}» ничего не найдено",
   chatSearchFailed: "Не удалось выполнить поиск. Mac в сети?",
+  terminalInput: "Ввод в терминал",
+  terminalInputPlaceholder: "Команда для терминала",
+  terminalInputSend: "Отправить в терминал с Enter",
+  terminalInputFailed: "Не удалось достучаться до терминала. Mac в сети?",
 } as const

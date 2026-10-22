@@ -20,7 +20,7 @@ import { CommandStoreOutcome, RuntimeEvent } from '../domain/runtime.js';
 import { type PreparedAttachment } from '../attachments/types.js';
 import type { LocalStorePort } from '../domain/ports/local-store.js';
 import type { MonitorPort } from '../domain/ports/monitor.js';
-import { type AdapterRegistry } from '../adapters/registry.js';
+import { type AdapterRegistry, type DispatchReceipt } from '../adapters/registry.js';
 import { type UserInputBroker } from './user-input-broker.js';
 import { type PermissionBroker } from './permission-broker.js';
 
@@ -181,6 +181,9 @@ export class Dispatcher {
           break;
         case CommandActionType.RestartSession:
           capability = CapabilityKey.RestartSession;
+          break;
+        case CommandActionType.TerminalInput:
+          capability = CapabilityKey.TerminalInput;
           break;
         default:
           capability = command.action.type;
@@ -366,10 +369,17 @@ export class Dispatcher {
 
         const adapter = this.options.adapters.resolve(command.target);
 
-        const receipt =
-          command.action.type === CommandActionType.Prompt
-            ? await adapter.sendPrompt(binding, command.action.text, prepared, command.action.delivery)
-            : await adapter.interrupt(binding);
+        let receipt: DispatchReceipt;
+
+        if (command.action.type === CommandActionType.Prompt) {
+          receipt = await adapter.sendPrompt(binding, command.action.text, prepared, command.action.delivery);
+        } else if (command.action.type === CommandActionType.TerminalInput) {
+          const { type: _type, ...input } = command.action;
+
+          receipt = await adapter.terminalInput(binding, input);
+        } else {
+          receipt = await adapter.interrupt(binding);
+        }
 
         result = { commandId: command.commandId, ...receipt };
       }

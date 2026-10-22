@@ -4,13 +4,31 @@ import {
   CodedError,
   positiveInteger,
   TargetKind,
+  TerminalKey,
   truncateUtf8,
   validatePrompt,
 } from '@protocol';
 import { execFile } from 'node:child_process';
 
 /** Keys `cmux send-key` takes. */
-const CmuxKey = { Escape: 'Escape', Enter: 'enter' } as const;
+const CmuxKey = {
+  Escape: 'Escape',
+  Enter: 'enter',
+  Tab: 'tab',
+  Up: 'up',
+  Down: 'down',
+  CtrlC: 'ctrl+c',
+} as const;
+
+/** The `cmux send-key` name of each key the Terminal tab presses. */
+const TERMINAL_KEYS: Record<TerminalKey, string> = {
+  [TerminalKey.Enter]: CmuxKey.Enter,
+  [TerminalKey.Escape]: CmuxKey.Escape,
+  [TerminalKey.Tab]: CmuxKey.Tab,
+  [TerminalKey.Up]: CmuxKey.Up,
+  [TerminalKey.Down]: CmuxKey.Down,
+  [TerminalKey.Interrupt]: CmuxKey.CtrlC,
+};
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -42,6 +60,23 @@ export class CmuxClient {
   /** Presses Enter, e.g. to take the focused answer of a dialog in the terminal. */
   async sendEnter(target: CmuxTarget): Promise<void> {
     await this.run(['send-key', ...this.selectors(target), CmuxKey.Enter]);
+  }
+
+  /**
+   * Types into the surface and presses a key there, from the app's Terminal tab. Text is pasted (stdin keeps it out
+   * of the option parser and away from escape sequences); `--force` reaches an open dialog, as at the terminal.
+   */
+  async type(
+    target: CmuxTarget,
+    input: { text?: string | undefined; key?: TerminalKey | undefined },
+  ): Promise<void> {
+    if (input.text) {
+      await this.run(['paste', ...this.selectors(target), '-'], input.text);
+    }
+
+    if (input.key) {
+      await this.run(['send-key', ...this.selectors(target), '--force', TERMINAL_KEYS[input.key]]);
+    }
   }
 
   private selectors(target: CmuxTarget): string[] {

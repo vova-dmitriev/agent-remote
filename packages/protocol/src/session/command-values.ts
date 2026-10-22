@@ -15,6 +15,8 @@ export const CommandActionType = {
   Interrupt: 'interrupt',
   Permission: 'permission',
   UserInput: 'user_input',
+  /** Text typed into the session's terminal and/or one key pressed there, from the app's Terminal tab. */
+  TerminalInput: 'terminal_input',
 } as const;
 
 export type CommandActionType = (typeof CommandActionType)[keyof typeof CommandActionType];
@@ -43,6 +45,7 @@ export const CapabilityKey = {
   UserInput: 'userInput',
   CreateSession: 'createSession',
   RestartSession: 'restartSession',
+  TerminalInput: 'terminalInput',
 } as const;
 
 export type CapabilityKey = (typeof CapabilityKey)[keyof typeof CapabilityKey];
@@ -61,3 +64,18 @@ export const PromptDelivery = {
 } as const;
 
 export type PromptDelivery = (typeof PromptDelivery)[keyof typeof PromptDelivery];
+
+/** Keys the app's Terminal tab presses in a session's terminal. */
+export const TerminalKey = {
+  Enter: 'enter',
+  Escape: 'escape',
+  Tab: 'tab',
+  Up: 'up',
+  Down: 'down',
+  Interrupt: 'ctrl_c',
+} as const;
+
+export type TerminalKey = (typeof TerminalKey)[keyof typeof TerminalKey];
+
+/** The longest text one terminal input types. */
+export const TERMINAL_INPUT_MAX_CHARS = 4096;

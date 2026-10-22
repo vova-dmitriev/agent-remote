@@ -5,7 +5,7 @@ import { useTranslation } from "@/shared/lib/hooks"
 import { Button } from "@/shared/ui/button"
 import { Skeleton } from "@/shared/ui/skeleton"
 import { cn } from "@/shared/lib/utils"
-import { RULES_PAGE_IDS } from "../config/test-ids"
+import { RULES_PAGE_IDS, RulesTabRole } from "../config/test-ids"
 import { useOwnRule } from "../model/use-own-rule"
 import { useRulesPage } from "../model/use-rules-page"
 import { OwnRuleForm } from "./own-rule-form"
@@ -43,7 +43,7 @@ export function RulesPage({ deviceId, online, session, onBack }: RulesPageProps)
           <Button
             key={tab.id}
             variant="outline"
-            role="tab"
+            role={RulesTabRole.Tab}
             aria-selected={tab.id === page.tab?.id}
             className={cn(
               "h-[30px] max-w-[260px] rounded-full px-[12px] text-[12px]",
