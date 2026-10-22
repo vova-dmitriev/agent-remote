@@ -1,6 +1,7 @@
 import { CommandStatus, ErrorCode } from "@protocol"
 import { useTranslation } from "@/shared/lib/hooks"
 import { feedbackText } from "@/shared/lib/i18n"
+import { Toast } from "@/shared/ui/toast"
 import { SHELL_IDS } from "../config/test-ids"
 import { ShellHeader } from "./header/shell-header"
 import { SESSION_SHELL_CLASS, ShellLayout } from "../config/values"
@@ -38,7 +39,13 @@ export function ApplicationShell({
         />
       ) : null}
       {children}
-      {result === CommandStatus.Dispatched || result === CommandStatus.Accepted || result === ErrorCode.PAIRING_CONFIRM_LOCAL ? (
+      {/* A command's receipt passes over the chat, above its input; the pairing step stays until it is done. */}
+      {result === CommandStatus.Dispatched || result === CommandStatus.Accepted ? (
+        <Toast show={result} testId={SHELL_IDS.receipt}>
+          {feedbackText(result, t)}
+        </Toast>
+      ) : null}
+      {result === ErrorCode.PAIRING_CONFIRM_LOCAL ? (
         <p className={receiptClass} role="status" data-testid={SHELL_IDS.receipt}>
           {feedbackText(result, t)}
         </p>

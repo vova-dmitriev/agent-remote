@@ -5,6 +5,7 @@ import { HistoryStatus, type HistoryMessage } from "@protocol"
 import { useTranslation } from "@/shared/lib/hooks"
 import { Button } from "@/shared/ui/button"
 import { cn } from "@/shared/lib/utils"
+import { ToastAnchor } from "@/shared/ui/toast"
 import { SESSION_FEED_IDS } from "@/pages/session/config/test-ids"
 import { useFollowMessages } from "@/pages/session/model/use-follow-messages"
 import { useHistoryEdges } from "@/pages/session/model/history/use-history-edges"
@@ -99,6 +100,8 @@ export function SessionFeed({
           agent={agent}
         />
       ) : null}
+      {/* Above the bottom button while it shows. */}
+      <ToastAnchor className={atBottom ? "bottom-[12px]" : "bottom-[66px]"} />
       {!atBottom ? (
         <Button
           variant="outline"

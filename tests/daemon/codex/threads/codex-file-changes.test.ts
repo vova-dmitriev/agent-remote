@@ -70,3 +70,12 @@ it('does not add diff payload when other snapshot content uses the transport bud
   expect(bounded.sessions[0]?.changes?.truncated).toBe(true);
   expect(bounded.terminal?.text).toBe(snapshot.terminal.text);
 });
+
+it('records when Codex changed each file', () => {
+  const changes = new CodexFileChanges();
+
+  changes.ingest(item('edit'), 'turn', false, 1_792_000_000_000);
+
+  expect(changes.value().files[0]?.changedAt).toBe(1_792_000_000_000);
+  expect(sessionChangesSchema.safeParse(changes.value()).success).toBe(true);
+});

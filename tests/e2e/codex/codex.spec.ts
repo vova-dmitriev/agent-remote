@@ -38,7 +38,8 @@ for (const kind of ['codex-cli', 'codex-desktop'] as const) {
 
     await page.getByTestId(SESSION_PAGE_IDS.back).click();
     await chooseLanguage(page, 'en');
-    await expect(page.getByTestId(SHELL_IDS.receipt)).toContainText('Delivered to session');
+    // The receipt passed over the chat; the list shows none.
+    await expect(page.getByTestId(SHELL_IDS.receipt)).toHaveCount(0);
     await card.click();
     await expect(page.getByTestId(COMMAND_IDS.label)).toHaveText('Message this session');
   });

@@ -15,8 +15,9 @@ test('opens a file the session changed as formatted Markdown and goes back to th
   session.changes = {
     truncated: false,
     files: [
-      { id: 'synthetic-write', path: '/synthetic/docs/NOTES.md', kind: 'add', truncated: false, patch: '+# Synthetic notes' },
-      { id: 'synthetic-delete', path: '/synthetic/old.md', kind: 'delete', truncated: false, patch: '-gone' },
+      // Listed oldest first, as the device sends them; the app shows the newest first, with its time.
+      { id: 'synthetic-delete', path: '/synthetic/old.md', kind: 'delete', truncated: false, patch: '-gone', changedAt: Date.UTC(2026, 9, 22, 9, 0) },
+      { id: 'synthetic-write', path: '/synthetic/docs/NOTES.md', kind: 'add', truncated: false, patch: '+# Synthetic notes', changedAt: Date.UTC(2026, 9, 22, 14, 5) },
     ],
   };
 
@@ -26,6 +27,9 @@ test('opens a file the session changed as formatted Markdown and goes back to th
   await page.getByTestId(SESSION_CHANGES_IDS.toggle).click();
 
   const files = page.getByTestId(SESSION_CHANGES_IDS.file);
+
+  await expect(files.nth(0)).toHaveAttribute('data-change-id', 'synthetic-write');
+  await expect(files.nth(0).getByTestId(SESSION_CHANGES_IDS.changedAt)).toHaveAttribute('datetime', '2026-10-22T14:05:00.000Z');
 
   await files.nth(1).getByTestId(SESSION_CHANGES_IDS.fileToggle).click();
   // A deleted file has nothing to open.

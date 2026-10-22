@@ -7,4 +7,5 @@ export const SESSION_CHANGES_IDS = {
   fileToggle: "session-changes-file-toggle",
   patch: "session-changes-patch",
   open: "session-changes-open",
+  changedAt: "session-changes-changed-at",
 } as const

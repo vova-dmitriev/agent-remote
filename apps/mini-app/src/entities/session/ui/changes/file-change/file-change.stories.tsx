@@ -10,6 +10,7 @@ const exampleFile = {
   patch:
     '@@ -1,2 +1,3 @@\n-export const greeting = "Before";\n+export const greeting: string = "Hello";\n+console.log(greeting);\n // Synthetic example',
   truncated: false,
+  changedAt: Date.UTC(2026, 9, 22, 14, 5),
 }
 
 const meta = { title: "Entities/SessionChanges/File", component: FileChange, args: { file: exampleFile } } satisfies Meta<typeof FileChange>

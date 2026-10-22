@@ -14,7 +14,7 @@ const bytes = changeBytes;
 
 /** These patches come only from the bound native thread; paths are display metadata, never file reads. */
 export class CodexFileChanges extends FileChangeLog {
-  ingest(raw: unknown, turnId: string, historical = false) {
+  ingest(raw: unknown, turnId: string, historical = false, at?: number) {
     const item = object(raw);
 
     if (
@@ -46,6 +46,7 @@ export class CodexFileChanges extends FileChangeLog {
           path: change.path,
           kind: kind as SessionFileChange['kind'],
           diff: change.diff,
+          at,
         },
         historical,
       );

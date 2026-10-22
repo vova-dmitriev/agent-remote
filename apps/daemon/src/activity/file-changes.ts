@@ -9,6 +9,8 @@ export interface FileEdit {
   path: string;
   kind: SessionFileChange['kind'];
   diff: string;
+  /** When the agent made the edit, in milliseconds. */
+  at?: number | undefined;
 }
 
 /**
@@ -38,6 +40,7 @@ export class FileChangeLog {
       kind: edit.kind,
       patch,
       truncated: patch !== edit.diff,
+      ...(edit.at ? { changedAt: edit.at } : {}),
     };
 
     while (changeBytes(file) > 14000 && patch) {

@@ -43,6 +43,7 @@ export function claudeFileEdit(
   }
 
   const created = result.type === CREATED;
+  const at = typeof row.timestamp === 'string' ? Date.parse(row.timestamp) : NaN;
   const content = typeof result.content === 'string' ? result.content : '';
 
   // One row per file: a later edit of the same file replaces the earlier one.
@@ -50,6 +51,7 @@ export function claudeFileEdit(
     id: result.filePath,
     path: result.filePath,
     kind: created ? FileChangeKind.Add : FileChangeKind.Update,
+    ...(Number.isFinite(at) && at > 0 ? { at } : {}),
     // A new file's patch is empty; its content is the change.
     diff:
       created && !result.structuredPatch.length && content

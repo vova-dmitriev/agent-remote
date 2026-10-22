@@ -129,3 +129,18 @@ it('keeps every changed file listed when patches outgrow the budget, dropping th
   expect(files.at(-1)!.patch).not.toBe('');
   expect(Buffer.byteLength(JSON.stringify(log.value()))).toBeLessThanOrEqual(16384);
 });
+
+it('records when Claude changed each file', async () => {
+  const at = (line: string, timestamp: string) => JSON.stringify({ ...JSON.parse(line), timestamp }) + '\n';
+
+  await writeFile(path, at(edited('1', '/work/a.md'), '2026-10-22T10:00:00Z') + edited('2', '/work/b.md'));
+
+  const source = reader();
+
+  await source.readNext();
+
+  expect(source.changes!.files.map((file) => [file.path, file.changedAt])).toEqual([
+    ['/work/a.md', Date.parse('2026-10-22T10:00:00Z')],
+    ['/work/b.md', undefined],
+  ]);
+});

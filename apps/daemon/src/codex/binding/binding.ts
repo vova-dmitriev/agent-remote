@@ -257,7 +257,7 @@ export async function bindCodex(options: CodexBindingOptions, deps: Dependencies
       return;
     }
 
-    changes.ingest(item, turnId, historical);
+    changes.ingest(item, turnId, historical, occurredAt);
     session.changes = changes.value();
     subagents.ingest(item, turnId, historical);
     monitor.setSubagents(session.id, subagents.values());

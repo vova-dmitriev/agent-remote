@@ -23,9 +23,12 @@ test('permission, multiline draft and receipt stay usable together in a short vi
 
   await expect.poll(async () => (await feed.boundingBox())!.height).toBeGreaterThan(80);
 
-  expect((await composer.boundingBox())!.y + (await composer.boundingBox())!.height).toBeLessThanOrEqual(
-    (await receipt.boundingBox())!.y,
-  );
+  // The receipt passes over the chat, just above the composer.
+  const frame = (await page.getByTestId(SESSION_FEED_IDS.frame).boundingBox())!;
+  const passing = (await receipt.boundingBox())!;
+
+  expect(passing.y + passing.height).toBeLessThanOrEqual((await composer.boundingBox())!.y);
+  expect(passing.y).toBeGreaterThanOrEqual(frame.y);
 
   await expect(page.getByTestId(PERMISSION_IDS.allow)).toBeInViewport();
   await expect(page.getByTestId(COMMAND_IDS.send)).toBeInViewport();

@@ -7,6 +7,8 @@ export const sessionFileChangeSchema = z.strictObject({
   kind: z.enum(FileChangeKind),
   patch: z.string().max(16384),
   truncated: z.boolean(),
+  /** When the agent last changed the file, in milliseconds; absent where the source does not say. */
+  changedAt: z.number().int().nonnegative().optional(),
 });
 
 export const sessionChangesSchema = z.strictObject({

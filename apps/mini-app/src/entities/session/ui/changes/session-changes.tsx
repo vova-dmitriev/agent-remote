@@ -4,6 +4,7 @@ import { cn } from "@/shared/lib/utils"
 import { noticeVariants } from "@/shared/ui/notice"
 import { SESSION_CHANGES_IDS as IDS } from "@/entities/session/config/change-test-ids"
 import { sourceTextClass } from "../session-class"
+import { newestChangesFirst } from "@/entities/session/lib/changes/order"
 import { FileChange } from "./file-change/file-change"
 import { summaryClass } from "./summary-class"
 import type { SessionChangesProps } from "./session-changes.types"
@@ -30,7 +31,7 @@ export function SessionChanges({ changes, onOpen }: SessionChangesProps) {
             {t("changesLimited")}
           </p>
         ) : null}
-        {changes?.files.map((file) => (
+        {newestChangesFirst(changes?.files ?? []).map((file) => (
           <FileChange key={file.id} file={file} onOpen={onOpen} />
         ))}
       </div>

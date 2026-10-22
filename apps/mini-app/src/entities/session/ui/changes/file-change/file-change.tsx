@@ -1,3 +1,4 @@
+import { useMemo } from "react"
 import { ChevronRight, FileText } from "lucide-react"
 import { FileChangeKind } from "@protocol"
 import { Button } from "@/shared/ui/button"
@@ -17,8 +18,17 @@ const plugins: Options["rehypePlugins"] = [[rehypeHighlight, { detect: false }],
 const kindKeys = { add: "changeAdded", delete: "changeDeleted", update: "changeUpdated" } as const
 
 export function FileChange({ file, onOpen }: FileChangeProps) {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   const stats = patchStats(file.patch)
+
+  // The device's own time zone, as the rest of the app's times.
+  const changedAt = useMemo(
+    () =>
+      file.changedAt
+        ? new Intl.DateTimeFormat(language, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(file.changedAt)
+        : null,
+    [file.changedAt, language],
+  )
 
   return (
     <details className="group/file border-t border-border" data-testid={IDS.file} data-change-id={file.id}>
@@ -31,6 +41,15 @@ export function FileChange({ file, onOpen }: FileChangeProps) {
         <span className="text-[0.7rem] text-muted-foreground">{t(kindKeys[file.kind])}</span>
         <span className="text-syntax-string">+{stats.added}</span>
         <span className="text-danger">−{stats.deleted}</span>
+        {changedAt ? (
+          <time
+            className="text-[0.7rem] whitespace-nowrap text-muted-foreground tabular-nums"
+            dateTime={new Date(file.changedAt!).toISOString()}
+            data-testid={IDS.changedAt}
+          >
+            {changedAt}
+          </time>
+        ) : null}
       </summary>
       <div className={cn("message-markdown", patchClass)} data-testid={IDS.patch}>
         <ReactMarkdown skipHtml rehypePlugins={plugins}>
