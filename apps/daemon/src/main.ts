@@ -5,7 +5,8 @@ import { NativeProcesses } from './sessions/native-process.js';
 import { SessionNames } from './sessions/session-names.js';
 import { SessionRemover } from './sessions/session-removal.js';
 import { SessionModelSwitch } from './sessions/session-model.js';
-import { ProjectSessions } from './sessions/project-sessions.js';
+import { ProjectSessions } from './sessions/projects/project-sessions.js';
+import { recentFolders } from './sessions/projects/recent-folders.js';
 import { createManagedSession } from './runtime/services/create-session.js';
 import { CodexManager } from './runtime/services/codex-manager.js';
 import { BridgeClient } from './desktop/bridge-client.js';
@@ -127,6 +128,16 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
 
   const projects = new ProjectSessions({
     root: projectsRoot(),
+    // A user's daemon on a shared machine offers only the projects root, never the machine's histories.
+    ...(multiUserMode()
+      ? {}
+      : {
+          recent: () =>
+            recentFolders({
+              claudeDirectory: claudeConfigDirectory(),
+              codexHome: process.env.CODEX_HOME ?? join(homedir(), '.codex'),
+            }),
+        }),
     monitor,
     // The relay and the local surface check the owner before asking.
     create: (action) =>

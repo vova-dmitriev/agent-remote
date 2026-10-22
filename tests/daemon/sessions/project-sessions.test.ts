@@ -1,9 +1,11 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, realpath, rm, utimes, writeFile } from 'node:fs/promises';
+import Sqlite from 'better-sqlite3';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { AgentProvider, CommandActionType, ErrorCode } from '@protocol';
-import { ProjectSessions } from '@daemon/sessions/project-sessions.js';
+import { ProjectSessions } from '@daemon/sessions/projects/project-sessions.js';
+import { recentFolders } from '@daemon/sessions/projects/recent-folders.js';
 
 const roots: string[] = [];
 
@@ -68,6 +70,67 @@ it('offers no projects without a projects root', async () => {
   expect(setProjects).not.toHaveBeenCalled();
 
   await expect(projects.create({ provider: AgentProvider.Claude, cwd: '/tmp' })).rejects.toMatchObject({
+    code: ErrorCode.INVALID_PROJECT,
+  });
+});
+
+it("offers a Mac's recent session folders from Claude's and Codex's history, newest first, while they exist", async () => {
+  const home = await realpath(await mkdtemp(join(tmpdir(), 'recent-folders-')));
+
+  roots.push(home);
+
+  const folder = (name: string) => join(home, 'work', name);
+
+  const [claudeOld, claudeNew, codex, gone] = [
+    folder('claude-old'),
+    folder('claude-new'),
+    folder('codex'),
+    folder('gone'),
+  ];
+
+  for (const folder of [claudeOld, claudeNew, codex]) {
+    await mkdir(folder, { recursive: true });
+  }
+
+  const transcript = async (project: string, cwd: string, at: number) => {
+    await mkdir(join(home, 'claude', 'projects', project), { recursive: true });
+    const file = join(home, 'claude', 'projects', project, 'synthetic.jsonl');
+
+    await writeFile(
+      file,
+      JSON.stringify({ type: 'summary' }) + '\n' + JSON.stringify({ type: 'user', cwd }) + '\n',
+    );
+
+    await utimes(file, at, at);
+  };
+
+  await transcript('old', claudeOld, 1_000);
+  await transcript('new', claudeNew, 3_000);
+  await transcript('gone', gone, 4_000);
+
+  const db = new Sqlite(join(home, 'state_5.sqlite'));
+
+  db.exec('CREATE TABLE threads(cwd TEXT, archived INTEGER, updated_at_ms INTEGER)');
+  db.prepare('INSERT INTO threads VALUES(?,?,?)').run(codex, 0, 2_000_000);
+  db.prepare('INSERT INTO threads VALUES(?,?,?)').run(join(home, 'work', 'archived'), 1, 9_000_000);
+  db.close();
+
+  const setProjects = vi.fn();
+  const create = vi.fn(async () => 'new-session');
+
+  const projects = new ProjectSessions({
+    root: undefined,
+    recent: () => recentFolders({ claudeDirectory: join(home, 'claude'), codexHome: home }),
+    monitor: { setProjects },
+    create,
+  });
+
+  await projects.refresh();
+
+  expect(setProjects).toHaveBeenLastCalledWith([claudeNew, codex, claudeOld]);
+  await expect(projects.create({ provider: AgentProvider.Claude, cwd: codex })).resolves.toBe('new-session');
+
+  await expect(projects.create({ provider: AgentProvider.Claude, cwd: gone })).rejects.toMatchObject({
     code: ErrorCode.INVALID_PROJECT,
   });
 });

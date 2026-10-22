@@ -1,8 +1,8 @@
 import { CodedError, type Command, CommandActionType, ErrorCode, type ProjectSession } from '@protocol';
 import { readdir, realpath } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { ProjectSessionsPort } from '../domain/ports/session-names.js';
-import { logDebug } from '../diagnostics/log.js';
+import type { ProjectSessionsPort } from '../../domain/ports/session-names.js';
+import { logDebug } from '../../diagnostics/log.js';
 
 type CreateAction = Extract<Command['action'], { type: typeof CommandActionType.CreateSession }>;
 
@@ -12,13 +12,15 @@ const MAX_PROJECTS = 200;
 interface ProjectSessionsDeps {
   /** The directory whose subdirectories are the projects (REMOTE_PROJECTS_ROOT); none offers no projects. */
   root: string | undefined;
+  /** Without a root (a Mac): the folders its owner recently worked in, newest first. */
+  recent?: () => Promise<string[]>;
   monitor: { setProjects(paths: string[]): void };
   create: (action: CreateAction) => Promise<string>;
 }
 
 /**
- * The projects of a shared machine (a Linux VM) that an owner can start a session in before having any session
- * there: the root's subdirectories, listed on the snapshot. A session starts only in a listed project.
+ * The projects an owner can start a session in though no session runs there: a shared machine's (a Linux VM) root
+ * subdirectories, or a Mac's recent session folders, listed on the snapshot. A session starts only in a listed project.
  */
 export class ProjectSessions implements ProjectSessionsPort {
   private projects: readonly string[] = [];
@@ -26,9 +28,22 @@ export class ProjectSessions implements ProjectSessionsPort {
   constructor(private readonly deps: ProjectSessionsDeps) {}
 
   async refresh() {
-    const { root, monitor } = this.deps;
+    const { root, recent, monitor } = this.deps;
 
     if (!root) {
+      if (recent) {
+        this.projects = await recent().then(
+          (folders) => folders.slice(0, MAX_PROJECTS),
+          (error: unknown) => {
+            logDebug('sessions/project-sessions', error);
+
+            return [];
+          },
+        );
+
+        monitor.setProjects([...this.projects]);
+      }
+
       return;
     }
 
