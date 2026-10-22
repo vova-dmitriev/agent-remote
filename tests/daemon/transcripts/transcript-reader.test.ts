@@ -191,4 +191,19 @@ describe('TranscriptReader', () => {
       { id: 'pasted', role: 'user', text: 'With an image', occurredAt: 1_792_152_000_000 },
     ]);
   });
+
+  it('hides a task notification Claude Code sends as a turn of its own while idle', async () => {
+    const row = (uuid: string, origin?: object) =>
+      JSON.stringify({ type: 'user', uuid, ...(origin ? { origin } : {}), message: { content: uuid } }) +
+      '\n';
+
+    await writeFile(
+      file,
+      row('typed', { kind: 'human' }) + row('task', { kind: 'task-notification' }) + row('older'),
+    );
+
+    const reader = new TranscriptReader({ path: file, allowedRoot: allowed });
+
+    expect((await reader.readNext()).map((message) => message.id)).toEqual(['typed', 'older']);
+  });
 });

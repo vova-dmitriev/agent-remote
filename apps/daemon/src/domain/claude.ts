@@ -40,7 +40,7 @@ export const ClaudeShellTool = 'Bash';
 export const ClaudeAttachmentType = { QueuedCommand: 'queued_command' } as const;
 
 /** Who queued a command: a person, or Claude Code itself (task notifications). */
-export const ClaudeQueueOrigin = { Human: 'human' } as const;
+export const ClaudeQueueOrigin = { Human: 'human', TaskNotification: 'task-notification' } as const;
 
 export const ClaudeContentType = {
   Text: 'text',

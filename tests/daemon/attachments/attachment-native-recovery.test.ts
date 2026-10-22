@@ -254,3 +254,15 @@ it('upgrades a cached live image with a durable source position on its first pag
   expect(f.fetcher.mock.calls.map((call) => call[1]?.method)).toEqual(['POST', 'POST']);
   expect(f.fetcher.mock.calls[1]![1]?.headers).toMatchObject({ 'x-source-position': 'position:synthetic' });
 });
+
+it("leaves a tool's image output on the device instead of showing it as the owner's attachment", () => {
+  const image = {
+    type: 'image',
+    source: { type: 'base64', media_type: 'image/png', data: bytes.toString('base64') },
+  };
+
+  const result = { type: 'tool_result', tool_use_id: 'toolu_synthetic', content: [image] };
+
+  expect(nativeClaudeMedia({ type: 'user', message: { content: [result] } })).toEqual([]);
+  expect(nativeClaudeMedia({ type: 'user', message: { content: [image] } })).toHaveLength(1);
+});

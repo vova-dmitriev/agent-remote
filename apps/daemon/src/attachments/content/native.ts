@@ -100,8 +100,9 @@ export function nativeCodexMedia(raw: unknown): NativeMedia[] {
   return [];
 }
 
-function claudeBlocks(blocks: unknown, depth = 0, pasteIds: unknown[] = []): NativeMedia[] {
-  if (!Array.isArray(blocks) || depth > 2) {
+/** The owner's and Claude's own media; a tool's output (a screenshot it read) stays on the device, as tool results do. */
+function claudeBlocks(blocks: unknown, pasteIds: unknown[] = []): NativeMedia[] {
+  if (!Array.isArray(blocks)) {
     return [];
   }
 
@@ -112,12 +113,7 @@ function claudeBlocks(blocks: unknown, depth = 0, pasteIds: unknown[] = []): Nat
       const block = object(value),
         source = object(block.source);
 
-      const pasteId =
-        depth === 0 && block.type === ClaudeContentType.Image ? pasteIds[imageIndex++] : undefined;
-
-      if (block.type === ClaudeContentType.ToolResult) {
-        return claudeBlocks(block.content, depth + 1);
-      }
+      const pasteId = block.type === ClaudeContentType.Image ? pasteIds[imageIndex++] : undefined;
 
       if (
         (block.type === ClaudeContentType.Image || block.type === ClaudeContentType.Document) &&
@@ -146,7 +142,6 @@ export function nativeClaudeMedia(raw: unknown): NativeMedia[] {
   if (row.type === ClaudeRecordType.User || row.type === ClaudeRecordType.Assistant) {
     return claudeBlocks(
       object(row.message).content,
-      0,
       row.type === ClaudeRecordType.User && Array.isArray(row.imagePasteIds) ? row.imagePasteIds : [],
     );
   }

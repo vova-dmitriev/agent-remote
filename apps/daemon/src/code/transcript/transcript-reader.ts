@@ -324,7 +324,9 @@ export class TranscriptReader {
       ![ClaudeRecordType.User, ClaudeRecordType.Assistant, ClaudeRecordType.Attachment].some(
         (candidateValue) => candidateValue === String(row.type),
       ) ||
-      row.isMeta === true
+      row.isMeta === true ||
+      // Idle, Claude Code sends a task notification as a turn of its own; it is not the owner's message.
+      (row.origin as { kind?: unknown } | undefined)?.kind === ClaudeQueueOrigin.TaskNotification
     ) {
       return [];
     }

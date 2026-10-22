@@ -47,7 +47,7 @@ export const MessageRail = memo(function MessageRail(props: MessageRailProps) {
           {older ? <HistoryCap direction={HistoryDirection.Before} loadPage={loadPage} /> : null}
           {newer ? <HistoryCap direction={HistoryDirection.After} loadPage={loadPage} /> : null}
         </div>
-        <div ref={track} className="absolute inset-y-0 right-0 left-[16px]" data-testid={SESSION_FEED_IDS.railTrack}>
+        <div ref={track} className="absolute inset-y-0 left-0 right-[16px]" data-testid={SESSION_FEED_IDS.railTrack}>
           {/* The free track is a pointer-only shortcut to the nearest marker; markers carry keyboard navigation. */}
           <Button
             variant="ghost"

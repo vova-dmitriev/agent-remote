@@ -31,7 +31,7 @@ test('a "more history" cap sits beside the full-height track and loads earlier p
 
   expect(Math.abs(track.y - feed.y)).toBeLessThan(0.5);
   expect(Math.abs(track.height - feed.height)).toBeLessThan(0.5);
-  expect(cap.x + cap.width).toBeLessThanOrEqual(track.x + 0.5);
+  expect(cap.x).toBeGreaterThanOrEqual(track.x + track.width - 0.5);
   expect(cap.height).toBeGreaterThanOrEqual(RAIL_HIT_SIZE);
 
   await earlier(page).click();

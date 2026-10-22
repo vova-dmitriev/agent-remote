@@ -44,6 +44,9 @@ export const historyDoneSchema = z.strictObject({
 });
 export type HistoryRead = z.infer<typeof historyReadSchema>;
 
+/** Transport identifiers of a native task notification: no reader wants them, and they would crowd out its summary. */
+const TASK_NOTIFICATION_IDS = /<(task-id|tool-use-id|output-file)>[\s\S]*?<\/\1>\s*/g;
+
 /** The outline of a conversation: its newest owner's messages (no tool lines), text shortened, attachments left out. */
 export function outlineMessages<
   Message extends { role: string; text: string; tool?: unknown; attachments?: unknown },
@@ -53,7 +56,7 @@ export function outlineMessages<
     .slice(-HISTORY_OUTLINE_MESSAGES)
     .map(({ attachments: _attachments, ...message }) => ({
       ...message,
-      text: message.text.slice(0, HISTORY_OUTLINE_TEXT_CHARS),
+      text: message.text.replace(TASK_NOTIFICATION_IDS, '').slice(0, HISTORY_OUTLINE_TEXT_CHARS),
     }));
 }
 

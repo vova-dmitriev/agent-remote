@@ -18,7 +18,7 @@ export function HistoryCap({ direction, loadPage }: HistoryCapProps) {
     <Button
       variant="ghost"
       className={cn(
-        "absolute left-0 flex w-[16px] items-center rounded-[4px] p-0 text-muted-foreground hover:text-primary has-[>svg]:px-0",
+        "absolute right-0 flex w-[16px] items-center rounded-[4px] p-0 text-muted-foreground hover:text-primary has-[>svg]:px-0",
         earlier ? "top-0" : "bottom-0",
       )}
       style={{ height: RAIL_HIT_SIZE }}

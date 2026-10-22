@@ -55,7 +55,7 @@ test('one readable preview follows hovered and focused markers without changing 
 
   await page.keyboard.press('Escape');
   await expect(preview).toHaveCount(0);
-  await page.getByTestId(SESSION_FEED_IDS.frame).hover({ position: { x: 5, y: 5 } });
+  await page.getByTestId(SESSION_FEED_IDS.frame).hover({ position: { x: 60, y: 5 } });
   await marker.hover();
   await expect(preview).toBeVisible();
 
@@ -63,7 +63,7 @@ test('one readable preview follows hovered and focused markers without changing 
   await preview.click();
   await expect(preview).toBeVisible();
   expect(await feed.evaluate((node) => node.scrollTop)).toBe(position);
-  await page.getByTestId(SESSION_FEED_IDS.frame).hover({ position: { x: 5, y: 5 } });
+  await page.getByTestId(SESSION_FEED_IDS.frame).hover({ position: { x: 60, y: 5 } });
   await expect(preview).toHaveCount(0);
   await page.keyboard.press('Tab');
   await marker.focus();
