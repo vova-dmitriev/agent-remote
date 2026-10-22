@@ -133,11 +133,39 @@ it('starts Claude without the Claude Code session the daemon itself may run unde
   }
 });
 
-it('opens a new session in a new cmux workspace on a Mac with cmux', async () => {
+/** A cmux command line whose one window holds workspaces open in the given folders. */
+function syntheticCmux(folders: string[]) {
+  const calls: string[][] = [];
+
+  const open = async (_file: string, args: string[]) => {
+    calls.push(args);
+
+    if (args.includes('list-windows')) {
+      return { stdout: JSON.stringify([{ id: 'window-1' }]) };
+    }
+
+    if (args.includes('list-workspaces')) {
+      return {
+        stdout: JSON.stringify({
+          workspaces: folders.map((folder, index) => ({
+            id: 'workspace-' + index,
+            current_directory: folder,
+          })),
+        }),
+      };
+    }
+
+    return { stdout: '' };
+  };
+
+  return { calls, open };
+}
+
+it('opens a new session in a new cmux workspace on a Mac with cmux when no workspace holds the project', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'remote-launch-'));
 
   try {
-    const calls: { file: string; args: string[] }[] = [];
+    const cmux = syntheticCmux(['/elsewhere']);
 
     await launchClaudeSession({
       directory: dir,
@@ -146,17 +174,65 @@ it('opens a new session in a new cmux workspace on a Mac with cmux', async () =>
       entry: '/remote.mjs',
       platform: 'darwin',
       cmuxCli: '/synthetic/cmux',
-      open: async (file, args) => {
-        calls.push({ file, args });
+      open: cmux.open,
+    });
+
+    const launch = cmux.calls.at(-1)!;
+
+    expect(launch.slice(0, 3)).toEqual(['new-workspace', '--cwd', dir]);
+    expect(launch.slice(3, 4)).toEqual(['--command']);
+    expect(launch[4]).toMatch(/^\/bin\/sh '.+\.command'$/u);
+    expect(launch.slice(5)).toEqual(['--focus', 'false']);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+it('opens a new session as a tab of the cmux workspace that already holds the project', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'remote-launch-'));
+
+  try {
+    const cmux = syntheticCmux(['/elsewhere', await realpath(dir)]);
+
+    await launchClaudeSession({
+      directory: dir,
+      cwd: await realpath(dir),
+      node: '/node',
+      entry: '/remote.mjs',
+      platform: 'darwin',
+      cmuxCli: '/synthetic/cmux',
+      open: cmux.open,
+    });
+
+    const launch = cmux.calls.at(-1)!;
+
+    expect(launch.slice(0, 5)).toEqual(['new-surface', '--window', 'window-1', '--workspace', 'workspace-1']);
+    expect(launch[6]).toMatch(/^\/bin\/sh '.+\.command'$/u);
+    expect(launch.slice(7)).toEqual(['--focus', 'false']);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+it('opens Codex in a terminal on the thread the app started', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'remote-launch-'));
+
+  try {
+    const scripts: string[] = [];
+
+    await launchClaudeSession({
+      directory: dir,
+      cwd: dir,
+      node: '/node',
+      entry: '/remote.mjs',
+      codexThreadId: 'thread-1',
+      cmuxCli: null,
+      open: async (_file, args) => {
+        scripts.push(await readFile(args[2]!, 'utf8'));
       },
     });
 
-    expect(calls).toHaveLength(1);
-    expect(calls[0]!.file).toBe('/synthetic/cmux');
-    expect(calls[0]!.args.slice(0, 3)).toEqual(['new-workspace', '--cwd', dir]);
-    expect(calls[0]!.args.slice(3, 4)).toEqual(['--command']);
-    expect(calls[0]!.args[4]).toMatch(/^\/bin\/sh '.+\.command'$/u);
-    expect(calls[0]!.args.slice(5)).toEqual(['--focus', 'false']);
+    expect(scripts[0]).toContain("exec '/node' '/remote.mjs' codex resume 'thread-1'\n");
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

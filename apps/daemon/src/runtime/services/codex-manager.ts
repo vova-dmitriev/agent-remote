@@ -541,6 +541,15 @@ export class CodexManager {
     };
 
     if (selection.kind === TargetKind.CodexCli && !entry.rpc) {
+      // The own app-server is started on demand; Codex Desktop's threads need it while Codex Desktop is closed.
+      if (
+        selection.socketPath === this.ownSocket &&
+        this.desktopThreads.orphans.size &&
+        this.deps.inputEnabled
+      ) {
+        await ensureManagedCodexSocket(this.deps.stateDirectory);
+      }
+
       entry.rpc = await connectCodexSocket(selection.socketPath);
 
       entry.rpc.once(RuntimeEvent.Disconnected, () => {

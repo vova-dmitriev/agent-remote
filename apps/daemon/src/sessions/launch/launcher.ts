@@ -13,6 +13,7 @@ import { type LaunchContext } from './launch-context.js';
 import { type CmuxContext } from '../../cmux/context.js';
 import { CMUX_APP_CLI, launchInCmux } from '../../cmux/launch.js';
 import { logDebug } from '../../diagnostics/log.js';
+import { projectWorkspace, type CmuxRun } from '../../cmux/workspaces.js';
 
 const execute = promisify(execFile);
 
@@ -62,11 +63,13 @@ export async function launchClaudeSession(options: {
   launchContext?: LaunchContext;
   cmux?: CmuxContext;
   launchCmux?: typeof launchInCmux;
-  open?: (file: string, args: string[]) => Promise<unknown>;
+  open?: CmuxRun;
   /** Where the session runs: Terminal on macOS, a detached tmux session elsewhere (a Linux VM). */
   platform?: NodeJS.Platform;
   /** cmux's command line; on macOS a new session opens in a new cmux workspace when it is there. Null: Terminal. */
   cmuxCli?: string | null;
+  /** Opens Codex on this thread of the daemon's own app-server instead of Claude. */
+  codexThreadId?: string;
 }): Promise<string> {
   if (options.resumeId && !/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,511}$/.test(options.resumeId)) {
     throw new CodedError(DaemonErrorCode.INVALID_CLAUDE_ARGS);
@@ -82,6 +85,15 @@ export async function launchClaudeSession(options: {
   if (options.launchContext) {
     await writeFile(payload, JSON.stringify(options.launchContext), { mode: 0o600, flag: 'wx' });
   }
+
+  const claude = options.launchContext
+    ? ' restore-claude ' + quote(payload)
+    : ' claude' +
+      (options.resumeId ? ' --resume ' + quote(options.resumeId) : '') +
+      (options.model ? ' --model ' + quote(options.model.model) : '') +
+      (options.model?.effort ? ' --effort ' + quote(options.model.effort) : '');
+
+  const agent = options.codexThreadId ? ' codex resume ' + quote(options.codexThreadId) : claude;
 
   await writeFile(
     script,
@@ -99,12 +111,7 @@ export async function launchClaudeSession(options: {
       quote(options.node) +
       ' ' +
       quote(options.entry) +
-      (options.launchContext
-        ? ' restore-claude ' + quote(payload)
-        : ' claude' +
-          (options.resumeId ? ' --resume ' + quote(options.resumeId) : '') +
-          (options.model ? ' --model ' + quote(options.model.model) : '') +
-          (options.model?.effort ? ' --effort ' + quote(options.model.effort) : '')) +
+      agent +
       '\n',
     { mode: 0o700, flag: 'wx' },
   );
@@ -119,18 +126,32 @@ export async function launchClaudeSession(options: {
     } else if ((options.platform ?? process.platform) === 'darwin') {
       const run = options.open ?? ((file: string, args: string[]) => execute(file, args));
       const cmux = options.cmuxCli === undefined ? await installedCmux() : options.cmuxCli;
+      const command = ['--command', '/bin/sh ' + quote(script), '--focus', 'false'];
 
-      await (cmux
-        ? run(cmux, [
-            'new-workspace',
-            '--cwd',
-            options.cwd,
-            '--command',
-            '/bin/sh ' + quote(script),
-            '--focus',
-            'false',
-          ])
-        : run('/usr/bin/open', ['-a', 'Terminal', script]));
+      if (!cmux) {
+        await run('/usr/bin/open', ['-a', 'Terminal', script]);
+      } else {
+        // A new tab next to the project's open workspace, else a workspace of its own.
+        const workspace = await projectWorkspace(run, cmux, options.cwd).catch((error: unknown) => {
+          logDebug('sessions/launch/launcher', error);
+
+          return null;
+        });
+
+        await run(
+          cmux,
+          workspace
+            ? [
+                'new-surface',
+                '--window',
+                workspace.windowId,
+                '--workspace',
+                workspace.workspaceId,
+                ...command,
+              ]
+            : ['new-workspace', '--cwd', options.cwd, ...command],
+        );
+      }
     } else {
       // No Terminal app on a Linux VM: tmux gives the wrapper a terminal that outlives the daemon and whose screen
       // the wrapper can read.

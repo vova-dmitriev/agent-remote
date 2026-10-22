@@ -15,6 +15,7 @@ import { launchClaudeSession, validateProject } from '../../sessions/launch/laun
 import type { RuntimeProfiles } from './runtime-profiles.js';
 import { claudeConfigDirectory } from '../../config.js';
 import { claudeConversation } from '../../sessions/projects/recent-folders.js';
+import { logDebug } from '../../diagnostics/log.js';
 
 /** Where the daemon can start a Claude session in a terminal. */
 const CLAUDE_LAUNCH_PLATFORMS: ReadonlySet<NodeJS.Platform> = new Set(['darwin', 'linux']);
@@ -47,11 +48,11 @@ async function launchSession(action: CreateAction, options: CreateOptions): Prom
 
   if (action.provider === AgentProvider.Codex) {
     if (action.resume) {
-      return options.codex.resumeThread(action.resume);
+      return openCodexTerminal(await options.codex.resumeThread(action.resume), cwd, options);
     }
 
     if (!action.execution) {
-      return options.codex.createSession(cwd, undefined, action.model);
+      return openCodexTerminal(await options.codex.createSession(cwd, undefined, action.model), cwd, options);
     }
 
     if (!options.profiles) {
@@ -100,6 +101,27 @@ async function launchSession(action: CreateAction, options: CreateOptions): Prom
   });
 
   return waitManagedSession(options.monitor, connectorId);
+}
+
+/**
+ * Opens the Codex TUI on a thread of the daemon's own app-server in a terminal, so the session can be typed into there
+ * as well. The session already exists: a terminal that fails to open leaves it to the app.
+ */
+async function openCodexTerminal(sessionId: string, cwd: string, options: CreateOptions) {
+  const target = options.monitor.find((session) => session.id === sessionId)?.target;
+  const threadId = target && 'threadId' in target ? target.threadId : undefined;
+
+  if (threadId && CLAUDE_LAUNCH_PLATFORMS.has(process.platform)) {
+    await launchClaudeSession({
+      directory: options.directory,
+      cwd,
+      node: process.execPath,
+      entry: fileURLToPath(new URL('../../entry/entry.js', import.meta.url)),
+      codexThreadId: threadId,
+    }).catch((error: unknown) => logDebug('runtime/services/create-session', error));
+  }
+
+  return sessionId;
 }
 
 export async function waitManagedSession(monitor: Monitor, connectorId: string): Promise<string> {

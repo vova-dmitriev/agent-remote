@@ -38,7 +38,7 @@ afterEach(async () => {
 });
 
 /** A Codex home whose state database holds the given threads, and a manager whose own app-server serves them. */
-async function setup(threads: { id: string; originator: string; archived?: number }[]) {
+async function setup(threads: { id: string; originator: string; archived?: number }[], running = true) {
   const directory = await mkdtemp(join(tmpdir(), 'codex-own-threads-'));
   const endpoint = join(directory, 'codex/app-server.sock');
   const db = new Sqlite(join(directory, 'state_5.sqlite'));
@@ -87,10 +87,16 @@ async function setup(threads: { id: string; originator: string; archived?: numbe
     async close() {},
   });
 
-  managedSocket.mockResolvedValue(endpoint);
+  let started = running;
+
+  managedSocket.mockReset().mockImplementation(async () => {
+    started = true;
+
+    return endpoint;
+  });
 
   connectSocket.mockImplementation(async (path: string) => {
-    if (path !== endpoint) {
+    if (path !== endpoint || !started) {
       throw new Error('CODEX_DISCONNECTED');
     }
 
@@ -177,4 +183,14 @@ it('continues a Codex thread by the id the owner pasted', async () => {
 
   await expect(manager.resumeThread('pasted-thread')).resolves.toEqual(expect.any(String));
   expect(threadIds()).toEqual(['pasted-thread']);
+});
+
+it("starts the daemon's own app-server to follow Codex Desktop's threads while Codex Desktop is closed", async () => {
+  connectDesktop.mockRejectedValue(new Error('ENOENT'));
+
+  const { manager, threadIds } = await setup([{ id: 'desktop-thread', originator: 'Codex Desktop' }], false);
+
+  await manager.start();
+  await vi.waitFor(() => expect(threadIds()).toEqual(['desktop-thread']));
+  expect(managedSocket).toHaveBeenCalled();
 });
