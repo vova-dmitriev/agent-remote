@@ -27,7 +27,7 @@ export function SidebarGroups({
       aria-label={label}
       aria-activedescendant={cursorId ? rowDomId(cursorId) : undefined}
       data-testid={SESSION_SIDEBAR_IDS.list}
-      className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-3 outline-none focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:ring-inset"
+      className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-3 [scrollbar-gutter:stable] outline-none focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:ring-inset"
       onKeyDown={onKeyDown}
       onScroll={(event) => {
         const node = event.currentTarget

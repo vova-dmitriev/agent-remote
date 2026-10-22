@@ -1,6 +1,6 @@
 import { CodedError, ErrorCode } from '@protocol';
 import { RuntimeEvent } from '../../domain/runtime.js';
-import { CodexMethod } from '../../domain/codex/codex.js';
+import { CodexMethod, CodexOriginator } from '../../domain/codex/codex.js';
 import type { RpcFrame } from '../../domain/codex/client.js';
 import { EventEmitter } from 'node:events';
 import { type Readable, type Writable } from 'node:stream';
@@ -56,7 +56,7 @@ export class CodexRpcClient extends EventEmitter {
   }
   initialize() {
     return (this.initialization ??= this.request(CodexMethod.Initialize, {
-      clientInfo: { name: 'claude_remote', title: 'Claude Remote', version: '0.1.0' },
+      clientInfo: { name: CodexOriginator.Remote, title: 'Claude Remote', version: '0.1.0' },
       capabilities: { experimentalApi: true },
     }).then((result) => {
       this.write({ method: CodexMethod.Initialized });

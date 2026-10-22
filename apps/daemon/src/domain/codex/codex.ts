@@ -80,6 +80,13 @@ export const CodexAgentStatus = {
 
 export type CodexAgentStatus = (typeof CodexAgentStatus)[keyof typeof CodexAgentStatus];
 
+/** Who started a thread, as Codex records it: Codex Desktop (two spellings) or this app on its own app-server. */
+export const CodexOriginator = {
+  Desktop: 'Codex Desktop',
+  DesktopLegacy: 'codex_desktop',
+  Remote: 'claude_remote',
+} as const;
+
 export const CodexMethod = {
   ThreadLoadedList: 'thread/loaded/list',
   ThreadRead: 'thread/read',

@@ -7,7 +7,7 @@ import {
   TargetKind,
 } from '@protocol';
 import { RuntimeEvent } from '../../domain/runtime.js';
-import { CodexMethod } from '../../domain/codex/codex.js';
+import { CodexMethod, CodexOriginator } from '../../domain/codex/codex.js';
 import { type AttachmentService } from '../../attachments/service.js';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -77,6 +77,10 @@ export class CodexManager {
   /** App-servers of the device's own Codex sign-in, whose models the app offers. */
   private nativeSockets = new Set<string>();
   private saved = new Map<string, CodexConnection>();
+  /** The app-server this daemon starts for the sessions it creates. */
+  private get ownSocket() {
+    return join(this.deps.stateDirectory, 'codex/app-server.sock');
+  }
   private closed = false;
   private scanning: Promise<void> = Promise.resolve();
   private reading = false;
@@ -99,10 +103,7 @@ export class CodexManager {
       this.saved.set(JSON.stringify(selection), selection);
     }
 
-    const own = {
-      kind: TargetKind.CodexCli,
-      socketPath: join(this.deps.stateDirectory, 'codex/app-server.sock'),
-    };
+    const own = { kind: TargetKind.CodexCli, socketPath: this.ownSocket };
 
     // A user's daemon on a shared machine follows only its own app-server: the machine's shared one and Codex
     // Desktop hold every user's threads.
@@ -415,7 +416,31 @@ export class CodexManager {
 
     return task;
   }
-  private async candidates() {
+  /** Loads the threads this app started that Codex unloaded; returns those now loaded. */
+  private async reload(rpc: NonNullable<Connection['rpc']>, loaded: unknown) {
+    const reloaded: string[] = [];
+
+    for (const id of await this.candidates([CodexOriginator.Remote]).catch((error: unknown) => {
+      logDebug('runtime/services/codex-manager', error);
+
+      return [];
+    })) {
+      if (Array.isArray(loaded) && loaded.includes(id)) {
+        continue;
+      }
+
+      try {
+        await rpc.request(CodexMethod.ThreadResume, { threadId: id, excludeTurns: true });
+        reloaded.push(id);
+      } catch (error) {
+        logDebug('runtime/services/codex-manager', error);
+      }
+    }
+
+    return reloaded;
+  }
+  /** The newest unarchived threads the given originators started, from Codex's state database. */
+  private async candidates(originators: readonly string[]) {
     const home = this.deps.codexHome ?? process.env.CODEX_HOME ?? join(homedir(), '.codex');
 
     const files = (await readdir(home))
@@ -432,9 +457,9 @@ export class CodexManager {
       return (
         db
           .prepare(
-            "SELECT id FROM threads WHERE archived=0 AND source IN ('vscode','appServer') AND originator IN ('Codex Desktop','codex_desktop') ORDER BY updated_at_ms DESC,id DESC LIMIT 20",
+            "SELECT id FROM threads WHERE archived=0 AND source IN ('vscode','appServer') AND originator IN (SELECT value FROM json_each(?)) ORDER BY updated_at_ms DESC,id DESC LIMIT 20",
           )
-          .all() as { id: string }[]
+          .all(JSON.stringify(originators)) as { id: string }[]
       ).map((row) => row.id);
     } finally {
       db.close();
@@ -489,7 +514,13 @@ export class CodexManager {
     if (entry.discover) {
       loaded = entry.rpc
         ? object(await entry.rpc.request(CodexMethod.ThreadLoadedList, {})).data
-        : await this.candidates();
+        : await this.candidates([CodexOriginator.Desktop, CodexOriginator.DesktopLegacy]);
+    }
+
+    // Codex unloads a thread nobody follows, so after a restart the threads this app started on its own app-server
+    // are found where Codex records them, and loaded again.
+    if (entry.discover && entry.rpc && selection.socketPath === this.ownSocket) {
+      loaded = [...(Array.isArray(loaded) ? loaded : []), ...(await this.reload(entry.rpc, loaded))];
     }
 
     const ids = [

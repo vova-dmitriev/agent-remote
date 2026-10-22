@@ -7,7 +7,7 @@ import { SessionPageStatus } from "./session-page-status"
 export function SessionsPageList(props: SessionsPageListProps) {
   return (
     <div
-      className="grid max-h-[70vh] gap-0 overflow-y-auto"
+      className="grid max-h-[70vh] gap-0 overflow-y-auto [scrollbar-gutter:stable]"
       data-testid={SESSIONS_PAGE_IDS.list}
       aria-busy={props.loading || props.pagesLoading}
       onScroll={(event) => {
