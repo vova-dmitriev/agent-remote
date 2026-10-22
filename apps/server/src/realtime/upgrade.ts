@@ -2,8 +2,9 @@ import type { IncomingMessage } from 'node:http';
 import type { Duplex } from 'node:stream';
 import type { WebSocketServer } from 'ws';
 import type { RelayConfig } from '../app/relay-config.js';
+import { isExtensionOrigin } from '../http/pipeline/middleware.js';
 
-/** Accepts `/ws/app` (from the public origin only) and `/ws/device` without a query string; destroys anything else. */
+/** Accepts `/ws/app` (from the public origin or a Chrome extension, which then authenticates by token) and `/ws/device` without a query string; destroys anything else. */
 export const upgradeHandler =
   (config: RelayConfig, appWss: WebSocketServer, deviceWss: WebSocketServer) =>
   (req: IncomingMessage, socket: Duplex, head: Buffer) => {
@@ -12,7 +13,9 @@ export const upgradeHandler =
     if (
       (path !== '/ws/app' && path !== '/ws/device') ||
       req.url !== path ||
-      (path === '/ws/app' && req.headers.origin !== config.publicOrigin)
+      (path === '/ws/app' &&
+        req.headers.origin !== config.publicOrigin &&
+        !isExtensionOrigin(req.headers.origin))
     ) {
       socket.destroy();
 

@@ -5,6 +5,8 @@ interface HostCapabilities {
   readonly pairDevice: boolean
   readonly revokeDevice: boolean
   readonly fullTab: boolean
+  /** Issues codes that link the Chrome extension to this owner (the Telegram Mini App). */
+  readonly linkClients: boolean
 }
 
 export interface HostAdapter {

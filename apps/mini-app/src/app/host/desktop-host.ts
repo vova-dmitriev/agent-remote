@@ -12,7 +12,7 @@ declare global {
 export function createDesktopHost(bridge: DesktopBridge | undefined = globalThis.window?.desktopBridge): HostAdapter {
   return {
     kind: HostKind.Desktop,
-    capabilities: { pairDevice: false, revokeDevice: false, fullTab: false },
+    capabilities: { pairDevice: false, revokeDevice: false, fullTab: false, linkClients: false },
     createClient(handlers) {
       if (!bridge) throw new Error(DesktopBridgeError.Unavailable)
 

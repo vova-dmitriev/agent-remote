@@ -1,6 +1,11 @@
 import { ErrorCode } from "@protocol"
 import { fetchResponse, responseError } from "../request-error"
 
+/** What a linked client (the Chrome extension) keeps to sign in without Telegram. */
+export interface LinkedCredential {
+  refresh: string
+}
+
 type Login = { token: string; expiresAt: number }
 
 export class SessionAuthentication {
@@ -8,6 +13,9 @@ export class SessionAuthentication {
   private timer: ReturnType<typeof setTimeout> | undefined
   private pending: Promise<void> | undefined
   private request = new AbortController()
+
+  /** A linked client's own refresh credential; without one, access renews through the browser session's cookie. */
+  private refresh: string | undefined
 
   constructor(
     private origin: string,
@@ -33,7 +41,17 @@ export class SessionAuthentication {
     return value
   }
 
-  async start(initData: string) {
+  /** Signs in with Telegram's init data, or with the credential a linked client (the Chrome extension) keeps. */
+  async start(credential: string | LinkedCredential) {
+    if (typeof credential !== "string") {
+      this.refresh = credential.refresh
+      this.apply(await this.load("/auth/refresh", { refresh: credential.refresh }))
+
+      return
+    }
+
+    const initData = credential
+
     const login = await this.load("/auth/telegram", { initData }).catch((error: unknown) => {
       if (error instanceof Error && [ErrorCode.UNAUTHORIZED, ErrorCode.ACCESS_DENIED].some((candidate) => candidate === error.message))
         return this.load("/auth/refresh", { initData })
@@ -55,7 +73,7 @@ export class SessionAuthentication {
     if (this.pending) return this.pending
     clearTimeout(this.timer)
 
-    this.pending = this.load("/auth/refresh")
+    this.pending = this.load("/auth/refresh", this.refresh ? { refresh: this.refresh } : undefined)
       .then((login) => this.apply(login))
       .catch((failure: unknown) => {
         if (this.stopped) return

@@ -83,6 +83,8 @@ export const RateLimitKey = {
   PairOwner: 'pair-owner:',
   Profiles: 'profiles:',
   Attachment: 'attachment:',
+  LinkCode: 'link-code:',
+  Link: 'link:',
 } as const;
 
 export type RateLimitKey = (typeof RateLimitKey)[keyof typeof RateLimitKey];

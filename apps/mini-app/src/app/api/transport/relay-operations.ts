@@ -62,6 +62,13 @@ export abstract class RelayOperations extends RelayCommandOperations implements 
     return this.history(sessionId, true, aroundQuery(messageId, cursor))
   }
 
+  /** A short code that links the Chrome extension to this owner, once, for a few minutes. */
+  async createLinkCode() {
+    return z
+      .strictObject({ code: z.string().min(1).max(32), expiresAt: z.number().int().positive() })
+      .parse(await this.request("/auth/link-code", { method: HttpRequestMethod.Post }))
+  }
+
   async historyOutline(sessionId: string) {
     return z
       .array(historySchema)

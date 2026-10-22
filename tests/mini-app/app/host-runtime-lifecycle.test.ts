@@ -13,7 +13,7 @@ it('connects an injected host without Telegram and suppresses callbacks after re
 
   const host: HostAdapter = {
     kind: 'chrome',
-    capabilities: { pairDevice: false, revokeDevice: false, fullTab: true },
+    capabilities: { pairDevice: false, revokeDevice: false, fullTab: true, linkClients: false },
     createClient: (handlers) => {
       publish = () => handlers.onConnection(ConnectionStatus.Online);
       const client = new AppTransport('', handlers);
@@ -49,7 +49,7 @@ it('leaves startup loading on a denied native grant and exposes the terminal err
 
   const host: HostAdapter = {
     kind: 'chrome',
-    capabilities: { pairDevice: false, revokeDevice: false, fullTab: true },
+    capabilities: { pairDevice: false, revokeDevice: false, fullTab: true, linkClients: false },
     createClient: (handlers) => {
       const client = new AppTransport('', handlers);
 
@@ -87,7 +87,7 @@ it.each([
 
   const host: HostAdapter = {
     kind: 'telegram',
-    capabilities: { pairDevice: true, revokeDevice: true, fullTab: false },
+    capabilities: { pairDevice: true, revokeDevice: true, fullTab: false, linkClients: false },
     createClient: (handlers) => new AppTransport('synthetic-init', handlers, 'https://synthetic.invalid'),
   };
 

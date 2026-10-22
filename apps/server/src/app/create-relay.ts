@@ -14,7 +14,7 @@ import { Notifier } from '../notifications/notify.js';
 import { RelayHub } from '../realtime/relay-hub.js';
 import { logError } from '../http/errors/error-log.js';
 import { JsonExpressAdapter } from '../http/pipeline/json-express-adapter.js';
-import { securityHeaders } from '../http/pipeline/middleware.js';
+import { extensionCors, securityHeaders } from '../http/pipeline/middleware.js';
 import type { RelayConfig } from './relay-config.js';
 import { RelayModule } from './relay.module.js';
 
@@ -64,6 +64,7 @@ export async function createRelay(config: RelayConfig): Promise<Relay> {
     );
 
     app.use(securityHeaders);
+    app.use(extensionCors);
     // Starts the maintenance jobs and attaches the WebSocket hub now, as before the Nest migration, not on `listen()`.
     await app.init();
 

@@ -11,8 +11,9 @@ const manifestFields = new Set(
   ),
 );
 
-const expectedCsp =
-  "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' blob: data:; media-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-src 'none'";
+/** The pages' CSP; a linked build adds its one server to connect-src, as HTTPS and WSS of the same host. */
+const cspPattern =
+  /^default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self'(?: https:\/\/([a-z0-9.-]+(?::\d+)?) wss:\/\/\1)?; img-src 'self' blob: data:; media-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-src 'none'$/u;
 
 const assetExtensions = new Set('.js .css .svg .png .jpg .jpeg .webp .woff .woff2 .ico'.split(' '));
 
@@ -135,7 +136,8 @@ export function verifyArtifact(directory) {
         JSON.stringify({ service_worker: 'background.js', type: 'module' }) ||
       JSON.stringify(manifest.side_panel) !== JSON.stringify({ default_path: 'extension.html' }) ||
       JSON.stringify(manifest.action) !== JSON.stringify({ default_title: 'Agent Remote' }) ||
-      JSON.stringify(manifest.content_security_policy) !== JSON.stringify({ extension_pages: expectedCsp })
+      Object.keys(manifest.content_security_policy ?? {}).join() !== 'extension_pages' ||
+      !cspPattern.test(manifest.content_security_policy.extension_pages)
     ) {
       reject('manifest policy');
     }

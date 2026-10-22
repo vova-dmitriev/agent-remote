@@ -7,14 +7,14 @@ import { ThemeProvider } from "./_providers/theme-provider"
 import { RemoteApplication } from "./remote-application"
 import type { AppProps } from "./model/app.types"
 
-export function App({ host = telegramHost, initialLanguage, initialProviderFilter }: AppProps = {}) {
+export function App({ host = telegramHost, initialLanguage, initialProviderFilter, content }: AppProps = {}) {
   return (
     <HostContext.Provider value={host}>
       <LanguageProvider {...(initialLanguage ? { initialLanguage } : {})}>
         <ThemeProvider>
           <QueryProvider>
             <SessionProvider {...(initialProviderFilter ? { initialProviderFilter } : {})}>
-              <RemoteApplication />
+              {content ?? <RemoteApplication />}
             </SessionProvider>
           </QueryProvider>
         </ThemeProvider>

@@ -19,3 +19,14 @@ export const SHELL_IDS = {
   usage: "application-shell-usage",
   rules: "application-shell-rules",
 } as const
+
+export const LINK_EXTENSION_IDS = {
+  open: "link-extension-open",
+  dialog: "link-extension-dialog",
+  code: "link-extension-code",
+  expires: "link-extension-expires",
+  copy: "link-extension-copy",
+  renew: "link-extension-renew",
+  done: "link-extension-done",
+  failed: "link-extension-failed",
+} as const

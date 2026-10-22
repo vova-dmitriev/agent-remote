@@ -5,7 +5,7 @@ import { AppTransport } from "../api/transport/app-transport"
 
 export const telegramHost: HostAdapter = {
   kind: HostKind.Telegram,
-  capabilities: { pairDevice: true, revokeDevice: true, fullTab: false },
+  capabilities: { pairDevice: true, revokeDevice: true, fullTab: false, linkClients: true },
   createClient(handlers) {
     const init = telegram()?.initData
 

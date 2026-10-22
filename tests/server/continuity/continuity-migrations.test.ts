@@ -143,6 +143,7 @@ describe('ordered PostgreSQL migration journal', () => {
       '009_notification_payload',
       '010_telegram_actions',
       '011_session_catalog',
+      '012_client_links',
     ]);
 
     expect(
@@ -168,6 +169,7 @@ describe('ordered PostgreSQL migration journal', () => {
       '009_notification_payload',
       '010_telegram_actions',
       '011_session_catalog',
+      '012_client_links',
     ]);
 
     expect(

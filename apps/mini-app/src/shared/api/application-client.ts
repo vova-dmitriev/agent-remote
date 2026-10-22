@@ -99,6 +99,8 @@ export interface ApplicationClient extends ApplicationOperations {
   historyPage(sessionId: string, direction: HistoryPageDirection, edge?: string): Promise<EventEnvelope[] | HistoryPageSkip>
   /** The owner's messages of the whole conversation, text shortened: the message rail's map. */
   historyOutline?(sessionId: string): Promise<HistoryMessage[]>
+  /** A short code that links the Chrome extension to this owner; absent where the host cannot issue one. */
+  createLinkCode?(): Promise<{ code: string; expiresAt: number }>
   /** The conversation's messages that hold the words, shortened around the first match. */
   historySearch?(sessionId: string, query: string): Promise<HistoryMessage[]>
   /** A fresh window around one message (its position cursor when the outline gave one); null when no longer current. */

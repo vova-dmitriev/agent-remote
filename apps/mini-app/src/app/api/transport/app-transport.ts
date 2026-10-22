@@ -40,7 +40,7 @@ export class AppTransport extends RelayOperations implements ApplicationClient {
   private requests = new Set<AbortController>()
   readonly attachments = new AttachmentTransfer(() => ({ origin: this.origin, token: this.token }), this.requests)
   constructor(
-    private initData: string,
+    private initData: Parameters<SessionAuthentication["start"]>[0],
     private handlers: TransportHandlers,
     private origin = "",
   ) {

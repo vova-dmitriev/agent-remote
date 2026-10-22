@@ -10,7 +10,7 @@ export function createChromeHost(
 ): HostAdapter {
   return {
     kind: HostKind.Chrome,
-    capabilities: { pairDevice: false, revokeDevice: false, fullTab: true },
+    capabilities: { pairDevice: false, revokeDevice: false, fullTab: true, linkClients: false },
     saveProviderFilter: (filter) => {
       void chromeApi().storage.local.set({ [ExtensionConfig.ProviderFilterKey]: filter });
     },

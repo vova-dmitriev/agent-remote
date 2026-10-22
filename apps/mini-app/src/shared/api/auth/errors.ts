@@ -1,5 +1,5 @@
 import { ConnectionStatus, ErrorCode, FrameType } from "@protocol"
-import type { SessionAuthentication } from "./session"
+import type { LinkedCredential, SessionAuthentication } from "./session"
 import type { TransportHandlers } from "../types"
 
 export function isAuthenticationError(error: unknown) {
@@ -9,7 +9,11 @@ export function isAuthenticationError(error: unknown) {
   )
 }
 
-export async function startSessionAuthentication(authentication: SessionAuthentication, initData: string, handlers: TransportHandlers) {
+export async function startSessionAuthentication(
+  authentication: SessionAuthentication,
+  initData: string | LinkedCredential,
+  handlers: TransportHandlers,
+) {
   handlers.onConnection(ConnectionStatus.Connecting)
 
   try {

@@ -1,7 +1,7 @@
 import { and, eq, gt, inArray, lt, or, sql } from 'drizzle-orm';
 import type { PoolClient } from 'pg';
 import { ormOn, type Database } from '../db/database.js';
-import { authSessions, browserSessions, users } from '../db/schema/index.js';
+import { authSessions, browserSessions, clientLinks, users } from '../db/schema/index.js';
 import { AUTH_RECHECK_CHUNK } from '../maintenance/limits.js';
 
 /** The browser session a token was issued from, as a scalar subquery. */
@@ -29,6 +29,22 @@ export class AuthRepository {
 
   async insertToken(tx: PoolClient, tokenHash: string, ownerId: string, expiresAt: number) {
     await ormOn(tx).insert(authSessions).values({ tokenHash, ownerId, expiresAt });
+  }
+
+  /** Stores a client link code by hash and drops expired ones. */
+  async insertLink(codeHash: string, ownerId: string, expiresAt: number, now: number) {
+    await this.db.orm.delete(clientLinks).where(lt(clientLinks.expiresAt, now));
+    await this.db.orm.insert(clientLinks).values({ codeHash, ownerId, expiresAt });
+  }
+
+  /** Takes an unexpired link code once: its owner, or undefined when it is unknown, used or expired. */
+  async takeLink(codeHash: string, now: number): Promise<string | undefined> {
+    const [row] = await this.db.orm
+      .delete(clientLinks)
+      .where(and(eq(clientLinks.codeHash, codeHash), gt(clientLinks.expiresAt, now)))
+      .returning({ ownerId: clientLinks.ownerId });
+
+    return row?.ownerId;
   }
 
   async deleteExpiredTokens(tx: PoolClient, now: number) {

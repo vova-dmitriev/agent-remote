@@ -50,6 +50,19 @@ export const authSessions = pgTable(
   (table) => [index('auth_browser_session').on(table.browserSessionHash)],
 );
 
+/** A short code the Mini App shows once, which links another client (the Chrome extension) to its owner. */
+export const clientLinks = pgTable(
+  'client_links',
+  {
+    codeHash: text('code_hash').primaryKey(),
+    ownerId: text('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    expiresAt: epoch('expires_at').notNull(),
+  },
+  (table) => [index('client_links_expiry').on(table.expiresAt)],
+);
+
 export const pairings = pgTable('pairings', {
   codeHash: text('code_hash').primaryKey(),
   proofHash: text('proof_hash').notNull().unique(),

@@ -1,17 +1,22 @@
 import { useState } from "react"
-import { ChartColumn, KeyRound, LogOut, Settings, ShieldCheck } from "lucide-react"
+import { ChartColumn, KeyRound, LogOut, Puzzle, Settings, ShieldCheck } from "lucide-react"
 import { useTranslation } from "@/shared/lib/hooks"
 import { cn } from "@/shared/lib/utils"
 import { Button } from "@/shared/ui/button"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { DropdownItem, DropdownMenu, DropdownSeparator, DropdownTrigger, MenuContent, menuItemClass } from "@/shared/ui/dropdown"
-import { SHELL_IDS } from "@/widgets/application-shell/config/test-ids"
+import { useHost } from "@/shared/lib/host"
+import { LINK_EXTENSION_IDS, SHELL_IDS } from "@/widgets/application-shell/config/test-ids"
+import { LinkExtensionDialog } from "../link/link-extension-dialog"
 import type { SettingsMenuProps } from "./header.types"
 
 /** Header gear menu: app-level destinations, then, set apart at the bottom, signing out after a confirmation. */
 export function SettingsMenu({ onAccounts, onUsage, onRules, onLogout }: SettingsMenuProps) {
   const { t } = useTranslation()
   const [confirming, setConfirming] = useState(false)
+  const [linking, setLinking] = useState(false)
+  // Only the Telegram Mini App, which knows the owner, issues codes that link the Chrome extension.
+  const canLink = useHost().capabilities.linkClients
 
   return (
     <>
@@ -47,7 +52,13 @@ export function SettingsMenu({ onAccounts, onUsage, onRules, onLogout }: Setting
               <span>{t("rulesTitle")}</span>
             </DropdownItem>
           ) : null}
-          {onAccounts || onUsage || onRules ? (
+          {canLink ? (
+            <DropdownItem className={menuItemClass} data-testid={LINK_EXTENSION_IDS.open} onSelect={() => setLinking(true)}>
+              <Puzzle aria-hidden="true" size={17} />
+              <span>{t("linkExtension")}</span>
+            </DropdownItem>
+          ) : null}
+          {onAccounts || onUsage || onRules || canLink ? (
             <DropdownSeparator className="mx-[4px] my-[6px] h-px bg-border" data-testid={SHELL_IDS.settingsSeparator} />
           ) : null}
           <DropdownItem
@@ -73,6 +84,7 @@ export function SettingsMenu({ onAccounts, onUsage, onRules, onLogout }: Setting
         onCancel={() => setConfirming(false)}
         testIds={SHELL_IDS.logoutConfirm}
       />
+      {canLink ? <LinkExtensionDialog open={linking} onClose={() => setLinking(false)} /> : null}
     </>
   )
 }
