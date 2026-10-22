@@ -6,7 +6,7 @@ import ts from 'typescript';
 const expectedPermissions = ['nativeMessaging', 'sidePanel', 'storage'];
 
 const manifestFields = new Set(
-  'manifest_version name version description minimum_chrome_version permissions incognito action side_panel background content_security_policy key'.split(
+  'manifest_version name version description minimum_chrome_version permissions incognito icons action side_panel background content_security_policy key'.split(
     ' ',
   ),
 );
@@ -14,6 +14,9 @@ const manifestFields = new Set(
 /** The pages' CSP; a linked build adds its one server to connect-src, as HTTPS and WSS of the same host. */
 const cspPattern =
   /^default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self'(?: https:\/\/([a-z0-9.-]+(?::\d+)?) wss:\/\/\1)?; img-src 'self' blob: data:; media-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-src 'none'$/u;
+
+/** The bundled icon at each size Chrome uses, as the manifest names it. */
+const expectedIcons = Object.fromEntries([16, 32, 48, 128].map((size) => [size, `assets/icon-${size}.png`]));
 
 const assetExtensions = new Set('.js .css .svg .png .jpg .jpeg .webp .woff .woff2 .ico'.split(' '));
 
@@ -135,7 +138,9 @@ export function verifyArtifact(directory) {
       JSON.stringify(manifest.background) !==
         JSON.stringify({ service_worker: 'background.js', type: 'module' }) ||
       JSON.stringify(manifest.side_panel) !== JSON.stringify({ default_path: 'extension.html' }) ||
-      JSON.stringify(manifest.action) !== JSON.stringify({ default_title: 'Agent Remote' }) ||
+      JSON.stringify(manifest.action) !==
+        JSON.stringify({ default_title: 'Agent Remote', default_icon: expectedIcons }) ||
+      JSON.stringify(manifest.icons) !== JSON.stringify(expectedIcons) ||
       Object.keys(manifest.content_security_policy ?? {}).join() !== 'extension_pages' ||
       !cspPattern.test(manifest.content_security_policy.extension_pages)
     ) {
@@ -144,6 +149,10 @@ export function verifyArtifact(directory) {
 
     resource(root, resolve(root, 'manifest.json'), 'background.js');
     resource(root, resolve(root, 'manifest.json'), 'extension.html');
+
+    for (const icon of Object.values(expectedIcons)) {
+      resource(root, resolve(root, 'manifest.json'), icon);
+    }
 
     const inspect = (directoryPath) => {
       for (const entry of readdirSync(directoryPath, { withFileTypes: true })) {

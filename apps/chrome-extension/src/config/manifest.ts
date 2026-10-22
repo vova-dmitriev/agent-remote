@@ -19,6 +19,11 @@ export function serverOrigin(value: string | undefined) {
   return value;
 }
 
+/** The app's icon at the sizes Chrome uses: toolbar, extensions page and store listing. */
+export const EXTENSION_ICON_SIZES = [16, 32, 48, 128] as const;
+
+const icons = Object.fromEntries(EXTENSION_ICON_SIZES.map((size) => [size, `assets/icon-${size}.png`]));
+
 export const extensionManifestFor = (server?: string) => ({
   manifest_version: 3,
   name: 'Agent Remote',
@@ -27,7 +32,8 @@ export const extensionManifestFor = (server?: string) => ({
   minimum_chrome_version: ExtensionConfig.MinimumChromeVersion,
   permissions: ['sidePanel', 'nativeMessaging', 'storage'],
   incognito: 'not_allowed',
-  action: { default_title: 'Agent Remote' },
+  icons,
+  action: { default_title: 'Agent Remote', default_icon: icons },
   side_panel: { default_path: ExtensionConfig.EntryPage },
   background: { service_worker: ExtensionConfig.BackgroundFile, type: 'module' },
   content_security_policy: { extension_pages: contentSecurityPolicy(server) },

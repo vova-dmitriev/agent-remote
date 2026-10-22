@@ -10,6 +10,9 @@ it('allows only bundled WebAssembly encryption while keeping JavaScript evaluato
   expect(csp).not.toContain("'unsafe-eval'");
   expect(csp).not.toMatch(/https?:|\*/);
   expect(extensionManifest.permissions).toEqual(['sidePanel', 'nativeMessaging', 'storage']);
+  // The toolbar and the extensions page show the app's icon, not a letter.
+  expect(extensionManifest.action.default_icon).toEqual(extensionManifest.icons);
+  expect(Object.keys(extensionManifest.icons)).toEqual(['16', '32', '48', '128']);
 });
 
 it('lets a linked build connect to its one HTTPS server and nothing else', () => {
