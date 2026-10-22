@@ -39,17 +39,22 @@ export function FileChange({ file, onOpen }: FileChangeProps) {
         <ChevronRight className="flex-none text-muted-foreground group-open/file:rotate-90" size={12} aria-hidden="true" />
         <span className="min-w-0 flex-1 font-mono wrap-anywhere">{file.path}</span>
         <span className="text-[0.7rem] text-muted-foreground">{t(kindKeys[file.kind])}</span>
-        <span className="text-syntax-string">+{stats.added}</span>
-        <span className="text-danger">−{stats.deleted}</span>
-        {changedAt ? (
-          <time
-            className="text-[0.7rem] whitespace-nowrap text-muted-foreground tabular-nums"
-            dateTime={new Date(file.changedAt!).toISOString()}
-            data-testid={IDS.changedAt}
-          >
-            {changedAt}
-          </time>
-        ) : null}
+        {/* The time on top, the line counts under it, both on the right. */}
+        <span className="flex flex-none flex-col items-end gap-[0.1rem] tabular-nums">
+          {changedAt ? (
+            <time
+              className="text-[0.7rem] whitespace-nowrap text-muted-foreground"
+              dateTime={new Date(file.changedAt!).toISOString()}
+              data-testid={IDS.changedAt}
+            >
+              {changedAt}
+            </time>
+          ) : null}
+          <span className="flex gap-[0.45rem]">
+            <span className="text-syntax-string">+{stats.added}</span>
+            <span className="text-danger">−{stats.deleted}</span>
+          </span>
+        </span>
       </summary>
       <div className={cn("message-markdown", patchClass)} data-testid={IDS.patch}>
         <ReactMarkdown skipHtml rehypePlugins={plugins}>
