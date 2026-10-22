@@ -1,3 +1,4 @@
+import { lstat } from 'node:fs/promises';
 import { DaemonErrorCode } from '../../error-codes.js';
 import {
   CodedError,
@@ -43,6 +44,8 @@ interface Options {
   sessionId?: string;
   /** Tool calls and results become history items (subagent transcripts). */
   includeTools?: boolean;
+  /** A session's own transcript, which Claude writes with the first message: until then it reads as empty. */
+  emptyUntilWritten?: boolean;
   open?: TranscriptOpenOptions;
   transform?: (message: HistoryMessage, media: NativeMedia[]) => Promise<HistoryMessage>;
 }
@@ -61,7 +64,7 @@ export class TranscriptPages {
     const opened = await openTranscript(this.options.path, this.options.allowedRoot, this.options.open);
 
     if (!opened) {
-      throw new CodedError(ErrorCode.TRANSCRIPT_UNAVAILABLE);
+      return this.notWritten();
     }
 
     const { file, info } = opened;
@@ -210,7 +213,7 @@ export class TranscriptPages {
     const opened = await openTranscript(this.options.path, this.options.allowedRoot, this.options.open);
 
     if (!opened) {
-      throw new CodedError(ErrorCode.TRANSCRIPT_UNAVAILABLE);
+      return this.notWritten();
     }
 
     const { file, info } = opened;
@@ -241,6 +244,22 @@ export class TranscriptPages {
       before: null,
       after: null,
     };
+  }
+  /**
+   * An empty history for a session whose transcript Claude has not written yet (it writes the file with the first
+   * message); any other transcript that cannot be opened stays unavailable.
+   */
+  private async notWritten() {
+    const missing = await lstat(this.options.path).then(
+      () => false,
+      (error: NodeJS.ErrnoException) => error.code === 'ENOENT',
+    );
+
+    if (!missing || !this.options.emptyUntilWritten) {
+      throw new CodedError(ErrorCode.TRANSCRIPT_UNAVAILABLE);
+    }
+
+    return { messages: [], before: null, after: null };
   }
   private position(value: string, info: { dev: number; ino: number; size: number }) {
     let cursor: z.infer<typeof cursorSchema>;

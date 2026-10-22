@@ -126,7 +126,7 @@ export async function installDesktopBridge(
           }
 
           // Like the companion: a project session joins the snapshot, a switched session shows its model, a removed one
-          // leaves; a test reads `projectSessions`, `modelSwitches` and `removals`, and sets `modelRefused`.
+          // leaves; a test reads `projectSessions`, `modelSwitches` and `removals`, and sets `modelRefused` and `createHeld`.
           const record = window as unknown as Record<string, unknown[] | boolean | undefined>
           const note = (key: string, value: unknown) => (record[key] = [...((record[key] as unknown[] | undefined) ?? []), value])
           const { sessionId, choice, mode } = request.action
@@ -142,6 +142,8 @@ export async function installDesktopBridge(
               [operations.remove]: () => snapshot.sessions.filter((item) => item.id !== sessionId),
             }[operation]!
 
+            // A test holds the answer with `createHeld` (a Promise) to see the form while the session starts.
+            if (operation === operations.create) await (record.createHeld as unknown as Promise<void> | undefined)
             if (operation === operations.create) note('projectSessions', request.action.session)
             else if (operation === operations.model) note('modelSwitches', { sessionId, choice })
             else note('removals', { sessionId, mode })

@@ -103,7 +103,7 @@ export function SessionCreationForm({
         {model.error ? feedbackText(model.error, t) : status}
       </small>
       <Button type="submit" data-testid={SESSION_CREATE_IDS.submit} disabled={disabled || !model.ready}>
-        {t(disabled ? "creatingSession" : CapabilityKey.CreateSession)}
+        {t(disabled || model.starting ? "creatingSession" : CapabilityKey.CreateSession)}
       </Button>
     </form>
   )

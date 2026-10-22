@@ -1,7 +1,8 @@
 import { useState } from "react"
-import { AgentProvider, ErrorCode, type Session } from "@protocol"
+import { AgentProvider, type Session } from "@protocol"
 import type { ModelChoice, ProfileList, ProviderModels, ReasoningEffort } from "@protocol"
 import { projectChoice } from "./project-choice"
+import { readyToCreate, useProjectStart } from "./use-project-start"
 import { resolveProfileLaunch, selectableProfiles, type ProfileExecution } from "./profile-launch"
 
 type CreateSession = (session: Session, provider: AgentProvider, execution?: ProfileExecution, model?: ModelChoice, resume?: string) => void
@@ -24,8 +25,7 @@ export function useSessionCreation(
   /** A Claude session id or Codex thread id to continue instead of starting an empty conversation. */
   const [resumeId, setResumeId] = useState("")
   const resume = resumeId.trim() || undefined
-  /** Why the device refused the last session in a project, as an error code. */
-  const [error, setError] = useState("")
+  const { starting, error, start } = useProjectStart()
   const { projects, selected, selectedPath, projectOptions, projectValue, projectLabel } = projectChoice(sessions, projectPaths, projectId)
   const profiles = selectableProfiles(data, provider, online, refreshing)
   const launch = resolveProfileLaunch(data, provider, profileId, modelId, effort, online, refreshing)
@@ -45,14 +45,7 @@ export function useSessionCreation(
       return
     }
 
-    if (!selectedPath || !createInProject) return
-    setError("")
-
-    try {
-      await createInProject(selectedPath, provider, modelChoice, resume)
-    } catch (failure) {
-      setError(failure instanceof Error ? failure.message : ErrorCode.REQUEST_FAILED)
-    }
+    if (selectedPath && createInProject) await start(() => createInProject(selectedPath, provider, modelChoice, resume))
   }
 
   function setProvider(value: AgentProvider) {
@@ -86,7 +79,14 @@ export function useSessionCreation(
     projectLabel,
     /** A project session runs on the device's own sign-in; a profile launch needs a session beside it. */
     // A conversation continues on the device's own sign-in, never a profile's.
-    ready: selectedPath || resume ? native : native || (launch.profileAvailable && !!launch.execution),
+    ready: readyToCreate({
+      starting,
+      inProject: !!selectedPath,
+      resume,
+      native,
+      profileLaunch: launch.profileAvailable && !!launch.execution,
+    }),
+    starting,
     resumeId,
     setResumeId,
     submit,

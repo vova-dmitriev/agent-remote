@@ -80,3 +80,23 @@ it('reads latest and adjacent native pages and restores a saved byte cursor with
     await rm(root, { recursive: true, force: true });
   }
 });
+
+it('reads an empty history for a session Claude has not written a transcript for yet', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'native-pages-'));
+
+  try {
+    const path = join(root, 'not-written-yet.jsonl');
+    const pages = new TranscriptPages({ path, allowedRoot: root, emptyUntilWritten: true });
+    const empty = { messages: [], before: null, after: null };
+
+    await expect(pages.page({ direction: 'latest' })).resolves.toEqual(empty);
+    await expect(pages.page({ direction: 'outline' })).resolves.toEqual(empty);
+
+    // A subagent's transcript is read only once listed: a missing one stays unavailable.
+    await expect(
+      new TranscriptPages({ path, allowedRoot: root }).page({ direction: 'latest' }),
+    ).rejects.toThrow('TRANSCRIPT_UNAVAILABLE');
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

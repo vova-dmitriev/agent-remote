@@ -18,7 +18,18 @@ test("starts a first session in one of the VM's projects, where the owner has no
 
   await page.getByTestId(SESSION_SIDEBAR_IDS.newSession).click();
   await expect(page.getByTestId(SESSION_CREATE_IDS.project.trigger)).toContainText('/vm/projects/alpha');
+
+  await page.evaluate(() => {
+    const record = window as unknown as { createHeld: Promise<void>; releaseCreate: () => void };
+
+    record.createHeld = new Promise((release) => (record.releaseCreate = release));
+  });
+
   await page.getByTestId(SESSION_CREATE_IDS.submit).click();
+  // Starting takes a few seconds on the Mac: the form says so and takes no second press.
+  await expect(page.getByTestId(SESSION_CREATE_IDS.submit)).toBeDisabled();
+  await expect(page.getByTestId(SESSION_CREATE_IDS.submit)).toHaveText('Creating…');
+  await page.evaluate(() => (window as unknown as { releaseCreate: () => void }).releaseCreate());
 
   await expect(page.getByTestId(SESSION_PAGE_IDS.title)).toHaveText('Project session');
 

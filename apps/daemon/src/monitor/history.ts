@@ -119,6 +119,7 @@ export class TranscriptSources {
       pages: new TranscriptPages({
         path,
         allowedRoot: this.allowedRoot,
+        emptyUntilWritten: true,
         ...(claudeSessionId ? { sessionId: claudeSessionId } : {}),
         ...(this.transform
           ? { transform: (message, media) => this.transform!(sessionId, generation, message, media) }
