@@ -7,6 +7,7 @@ import {
   type HistoryMessage,
   type HistoryRead,
   outlineMessages,
+  searchMessages,
 } from '@protocol';
 import type { NativeMedia } from '../../attachments/types.js';
 
@@ -50,7 +51,11 @@ export class TranscriptPages {
   constructor(private options: Options) {}
   async page(request: Pick<HistoryRead, 'direction' | 'anchor'>) {
     if (request.direction === HistoryDirection.Outline) {
-      return this.outline();
+      return this.whole(outlineMessages);
+    }
+
+    if (request.direction === HistoryDirection.Search) {
+      return this.whole((messages) => searchMessages(messages, request.anchor ?? ''));
     }
 
     const opened = await openTranscript(this.options.path, this.options.allowedRoot, this.options.open);
@@ -197,10 +202,11 @@ export class TranscriptPages {
     };
   }
   /**
-   * The owner's messages of the newest transcript window, each with the position cursor a page opens around.
+   * Messages `select` picks from the newest transcript window (the outline, or search matches), each with the
+   * position cursor a page opens around.
    * ponytail: rereads up to 32 MiB per call; cache by inode and size if outlines of long chats get slow.
    */
-  private async outline() {
+  private async whole(select: (messages: HistoryMessage[]) => HistoryMessage[]) {
     const opened = await openTranscript(this.options.path, this.options.allowedRoot, this.options.open);
 
     if (!opened) {
@@ -228,7 +234,7 @@ export class TranscriptPages {
       Buffer.from(JSON.stringify({ dev: info.dev, ino: info.ino, offset })).toString('base64url');
 
     return {
-      messages: outlineMessages(await reader.readNext()).map((message) => ({
+      messages: select(await reader.readNext()).map((message) => ({
         ...message,
         historyCursor: position(offsets.get(message.id) ?? 0),
       })),

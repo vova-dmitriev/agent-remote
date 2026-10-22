@@ -105,3 +105,16 @@ export const FILE_VIEW_IDS = {
   retry: "file-view-retry",
   truncated: "file-view-truncated",
 } as const
+
+export const CHAT_SEARCH_IDS = {
+  open: "chat-search-open",
+  root: "chat-search",
+  input: "chat-search-input",
+  close: "chat-search-close",
+  count: "chat-search-count",
+  results: "chat-search-results",
+  result: "chat-search-result",
+  match: "chat-search-match",
+  empty: "chat-search-empty",
+  failed: "chat-search-failed",
+} as const

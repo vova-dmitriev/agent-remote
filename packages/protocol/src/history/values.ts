@@ -6,6 +6,8 @@ export const HistoryDirection = {
   Message: 'message',
   /** Every owner's message of the conversation, text shortened: the message rail's map of the whole chat. */
   Outline: 'outline',
+  /** The conversation's messages whose text holds the words in `anchor`, shortened around the first match. */
+  Search: 'search',
 } as const;
 
 export type HistoryDirection = (typeof HistoryDirection)[keyof typeof HistoryDirection];

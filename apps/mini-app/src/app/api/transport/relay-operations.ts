@@ -12,6 +12,7 @@ import {
   sessionSchema,
   historySchema,
   HISTORY_OUTLINE_MESSAGES,
+  HISTORY_SEARCH_MESSAGES,
   CodedError,
   ErrorCode,
   type RulesRequest,
@@ -66,6 +67,13 @@ export abstract class RelayOperations extends RelayCommandOperations implements 
       .array(historySchema)
       .max(HISTORY_OUTLINE_MESSAGES)
       .parse(await this.request(`/sessions/${encodeURIComponent(sessionId)}/outline`))
+  }
+
+  async historySearch(sessionId: string, query: string) {
+    return z
+      .array(historySchema)
+      .max(HISTORY_SEARCH_MESSAGES)
+      .parse(await this.request(`/sessions/${encodeURIComponent(sessionId)}/search?${new URLSearchParams({ q: query })}`))
   }
 
   protected routingAccess(deviceId: string, current: () => boolean) {

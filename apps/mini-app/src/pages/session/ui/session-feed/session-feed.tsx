@@ -1,3 +1,4 @@
+import { useEffect } from "react"
 import { ArrowDown } from "lucide-react"
 import { SessionTab } from "@/entities/session"
 import { HistoryStatus, type HistoryMessage } from "@protocol"
@@ -30,6 +31,7 @@ export function SessionFeed({
   newestAt,
   outline = NO_OUTLINE,
   onHistoryAround,
+  focus,
 }: SessionFeedProps) {
   const edges = useHistoryEdges(messages, onHistoryPage, newestAt)
 
@@ -42,6 +44,13 @@ export function SessionFeed({
   )
 
   const outlineJump = useOutlineJump(messages, outline, jump, onHistoryAround)
+  const { reach } = outlineJump
+
+  useEffect(() => {
+    if (focus) reach(focus.id, focus.cursor)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- a new pick moves the feed, not a new loaded page
+  }, [focus])
+
   const { t } = useTranslation()
   const showMessages = tab === SessionTab.History && messages.length > 0
   const map = useRailMap(virtualizer, scroll, content, showMessages && settled)

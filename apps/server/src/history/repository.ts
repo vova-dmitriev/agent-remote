@@ -272,6 +272,16 @@ export class HistoryRepository {
     return result.rows.reverse();
   }
 
+  /** The session's newest stored messages, oldest first. */
+  async recent(scope: HistoryScope, limit: number): Promise<HistoryRow[]> {
+    const result = await this.db.orm.execute<HistoryRow>(
+      sql`${messages(scope)} SELECT * FROM ${message} WHERE data->>'type'=${EventType.Message}
+        ORDER BY ${ordered(KEYS, DESC)} LIMIT ${limit}`,
+    );
+
+    return result.rows.reverse();
+  }
+
   /** Whether any message lies beyond a row in the given direction (`<` older, `>` newer). */
   async beyond(scope: HistoryScope, row: HistoryRow, operator: '<' | '>'): Promise<boolean> {
     const at = position(

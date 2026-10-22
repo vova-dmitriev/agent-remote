@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import { RAIL_HIT_SIZE, RailTick } from "../src/pages/session/config/message-navigation"
 import { nearestGroup, railGroupOf, railGroups, tickMagnification } from "../src/pages/session/lib/rail-layout"
 import { railMarks } from "../src/pages/session/lib/history/rail-marks"
+import { matchParts } from "../src/pages/session/lib/history/chat-search"
 
 describe("message rail layout", () => {
   it("places every message on the track in the scrollbar's coordinate system", () => {
@@ -97,5 +98,17 @@ describe("rail marks", () => {
     expect(railGroups(marks.starts, Math.max(marks.total, marks.viewport.clientHeight), 500).map((group) => group.top)).toEqual([
       50, 150, 250, 350, 450,
     ])
+  })
+})
+
+describe("chat search snippet", () => {
+  it("marks every match of the words in any case", () => {
+    expect(matchParts("Деплой и ещё деплой", "ДЕПЛОЙ")).toEqual([
+      { text: "Деплой", match: true },
+      { text: " и ещё ", match: false },
+      { text: "деплой", match: true },
+    ])
+
+    expect(matchParts("text", "")).toEqual([{ text: "text", match: false }])
   })
 })

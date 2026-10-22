@@ -145,6 +145,7 @@ export class DesktopApplicationClient implements ApplicationClient {
   history = (sessionId: string, _latest = false) => this.historyClient.load(sessionId)
   historyPage = (sessionId: string, direction: HistoryPageDirection, edge?: string) => this.historyClient.page(sessionId, direction, edge)
   historyOutline = (sessionId: string) => this.historyClient.outline(sessionId)
+  historySearch = (sessionId: string, query: string) => this.historyClient.search(sessionId, query)
   historyAround = (sessionId: string, messageId: string, cursor?: string) => this.historyClient.around(sessionId, messageId, cursor)
   subagentHistory = (sessionId: string, agentId: string, direction: HistoryNavigationDirection, edge?: string) =>
     direction === HistoryDirection.Latest

@@ -12,6 +12,8 @@ import {
   type HistoryRead,
   MessageRole,
   outlineMessages,
+  HISTORY_SEARCH_SCAN_MESSAGES,
+  searchMessages,
 } from '@protocol';
 import { bytePage } from '../../local/history/index.js';
 
@@ -36,18 +38,30 @@ export function cachedLocalHistory(
   const args: (string | number)[] = [deviceId, request.sessionId, EventType.Message];
   let query = base;
 
-  if (request.direction === HistoryDirection.Outline) {
-    const rows = db
-      .prepare(
-        base +
-          ` AND json_extract(data,'$.payload.role')=? AND json_extract(data,'$.payload.tool') IS NULL ORDER BY at DESC,seq DESC LIMIT ?`,
-      )
-      .all(...args, MessageRole.User, HISTORY_OUTLINE_MESSAGES) as Row[];
+  if (request.direction === HistoryDirection.Outline || request.direction === HistoryDirection.Search) {
+    const search = request.direction === HistoryDirection.Search;
 
-    const events = rows.reverse().map((row) => {
-      const event = JSON.parse(row.data) as EventEnvelope;
+    // SQLite lowers only ASCII, so search words are matched in JavaScript over the newest messages.
+    const rows = (
+      search
+        ? db.prepare(base + ' ORDER BY at DESC,seq DESC LIMIT ?').all(...args, HISTORY_SEARCH_SCAN_MESSAGES)
+        : db
+            .prepare(
+              base +
+                ` AND json_extract(data,'$.payload.role')=? AND json_extract(data,'$.payload.tool') IS NULL ORDER BY at DESC,seq DESC LIMIT ?`,
+            )
+            .all(...args, MessageRole.User, HISTORY_OUTLINE_MESSAGES)
+    ) as Row[];
 
-      return { ...event, payload: outlineMessages([event.payload as HistoryMessage])[0] };
+    const messages = rows.reverse().map((row) => JSON.parse(row.data) as EventEnvelope);
+    const payloads = messages.map((event) => event.payload as HistoryMessage);
+    const kept = search ? searchMessages(payloads, request.anchor ?? '') : outlineMessages(payloads);
+    const byId = new Map(kept.map((message) => [message.id, message]));
+
+    const events = messages.flatMap((event) => {
+      const payload = byId.get((event.payload as HistoryMessage).id);
+
+      return payload ? [{ ...event, payload }] : [];
     });
 
     const { start } = bytePage(events, HistoryDirection.Latest);

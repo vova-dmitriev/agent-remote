@@ -17,6 +17,13 @@ export const viewerEN = {
   changeAdded: "Added",
   changeDeleted: "Deleted",
   changeUpdated: "Updated",
+  searchInChat: "Search in chat",
+  chatSearchPlaceholder: "Words from the chat",
+  chatSearchClose: "Close search",
+  chatSearchResults: "Search results",
+  chatSearchCount: "Found: {{count}}",
+  chatSearchEmpty: "Nothing found for “{{query}}”",
+  chatSearchFailed: "Couldn’t search. Is the Mac online?",
 } as const
 
 export const viewerRU = {
@@ -38,4 +45,11 @@ export const viewerRU = {
   changeAdded: "Добавлен",
   changeDeleted: "Удалён",
   changeUpdated: "Изменён",
+  searchInChat: "Найти в чате",
+  chatSearchPlaceholder: "Слова из переписки",
+  chatSearchClose: "Закрыть поиск",
+  chatSearchResults: "Результаты поиска",
+  chatSearchCount: "Найдено: {{count}}",
+  chatSearchEmpty: "По запросу «{{query}}» ничего не найдено",
+  chatSearchFailed: "Не удалось выполнить поиск. Mac в сети?",
 } as const

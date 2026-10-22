@@ -4,6 +4,7 @@ import {
   EventType,
   FrameType,
   HISTORY_OUTLINE_MESSAGES,
+  HISTORY_SEARCH_MESSAGES,
   HistoryQueryKey,
   HISTORY_PAGE_MESSAGES,
   HISTORY_CURSOR_MAX_LENGTH,
@@ -175,7 +176,32 @@ export class SourceHistory {
    * Every owner's message of a session its device reads from the transcript; null when the device has no source
    * for it or speaks an older protocol, so the relay's events stand in.
    */
-  async outline(principal: Pick<Principal, 'userId'>, sessionId: string): Promise<HistoryPage | null> {
+  outline(principal: Pick<Principal, 'userId'>, sessionId: string) {
+    return this.whole(
+      principal,
+      sessionId,
+      { direction: HistoryDirection.Outline },
+      RelayProtocolFeature.HistoryOutline,
+      HISTORY_OUTLINE_MESSAGES,
+    );
+  }
+  /** The session's messages that hold the words, read from the transcript; null as for the outline. */
+  search(principal: Pick<Principal, 'userId'>, sessionId: string, query: string) {
+    return this.whole(
+      principal,
+      sessionId,
+      { direction: HistoryDirection.Search, anchor: query },
+      RelayProtocolFeature.HistorySearch,
+      HISTORY_SEARCH_MESSAGES,
+    );
+  }
+  private async whole(
+    principal: Pick<Principal, 'userId'>,
+    sessionId: string,
+    read: Pick<HistoryRead, 'direction' | 'anchor'>,
+    feature: number,
+    limit: number,
+  ): Promise<HistoryPage | null> {
     const row = await this.repository.sourceSession(principal.userId, sessionId);
 
     if (!row) {
@@ -187,7 +213,7 @@ export class SourceHistory {
     if (
       !row.data.capabilities?.historyWindow ||
       !connection ||
-      (connection.protocolVersion ?? UNVERSIONED_RELAY_PROTOCOL) < RelayProtocolFeature.HistoryOutline
+      (connection.protocolVersion ?? UNVERSIONED_RELAY_PROTOCOL) < feature
     ) {
       return null;
     }
@@ -196,14 +222,7 @@ export class SourceHistory {
       throw new Fault(ErrorCode.NOT_FOUND);
     }
 
-    return this.read(
-      row,
-      connection,
-      sessionId,
-      { direction: HistoryDirection.Outline },
-      undefined,
-      HISTORY_OUTLINE_MESSAGES,
-    );
+    return this.read(row, connection, sessionId, read, undefined, limit);
   }
   private read(
     row: SourceSessionRow,

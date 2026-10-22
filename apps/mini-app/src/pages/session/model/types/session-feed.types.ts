@@ -20,4 +20,6 @@ export interface SessionFeedProps {
   outline?: readonly HistoryMessage[] | undefined
   /** Loads the window around a message outside the loaded one; false when it could not. */
   onHistoryAround?: ((id: string, cursor?: string) => Promise<boolean>) | undefined
+  /** A message to go to from outside the feed (a search match); `at` makes picking the same one again count. */
+  focus?: { id: string; cursor?: string | undefined; at: number } | null | undefined
 }

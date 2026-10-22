@@ -6,6 +6,8 @@ import {
   HISTORY_CURSOR_MAX_LENGTH,
   eventSchema,
   outlineMessages,
+  searchMessages,
+  HISTORY_SEARCH_SCAN_MESSAGES,
   type EventEnvelope,
   type HistoryMessage,
 } from '@protocol';
@@ -72,6 +74,28 @@ export class SessionHistory {
     private repository: HistoryRepository,
     private cache?: RedisCache,
   ) {}
+  /**
+   * The stored messages of a session that hold the words, newest kept. Words are matched in JavaScript: SQL case
+   * folding depends on the database locale and may miss non-Latin letters.
+   */
+  async search(principal: Principal, sessionId: string, query: string): Promise<HistoryMessage[]> {
+    const session = await this.repository.liveSession(principal.userId, sessionId);
+
+    if (!session) {
+      throw new Fault(ErrorCode.NOT_FOUND);
+    }
+
+    const rows = await this.repository.recent(
+      { ownerId: principal.userId, deviceId: session.device_id, sessionId },
+      HISTORY_SEARCH_SCAN_MESSAGES,
+    );
+
+    return searchMessages(
+      rows.map((row) => row.data.payload as HistoryMessage),
+      query,
+    );
+  }
+
   /** Every stored owner's message of a session, for the message rail. */
   async outline(principal: Principal, sessionId: string): Promise<HistoryMessage[]> {
     const session = await this.repository.liveSession(principal.userId, sessionId);

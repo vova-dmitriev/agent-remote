@@ -18,6 +18,7 @@ import {
   HistoryQueryKey,
   HttpStatus,
   outlineMessages,
+  HISTORY_SEARCH_QUERY_CHARS,
   RelayProtocolFeature,
   type HistoryMessage,
   type ServerFrame,
@@ -39,6 +40,9 @@ import { RelayHub } from '../realtime/relay-hub.js';
 import { DeviceRequests } from './device-requests.js';
 import { SessionLabels } from './labels.js';
 import { SessionRepository } from './repository.js';
+import { z } from 'zod';
+
+const searchQuerySchema = z.string().trim().min(1).max(HISTORY_SEARCH_QUERY_CHARS);
 
 /**
  * Session history pages (from the companion's source when it has one, else the relay's events), renaming, pins,
@@ -106,6 +110,18 @@ export class SessionsController {
     return source
       ? outlineMessages(source.events.map((event) => event.payload as HistoryMessage))
       : this.history.outline(p, id);
+  }
+
+  /** The conversation's messages that hold the owner's words, shortened around the first match. */
+  @Get('search')
+  async search(@CurrentPrincipal() p: Principal, @Param('id') id: string, @Query('q') q: unknown) {
+    const query = searchQuerySchema.parse(q);
+    const source = await this.sourceHistory.search(p, id, query);
+
+    // The device already cut its matches to snippets; cutting them again would shift them.
+    return source
+      ? source.events.map((event) => event.payload as HistoryMessage)
+      : this.history.search(p, id, query);
   }
 
   @Patch()

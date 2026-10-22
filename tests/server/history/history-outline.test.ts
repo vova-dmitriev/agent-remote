@@ -69,6 +69,19 @@ it("outlines the relay's stored owner messages in order, shortened, for the owne
 
     expect(outline[0]!.text).toHaveLength(HISTORY_OUTLINE_TEXT_CHARS);
 
+    // Search reads every stored message, and matches words in any letter case.
+    await fixture.db.pool.query(
+      "UPDATE events SET data=jsonb_set(data,'{payload,text}','\"Финальный ДЕПЛОЙ\"') WHERE seq=5",
+    );
+
+    const found = await history.search({ userId: 'owner' } as Principal, 'session', 'деплой');
+
+    expect(found.map((message) => message.id)).toEqual(['m5']);
+
+    await expect(history.search({ userId: 'stranger' } as Principal, 'session', 'деплой')).rejects.toThrow(
+      'NOT_FOUND',
+    );
+
     await expect(history.outline({ userId: 'stranger' } as Principal, 'session')).rejects.toThrow(
       'NOT_FOUND',
     );
@@ -101,6 +114,7 @@ it('asks only a device that speaks the outline protocol, and takes more than a p
     const principal = { userId: 'owner' } as Principal;
 
     expect(await source.outline(principal, 'session')).toBeNull();
+    expect(await source.search(principal, 'session', 'words')).toBeNull();
     expect(sent).toHaveLength(0);
     connection.protocolVersion = RelayProtocolFeature.HistoryOutline;
     const outline = source.outline(principal, 'session');

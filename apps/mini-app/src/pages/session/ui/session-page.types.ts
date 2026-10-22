@@ -53,4 +53,6 @@ export interface SessionMenuProps {
   connection: Connection
   deviceStatus: DeviceStatus
   onRemoved: () => void
+  /** Opens search in the chat; absent where the host cannot search. */
+  onSearch?: (() => void) | undefined
 }

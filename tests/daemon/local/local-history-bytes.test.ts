@@ -166,3 +166,26 @@ it("outlines a cached session's owner messages past a page", async () => {
 
   expect(ids(outline)).toEqual(Array.from({ length: 30 }, (_, i) => `cached-${i * 3}`));
 });
+
+it("searches a cached session's messages in any letter case", async () => {
+  const fixture = setup();
+
+  for (let i = 0; i < 40; i++) {
+    fixture.monitor.publish(fixture.session.id, EventType.Message, {
+      id: `cached-${i}`,
+      role: MessageRole.Assistant,
+      text: i === 3 ? 'Старый ДЕПЛОЙ' : 'synthetic ' + i,
+      occurredAt: 1000 + i,
+    });
+  }
+
+  const found = (await fixture.controller.execute(fixture.principal, {
+    operation: LocalOperation.History,
+    sessionId: fixture.session.id,
+    generation: fixture.session.generation,
+    direction: HistoryDirection.Search,
+    anchor: 'деплой',
+  })) as Page;
+
+  expect(ids(found)).toEqual(['cached-3']);
+});

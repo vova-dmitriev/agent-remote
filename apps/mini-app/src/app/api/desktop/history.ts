@@ -89,13 +89,18 @@ export class DesktopHistory {
   }
 
   /** The owner's messages of the whole conversation; they never enter the feed. */
-  async outline(sessionId: string): Promise<HistoryMessage[]> {
+  outline = (sessionId: string) => this.whole(sessionId, HistoryDirection.Outline)
+
+  /** The conversation's messages that hold the words, shortened around them; they never enter the feed. */
+  search = (sessionId: string, query: string) => this.whole(sessionId, HistoryDirection.Search, query)
+
+  private async whole(sessionId: string, direction: HistoryDirection, anchor?: string): Promise<HistoryMessage[]> {
     const generation = this.generations.get(sessionId)
 
     if (!generation) return []
 
     const page = pageSchema.parse(
-      await this.connection.request({ operation: LocalOperation.History, sessionId, generation, direction: HistoryDirection.Outline }),
+      await this.connection.request({ operation: LocalOperation.History, sessionId, generation, direction, ...(anchor ? { anchor } : {}) }),
     )
 
     return page.events.flatMap((event) => {

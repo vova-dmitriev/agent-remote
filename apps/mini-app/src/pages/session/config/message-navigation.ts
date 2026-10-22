@@ -21,3 +21,7 @@ export const RailTick = {
 /** The conversation outline the rail marks: its query key and how long a loaded outline stands. */
 export const HISTORY_OUTLINE_QUERY = "history-outline"
 export const HISTORY_OUTLINE_STALE_MS = 60_000
+
+/** Search in the chat: its query key, and how long typing rests before the words are searched. */
+export const CHAT_SEARCH_QUERY = "chat-search"
+export const CHAT_SEARCH_DEBOUNCE_MS = 300

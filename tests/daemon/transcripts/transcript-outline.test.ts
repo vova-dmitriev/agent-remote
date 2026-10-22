@@ -40,3 +40,26 @@ it("outlines every owner's message past a page and opens a window around one of 
     await rm(root, { recursive: true, force: true });
   }
 });
+
+it('searches the whole transcript and opens a window around a match', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'native-search-'));
+
+  try {
+    const path = join(root, 'source.jsonl');
+
+    await writeFile(
+      path,
+      Array.from({ length: 420 }, (_, i) => row(i, i === 7 ? 'Ранний ДЕПЛОЙ проекта' : undefined)).join(''),
+    );
+
+    const pages = new TranscriptPages({ path, allowedRoot: root, sessionId: 'source' });
+    const found = await pages.page({ direction: 'search', anchor: 'деплой' });
+
+    expect(found.messages.map((message) => message.id)).toEqual(['m7']);
+    const around = await pages.page({ direction: 'around', anchor: found.messages[0]!.historyCursor! });
+
+    expect(around.messages.map((message) => message.id)).toContain('m7');
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

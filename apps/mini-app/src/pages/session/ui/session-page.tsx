@@ -1,4 +1,3 @@
-import { useMemo } from "react"
 import { ArrowLeft } from "lucide-react"
 import { StatusConfidence, HistoryStatus, ConnectionStatus, DeviceStatus } from "@protocol"
 import {
@@ -10,8 +9,6 @@ import {
   sessionTitle,
   agentName,
   sourceTextClass,
-  promptEchoes,
-  useSessionStore,
 } from "@/entities/session"
 import { useTranslation } from "@/shared/lib/hooks"
 import { SessionTitle } from "@/features/rename-session"
@@ -30,7 +27,8 @@ import { SessionNotices } from "./header/session-notices"
 import { SessionMenu } from "./header/session-menu"
 import { SessionModelChips } from "./header/session-model-chips"
 import { SESSION_PAGE_IDS } from "../config/test-ids"
-import { useHistoryOutline } from "../model/history/use-history-outline"
+import { useFeedSources } from "../model/history/use-feed-sources"
+import { ChatSearch } from "./search/chat-search"
 import type { SessionPageProps } from "./session-page.types"
 
 export function SessionPage({
@@ -55,16 +53,7 @@ export function SessionPage({
 }: SessionPageProps) {
   const { t, language } = useTranslation()
   const observed = sessionObserved(state, session)
-  const outline = useHistoryOutline(session)
-  const echoes = useSessionStore((store) => store.echoes)
-  const outbox = useSessionStore((store) => store.outbox)
-
-  const feed = useMemo(() => {
-    const pending = promptEchoes({ echoes, outbox }, session.id, messages)
-
-    return pending.length ? [...messages, ...pending] : messages
-  }, [echoes, outbox, session.id, messages])
-
+  const { feed, outline, around, search } = useFeedSources(session, messages, onHistoryAround)
   const deviceStatus = state.snapshot?.deviceStatus ?? DeviceStatus.Offline
 
   return (
@@ -115,6 +104,7 @@ export function SessionPage({
           connection={state.connection}
           deviceStatus={deviceStatus}
           onRemoved={onBack}
+          onSearch={search.show}
         />
       </div>
       {/* The plan limits sit at the right of the status line, so the header leaves the title its room. */}
@@ -154,20 +144,15 @@ export function SessionPage({
       {session.changes ? (
         <SessionChanges key={session.id + ":changes:" + session.generation} changes={session.changes} onOpen={onOpenFile} />
       ) : null}
+      <ChatSearch open={search.open} session={session} agent={agentName(session)} onPick={search.pick} onClose={search.close} />
       <SessionFeed
         key={session.id + tab}
+        focus={search.focus}
         sessionId={session.id}
         readingScope={readingScope}
         onHistoryPage={onHistoryPage}
-        outline={outline.messages}
-        onHistoryAround={
-          onHistoryAround &&
-          ((id, cursor) => {
-            outline.refresh()
-
-            return onHistoryAround(id, cursor)
-          })
-        }
+        outline={outline}
+        onHistoryAround={around}
         newestAt={session.lastMessageAt}
         agent={agentName(session)}
         messages={feed}
