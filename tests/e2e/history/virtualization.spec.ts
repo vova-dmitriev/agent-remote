@@ -45,7 +45,9 @@ test('reading stays anchored through the 500-message cap and earlier message gro
     { id: 'capped-500', role: 'assistant', text: 'Newest capped message', occurredAt: now + 500 },
   ]);
 
-  await expect(railMarker(page, 'capped-0')).toHaveCount(0);
+  // The cap drops the oldest loaded message; the rail still marks it from the conversation's outline.
+  await expectLoadedMessages(page, 500);
+  await expect(railMarker(page, 'capped-0')).toHaveCount(1);
 
   await expect
     .poll(async () =>
@@ -53,8 +55,8 @@ test('reading stays anchored through the 500-message cap and earlier message gro
     )
     .toBeLessThan(2);
 
-  // Grow the message a rail marker starts with, so hovering that marker previews it.
-  const grown = (await railMarker(page, 'capped-10').getAttribute('data-message-id'))!;
+  // Grow a loaded message a rail marker starts with, so hovering that marker previews it.
+  const grown = (await railMarker(page, 'capped-100').getAttribute('data-message-id'))!;
 
   await publishMessages([{ ...messages[Number(grown.split('-')[1])]!, text: 'Earlier message grew. '.repeat(100) }]);
   await byTestId(page, SESSION_FEED_IDS.marker, { 'message-id': grown }).hover();

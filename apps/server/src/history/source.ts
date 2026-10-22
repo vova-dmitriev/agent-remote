@@ -3,8 +3,12 @@ import {
   HistoryDirection,
   EventType,
   FrameType,
+  HISTORY_OUTLINE_MESSAGES,
+  HistoryQueryKey,
   HISTORY_PAGE_MESSAGES,
   HISTORY_CURSOR_MAX_LENGTH,
+  RelayProtocolFeature,
+  UNVERSIONED_RELAY_PROTOCOL,
   type DeviceFrame,
   type EventEnvelope,
   type HistoryMessage,
@@ -24,13 +28,15 @@ import { randomUUID } from 'node:crypto';
 import { type WebSocket } from 'ws';
 import { type Principal } from '../auth/security.js';
 import { Fault } from '../http/errors/fault.js';
-import { type HistoryRepository } from './repository.js';
+import { type HistoryRepository, type SourceSessionRow } from './repository.js';
 import { type HistoryPage } from './service.js';
 
 interface Connection {
   socket: WebSocket;
   epoch: string;
   device: { owner_id: string };
+  /** The negotiated daemon protocol; a connection without one speaks the unversioned protocol. */
+  protocolVersion?: number;
 }
 interface Pending {
   deviceId: string;
@@ -39,6 +45,7 @@ interface Pending {
   sessionId: string;
   generation: string;
   messages: HistoryMessage[];
+  limit: number;
   at: number;
   aroundId?: string;
   resolve: (page: HistoryPage | null) => void;
@@ -133,14 +140,6 @@ export class SourceHistory {
       return null;
     }
 
-    if (
-      [...this.pending.values()].filter((value) => value.deviceId === row.device_id).length >=
-      HISTORY_MAX_PENDING_READS_PER_DEVICE
-    ) {
-      throw new Fault(ErrorCode.RATE_LIMITED);
-    }
-
-    const requestId = randomUUID();
     let direction: HistoryRead['direction'] = HistoryDirection.Latest;
 
     if (single) {
@@ -153,31 +152,11 @@ export class SourceHistory {
       direction = HistoryDirection.Around;
     }
 
-    return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
-        this.pending.delete(requestId);
-        reject(new Fault(ErrorCode.HISTORY_RELOAD_FAILED));
-      }, HISTORY_SOURCE_TIMEOUT_MS);
-
-      this.pending.set(requestId, {
-        deviceId: row.device_id,
-        ownerId: principal.userId,
-        epoch: connection.epoch,
-        sessionId,
-        generation: row.data.generation,
-        messages: [],
-        at: Date.now(),
-        ...(typeof around === 'string' ? { aroundId: around } : {}),
-        resolve,
-        reject,
-        timer,
-      });
-
-      const request: HistoryRead = {
-        type: FrameType.HistoryRead,
-        requestId,
-        sessionId,
-        generation: row.data.generation,
+    return this.read(
+      row,
+      connection,
+      sessionId,
+      {
         direction,
         ...(typeof agentId === 'string' ? { agentId } : {}),
         ...(raw
@@ -188,6 +167,88 @@ export class SourceHistory {
                   : String(raw).slice(HISTORY_SOURCE_CURSOR_PREFIX.length),
             }
           : {}),
+      },
+      typeof around === 'string' ? around : undefined,
+    );
+  }
+  /**
+   * Every owner's message of a session its device reads from the transcript; null when the device has no source
+   * for it or speaks an older protocol, so the relay's events stand in.
+   */
+  async outline(principal: Pick<Principal, 'userId'>, sessionId: string): Promise<HistoryPage | null> {
+    const row = await this.repository.sourceSession(principal.userId, sessionId);
+
+    if (!row) {
+      throw new Fault(ErrorCode.NOT_FOUND);
+    }
+
+    const connection = this.live.get(row.device_id);
+
+    if (
+      !row.data.capabilities?.historyWindow ||
+      !connection ||
+      (connection.protocolVersion ?? UNVERSIONED_RELAY_PROTOCOL) < RelayProtocolFeature.HistoryOutline
+    ) {
+      return null;
+    }
+
+    if (connection.device.owner_id !== principal.userId) {
+      throw new Fault(ErrorCode.NOT_FOUND);
+    }
+
+    return this.read(
+      row,
+      connection,
+      sessionId,
+      { direction: HistoryDirection.Outline },
+      undefined,
+      HISTORY_OUTLINE_MESSAGES,
+    );
+  }
+  private read(
+    row: SourceSessionRow,
+    connection: Connection,
+    sessionId: string,
+    read: Pick<HistoryRead, 'direction' | 'anchor' | typeof HistoryQueryKey.AgentId>,
+    aroundId: string | undefined,
+    limit = HISTORY_PAGE_MESSAGES,
+  ): Promise<HistoryPage | null> {
+    if (
+      [...this.pending.values()].filter((value) => value.deviceId === row.device_id).length >=
+      HISTORY_MAX_PENDING_READS_PER_DEVICE
+    ) {
+      throw new Fault(ErrorCode.RATE_LIMITED);
+    }
+
+    const requestId = randomUUID();
+
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        this.pending.delete(requestId);
+        reject(new Fault(ErrorCode.HISTORY_RELOAD_FAILED));
+      }, HISTORY_SOURCE_TIMEOUT_MS);
+
+      this.pending.set(requestId, {
+        deviceId: row.device_id,
+        ownerId: connection.device.owner_id,
+        epoch: connection.epoch,
+        sessionId,
+        generation: row.data.generation,
+        messages: [],
+        limit,
+        at: Date.now(),
+        ...(aroundId ? { aroundId } : {}),
+        resolve,
+        reject,
+        timer,
+      });
+
+      const request: HistoryRead = {
+        type: FrameType.HistoryRead,
+        requestId,
+        sessionId,
+        generation: row.data.generation,
+        ...read,
       };
 
       if (!this.send(connection.socket, request)) {
@@ -216,7 +277,7 @@ export class SourceHistory {
     }
 
     if (frame.type === FrameType.HistoryItem) {
-      if (pending.messages.length >= HISTORY_PAGE_MESSAGES) {
+      if (pending.messages.length >= pending.limit) {
         return;
       }
 

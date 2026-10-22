@@ -41,6 +41,10 @@ it('maps typed application operations to encoded relay routes without exposing U
     async request<T>(path: string, options: RequestInit = {}): Promise<T> {
       return (await fetch(origin + path, options)).json() as Promise<T>;
     }
+
+    async history() {
+      return null;
+    }
   }
 
   const client = new Client();

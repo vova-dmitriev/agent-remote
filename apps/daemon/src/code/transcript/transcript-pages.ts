@@ -6,6 +6,7 @@ import {
   HistoryDirection,
   type HistoryMessage,
   type HistoryRead,
+  outlineMessages,
 } from '@protocol';
 import type { NativeMedia } from '../../attachments/types.js';
 
@@ -48,6 +49,10 @@ export class TranscriptPages {
   private positions = new Map<string, number>();
   constructor(private options: Options) {}
   async page(request: Pick<HistoryRead, 'direction' | 'anchor'>) {
+    if (request.direction === HistoryDirection.Outline) {
+      return this.outline();
+    }
+
     const opened = await openTranscript(this.options.path, this.options.allowedRoot, this.options.open);
 
     if (!opened) {
@@ -189,6 +194,46 @@ export class TranscriptPages {
       })),
       before: start ? encode(start) : null,
       after: end < info.size ? encode(end) : null,
+    };
+  }
+  /**
+   * The owner's messages of the newest transcript window, each with the position cursor a page opens around.
+   * ponytail: rereads up to 32 MiB per call; cache by inode and size if outlines of long chats get slow.
+   */
+  private async outline() {
+    const opened = await openTranscript(this.options.path, this.options.allowedRoot, this.options.open);
+
+    if (!opened) {
+      throw new CodedError(ErrorCode.TRANSCRIPT_UNAVAILABLE);
+    }
+
+    const { file, info } = opened;
+
+    await file.close();
+    const offsets = new Map<string, number>();
+
+    const reader = new TranscriptReader({
+      path: this.options.path,
+      allowedRoot: this.options.allowedRoot,
+      ...(this.options.sessionId ? { sessionId: this.options.sessionId } : {}),
+      ...(this.options.open ? { open: this.options.open } : {}),
+      startAt: Math.max(0, info.size - TRANSCRIPT_WINDOW_BYTES),
+      endAt: info.size,
+      maxReadBytes: TRANSCRIPT_WINDOW_BYTES,
+      onPosition: (id, offset) => offsets.set(id, offset),
+    });
+
+    const position = (offset: number) =>
+      TRANSCRIPT_POSITION_PREFIX +
+      Buffer.from(JSON.stringify({ dev: info.dev, ino: info.ino, offset })).toString('base64url');
+
+    return {
+      messages: outlineMessages(await reader.readNext()).map((message) => ({
+        ...message,
+        historyCursor: position(offsets.get(message.id) ?? 0),
+      })),
+      before: null,
+      after: null,
     };
   }
   private position(value: string, info: { dev: number; ino: number; size: number }) {

@@ -1,6 +1,6 @@
 import { ArrowDown } from "lucide-react"
 import { SessionTab } from "@/entities/session"
-import { HistoryStatus } from "@protocol"
+import { HistoryStatus, type HistoryMessage } from "@protocol"
 import { useTranslation } from "@/shared/lib/hooks"
 import { Button } from "@/shared/ui/button"
 import { cn } from "@/shared/lib/utils"
@@ -9,7 +9,9 @@ import { useFollowMessages } from "@/pages/session/model/use-follow-messages"
 import { useHistoryEdges } from "@/pages/session/model/history/use-history-edges"
 import { useRailMap } from "@/pages/session/model/rail/use-rail-map"
 import { navigationScrollBehavior } from "@/pages/session/lib/message-navigation"
-import { railActiveId, railEntries } from "@/pages/session/lib/history/subagent-history"
+import { useOutlineJump } from "@/pages/session/model/history/use-outline-jump"
+import { railActiveId } from "@/pages/session/lib/history/subagent-history"
+import { railMarks } from "@/pages/session/lib/history/rail-marks"
 import type { SessionFeedProps } from "@/pages/session/model/types/session-feed.types"
 import { MessageRail } from "./rail/message-rail"
 import { HistorySkeleton } from "./loading/history-skeleton"
@@ -26,6 +28,8 @@ export function SessionFeed({
   terminal,
   agent,
   newestAt,
+  outline = NO_OUTLINE,
+  onHistoryAround,
 }: SessionFeedProps) {
   const edges = useHistoryEdges(messages, onHistoryPage, newestAt)
 
@@ -37,6 +41,7 @@ export function SessionFeed({
     edges.page,
   )
 
+  const reach = useOutlineJump(messages, outline, jump, onHistoryAround)
   const { t } = useTranslation()
   const showMessages = tab === SessionTab.History && messages.length > 0
   const map = useRailMap(virtualizer, scroll, content, showMessages && settled)
@@ -73,11 +78,10 @@ export function SessionFeed({
       ) : null}
       {showMessages && settled ? (
         <MessageRail
-          {...map}
-          {...railEntries(messages, map.starts)}
+          {...railMarks(messages, map, outline)}
           loaded={messages.length}
           activeId={railActiveId(messages, activeId)}
-          jump={jump}
+          jump={reach}
           older={edges.older}
           newer={edges.newer}
           loadPage={edges.page}
@@ -100,6 +104,8 @@ export function SessionFeed({
     </div>
   )
 }
+
+const NO_OUTLINE: HistoryMessage[] = []
 
 const feedClass =
   "h-[44dvh] min-h-[240px] overflow-y-auto overscroll-y-contain px-0 py-[22px] [overflow-anchor:none] [scrollbar-width:thin] phone:h-[40dvh] session:h-full session:min-h-0 session:py-[12px]"

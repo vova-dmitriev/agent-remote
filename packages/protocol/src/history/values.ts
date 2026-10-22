@@ -4,6 +4,8 @@ export const HistoryDirection = {
   Before: 'before',
   After: 'after',
   Message: 'message',
+  /** Every owner's message of the conversation, text shortened: the message rail's map of the whole chat. */
+  Outline: 'outline',
 } as const;
 
 export type HistoryDirection = (typeof HistoryDirection)[keyof typeof HistoryDirection];

@@ -5,7 +5,9 @@ import {
   HistoryDirection,
   LocalOperation,
   eventSchema,
+  historySchema,
   type EventEnvelope,
+  type HistoryMessage,
   type HistoryPageDirection,
   type ServerFrame,
 } from "@protocol"
@@ -70,6 +72,39 @@ export class DesktopHistory {
     return page?.events ?? null
   }
 
+  /** A fresh window around one message, with the page cursors a latest load would set. */
+  async around(sessionId: string, messageId: string, cursor?: string): Promise<EventEnvelope[] | null> {
+    const window = this.window(sessionId)
+    const position = cursor?.startsWith(HistoryCursorPrefix.Position) ? cursor : undefined
+    const page = await this.request(sessionId, HistoryDirection.Around, messageId, undefined, position)
+
+    if (page && window) {
+      window.before = page.before
+      window.after = page.after
+      window.exhausted.clear()
+      window.loaded = true
+    }
+
+    return page?.events ?? null
+  }
+
+  /** The owner's messages of the whole conversation; they never enter the feed. */
+  async outline(sessionId: string): Promise<HistoryMessage[]> {
+    const generation = this.generations.get(sessionId)
+
+    if (!generation) return []
+
+    const page = pageSchema.parse(
+      await this.connection.request({ operation: LocalOperation.History, sessionId, generation, direction: HistoryDirection.Outline }),
+    )
+
+    return page.events.flatMap((event) => {
+      const message = historySchema.safeParse(event.payload)
+
+      return message.success ? [message.data] : []
+    })
+  }
+
   async page(
     sessionId: string,
     direction: HistoryPageDirection,
@@ -100,7 +135,7 @@ export class DesktopHistory {
     }
   }
 
-  private async request(sessionId: string, direction: HistoryDirection, anchor?: string, agentId?: string) {
+  private async request(sessionId: string, direction: HistoryDirection, anchor?: string, agentId?: string, position?: string) {
     const generation = this.generations.get(sessionId)
 
     if (!generation) return null
@@ -112,6 +147,7 @@ export class DesktopHistory {
         generation,
         direction,
         ...(anchor ? { anchor } : {}),
+        ...(position ? { position } : {}),
         ...(agentId ? { agentId } : {}),
       }),
     )

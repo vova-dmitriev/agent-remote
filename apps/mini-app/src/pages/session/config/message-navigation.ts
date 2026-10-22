@@ -17,3 +17,7 @@ export const RailTick = {
   /** Neighbours within this many pixels of the pointer grow, more the closer they are. */
   Reach: 40,
 } as const
+
+/** The conversation outline the rail marks: its query key and how long a loaded outline stands. */
+export const HISTORY_OUTLINE_QUERY = "history-outline"
+export const HISTORY_OUTLINE_STALE_MS = 60_000

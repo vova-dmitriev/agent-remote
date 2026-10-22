@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { RAIL_HIT_SIZE, RailTick } from "../src/pages/session/config/message-navigation"
 import { nearestGroup, railGroupOf, railGroups, tickMagnification } from "../src/pages/session/lib/rail-layout"
+import { railMarks } from "../src/pages/session/lib/history/rail-marks"
 
 describe("message rail layout", () => {
   it("places every message on the track in the scrollbar's coordinate system", () => {
@@ -59,5 +60,42 @@ describe("message rail layout", () => {
     expect(tickMagnification(100, 100 + RailTick.Reach / 2)).toBe(0.5)
     expect(tickMagnification(100, 100 - RailTick.Reach)).toBe(0)
     expect(tickMagnification(100, 100 + RailTick.Reach * 2)).toBe(0)
+  })
+})
+
+describe("rail marks", () => {
+  const message = (index: number, role: "user" | "assistant", text = "Loaded " + index) => ({
+    id: "m" + index,
+    role,
+    text,
+    occurredAt: index,
+  })
+
+  const loaded = [message(4, "user"), message(5, "assistant"), message(6, "user")]
+  const map = { starts: [0, 100, 200], total: 300, viewport: { scrollTop: 0, clientHeight: 100, scrollHeight: 300 } }
+
+  it("keeps the feed offsets while the loaded feed holds every outlined message", () => {
+    const marks = railMarks(loaded, map, [message(4, "user", "Short"), message(6, "user")])
+
+    expect(marks.messages.map((item) => item.text)).toEqual(["Loaded 4", "Loaded 6"])
+    expect(marks.starts).toEqual([0, 200])
+    expect(marks.total).toBe(300)
+  })
+
+  it("marks outlined messages outside the loaded window in conversation order, evenly spaced", () => {
+    const marks = railMarks(loaded, map, [
+      message(0, "user"),
+      message(2, "user"),
+      message(4, "user", "Short"),
+      message(6, "user"),
+      message(8, "user"),
+    ])
+
+    expect(marks.messages.map((item) => item.id)).toEqual(["m0", "m2", "m4", "m6", "m8"])
+    expect(marks.messages[2]!.text).toBe("Loaded 4")
+
+    expect(railGroups(marks.starts, Math.max(marks.total, marks.viewport.clientHeight), 500).map((group) => group.top)).toEqual([
+      50, 150, 250, 350, 450,
+    ])
   })
 })

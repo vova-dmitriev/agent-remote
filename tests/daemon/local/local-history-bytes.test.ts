@@ -144,3 +144,25 @@ it('rejects a single oversized event explicitly instead of truncating its payloa
     }),
   ).rejects.toThrow(ErrorCode.LOCAL_PAYLOAD_TOO_LARGE);
 });
+
+it("outlines a cached session's owner messages past a page", async () => {
+  const fixture = setup();
+
+  for (let i = 0; i < 90; i++) {
+    fixture.monitor.publish(fixture.session.id, EventType.Message, {
+      id: `cached-${i}`,
+      role: i % 3 ? MessageRole.Assistant : MessageRole.User,
+      text: 'synthetic ' + i,
+      occurredAt: 1000 + i,
+    });
+  }
+
+  const outline = (await fixture.controller.execute(fixture.principal, {
+    operation: LocalOperation.History,
+    sessionId: fixture.session.id,
+    generation: fixture.session.generation,
+    direction: HistoryDirection.Outline,
+  })) as Page;
+
+  expect(ids(outline)).toEqual(Array.from({ length: 30 }, (_, i) => `cached-${i * 3}`));
+});

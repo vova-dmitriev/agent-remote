@@ -44,13 +44,17 @@ test('Codex preserves a line inside a long message after a smooth rail jump and 
 
   await feed.hover();
 
-  // Wheel into the long message, whose start is somewhere below the landed target.
+  // Wheel into the long message, whose start is somewhere below the landed target (a rail of every owner's
+  // message merges more of them into one target, so the target may be a few screens above it).
   await expect
     .poll(async () => {
       await page.mouse.wheel(0, 900);
 
+      // The long message's row renders only once the wheel brings it near.
+      if (!(await row.count())) return Number.POSITIVE_INFINITY;
+
       return row.evaluate((node) => node.getBoundingClientRect().top);
-    })
+    }, { timeout: 20000 })
     .toBeLessThan(0);
 
   await scrollSettled(feed);

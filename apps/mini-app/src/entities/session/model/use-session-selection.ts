@@ -101,6 +101,30 @@ export function useSessionSelection() {
     }
   }
 
+  /** Replaces the loaded window with the one around a message; false when it is gone or no longer current. */
+  async function loadAround(messageId: string, cursor?: string) {
+    const lease = runtime.current()
+    const transport = lease?.client
+    const sessionId = selected.current
+
+    if (!transport?.historyAround || !sessionId) return false
+    const request = ++selection.current
+
+    try {
+      const events = await transport.historyAround(sessionId, messageId, cursor)
+
+      if (!events || !runtime.isCurrent(lease) || selection.current !== request) return false
+      setState((s) => reduceHistoryWindow(s, sessionId, events, HistoryDirection.After, true))
+
+      return true
+    } catch (error) {
+      if (runtime.isCurrent(lease) && selection.current === request)
+        setError(error instanceof Error ? error.message : ErrorCode.HISTORY_RELOAD_FAILED)
+
+      return false
+    }
+  }
+
   function back(deviceId: string | null) {
     ++selection.current
     selected.current = null
@@ -108,5 +132,5 @@ export function useSessionSelection() {
     if (deviceId) runtime.client?.selectTarget(deviceId, null)
   }
 
-  return { tab, setTab, select, back, loadPage }
+  return { tab, setTab, select, back, loadPage, loadAround }
 }

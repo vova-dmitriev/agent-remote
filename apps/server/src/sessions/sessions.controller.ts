@@ -17,7 +17,9 @@ import {
   FrameType,
   HistoryQueryKey,
   HttpStatus,
+  outlineMessages,
   RelayProtocolFeature,
+  type HistoryMessage,
   type ServerFrame,
   sessionFileQuerySchema,
   sessionModelChoiceSchema,
@@ -94,6 +96,16 @@ export class SessionsController {
     }
 
     return page.events;
+  }
+
+  /** The owner's messages of the whole conversation, text shortened: the message rail's map. */
+  @Get('outline')
+  async outline(@CurrentPrincipal() p: Principal, @Param('id') id: string) {
+    const source = await this.sourceHistory.outline(p, id);
+
+    return source
+      ? outlineMessages(source.events.map((event) => event.payload as HistoryMessage))
+      : this.history.outline(p, id);
   }
 
   @Patch()

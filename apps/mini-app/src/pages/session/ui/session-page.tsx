@@ -27,6 +27,7 @@ import { SessionNotices } from "./header/session-notices"
 import { SessionMenu } from "./header/session-menu"
 import { SessionModelChips } from "./header/session-model-chips"
 import { SESSION_PAGE_IDS } from "../config/test-ids"
+import { useHistoryOutline } from "../model/history/use-history-outline"
 import type { SessionPageProps } from "./session-page.types"
 
 export function SessionPage({
@@ -36,6 +37,7 @@ export function SessionPage({
   historyStatus = HistoryStatus.Ready,
   readingScope,
   onHistoryPage,
+  onHistoryAround,
   tab,
   setTab,
   onBack,
@@ -50,6 +52,7 @@ export function SessionPage({
 }: SessionPageProps) {
   const { t, language } = useTranslation()
   const observed = sessionObserved(state, session)
+  const outline = useHistoryOutline(session)
   const deviceStatus = state.snapshot?.deviceStatus ?? DeviceStatus.Offline
 
   return (
@@ -144,6 +147,15 @@ export function SessionPage({
         sessionId={session.id}
         readingScope={readingScope}
         onHistoryPage={onHistoryPage}
+        outline={outline.messages}
+        onHistoryAround={
+          onHistoryAround &&
+          ((id, cursor) => {
+            outline.refresh()
+
+            return onHistoryAround(id, cursor)
+          })
+        }
         newestAt={session.lastMessageAt}
         agent={agentName(session)}
         messages={messages}

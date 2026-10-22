@@ -4,6 +4,7 @@ import type {
   ClientCommand,
   CommandResult,
   EventEnvelope,
+  HistoryMessage,
   HistoryNavigationDirection,
   HistoryPageDirection,
   PreferencePatch,
@@ -96,6 +97,10 @@ export interface ApplicationClient extends ApplicationOperations {
   resetTarget(): void
   history(sessionId: string, latest?: boolean): Promise<EventEnvelope[] | null>
   historyPage(sessionId: string, direction: HistoryPageDirection, edge?: string): Promise<EventEnvelope[] | HistoryPageSkip>
+  /** The owner's messages of the whole conversation, text shortened: the message rail's map. */
+  historyOutline?(sessionId: string): Promise<HistoryMessage[]>
+  /** A fresh window around one message (its position cursor when the outline gave one); null when no longer current. */
+  historyAround?(sessionId: string, messageId: string, cursor?: string): Promise<EventEnvelope[] | null>
   /**
    * One page of a subagent's own transcript, kept apart from the parent feed; absent where the host cannot read it.
    * Latest returns null when the response is no longer current; Before/After return a skip reason like `historyPage`.

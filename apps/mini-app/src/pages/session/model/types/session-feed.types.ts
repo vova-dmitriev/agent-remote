@@ -16,4 +16,8 @@ export interface SessionFeedProps {
   agent: AgentName
   /** When the session's newest message happened; newer history is unloaded while the feed ends earlier. */
   newestAt?: number | undefined
+  /** Every owner's message of the conversation, loaded or not: the rail marks them all. */
+  outline?: readonly HistoryMessage[] | undefined
+  /** Loads the window around a message outside the loaded one; false when it could not. */
+  onHistoryAround?: ((id: string, cursor?: string) => Promise<boolean>) | undefined
 }

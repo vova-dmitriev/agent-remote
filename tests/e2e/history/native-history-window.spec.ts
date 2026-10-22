@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { test, deviceFixture } from '../support/relay/relay-fixture.js';
 import { identity } from '../support/relay/identity.js';
 import { byTestId } from '../support/ui/testid.js';
-import { expectLoadedMessages, railMarker } from '../support/ui/rail.js';
+import { expectLoadedMessages, jumpNear, railMarker } from '../support/ui/rail.js';
 import { sessionSnapshot } from '../support/fixtures/session-fixtures.js';
 import { TranscriptSources } from '@daemon/monitor/history.js';
 import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
@@ -32,7 +32,10 @@ test('native chat opens at the last page, prepends on demand, and reopens at its
     snapshot = sessionSnapshot(f.deviceId);
 
   const session = snapshot.sessions[0]!,
-    requests: HistoryRead[] = [];
+    reads: HistoryRead[] = [];
+
+  // Page reads; the rail's outline is read beside them.
+  const pages = () => reads.filter((request) => request.direction !== 'outline');
 
   session.capabilities.historyWindow = true;
 
@@ -52,7 +55,7 @@ test('native chat opens at the last page, prepends on demand, and reopens at its
     const frame = JSON.parse(String(raw)) as HistoryRead;
 
     if (frame.type !== 'history_read') return;
-    requests.push(frame);
+    reads.push(frame);
 
     void sources.page(frame).then((result) => {
       for (const message of result.messages)
@@ -101,13 +104,16 @@ test('native chat opens at the last page, prepends on demand, and reopens at its
     await open();
     await expectLoadedMessages(page, 100);
     await expect(byTestId(page, SESSION_FEED_IDS.message, { 'message-id': 'native-419' })).toBeVisible();
-    expect(requests.map((request) => request.direction)).toEqual(['latest']);
-    const marker = page.getByTestId(SESSION_FEED_IDS.marker).first();
-
-    await expect(marker).toHaveAttribute('data-message-id', 'native-320');
-    await marker.click();
+    expect(pages().map((request) => request.direction)).toEqual(['latest']);
+    // The rail marks every owner's message of the transcript, the 160 outside the loaded window too.
+    await expect(page.getByTestId(SESSION_FEED_IDS.rail)).toHaveAttribute('data-marker-count', '210');
+    expect(reads.some((request) => request.direction === 'outline')).toBe(true);
+    await expect(page.getByTestId(SESSION_FEED_IDS.marker).first()).toHaveAttribute('data-message-id', 'native-0');
+    // Earlier pages load on demand from the rail's cap.
+    await byTestId(page, SESSION_FEED_IDS.railCap, { direction: 'before' }).click();
     await expectLoadedMessages(page, 200);
-    const message = byTestId(page, SESSION_FEED_IDS.message, { 'message-id': 'native-320' });
+    const target = await jumpNear(page, 'native-320');
+    const message = byTestId(page, SESSION_FEED_IDS.message, { 'message-id': target });
 
     await expect(message).toBeVisible();
 
@@ -129,27 +135,22 @@ test('native chat opens at the last page, prepends on demand, and reopens at its
       )
       .toBeLessThan(3);
 
-    await expect(railMarker(page, 'native-320')).toHaveAttribute(
+    await expect(railMarker(page, target)).toHaveAttribute(
       'aria-current',
       'true',
     );
 
-    expect(requests.at(-1)?.direction).toBe('around');
-    expect(requests.at(-1)?.anchor).toMatch(/^position:/);
-    expect(requests).toHaveLength(3);
-
-    const boundaryId = (await page.getByTestId(SESSION_FEED_IDS.marker).last().getAttribute('data-message-ids'))!
-      .split(' ')
-      .at(-1);
+    expect(pages().at(-1)?.direction).toBe('around');
+    expect(pages().at(-1)?.anchor).toMatch(/^position:/);
+    expect(pages()).toHaveLength(3);
 
     await page.getByTestId(SESSION_FEED_IDS.root).hover();
     await page.mouse.wheel(0, 50000);
     await expectLoadedMessages(page, 200);
-    await expect(byTestId(page, SESSION_FEED_IDS.message, { 'message-id': boundaryId! })).toBeVisible();
-    expect(requests.at(-1)?.direction).toBe('after');
+    expect(pages().at(-1)?.direction).toBe('after');
     await page.getByTestId(SESSION_FEED_IDS.bottom).click();
     await expect(byTestId(page, SESSION_FEED_IDS.message, { 'message-id': 'native-669' })).toBeVisible();
-    expect(requests.at(-1)?.direction).toBe('latest');
+    expect(pages().at(-1)?.direction).toBe('latest');
   } finally {
     await rm(root, { recursive: true, force: true });
   }

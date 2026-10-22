@@ -5,7 +5,9 @@ import {
   HISTORY_PAGE_MESSAGES,
   HISTORY_CURSOR_MAX_LENGTH,
   eventSchema,
+  outlineMessages,
   type EventEnvelope,
+  type HistoryMessage,
 } from '@protocol';
 
 import { HISTORY_CACHE_CURSOR_PREFIX, HISTORY_WINDOW_CACHE_VERSION } from './limits.js';
@@ -70,6 +72,22 @@ export class SessionHistory {
     private repository: HistoryRepository,
     private cache?: RedisCache,
   ) {}
+  /** Every stored owner's message of a session, for the message rail. */
+  async outline(principal: Principal, sessionId: string): Promise<HistoryMessage[]> {
+    const session = await this.repository.liveSession(principal.userId, sessionId);
+
+    if (!session) {
+      throw new Fault(ErrorCode.NOT_FOUND);
+    }
+
+    const rows = await this.repository.outline({
+      ownerId: principal.userId,
+      deviceId: session.device_id,
+      sessionId,
+    });
+
+    return outlineMessages(rows.map((row) => row.data.payload as HistoryMessage));
+  }
   async page(
     principal: Principal,
     sessionId: string,

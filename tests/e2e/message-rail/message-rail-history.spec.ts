@@ -3,7 +3,7 @@ import { HistoryDirection } from '@protocol';
 import { test, publishMessages } from '../support/relay/relay-fixture.js';
 import { identity } from '../support/relay/identity.js';
 import { byTestId } from '../support/ui/testid.js';
-import { box, expectLoadedMessages, jumpNear, railConversation } from '../support/ui/rail.js';
+import { box, expectActiveMessage, expectLoadedMessages, jumpNear, railConversation } from '../support/ui/rail.js';
 import { scrollSettled } from '../support/ui/scroll-settled.js';
 import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
 import { SESSION_FEED_IDS, SESSION_PAGE_IDS } from '@/pages/session/config/test-ids.js';
@@ -39,6 +39,25 @@ test('a "more history" cap sits beside the full-height track and loads earlier p
   await expect(page.getByTestId(SESSION_FEED_IDS.marker).first()).toHaveAttribute('data-message-id', 'rail-0');
   await earlier(page).click();
   await expect(earlier(page)).toHaveCount(0);
+});
+
+test('the rail marks every owner message of the conversation and jumps to one outside the loaded window', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await publishMessages(railConversation(300));
+  await identity(page, '801', 'en');
+  await page.goto('/');
+  await open(page);
+
+  await expectLoadedMessages(page, 100);
+  const rail = page.getByTestId(SESSION_FEED_IDS.rail);
+
+  await expect(rail).toHaveAttribute('data-marker-count', '150');
+  await expect(page.getByTestId(SESSION_FEED_IDS.marker).first()).toHaveAttribute('data-message-id', 'rail-0');
+  expect(await jumpNear(page, 'rail-0')).toBe('rail-0');
+
+  await expect(byTestId(page, SESSION_FEED_IDS.message, { 'message-id': 'rail-0' })).toBeInViewport();
+  await expectActiveMessage(page, 'rail-0');
+  await expect(rail).toHaveAttribute('data-marker-count', '150');
 });
 
 test('loading an earlier page from the cap keeps the reading position', async ({ page }) => {

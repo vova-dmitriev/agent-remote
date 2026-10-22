@@ -13,6 +13,8 @@ export interface SessionPageProps {
   historyStatus?: HistoryStatus
   onHistoryPage?: ((direction: HistoryDirection) => void | Promise<HistoryPageOutcome | void>) | undefined
   readingScope?: string | undefined
+  /** Loads the window around a message the rail marks outside the loaded one; false when it could not. */
+  onHistoryAround?: ((id: string, cursor?: string) => Promise<boolean>) | undefined
   tab: SessionTab
   setTab: (value: SessionTab) => void
   onBack: () => void

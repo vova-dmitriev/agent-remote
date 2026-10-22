@@ -46,6 +46,7 @@ export function ApplicationContent({
       messages={state.messages[selected.id] ?? []}
       historyStatus={state.history?.sessionId === selected.id ? state.history.status : HistoryStatus.Loading}
       onHistoryPage={(direction) => selection.loadPage(direction)}
+      onHistoryAround={(id, cursor) => selection.loadAround(id, cursor)}
       tab={selection.tab}
       setTab={selection.setTab}
       onBack={back}

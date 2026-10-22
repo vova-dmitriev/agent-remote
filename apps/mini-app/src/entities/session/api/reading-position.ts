@@ -1,5 +1,5 @@
 import { QueryClient } from "@tanstack/react-query"
-import { readingPositionResponseSchema, type ReadingPosition as StoredPosition } from "@protocol"
+import { HistoryCursorPrefix, readingPositionResponseSchema, type ReadingPosition as StoredPosition } from "@protocol"
 import {
   READING_POSITION_LIMITS,
   mergePosition,
@@ -9,6 +9,12 @@ import {
 } from "@/shared/lib/reading-position"
 
 type PositionOperations = Pick<import("@/shared/api").ApplicationOperations, "getReadingPosition" | "saveReadingPosition">
+
+/** The history query of a window around one message; a native position cursor locates it without a search. */
+export const aroundQuery = (messageId: string, cursor?: string) =>
+  "?around=" +
+  encodeURIComponent(messageId) +
+  (cursor?.startsWith(HistoryCursorPrefix.Position) ? "&position=" + encodeURIComponent(cursor) : "")
 
 export class ReadingPositions {
   private cache = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
@@ -56,11 +62,7 @@ export class ReadingPositions {
     await this.load(scope, sessionId, current)
     const bookmark = readPosition(scope)
 
-    return bookmark
-      ? "?around=" +
-          encodeURIComponent(bookmark.messageId) +
-          (bookmark.cursor?.startsWith("position:") ? "&position=" + encodeURIComponent(bookmark.cursor) : "")
-      : ""
+    return bookmark ? aroundQuery(bookmark.messageId, bookmark.cursor) : ""
   }
 
   private enqueue(scope: string, position: ReadingPosition) {

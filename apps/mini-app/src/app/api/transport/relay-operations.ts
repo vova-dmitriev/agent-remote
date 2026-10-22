@@ -10,6 +10,8 @@ import {
   rulesReplySchema,
   sessionSkillsSchema,
   sessionSchema,
+  historySchema,
+  HISTORY_OUTLINE_MESSAGES,
   CodedError,
   ErrorCode,
   type RulesRequest,
@@ -22,9 +24,11 @@ import {
   SessionListLimits,
   type ProjectSession,
   projectSessionReplySchema,
+  type EventEnvelope,
 } from "@protocol"
 import { z } from "zod"
 import type { ApplicationOperations, Device } from "@/shared/api"
+import { aroundQuery } from "@/entities/session"
 import { RelayCommandOperations } from "./relay-command-operations"
 
 export abstract class RelayOperations extends RelayCommandOperations implements ApplicationOperations {
@@ -48,6 +52,20 @@ export abstract class RelayOperations extends RelayCommandOperations implements 
     if (result.sessionId !== sessionId || result.generation !== generation) throw new CodedError(ErrorCode.INVALID_FRAME)
 
     return result
+  }
+
+  /** Latest reloads the newest page, or the window `around` names, instead of the saved reading position. */
+  abstract history(sessionId: string, latest?: boolean, around?: string): Promise<EventEnvelope[] | null>
+
+  historyAround(sessionId: string, messageId: string, cursor?: string) {
+    return this.history(sessionId, true, aroundQuery(messageId, cursor))
+  }
+
+  async historyOutline(sessionId: string) {
+    return z
+      .array(historySchema)
+      .max(HISTORY_OUTLINE_MESSAGES)
+      .parse(await this.request(`/sessions/${encodeURIComponent(sessionId)}/outline`))
   }
 
   protected routingAccess(deviceId: string, current: () => boolean) {

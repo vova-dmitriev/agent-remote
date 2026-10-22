@@ -1,4 +1,10 @@
-import { EventType, HISTORY_PAGE_MESSAGES, type EventEnvelope } from '@protocol';
+import {
+  EventType,
+  HISTORY_OUTLINE_MESSAGES,
+  HISTORY_PAGE_MESSAGES,
+  MessageRole,
+  type EventEnvelope,
+} from '@protocol';
 import { and, asc, eq, gt, isNull, sql, type SQL } from 'drizzle-orm';
 import type { PoolClient } from 'pg';
 import { ormOn, type Database } from '../db/database.js';
@@ -253,6 +259,17 @@ export class HistoryRepository {
     }
 
     return (await this.db.orm.execute<HistoryRow>(sql`${messages(scope)} ${query}`)).rows;
+  }
+
+  /** The newest owner's messages, tool lines left out, oldest first. */
+  async outline(scope: HistoryScope): Promise<HistoryRow[]> {
+    const result = await this.db.orm.execute<HistoryRow>(
+      sql`${messages(scope)} SELECT * FROM ${message} WHERE data->>'type'=${EventType.Message}
+        AND data->'payload'->>'role'=${MessageRole.User} AND data->'payload'->'tool' IS NULL
+        ORDER BY ${ordered(KEYS, DESC)} LIMIT ${HISTORY_OUTLINE_MESSAGES}`,
+    );
+
+    return result.rows.reverse();
   }
 
   /** Whether any message lies beyond a row in the given direction (`<` older, `>` newer). */

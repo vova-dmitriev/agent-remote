@@ -152,7 +152,7 @@ export class AppTransport extends RelayOperations implements ApplicationClient {
   }
   private currentHistory = (socket: WebSocket | undefined, sessionId: string, generation: number) =>
     !this.stopped && socket === this.socket && sessionId === this.selectedId && generation === this.selection
-  history(sessionId: string, latest = false) {
+  history(sessionId: string, latest = false, around = "") {
     if (latest) {
       ++this.selection
       this.window.reset()
@@ -167,7 +167,7 @@ export class AppTransport extends RelayOperations implements ApplicationClient {
       () => this.currentHistory(socket, sessionId, generation),
       (status) => this.handlers.onHistoryStatus?.(sessionId, status),
       latest
-        ? ""
+        ? around
         : () => this.reading.query(this.deviceId + ":" + sessionId, sessionId, () => this.currentHistory(socket, sessionId, generation)),
       this.window.observe,
     )

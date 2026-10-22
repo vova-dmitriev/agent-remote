@@ -5,9 +5,13 @@ import {
   ErrorCode,
   type EventEnvelope,
   EventType,
+  HISTORY_OUTLINE_MESSAGES,
   HistoryCursorPrefix,
   HistoryDirection,
+  type HistoryMessage,
   type HistoryRead,
+  MessageRole,
+  outlineMessages,
 } from '@protocol';
 import { bytePage } from '../../local/history/index.js';
 
@@ -31,6 +35,25 @@ export function cachedLocalHistory(
   const base = `WITH messages AS (SELECT data,seq,json_extract(data,'$.payload.occurredAt') AS at, row_number() OVER (PARTITION BY json_extract(data,'$.payload.id') ORDER BY seq DESC) AS rank FROM events WHERE json_extract(data,'$.deviceId')=? AND json_extract(data,'$.sessionId')=? AND json_extract(data,'$.type')=?) SELECT data,seq,at FROM messages WHERE rank=1`;
   const args: (string | number)[] = [deviceId, request.sessionId, EventType.Message];
   let query = base;
+
+  if (request.direction === HistoryDirection.Outline) {
+    const rows = db
+      .prepare(
+        base +
+          ` AND json_extract(data,'$.payload.role')=? AND json_extract(data,'$.payload.tool') IS NULL ORDER BY at DESC,seq DESC LIMIT ?`,
+      )
+      .all(...args, MessageRole.User, HISTORY_OUTLINE_MESSAGES) as Row[];
+
+    const events = rows.reverse().map((row) => {
+      const event = JSON.parse(row.data) as EventEnvelope;
+
+      return { ...event, payload: outlineMessages([event.payload as HistoryMessage])[0] };
+    });
+
+    const { start } = bytePage(events, HistoryDirection.Latest);
+
+    return { events: events.slice(start), before: null, after: null };
+  }
 
   if (request.direction === HistoryDirection.Before || request.direction === HistoryDirection.After) {
     let anchor: z.infer<typeof cursorSchema>;
