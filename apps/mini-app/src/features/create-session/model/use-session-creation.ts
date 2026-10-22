@@ -4,8 +4,8 @@ import type { ModelChoice, ProfileList, ProviderModels, ReasoningEffort } from "
 import { projectChoice } from "./project-choice"
 import { resolveProfileLaunch, selectableProfiles, type ProfileExecution } from "./profile-launch"
 
-type CreateSession = (session: Session, provider: AgentProvider, execution?: ProfileExecution, model?: ModelChoice) => void
-type CreateInProject = (cwd: string, provider: AgentProvider, model?: ModelChoice) => Promise<unknown>
+type CreateSession = (session: Session, provider: AgentProvider, execution?: ProfileExecution, model?: ModelChoice, resume?: string) => void
+type CreateInProject = (cwd: string, provider: AgentProvider, model?: ModelChoice, resume?: string) => Promise<unknown>
 
 export function useSessionCreation(
   sessions: Session[],
@@ -21,6 +21,9 @@ export function useSessionCreation(
   const [profileId, setProfileId] = useState("")
   const [modelId, setModelId] = useState("")
   const [effort, setEffort] = useState<ReasoningEffort | "">("")
+  /** A Claude session id or Codex thread id to continue instead of starting an empty conversation. */
+  const [resumeId, setResumeId] = useState("")
+  const resume = resumeId.trim() || undefined
   /** Why the device refused the last session in a project, as an error code. */
   const [error, setError] = useState("")
   const { projects, selected, selectedPath, projectOptions, projectValue, projectLabel } = projectChoice(sessions, projectPaths, projectId)
@@ -37,7 +40,7 @@ export function useSessionCreation(
   /** Starts the session beside the chosen one, or in the chosen project through the device. */
   async function submit(create: CreateSession, createInProject: CreateInProject | undefined) {
     if (selected) {
-      create(selected, provider, launch.execution ?? undefined, modelChoice)
+      create(selected, provider, resume ? undefined : (launch.execution ?? undefined), modelChoice, resume)
 
       return
     }
@@ -46,7 +49,7 @@ export function useSessionCreation(
     setError("")
 
     try {
-      await createInProject(selectedPath, provider, modelChoice)
+      await createInProject(selectedPath, provider, modelChoice, resume)
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : ErrorCode.REQUEST_FAILED)
     }
@@ -82,7 +85,10 @@ export function useSessionCreation(
     projectValue,
     projectLabel,
     /** A project session runs on the device's own sign-in; a profile launch needs a session beside it. */
-    ready: selectedPath ? native : native || (launch.profileAvailable && !!launch.execution),
+    // A conversation continues on the device's own sign-in, never a profile's.
+    ready: selectedPath || resume ? native : native || (launch.profileAvailable && !!launch.execution),
+    resumeId,
+    setResumeId,
     submit,
     error,
     profiles,

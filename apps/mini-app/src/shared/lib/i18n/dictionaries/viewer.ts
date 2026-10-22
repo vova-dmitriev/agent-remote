@@ -31,6 +31,9 @@ export const viewerEN = {
   sessionModelMenu: "Model · {{model}}",
   sessionModelDialog: "Model and reasoning",
   sessionModelDone: "Done",
+  copySessionId: "Copy session ID",
+  sessionIdCopied: "Session ID copied",
+  sessionResumeId: "Session ID to continue",
 } as const
 
 export const viewerRU = {
@@ -66,4 +69,7 @@ export const viewerRU = {
   sessionModelMenu: "Модель · {{model}}",
   sessionModelDialog: "Модель и рассуждения",
   sessionModelDone: "Готово",
+  copySessionId: "Скопировать ID сессии",
+  sessionIdCopied: "ID сессии скопирован",
+  sessionResumeId: "ID сессии, чтобы продолжить",
 } as const

@@ -109,3 +109,27 @@ test("creates a Codex session on a model of the device's own sign-in, or on its 
     model: { model: 'synthetic-deep', effort: 'high' },
   });
 });
+
+test('continues a pasted session id in a new session', async ({ page }) => {
+  const { sockets, deviceId } = deviceFixture();
+  const snapshot = sessionSnapshot(deviceId);
+
+  snapshot.sessions[0]!.cwd = '/synthetic/project';
+  snapshot.sessions[0]!.capabilities.createSession = true;
+  sockets[0]!.send(JSON.stringify({ type: 'snapshot', snapshot, connectors: [] }));
+  setCommandOutcome('held');
+  await identity(page, '801', 'en');
+  await page.goto('/');
+  await page.getByTestId(SESSION_CREATE_IDS.toggle).click();
+  await page.getByTestId(SESSION_CREATE_IDS.resume).fill('  synthetic-thread-id  ');
+  await page.getByTestId(SESSION_CREATE_IDS.submit).click();
+
+  await expect.poll(() => delivered.length).toBe(1);
+
+  expect(delivered[0]?.action).toEqual({
+    type: 'create_session',
+    provider: 'codex',
+    cwd: '/synthetic/project',
+    resume: 'synthetic-thread-id',
+  });
+});

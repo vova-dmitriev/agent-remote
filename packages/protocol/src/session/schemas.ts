@@ -167,11 +167,16 @@ export const projectPathSchema = z
   .max(4096)
   // eslint-disable-next-line no-control-regex -- Intentionally reject control characters at the wire boundary.
   .regex(/^\/[^\u0000-\u001f\u007f]*$/u);
+/** A Claude session id or Codex thread id to continue in a new session, as the agent prints and resumes it. */
+const resumeIdSchema = z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,511}$/u);
+
 /** A new session in one of the device's projects, for an owner who has no session there yet. */
 export const projectSessionSchema = z.strictObject({
   provider: z.enum(AgentProvider),
   cwd: projectPathSchema,
   model: modelChoiceSchema.optional(),
+  /** Continues this conversation instead of starting an empty one. */
+  resume: resumeIdSchema.optional(),
 });
 export type ProjectSession = z.infer<typeof projectSessionSchema>;
 /** The device's answer to a project session: the new session's id. */
@@ -220,8 +225,11 @@ export const actionSchema = z.discriminatedUnion('type', [
         .optional(),
       /** The model on the device's own sign-in; a profile launch names its model in `execution` instead. */
       model: modelChoiceSchema.optional(),
+      /** Continues this conversation (a Claude session id or Codex thread id) on the device's own sign-in. */
+      resume: resumeIdSchema.optional(),
     })
     .refine((action) => !(action.execution && action.model), { message: ErrorCode.INVALID_COMMAND })
+    .refine((action) => !(action.execution && action.resume), { message: ErrorCode.INVALID_COMMAND })
     .refine((action) => !action.execution || action.execution.selection.provider === action.provider, {
       message: ErrorCode.PROFILE_MISMATCH,
     }),

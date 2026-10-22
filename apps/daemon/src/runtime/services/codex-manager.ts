@@ -169,6 +169,45 @@ export class CodexManager {
       return { connected: count, kind: selection.kind };
     });
   }
+  /** Continues a Codex thread by its id on this daemon's own app-server, unless Codex Desktop already hosts it. */
+  async resumeThread(threadId: string): Promise<string> {
+    return this.enqueue(async () => {
+      if (this.closed || !this.deps.inputEnabled) {
+        throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
+      }
+
+      const entry = this.add({
+        kind: TargetKind.CodexCli,
+        socketPath: await ensureManagedCodexSocket(this.deps.stateDirectory),
+      });
+
+      await this.refresh(entry);
+
+      if (!this.desktopThreads.hosted.has(threadId)) {
+        try {
+          await entry.rpc!.request(CodexMethod.ThreadResume, { threadId, excludeTurns: true });
+        } catch (error) {
+          logDebug('codex/resume-thread', error);
+          throw new CodedError(ErrorCode.NOT_FOUND);
+        }
+
+        entry.requested.add(threadId);
+        await this.refresh(entry);
+      }
+
+      const session = this.deps.monitor
+        .snapshot()
+        .sessions.find(
+          (candidate) => 'threadId' in candidate.target && candidate.target.threadId === threadId,
+        );
+
+      if (!session) {
+        throw new CodedError(ErrorCode.UNKNOWN_AFTER_WRITE);
+      }
+
+      return session.id;
+    });
+  }
   async createSession(cwd: string, launch?: ProfiledExecutionLaunch, choice?: ModelChoice): Promise<string> {
     return this.enqueue(async () => {
       if (this.closed || !this.deps.inputEnabled) {

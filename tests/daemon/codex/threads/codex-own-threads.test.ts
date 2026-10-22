@@ -12,6 +12,12 @@ import { PermissionBroker } from '@daemon/commands/permission-broker.js';
 
 const connectSocket = vi.hoisted(() => vi.fn());
 const connectDesktop = vi.hoisted(() => vi.fn());
+const managedSocket = vi.hoisted(() => vi.fn());
+
+vi.mock('@daemon/codex/launcher.js', async (original) => ({
+  ...(await original<object>()),
+  ensureManagedCodexSocket: managedSocket,
+}));
 
 vi.mock('@daemon/codex/rpc/transport.js', () => ({ connectCodexSocket: connectSocket }));
 
@@ -80,6 +86,8 @@ async function setup(threads: { id: string; originator: string; archived?: numbe
     respond() {},
     async close() {},
   });
+
+  managedSocket.mockResolvedValue(endpoint);
 
   connectSocket.mockImplementation(async (path: string) => {
     if (path !== endpoint) {
@@ -158,4 +166,15 @@ it('leaves a thread Codex Desktop hosts to Codex Desktop', async () => {
 
   expect(threadIds()).toEqual([]);
   expect(rpc.request).not.toHaveBeenCalledWith('thread/resume', expect.anything());
+});
+
+it('continues a Codex thread by the id the owner pasted', async () => {
+  connectDesktop.mockRejectedValue(new Error('ENOENT'));
+
+  const { manager, threadIds } = await setup([]);
+
+  await manager.start();
+
+  await expect(manager.resumeThread('pasted-thread')).resolves.toEqual(expect.any(String));
+  expect(threadIds()).toEqual(['pasted-thread']);
 });

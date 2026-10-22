@@ -3,6 +3,7 @@ export const SESSION_CREATE_IDS = {
   toggle: "session-create-toggle",
   form: "session-create-form",
   submit: "session-create-submit",
+  resume: "session-create-resume",
   profile: { root: "create-profile-field", trigger: "create-profile", panel: "create-profile-panel" },
   profileStatus: "create-profile-status",
   model: { root: "create-model-field", trigger: "create-model", panel: "create-model-panel" },

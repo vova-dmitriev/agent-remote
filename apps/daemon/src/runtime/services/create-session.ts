@@ -44,6 +44,10 @@ async function launchSession(action: CreateAction, options: CreateOptions): Prom
   }
 
   if (action.provider === AgentProvider.Codex) {
+    if (action.resume) {
+      return options.codex.resumeThread(action.resume);
+    }
+
     if (!action.execution) {
       return options.codex.createSession(cwd, undefined, action.model);
     }
@@ -76,6 +80,7 @@ async function launchSession(action: CreateAction, options: CreateOptions): Prom
     node: process.execPath,
     entry: fileURLToPath(new URL('../../entry/entry.js', import.meta.url)),
     ...(action.model ? { model: action.model } : {}),
+    ...(action.resume ? { resumeId: action.resume } : {}),
   });
 
   return waitManagedSession(options.monitor, connectorId);

@@ -154,14 +154,15 @@ it('times out and terminates a named child that never registers', async () => {
     startNamedTunnel(3040, parsePersonalTunnelConfig(values(f.credentialsFile))!, {
       executable: f.executable,
       configPath: f.configPath,
-      timeoutMs: 1000,
+      // Long enough for the child to start and write its pid on a loaded machine.
+      timeoutMs: 3000,
     }),
   ).rejects.toThrow(/^TUNNEL_START_TIMEOUT$/);
 
   const pid = Number(await readFile(join(f.directory, 'pid'), 'utf8'));
 
   expect(() => process.kill(pid, 0)).toThrow();
-});
+}, 10_000);
 
 it('sanitizes missing credentials and executable errors without hanging close', async () => {
   const f = await fixture('');

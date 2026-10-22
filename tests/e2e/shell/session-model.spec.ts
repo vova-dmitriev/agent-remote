@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { SESSION_SIDEBAR_IDS } from '@/widgets/session-sidebar/config/test-ids.js';
 import { SWITCH_MODEL_IDS } from '@/features/switch-model/config/test-ids.js';
 import { COMMAND_IDS } from '@/features/send-command/config/test-ids.js';
+import { SESSION_PAGE_IDS } from '@/pages/session/config/test-ids.js';
 import { byTestId } from '../support/ui/testid.js';
 import { installDesktopBridge } from '../support/fixtures/desktop-bridge.js';
 import { sessionSnapshot } from '../support/fixtures/session-fixtures.js';
@@ -74,4 +75,17 @@ test('offers no models in the menu when the device lists none', async ({ page })
 
   await page.getByTestId(COMMAND_IDS.actionsTrigger).click();
   await expect(page.getByTestId(SWITCH_MODEL_IDS.open)).toHaveCount(0);
+});
+
+test("copies a session's own id from its menu", async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await installDesktopBridge(page, 'desktop-e2e-device', sessionSnapshot('desktop-e2e-device'));
+  await page.goto('/desktop.html');
+  await byTestId(page, SESSION_SIDEBAR_IDS.row, { 'session-id': 'codex-cli-session' }).click();
+
+  await page.getByTestId(COMMAND_IDS.actionsTrigger).click();
+  await page.getByTestId(SESSION_PAGE_IDS.copyId).click();
+
+  await expect(page.getByTestId(SESSION_PAGE_IDS.idCopied)).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('codex-cli-thread');
 });

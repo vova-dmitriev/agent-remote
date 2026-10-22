@@ -78,6 +78,7 @@ export class ProjectSessions implements ProjectSessionsPort {
       provider: session.provider,
       cwd,
       ...(session.model ? { model: session.model } : {}),
+      ...(session.resume ? { resume: session.resume } : {}),
     });
   }
 }

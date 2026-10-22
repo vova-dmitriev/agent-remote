@@ -16,7 +16,7 @@ export function sessionCreationProps(model: ReturnType<typeof useApplication>): 
     disabled: !online || commands.busy || commands.awaitingReceipt || commands.uncertain,
     models: state.snapshot?.models ?? [],
     projects: state.snapshot?.projects ?? [],
-    createInProject: async (cwd, provider, model) => {
+    createInProject: async (cwd, provider, model, resume) => {
       const lease = runtime.current()
 
       if (!lease || !state.deviceId) throw new Error(ErrorCode.NO_AUTHENTICATED_CLIENT)
@@ -25,11 +25,12 @@ export function sessionCreationProps(model: ReturnType<typeof useApplication>): 
         provider,
         cwd,
         ...(model ? { model } : {}),
+        ...(resume ? { resume } : {}),
       })
 
       commands.openCreatedSession(sessionId)
     },
-    create: (session, provider, execution, model) =>
+    create: (session, provider, execution, model, resume) =>
       void commands.action(
         {
           type: CommandActionType.CreateSession,
@@ -37,6 +38,7 @@ export function sessionCreationProps(model: ReturnType<typeof useApplication>): 
           cwd: session.cwd!,
           ...(execution ? { execution } : {}),
           ...(model ? { model } : {}),
+          ...(resume ? { resume } : {}),
         },
         session,
       ),

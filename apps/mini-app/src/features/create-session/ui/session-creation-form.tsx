@@ -5,6 +5,7 @@ import { useTranslation } from "@/shared/lib/hooks"
 import { feedbackText } from "@/shared/lib/i18n"
 import { Button } from "@/shared/ui/button"
 import { ChoiceDropdown } from "@/shared/ui/dropdown"
+import { Input } from "@/shared/ui/input"
 import { chipFieldClass, chipLabelClass } from "../config/chip-classes"
 import { SESSION_CREATE_IDS } from "../config/test-ids"
 import type { ProfileExecution } from "../model/profile-launch"
@@ -19,8 +20,8 @@ interface SessionCreationFormProps {
   online: boolean
   profilesUnavailable: boolean
   checkingProfiles: boolean
-  create: (session: Session, provider: AgentProvider, execution?: ProfileExecution, model?: ModelChoice) => void
-  createInProject?: ((cwd: string, provider: AgentProvider, model?: ModelChoice) => Promise<unknown>) | undefined
+  create: (session: Session, provider: AgentProvider, execution?: ProfileExecution, model?: ModelChoice, resume?: string) => void
+  createInProject?: ((cwd: string, provider: AgentProvider, model?: ModelChoice, resume?: string) => Promise<unknown>) | undefined
 }
 
 export function SessionCreationForm({
@@ -68,6 +69,16 @@ export function SessionCreationForm({
         className={chipFieldClass}
         labelClassName={chipLabelClass}
         options={model.projectOptions.map((option) => ({ ...option, testId: SESSION_CREATE_IDS.projectOption }))}
+      />
+      <Input
+        className="h-[32px] w-[min(100%,22rem)] px-[10px] py-0 font-mono text-[12px]"
+        value={model.resumeId}
+        onChange={(event) => model.setResumeId(event.target.value)}
+        placeholder={t("sessionResumeId")}
+        aria-label={t("sessionResumeId")}
+        spellCheck={false}
+        autoComplete="off"
+        data-testid={SESSION_CREATE_IDS.resume}
       />
       <ProfileSelectField
         nativeProvider={model.provider === AgentProvider.Codex ? ProviderFilterValue.Codex : ProviderFilterValue.Claude}

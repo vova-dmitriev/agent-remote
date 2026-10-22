@@ -50,6 +50,12 @@ export interface SessionMenuProps {
   onRemoved: () => void
 }
 
+export interface CopySessionIdItemProps {
+  /** The agent's own id of the session. */
+  id: string
+  onCopied: () => void
+}
+
 export interface SessionInputProps {
   tab: SessionTab
   session: Session
