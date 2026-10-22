@@ -22,8 +22,10 @@ export function exportSnapshot(root, destination, mode) {
       .toString()
       .split('\0')
       .filter(Boolean)
-      .map((entry) => [entry.slice(entry.indexOf('\t') + 1), entry.split(' ')[0]]),
+      .map((entry) => [entry.slice(entry.indexOf('\t') + 1), entry.split(' ')]),
   );
+
+  const written = [];
 
   for (const file of files) {
     if (isPrivatePath(file)) {
@@ -31,7 +33,7 @@ export function exportSnapshot(root, destination, mode) {
     }
 
     const source = join(root, file);
-    const modeValue = entries.get(file);
+    const [modeValue, object] = entries.get(file) ?? [];
 
     if (
       isUnsafeMode(modeValue) ||
@@ -44,12 +46,53 @@ export function exportSnapshot(root, destination, mode) {
       continue;
     }
 
-    const content = staged ? git(['show', `:${file}`], root) : readFileSync(source);
+    written.push({ file, modeValue, object, source });
+  }
+
+  // The staged blobs in one `git cat-file` call: one `git show` per file took most of the hook's export.
+  const blobs = staged
+    ? indexBlobs(
+        root,
+        written.map((entry) => entry.object),
+      )
+    : [];
+
+  written.forEach(({ file, modeValue, source }, index) => {
     const target = join(destination, file);
 
     mkdirSync(dirname(target), { recursive: true });
-    writeFileSync(target, content, { mode: modeValue === '100755' ? 0o700 : 0o600 });
-  }
+
+    writeFileSync(target, staged ? blobs[index] : readFileSync(source), {
+      mode: modeValue === '100755' ? 0o700 : 0o600,
+    });
+  });
 
   return files.length;
+}
+
+/** The contents of the given blob ids, in order, from `git cat-file --batch` (`<id> blob <size>\n<bytes>\n` each). */
+function indexBlobs(root, objects) {
+  const output = git(['cat-file', '--batch'], root, {
+    input: objects.join('\n') + '\n',
+    maxBuffer: 1024 * 1024 * 1024,
+  });
+
+  const blobs = [];
+  let offset = 0;
+
+  for (const object of objects) {
+    const header = output.indexOf(10, offset);
+    const [id, type, size] = output.subarray(offset, header).toString().split(' ');
+
+    if (id !== object || type !== 'blob') {
+      throw new Error(`Staged object is not a blob: ${object}`);
+    }
+
+    const start = header + 1;
+
+    blobs.push(output.subarray(start, start + Number(size)));
+    offset = start + Number(size) + 1;
+  }
+
+  return blobs;
 }

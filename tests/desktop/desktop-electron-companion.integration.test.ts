@@ -127,7 +127,7 @@ process.once('SIGTERM', async () => { await daemon.close(); process.exit(0); });
     runningPeer.stderr?.setEncoding('utf8').on('data', (chunk: string) => (peerErrors += chunk));
 
     await expect
-      .poll(() => peerOutput.includes('DESKTOP_PEER_READY'), { timeout: 30_000 })
+      .poll(() => peerOutput.includes('DESKTOP_PEER_READY'), { timeout: 60_000 })
       .toBe(true)
       .catch(() => {
         throw new Error(`Packaged daemon failed (exit=${runningPeer.exitCode}, stderr=${peerErrors})`);

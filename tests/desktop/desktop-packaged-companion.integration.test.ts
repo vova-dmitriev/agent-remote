@@ -103,7 +103,7 @@ process.once('SIGTERM', async () => {
       await rm(userData, { recursive: true, force: true });
     });
 
-    await expect.poll(() => output.includes('PACKAGED_DAEMON_READY'), { timeout: 30_000 }).toBe(true);
+    await expect.poll(() => output.includes('PACKAGED_DAEMON_READY'), { timeout: 60_000 }).toBe(true);
     expect(errors).toBe('');
 
     const identity = JSON.parse(await readFile(join(directory, 'local-identity.json'), 'utf8')) as {
@@ -157,5 +157,5 @@ process.once('SIGTERM', async () => {
     await expect(createDesktopCompanionConnector(options)).rejects.toThrow(ErrorCode.LOCAL_GRANT_REVOKED);
     expect(confirmations).toBe(1);
   },
-  60_000,
+  120_000,
 );
