@@ -630,6 +630,10 @@ export class Monitor extends EventEmitter implements MonitorPort {
   session(id: string) {
     return this.sessions.get(id);
   }
+  /** A known session of any recency: the snapshot lists only the newest, and one just started has no message yet. */
+  find(match: (session: Session) => boolean) {
+    return [...this.sessions.values()].find(match);
+  }
   applyDesktopRead(
     id: string,
     read: { status: Session['status']; canPrompt: boolean; canInterrupt: boolean },

@@ -88,14 +88,12 @@ async function launchSession(action: CreateAction, options: CreateOptions): Prom
 
 export async function waitManagedSession(monitor: Monitor, connectorId: string): Promise<string> {
   for (let attempt = 0; attempt < 100; attempt++) {
-    const session = monitor
-      .snapshot()
-      .sessions.find(
-        (session) =>
-          session.target.connectorId === connectorId &&
-          session.binding === BindingState.Verified &&
-          session.integrationState === IntegrationState.Ready,
-      );
+    const session = monitor.find(
+      (session) =>
+        session.target.connectorId === connectorId &&
+        session.binding === BindingState.Verified &&
+        session.integrationState === IntegrationState.Ready,
+    );
 
     if (session) {
       return session.id;

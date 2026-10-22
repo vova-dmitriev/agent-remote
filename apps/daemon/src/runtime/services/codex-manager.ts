@@ -195,11 +195,9 @@ export class CodexManager {
         await this.refresh(entry);
       }
 
-      const session = this.deps.monitor
-        .snapshot()
-        .sessions.find(
-          (candidate) => 'threadId' in candidate.target && candidate.target.threadId === threadId,
-        );
+      const session = this.deps.monitor.find(
+        (candidate) => 'threadId' in candidate.target && candidate.target.threadId === threadId,
+      );
 
       if (!session) {
         throw new CodedError(ErrorCode.UNKNOWN_AFTER_WRITE);
@@ -315,14 +313,12 @@ export class CodexManager {
       try {
         await this.refresh(entry);
 
-        const session = this.deps.monitor
-          .snapshot()
-          .sessions.find(
-            (session) =>
-              session.target.kind === TargetKind.CodexCli &&
-              session.target.threadId === threadId &&
-              session.integrationState === IntegrationState.Ready,
-          );
+        const session = this.deps.monitor.find(
+          (session) =>
+            session.target.kind === TargetKind.CodexCli &&
+            session.target.threadId === threadId &&
+            session.integrationState === IntegrationState.Ready,
+        );
 
         if (session) {
           if (launch) {
