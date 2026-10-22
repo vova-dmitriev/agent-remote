@@ -116,6 +116,15 @@ describe('private daemon attachments', () => {
 
     expect(nativeCodexMedia({ type: 'agentMessage', text: '![x](/etc/passwd)' })).toEqual([]);
     expect(nativeCodexMedia({ type: 'imageGeneration', result: 'https://internal/private' })).toEqual([]);
+    // A tool's output (an image the agent viewed, a tool's picture) stays on the device.
+    expect(nativeCodexMedia({ type: 'imageView', path: '/tmp/synthetic.png' })).toEqual([]);
+
+    expect(
+      nativeCodexMedia({
+        type: 'dynamicToolCall',
+        contentItems: [{ type: 'inputImage', imageUrl: `data:image/png;base64,${data}` }],
+      }),
+    ).toEqual([]);
 
     expect(
       nativeCodexMedia({
@@ -361,7 +370,12 @@ describe('native image path content guard', () => {
 
     await writeFile(path, bytes);
     const message = { id: 'image-path', role: 'assistant' as const, text: 'Visible text', occurredAt: 1 };
-    const result = await f.service.normalize(session, message, nativeCodexMedia({ type: 'imageView', path }));
+
+    const result = await f.service.normalize(
+      session,
+      message,
+      nativeCodexMedia({ type: 'userMessage', content: [{ type: 'localImage', path }] }),
+    );
 
     expect(result).toEqual(message);
     expect(f.fetcher).not.toHaveBeenCalled();
@@ -395,7 +409,7 @@ describe('native image path content guard', () => {
     const result = await f.service.normalize(
       session,
       { id: 'native-image', role: 'assistant', text: '', occurredAt: 1 },
-      nativeCodexMedia({ type: 'imageView', path }),
+      nativeCodexMedia({ type: 'userMessage', content: [{ type: 'localImage', path }] }),
     );
 
     expect(result.attachments).toEqual([image]);

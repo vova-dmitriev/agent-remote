@@ -52,6 +52,7 @@ function localPath(value: unknown, name: string): NativeMedia[] {
     : [];
 }
 
+/** The owner's and the agent's own images; a tool's output (an image it viewed) stays on the device, as tool results do. */
 export function nativeCodexMedia(raw: unknown): NativeMedia[] {
   const item = object(raw);
 
@@ -73,10 +74,6 @@ export function nativeCodexMedia(raw: unknown): NativeMedia[] {
     );
   }
 
-  if (item.type === CodexItemType.ImageView) {
-    return localPath(item.path, 'image.png');
-  }
-
   if (item.type === CodexItemType.ImageGeneration) {
     if (typeof item.savedPath === 'string') {
       return localPath(item.savedPath, 'generated.png');
@@ -85,16 +82,6 @@ export function nativeCodexMedia(raw: unknown): NativeMedia[] {
     return typeof item.result === 'string'
       ? [...dataImage(item.result, 'generated.png'), ...base64(item.result, 'image/png', 'generated.png')]
       : [];
-  }
-
-  if (item.type === CodexItemType.DynamicToolCall && Array.isArray(item.contentItems)) {
-    return boundedMedia(
-      item.contentItems.flatMap((value) => {
-        const block = object(value);
-
-        return block.type === CodexContentType.InputImage ? dataImage(block.imageUrl, 'tool-image.png') : [];
-      }),
-    );
   }
 
   return [];
@@ -207,28 +194,11 @@ export function codexMediaCandidate(
     };
   }
 
-  if (item.type === CodexItemType.ImageView) {
-    record = { type: item.type, path: item.path };
-  }
-
   if (item.type === CodexItemType.ImageGeneration) {
     record = { type: item.type, savedPath: item.savedPath, result: item.result };
   }
 
-  if (item.type === CodexItemType.DynamicToolCall && Array.isArray(item.contentItems)) {
-    record = {
-      type: item.type,
-      contentItems: item.contentItems
-        .filter((value) => object(value).type === CodexContentType.InputImage)
-        .map((value) => ({ type: CodexContentType.InputImage, imageUrl: object(value).imageUrl })),
-    };
-  }
-
-  if (
-    !record ||
-    (Array.isArray(record.content) && !record.content.length) ||
-    (Array.isArray(record.contentItems) && !record.contentItems.length)
-  ) {
+  if (!record || (Array.isArray(record.content) && !record.content.length)) {
     return;
   }
 

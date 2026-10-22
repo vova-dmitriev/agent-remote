@@ -30,7 +30,6 @@ export const JSON_RPC_INVALID_REQUEST = -32600;
 export const CodexShellTool = 'exec_command';
 
 export const CodexContentType = {
-  InputImage: 'inputImage',
   Text: 'text',
   Image: 'image',
   LocalImage: 'localImage',
