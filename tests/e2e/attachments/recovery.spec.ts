@@ -6,6 +6,9 @@ import { UPLOAD_IDS } from '@/features/send-command/ui/attachments/test-ids.js';
 import { releaseCommandOutcome } from '../runtime/command-outcome.js';
 import { image, openAttachments } from './fixture.js';
 import { interruptSession } from '../support/ui/session-actions.js';
+import { byTestId } from '../support/ui/testid.js';
+import { SESSION_FEED_IDS } from '@/pages/session/config/test-ids.js';
+import { ATTACHMENT_IDS } from '@/entities/attachment/config/test-ids.js';
 
 test('retries an upload with its original ID after an ambiguous response', async ({ page }) => {
   const ids: string[] = [];
@@ -158,7 +161,7 @@ test('does not confuse a pending interrupt with an unsent attachment prompt', as
   await expect(page.getByTestId(COMMAND_IDS.prompt)).toHaveValue('');
 });
 
-test('keeps accepted attachments immutable in the queue while a new draft remains editable', async ({ page }) => {
+test('shows an accepted prompt with its attachment in the feed while a new draft remains editable', async ({ page }) => {
   setCommandOutcome('held');
   await openAttachments(page);
   await page.getByTestId(UPLOAD_IDS.input).setInputFiles(image);
@@ -170,8 +173,14 @@ test('keeps accepted attachments immutable in the queue while a new draft remain
   await expect(page.getByTestId(UPLOAD_IDS.pending)).toHaveCount(0);
   await expect(page.getByTestId(UPLOAD_IDS.select)).toBeEnabled();
   await expect(page.getByTestId(UPLOAD_IDS.select)).toBeEnabled();
-  await expect(page.getByTestId(COMMAND_IDS.queuedItem)).toHaveAttribute('data-attachment-ids', JSON.stringify([originalId!]));
-  await expect(page.getByTestId(COMMAND_IDS.retryQueued)).toHaveCount(0);
+  // The accepted prompt waits in the feed with its attachment, not in the queue.
+  await expect(page.getByTestId(COMMAND_IDS.queue)).toHaveCount(0);
+
+  await expect(byTestId(page, SESSION_FEED_IDS.virtualRow, { pending: 'true' }).getByTestId(ATTACHMENT_IDS.root)).toHaveAttribute(
+    'data-attachment-id',
+    originalId!,
+  );
+
   await page.getByTestId(COMMAND_IDS.prompt).fill('Unsent next draft');
   await releaseCommandOutcome();
   await expect(page.getByTestId(UPLOAD_IDS.pending)).toHaveCount(0);

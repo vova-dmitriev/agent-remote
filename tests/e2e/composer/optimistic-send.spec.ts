@@ -32,6 +32,7 @@ test('a sent prompt shows in the feed at once and gives way to the agent record 
   release();
   await expect.poll(() => delivered.length).toBe(1);
   await expect(pending).toHaveCount(1);
+  await expect(page.getByTestId(COMMAND_IDS.queue)).toHaveCount(0);
 
   await publishMessages([{ id: 'recorded', role: 'user', text: 'Optimistic synthetic instruction', occurredAt: 1700000001000 }]);
   await expect(pending).toHaveCount(0);

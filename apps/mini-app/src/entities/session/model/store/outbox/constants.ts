@@ -18,3 +18,6 @@ export type PromptStatus = (typeof PromptStatus)[keyof typeof PromptStatus]
 export const PROMPT_ECHO_PREFIX = "echo:"
 /** An echo the agent never records leaves the feed after this long. */
 export const PROMPT_ECHO_TTL_MS = 120_000
+
+/** A prompt on its way to the agent (sent, or accepted by the relay and not yet delivered): the feed shows it, not the queue. */
+export const IN_FLIGHT_PROMPT_STATUSES: readonly PromptStatus[] = [PromptStatus.Sending, PromptStatus.Accepted]

@@ -1,4 +1,4 @@
-import type { ClientCommand } from "@protocol"
+import type { AttachmentDescriptor, ClientCommand } from "@protocol"
 import type { PromptStatus } from "./constants"
 
 export type { PromptStatus } from "./constants"
@@ -20,6 +20,7 @@ export interface PromptEcho {
   commandId: string
   sessionId: string
   text: string
+  attachments?: AttachmentDescriptor[] | undefined
   sentAt: number
   /** The session's owner messages loaded when it was sent; a new one is the agent's record of a prompt. */
   known: string[]

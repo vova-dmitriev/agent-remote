@@ -62,3 +62,15 @@ it("keeps each echo until its own record arrives, and drops failed or expired on
   await vi.waitFor(() => expect(store.getState().outbox[0]?.status).toBe("failed"))
   expect(shown(store)).toEqual(["two"])
 })
+
+it("keeps a prompt the relay accepted in the feed until the device delivers it, never back in the queue", async () => {
+  const { store, send, enqueue } = fixture()
+
+  send.mockImplementation(async (command) => ({ commandId: command.commandId, status: CommandStatus.Accepted }))
+  enqueue("accepted prompt")
+  await vi.waitFor(() => expect(store.getState().outbox[0]?.status).toBe(CommandStatus.Accepted))
+  expect(shown(store)).toEqual(["accepted prompt"])
+  store.getState().finishPrompt({ commandId: "accepted prompt", status: CommandStatus.Dispatched })
+  expect(store.getState().outbox).toHaveLength(0)
+  expect(shown(store)).toEqual(["accepted prompt"])
+})

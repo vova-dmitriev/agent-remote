@@ -32,10 +32,11 @@ test('authenticates image preview and file download without exposing bearer cred
   expect(action.attachments).toHaveLength(2);
   expect(action.attachments[1]).toMatchObject({ kind: 'file', mimeType: 'application/json' });
 
+  // The agent's record of the sent prompt replaces its echo in the feed.
   await publishMessages([
     {
       id: 'media-history',
-      role: 'assistant',
+      role: 'user',
       text: '',
       occurredAt: Date.now(),
       attachments: action.attachments,
@@ -75,6 +76,9 @@ test('shows a translated expired attachment and retries a transient image read f
 
   if (action.type !== 'prompt' || !action.attachments) throw new Error('EXPECTED_ATTACHMENT');
   await deviceFixture().relay.db.pool.query('UPDATE attachments SET expires_at=$1', [Date.now() - 1]);
+  // The sent prompt's echo already showed the image; a fresh app reads the expired attachment anew.
+  await page.reload();
+  await byTestId(page, SESSION_CARD_IDS.root, { 'session-id': 'terminal-session' }).click();
 
   await publishMessages([
     {
