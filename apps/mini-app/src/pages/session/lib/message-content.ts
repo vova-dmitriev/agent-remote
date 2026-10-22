@@ -68,12 +68,19 @@ export function displayMessage(message: HistoryMessage) {
 
 const timeFormats = new Map<string, Intl.DateTimeFormat>()
 
-/** When a message was written, as a date and time in the device's time zone ("22 Oct, 18:05"). */
+/** When a message was written, as a date and time to the second in the device's time zone ("22 Oct, 18:05:07"). */
 export function messageTime(at: number, language: string) {
   let format = timeFormats.get(language)
 
   if (!format) {
-    format = new Intl.DateTimeFormat(language, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
+    format = new Intl.DateTimeFormat(language, {
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    })
+
     timeFormats.set(language, format)
   }
 

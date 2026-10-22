@@ -7,6 +7,9 @@ import { cmuxContextSchema, type CmuxContext } from './context.js';
 
 const execute = promisify(execFile);
 
+/** cmux's command line inside its app bundle. */
+export const CMUX_APP_CLI = '/Applications/cmux.app/Contents/Resources/bin/cmux';
+
 export type CmuxExecute = (args: string[], env: NodeJS.ProcessEnv) => Promise<string>;
 
 const run: CmuxExecute = async (args, source) => {
@@ -20,7 +23,7 @@ const run: CmuxExecute = async (args, source) => {
 
   try {
     return (
-      await execute(process.env.CMUX_CLI ?? '/Applications/cmux.app/Contents/Resources/bin/cmux', args, {
+      await execute(process.env.CMUX_CLI ?? CMUX_APP_CLI, args, {
         env,
         timeout: 5000,
         maxBuffer: 131072,

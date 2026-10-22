@@ -16,6 +16,7 @@ import { hookHoldTimeoutMs } from './code/hooks/input/hook-timeout.js';
 import { installHooks, uninstallHooks } from './code/hooks/install-hooks.js';
 import { startDaemon } from './main.js';
 import { startClaude } from './cli/wrapper.js';
+import { logDebug } from './diagnostics/log.js';
 import { CodedError, hasErrorCode } from '@protocol';
 
 /** How long `remote hook` waits for the daemons' first answer: a permission prompt waits, other hooks do not. */
@@ -232,7 +233,16 @@ export async function runCli(argv = process.argv.slice(2)) {
   }
 
   if (command === CliCommand.Claude) {
-    process.exitCode = await startClaude(args);
+    // Started in a cmux pane (a session the app opened in a new workspace): cmux reads and types into it.
+    const { prepareCmuxContext } = await import('./cmux/launch.js');
+
+    const cmux = await prepareCmuxContext(process.env).catch((error: unknown) => {
+      logDebug('setup-cli', error);
+
+      return undefined;
+    });
+
+    process.exitCode = await startClaude(args, { stdin: process.stdin, stdout: process.stdout }, cmux);
 
     return;
   }
