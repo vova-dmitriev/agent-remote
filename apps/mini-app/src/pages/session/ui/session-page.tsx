@@ -24,7 +24,7 @@ import { SessionFeed } from "./session-feed/session-feed"
 import { SessionRulesBadge } from "./rules/session-rules-badge"
 import { SessionNotices } from "./header/session-notices"
 import { SessionMenu } from "./header/session-menu"
-import { SessionModelChips } from "./header/session-model-chips"
+import { ChatSearchButton } from "./search/chat-search-button"
 import { SESSION_PAGE_IDS } from "../config/test-ids"
 import { useFeedSources } from "../model/history/use-feed-sources"
 import { ChatSearch } from "./search/chat-search"
@@ -72,7 +72,7 @@ export function SessionPage({
           </Button>
         ) : null}
         <div className="flex items-center justify-between gap-[14px] phone:items-start session:min-w-0 session:flex-1 session:items-center session:gap-[8px]">
-          <div className="session:min-w-0">
+          <div className="min-w-0">
             <h1 className={titleClass} data-testid={SESSION_PAGE_IDS.title}>
               {rename ? (
                 <SessionTitle
@@ -85,7 +85,8 @@ export function SessionPage({
                 (sessionTitle(session, 16) ?? t("selectedChat"))
               )}
             </h1>
-            <p className={sourceTextClass}>
+            {/* One line: the header's controls keep their room on a narrow phone. */}
+            <p className={cn(sourceTextClass, "truncate")}>
               {t(sourceNames[session.target.kind])} ·{" "}
               <span className="text-[12px] text-muted-foreground session:p-0 session:text-[10px]" data-testid={SESSION_PAGE_IDS.status}>
                 {t(sessionStatusLabel(session, observed))}
@@ -93,18 +94,17 @@ export function SessionPage({
             </p>
           </div>
         </div>
-        <SessionModelChips session={session} state={state} controller={switchModel} />
+        <ChatSearchButton onOpen={search.show} />
         <SessionRulesBadge session={session} state={state} onOpen={onOpenRules} />
         <SessionAvailability key={session.id + ":availability:" + session.generation} available={observed} />
         <SessionMenu
           key={session.id + ":" + session.generation}
           session={session}
+          state={state}
           controller={controller}
+          switchModel={switchModel}
           remove={remove}
-          connection={state.connection}
-          deviceStatus={deviceStatus}
           onRemoved={onBack}
-          onSearch={search.show}
         />
       </div>
       {/* The plan limits sit at the right of the status line, so the header leaves the title its room. */}

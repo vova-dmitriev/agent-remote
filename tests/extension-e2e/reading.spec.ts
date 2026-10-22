@@ -3,7 +3,6 @@ import { test, selectSession } from './fixture.js';
 import { byTestId } from '../e2e/support/ui/testid.js';
 import { jumpNear, railMarker } from '../e2e/support/ui/rail.js';
 import { CHAT_SEARCH_IDS, SESSION_PAGE_IDS, SESSION_FEED_IDS } from '@/pages/session/config/test-ids.js';
-import { COMMAND_IDS } from '@/features/send-command/config/test-ids.js';
 import { EventType, MessageRole } from '@protocol';
 import { LocalDocumentKind } from '@daemon/local/state/values.js';
 
@@ -84,7 +83,6 @@ test('searches the whole chat through the companion and goes to a match outside 
 
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await selectSession(page);
-  await page.getByTestId(COMMAND_IDS.actionsTrigger).click();
   await page.getByTestId(CHAT_SEARCH_IDS.open).click();
   await page.getByTestId(CHAT_SEARCH_IDS.input).fill('деплой');
   await expect(page.getByTestId(CHAT_SEARCH_IDS.result)).toHaveCount(1);

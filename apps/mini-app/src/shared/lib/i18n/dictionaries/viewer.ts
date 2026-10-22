@@ -28,6 +28,9 @@ export const viewerEN = {
   terminalInputPlaceholder: "Type a command for the terminal",
   terminalInputSend: "Send to the terminal with Enter",
   terminalInputFailed: "Couldn’t reach the terminal. Is the Mac online?",
+  sessionModelMenu: "Model · {{model}}",
+  sessionModelDialog: "Model and reasoning",
+  sessionModelDone: "Done",
 } as const
 
 export const viewerRU = {
@@ -60,4 +63,7 @@ export const viewerRU = {
   terminalInputPlaceholder: "Команда для терминала",
   terminalInputSend: "Отправить в терминал с Enter",
   terminalInputFailed: "Не удалось достучаться до терминала. Mac в сети?",
+  sessionModelMenu: "Модель · {{model}}",
+  sessionModelDialog: "Модель и рассуждения",
+  sessionModelDone: "Готово",
 } as const

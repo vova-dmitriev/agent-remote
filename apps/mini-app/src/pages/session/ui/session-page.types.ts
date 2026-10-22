@@ -23,7 +23,7 @@ export interface SessionPageProps {
   rename?: RenameSessionController
   /** Hides, archives or ends the session from its menu; absent, the menu offers no removal. */
   remove?: RemoveSessionController
-  /** Switches the session's model from its header; absent, the header shows no model chips. */
+  /** Switches the session's model from its "…" menu; absent, the menu offers no models. */
   switchModel?: SwitchModelController
   controller: CommandController
   /** Opens a subagent's read-only view; the caller passes it only where the session's source can read subagent transcripts. */
@@ -40,21 +40,14 @@ export interface SessionNoticesProps {
   switchModel?: SwitchModelController | undefined
 }
 
-export interface SessionModelChipsProps {
-  session: Session
-  state: SessionState
-  controller?: SwitchModelController | undefined
-}
-
 export interface SessionMenuProps {
   session: Session
+  state: SessionState
   controller: CommandController
   remove?: RemoveSessionController | undefined
-  connection: Connection
-  deviceStatus: DeviceStatus
+  /** Switches the session's model; absent, the menu offers no models. */
+  switchModel?: SwitchModelController | undefined
   onRemoved: () => void
-  /** Opens search in the chat; absent where the host cannot search. */
-  onSearch?: (() => void) | undefined
 }
 
 export interface SessionInputProps {

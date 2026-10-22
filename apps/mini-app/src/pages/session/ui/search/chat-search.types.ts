@@ -16,3 +16,7 @@ export interface ChatSearchResultProps {
   agent: AgentName
   onPick: (message: HistoryMessage) => void
 }
+
+export interface ChatSearchButtonProps {
+  onOpen?: (() => void) | undefined
+}

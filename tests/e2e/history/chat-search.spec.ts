@@ -3,7 +3,6 @@ import { test, publishMessages } from '../support/relay/relay-fixture.js';
 import { identity } from '../support/relay/identity.js';
 import { byTestId } from '../support/ui/testid.js';
 import { expectLoadedMessages, railConversation } from '../support/ui/rail.js';
-import { COMMAND_IDS } from '@/features/send-command/config/test-ids.js';
 import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
 import { CHAT_SEARCH_IDS, SESSION_FEED_IDS } from '@/pages/session/config/test-ids.js';
 
@@ -19,7 +18,6 @@ test('searches the whole chat from the session menu and goes to a match outside 
   await byTestId(page, SESSION_CARD_IDS.root, { 'session-id': 'terminal-session' }).click();
   await expectLoadedMessages(page, 100);
 
-  await page.getByTestId(COMMAND_IDS.actionsTrigger).click();
   await page.getByTestId(CHAT_SEARCH_IDS.open).click();
   await page.getByTestId(CHAT_SEARCH_IDS.input).fill('деплой');
 

@@ -1,13 +1,23 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { SESSION_SIDEBAR_IDS } from '@/widgets/session-sidebar/config/test-ids.js';
 import { SWITCH_MODEL_IDS } from '@/features/switch-model/config/test-ids.js';
+import { COMMAND_IDS } from '@/features/send-command/config/test-ids.js';
 import { byTestId } from '../support/ui/testid.js';
 import { installDesktopBridge } from '../support/fixtures/desktop-bridge.js';
 import { sessionSnapshot } from '../support/fixtures/session-fixtures.js';
 
 test.use({ viewport: { width: 1280, height: 800 }, isMobile: false, hasTouch: false });
 
-test('switches a Codex session to another model and effort from its header', async ({ page }) => {
+/** Opens the model dialog from the session's "…" menu. */
+async function openModels(page: Page) {
+  await page.getByTestId(COMMAND_IDS.actionsTrigger).click();
+  await page.getByTestId(SWITCH_MODEL_IDS.open).click();
+  await expect(page.getByTestId(SWITCH_MODEL_IDS.dialog)).toBeVisible();
+}
+
+const option = (page: Page, id: string, value: string) => byTestId(page, id, { value });
+
+test('switches a Codex session to another model and effort from its menu', async ({ page }) => {
   const snapshot = sessionSnapshot('desktop-e2e-device');
 
   snapshot.models = [
@@ -24,15 +34,16 @@ test('switches a Codex session to another model and effort from its header', asy
   await page.goto('/desktop.html');
   await byTestId(page, SESSION_SIDEBAR_IDS.row, { 'session-id': 'codex-cli-session' }).click();
 
-  const model = page.getByTestId(SWITCH_MODEL_IDS.model.trigger);
-
-  await model.click();
-  await byTestId(page, SWITCH_MODEL_IDS.modelOption, { value: 'synthetic-deep' }).click();
-  await expect(model).toHaveAttribute('data-value', 'synthetic-deep');
-
-  await page.getByTestId(SWITCH_MODEL_IDS.effort.trigger).click();
-  await byTestId(page, SWITCH_MODEL_IDS.effortOption, { value: 'high' }).click();
-  await expect(page.getByTestId(SWITCH_MODEL_IDS.effort.trigger)).toHaveAttribute('data-value', 'high');
+  await openModels(page);
+  await option(page, SWITCH_MODEL_IDS.modelOption, 'synthetic-deep').click();
+  await expect(option(page, SWITCH_MODEL_IDS.modelOption, 'synthetic-deep')).toHaveAttribute('aria-checked', 'true');
+  await option(page, SWITCH_MODEL_IDS.effortOption, 'high').click();
+  await expect(option(page, SWITCH_MODEL_IDS.effortOption, 'high')).toHaveAttribute('aria-checked', 'true');
+  await page.getByTestId(SWITCH_MODEL_IDS.done).click();
+  await expect(page.getByTestId(SWITCH_MODEL_IDS.dialog)).toBeHidden();
+  // The menu names the model the session now runs.
+  await page.getByTestId(COMMAND_IDS.actionsTrigger).click();
+  await expect(page.getByTestId(SWITCH_MODEL_IDS.open)).toContainText('synthetic-deep');
 
   expect(await page.evaluate(() => (window as unknown as { modelSwitches: unknown[] }).modelSwitches)).toEqual([
     { sessionId: 'codex-cli-session', choice: { model: 'synthetic-deep' } },
@@ -49,20 +60,18 @@ test("says why the device refused a model switch and keeps the session's model",
   await byTestId(page, SESSION_SIDEBAR_IDS.row, { 'session-id': 'codex-cli-session' }).click();
   await page.evaluate(() => ((window as unknown as { modelRefused: boolean }).modelRefused = true));
 
-  const model = page.getByTestId(SWITCH_MODEL_IDS.model.trigger);
-  const before = await model.getAttribute('data-value');
-
-  await model.click();
-  await byTestId(page, SWITCH_MODEL_IDS.modelOption, { value: 'synthetic-fast' }).click();
-
+  await openModels(page);
+  await option(page, SWITCH_MODEL_IDS.modelOption, 'synthetic-fast').click();
+  await expect(option(page, SWITCH_MODEL_IDS.modelOption, 'synthetic-fast')).toHaveAttribute('aria-checked', 'false');
+  await page.keyboard.press('Escape');
   await expect(page.getByTestId(SWITCH_MODEL_IDS.error)).toContainText('Couldn’t switch the model:');
-  await expect(model).toHaveAttribute('data-value', before ?? '');
 });
 
-test('offers no model chips when the device lists no models', async ({ page }) => {
+test('offers no models in the menu when the device lists none', async ({ page }) => {
   await installDesktopBridge(page, 'desktop-e2e-device', sessionSnapshot('desktop-e2e-device'));
   await page.goto('/desktop.html');
   await byTestId(page, SESSION_SIDEBAR_IDS.row, { 'session-id': 'codex-cli-session' }).click();
 
-  await expect(page.getByTestId(SWITCH_MODEL_IDS.model.trigger)).toHaveCount(0);
+  await page.getByTestId(COMMAND_IDS.actionsTrigger).click();
+  await expect(page.getByTestId(SWITCH_MODEL_IDS.open)).toHaveCount(0);
 });

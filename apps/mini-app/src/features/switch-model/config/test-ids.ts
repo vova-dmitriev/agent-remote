@@ -1,7 +1,10 @@
 export const SWITCH_MODEL_IDS = {
-  model: { root: "switch-model", trigger: "switch-model-trigger", panel: "switch-model-panel" },
+  open: "switch-model-open",
+  dialog: "switch-model-dialog",
+  models: "switch-model",
   modelOption: "switch-model-option",
-  effort: { root: "switch-effort", trigger: "switch-effort-trigger", panel: "switch-effort-panel" },
+  efforts: "switch-effort",
   effortOption: "switch-effort-option",
+  done: "switch-model-done",
   error: "switch-model-error",
 } as const
