@@ -1,4 +1,11 @@
-import { HistoryCursorPrefix, HistoryDirection, LocalOperation, eventSchema } from '@protocol';
+import {
+  HistoryCursorPrefix,
+  HistoryDirection,
+  LocalOperation,
+  eventSchema,
+  historySchema,
+  type HistoryMessage,
+} from '@protocol';
 import { z } from 'zod';
 import type { ExtensionConnection } from '../connection.js';
 
@@ -54,4 +61,29 @@ export async function requestHistory(
   );
 
   return page.events;
+}
+
+/** Messages the companion picks from the whole conversation (its outline, or search matches), outside the feed. */
+export async function requestMessages(
+  connection: ExtensionConnection,
+  sessionId: string,
+  generation: string,
+  direction: typeof HistoryDirection.Outline | typeof HistoryDirection.Search,
+  query?: string,
+): Promise<HistoryMessage[]> {
+  const page = pageSchema.parse(
+    await connection.request({
+      operation: LocalOperation.History,
+      sessionId,
+      generation,
+      direction,
+      ...(query ? { anchor: query } : {}),
+    }),
+  );
+
+  return page.events.flatMap((event) => {
+    const message = historySchema.safeParse(event.payload);
+
+    return message.success ? [message.data] : [];
+  });
 }

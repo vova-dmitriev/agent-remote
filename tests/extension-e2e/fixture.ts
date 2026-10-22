@@ -109,6 +109,9 @@ export const test = base.extend<{ extension: ExtensionHarness }>({
       const open = async () => {
         const page = await current.newPage();
 
+        // Chrome's side panel is narrow, so the viewer shows the phone layout there; a full tab gets the sidebar.
+        await page.setViewportSize(SIDE_PANEL_VIEWPORT);
+
         page.on('pageerror', (error) => errors.push(error.message));
 
         page.on('console', (message) => {
@@ -176,6 +179,9 @@ export const test = base.extend<{ extension: ExtensionHarness }>({
     }
   },
 });
+
+/** The width of Chrome's side panel at its default size. */
+const SIDE_PANEL_VIEWPORT = { width: 400, height: 800 };
 
 export async function selectSession(page: Page) {
   await page.getByTestId(SESSION_CARD_IDS.root).click();

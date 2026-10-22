@@ -2,7 +2,8 @@ import { expect } from '@playwright/test';
 import { test, selectSession } from './fixture.js';
 import { byTestId } from '../e2e/support/ui/testid.js';
 import { jumpNear, railMarker } from '../e2e/support/ui/rail.js';
-import { SESSION_PAGE_IDS, SESSION_FEED_IDS } from '@/pages/session/config/test-ids.js';
+import { CHAT_SEARCH_IDS, SESSION_PAGE_IDS, SESSION_FEED_IDS } from '@/pages/session/config/test-ids.js';
+import { COMMAND_IDS } from '@/features/send-command/config/test-ids.js';
 import { EventType, MessageRole } from '@protocol';
 import { LocalDocumentKind } from '@daemon/local/state/values.js';
 
@@ -10,7 +11,8 @@ test('restores a middle message and active marker in a new extension viewer', as
   for (let i = 0; i < 80; i++) {
     extension.runtime.monitor.publish(extension.runtime.session.id, EventType.Message, {
       id: 'reading-' + i,
-      role: MessageRole.Assistant,
+      // Every other message is the owner's, which the rail marks.
+      role: i % 2 ? MessageRole.Assistant : MessageRole.User,
       text: ('Synthetic paragraph ' + i + '\n\n').repeat(8),
       occurredAt: 1700000000000 + i,
     });
@@ -20,6 +22,8 @@ test('restores a middle message and active marker in a new extension viewer', as
 
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await selectSession(page);
+  // The rail marks every owner's message the companion holds, beyond the loaded window too.
+  await expect(page.getByTestId(SESSION_FEED_IDS.rail)).toHaveAttribute('data-marker-count', '40');
   const target = await jumpNear(page, 'reading-60');
 
   await expect(railMarker(page, target)).toHaveAttribute('aria-current', 'true');
@@ -60,6 +64,30 @@ test('restores a middle message and active marker in a new extension viewer', as
 
   await expect(reopened.getByTestId(SESSION_FEED_IDS.rail)).toHaveAttribute(
     'data-active-message-id',
-    'reading-79',
+    'reading-78',
   );
+});
+
+test('searches the whole chat through the companion and goes to a match outside the loaded window', async ({
+  extension,
+}) => {
+  for (let i = 0; i < 80; i++) {
+    extension.runtime.monitor.publish(extension.runtime.session.id, EventType.Message, {
+      id: 'searching-' + i,
+      role: i % 2 ? MessageRole.Assistant : MessageRole.User,
+      text: i === 5 ? 'Синтетический ДЕПЛОЙ на виртуальную машину' : 'Synthetic paragraph ' + i,
+      occurredAt: 1700000000000 + i,
+    });
+  }
+
+  const page = await extension.open();
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await selectSession(page);
+  await page.getByTestId(COMMAND_IDS.actionsTrigger).click();
+  await page.getByTestId(CHAT_SEARCH_IDS.open).click();
+  await page.getByTestId(CHAT_SEARCH_IDS.input).fill('деплой');
+  await expect(page.getByTestId(CHAT_SEARCH_IDS.result)).toHaveCount(1);
+  await page.getByTestId(CHAT_SEARCH_IDS.result).click();
+  await expect(byTestId(page, SESSION_FEED_IDS.message, { 'message-id': 'searching-5' })).toBeInViewport();
 });

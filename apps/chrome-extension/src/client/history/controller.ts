@@ -1,14 +1,21 @@
-import { HistoryCursorPrefix, FrameType, type HistoryPageDirection, type ServerFrame } from '@protocol';
+import {
+  HistoryCursorPrefix,
+  HistoryDirection,
+  FrameType,
+  type HistoryPageDirection,
+  type ServerFrame,
+} from '@protocol';
 import { HistoryPageSkip, type ApplicationOperations, type TransportHandlers } from '@/shared/api';
 import {
   HistoryStream,
   HistoryWindow,
   ReadingPositions,
+  aroundQuery,
   loadSessionHistory,
   restoreHistoryWindow,
 } from '@/entities/session';
 import type { ExtensionConnection } from '../connection.js';
-import { requestHistory } from './request.js';
+import { requestHistory, requestMessages } from './request.js';
 
 export class ExtensionHistory {
   private reading: ReadingPositions;
@@ -90,7 +97,8 @@ export class ExtensionHistory {
   private current = (sessionId: string, epoch: number) =>
     !this.stopped && sessionId === this.selectedId && epoch === this.epoch;
 
-  history(sessionId: string, latest = false) {
+  /** Latest reloads the newest page, or the window `around` names, instead of the saved reading position. */
+  history(sessionId: string, latest = false, around = '') {
     if (latest) {
       ++this.epoch;
       this.window = new HistoryWindow();
@@ -109,9 +117,27 @@ export class ExtensionHistory {
       (path, observe) => requestHistory(this.connection, sessionId, generation, path, observe),
       current,
       (status) => this.handlers.onHistoryStatus?.(sessionId, status),
-      latest ? '' : () => this.reading.query(this.deviceId + ':' + sessionId, sessionId, current),
+      latest ? around : () => this.reading.query(this.deviceId + ':' + sessionId, sessionId, current),
       this.window.observe,
     );
+  }
+
+  /** A fresh window around one message, from the rail's outline or a search match. */
+  around(sessionId: string, messageId: string, cursor?: string) {
+    return this.history(sessionId, true, aroundQuery(messageId, cursor));
+  }
+
+  /** The owner's messages of the whole conversation, or the ones that hold the words; they never enter the feed. */
+  messages(
+    sessionId: string,
+    direction: typeof HistoryDirection.Outline | typeof HistoryDirection.Search,
+    query?: string,
+  ) {
+    const generation = this.generations.get(sessionId);
+
+    return generation
+      ? requestMessages(this.connection, sessionId, generation, direction, query)
+      : Promise.resolve([]);
   }
 
   page(sessionId: string, direction: HistoryPageDirection, edge?: string) {

@@ -2,6 +2,7 @@ import { expect } from '@playwright/test';
 import { test, selectSession } from './fixture.js';
 import { COMMAND_IDS } from '@/features/send-command/config/test-ids.js';
 import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
+import { SESSION_SIDEBAR_IDS } from '@/widgets/session-sidebar/config/test-ids.js';
 import { SESSION_PAGE_IDS } from '@/pages/session/config/test-ids.js';
 import { SHELL_IDS } from '@/widgets/application-shell/config/test-ids.js';
 import { SessionStatus } from '@protocol';
@@ -41,7 +42,8 @@ test('opens the same shared UI in a full tab from a narrow viewer', async ({ ext
   await page.getByTestId(SHELL_IDS.openTab).click();
   const tab = await opened;
 
-  await expect(tab.getByTestId(SESSION_CARD_IDS.root)).toBeVisible();
+  // A full tab is wide: the sessions sit in the sidebar.
+  await expect(tab.getByTestId(SESSION_SIDEBAR_IDS.row)).toBeVisible();
   expect(new URL(tab.url()).origin).toBe(new URL(page.url()).origin);
 });
 

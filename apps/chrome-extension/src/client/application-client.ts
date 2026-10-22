@@ -6,6 +6,7 @@ import {
   LocalOperation,
   resultSchema,
   type ClientCommand,
+  HistoryDirection,
   type HistoryPageDirection,
   type ServerFrame,
 } from '@protocol';
@@ -144,6 +145,11 @@ export class ExtensionApplicationClient extends ExtensionOperations implements A
   history = (sessionId: string, latest = false) => this.historyState.history(sessionId, latest);
   historyPage = (sessionId: string, direction: HistoryPageDirection, edge?: string) =>
     this.historyState.page(sessionId, direction, edge);
+  historyAround = (sessionId: string, messageId: string, cursor?: string) =>
+    this.historyState.around(sessionId, messageId, cursor);
+  historyOutline = (sessionId: string) => this.historyState.messages(sessionId, HistoryDirection.Outline);
+  historySearch = (sessionId: string, query: string) =>
+    this.historyState.messages(sessionId, HistoryDirection.Search, query);
 
   send = (command: ClientCommand) => this.commands.send(command);
   retryPending = (commandId?: string) => this.commands.retryPending(commandId);
