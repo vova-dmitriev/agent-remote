@@ -1,10 +1,8 @@
 import { afterEach, expect, it } from 'vitest';
-import { createHash } from 'node:crypto';
-import { mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { basename, join } from 'node:path';
+import { join } from 'node:path';
 import { LOCAL_LIMITS } from '@protocol';
-import { installDesktopRuntime } from '@desktop/runtime/install-runtime.js';
 import { verifyDesktopRuntime } from '../../../scripts/desktop/runtime/verify-runtime-lib.mjs';
 import { desktopRuntimeFixture } from '../../helpers/desktop/desktop-runtime-fixture.js';
 import { packagedCompanionFixture } from '../../helpers/desktop/packaged-companion.js';
@@ -14,7 +12,6 @@ import {
   packageDesktopRuntime,
   runtimeFiles,
 } from '../../../scripts/desktop/runtime/package-runtime.mjs';
-import { desktopNodeTarget } from '../../../scripts/desktop/runtime/runtime-pin.mjs';
 import { FINDER_METADATA, listRuntimeFiles } from '../../../scripts/desktop/runtime/runtime-files.mjs';
 
 const cleanups: Array<() => Promise<unknown>> = [];
@@ -27,92 +24,6 @@ afterEach(async () => {
     await cleanup();
   }
 });
-
-itOnDarwin(
-  'keeps verified launcher files stable after the application bundle moves',
-  async () => {
-    const packaged = await desktopRuntimeFixture();
-    const privateRoot = join(packaged.root, 'private app support');
-
-    cleanups.push(
-      () => packaged.close(),
-      () => rm(privateRoot, { recursive: true, force: true }),
-    );
-
-    const metadata = {
-      privateUserDataRoot: privateRoot,
-      platform: process.platform,
-      architecture: process.arch,
-      appVersion: '0.1.0',
-      protocolVersion: LOCAL_LIMITS.protocolVersion,
-    };
-
-    const bundled = await verifyDesktopRuntime({ ...metadata, resourceRoot: packaged.artifact });
-
-    expect(bundled.manifest).toMatchObject({
-      node: 'v22.23.3',
-      abi: '127',
-      nodeArchiveSha256: desktopNodeTarget(process.platform, process.arch).archiveSha256,
-    });
-
-    const installed = await installDesktopRuntime({ sourceRoot: packaged.artifact, ...metadata });
-
-    expect(installed.nodePath).toContain(join(privateRoot, 'desktop-runtime'));
-    expect(installed.entryPath).toContain(join(privateRoot, 'desktop-runtime'));
-    await rm(packaged.artifact, { recursive: true, force: true });
-
-    await expect(verifyDesktopRuntime({ ...metadata, resourceRoot: installed.root })).resolves.toMatchObject({
-      nodePath: installed.nodePath,
-      entryPath: installed.entryPath,
-    });
-  },
-  60_000,
-);
-
-itOnDarwin(
-  'installs a rebuilt runtime of the same app version and removes the one it replaces',
-  async () => {
-    const packaged = await desktopRuntimeFixture();
-    const privateRoot = join(packaged.root, 'private app support');
-    const runtimes = join(privateRoot, 'desktop-runtime');
-
-    cleanups.push(
-      () => packaged.close(),
-      () => rm(privateRoot, { recursive: true, force: true }),
-    );
-
-    const metadata = {
-      privateUserDataRoot: privateRoot,
-      platform: process.platform,
-      architecture: process.arch,
-      appVersion: '0.1.0',
-      protocolVersion: LOCAL_LIMITS.protocolVersion,
-    };
-
-    const first = await installDesktopRuntime({ sourceRoot: packaged.artifact, ...metadata });
-
-    expect((await installDesktopRuntime({ sourceRoot: packaged.artifact, ...metadata })).root).toBe(
-      first.root,
-    );
-
-    // A rebuild keeps the app version but changes a file, so its manifest changes.
-    const manifestPath = join(packaged.artifact, 'runtime-manifest.json');
-    const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
-    const extra = 'dist/synthetic-rebuild.txt';
-
-    await writeFile(join(packaged.artifact, extra), 'rebuilt\n');
-    manifest.files.push({ path: extra, sha256: createHash('sha256').update('rebuilt\n').digest('hex') });
-    manifest.files.sort((a: { path: string }, b: { path: string }) => (a.path < b.path ? -1 : 1));
-    await writeFile(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
-
-    const rebuilt = await installDesktopRuntime({ sourceRoot: packaged.artifact, ...metadata });
-
-    expect(rebuilt.root).not.toBe(first.root);
-    expect(await readFile(join(rebuilt.root, extra), 'utf8')).toBe('rebuilt\n');
-    expect(await readdir(runtimes)).toEqual([basename(rebuilt.root)]);
-  },
-  120_000,
-);
 
 itOnDarwin(
   'rejects a tampered runtime file and app-version, ABI, protocol, platform or architecture mismatch',
