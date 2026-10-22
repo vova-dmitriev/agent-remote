@@ -86,6 +86,15 @@ for (const theme of [ThemePreference.Light, ThemePreference.Dark]) {
   await expect(input).toHaveValue('/test ');
   await expect(page.getByTestId(SLASH_SKILL_IDS.menu)).toHaveCount(0);
   expect(delivered).toHaveLength(0);
+  // A slash in the middle of the text completes too, and replaces only its own word.
+  await input.fill('Please run  after the fix');
+  await input.press('Home');
+  for (let step = 0; step < 'Please run '.length; step++) await input.press('ArrowRight');
+  await input.pressSequentially('/te');
+  await expect(page.getByTestId(SLASH_SKILL_IDS.option)).toHaveCount(1);
+  await input.press('Enter');
+  await expect(input).toHaveValue('Please run /test after the fix');
+  expect(delivered).toHaveLength(0);
   await input.fill('/rev');
   await expect(page.getByTestId(SLASH_SKILL_IDS.option)).toHaveCount(1);
   await page.getByTestId(SLASH_SKILL_IDS.option).click();

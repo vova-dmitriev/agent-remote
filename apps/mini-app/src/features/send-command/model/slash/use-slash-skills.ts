@@ -39,7 +39,7 @@ export function useSlashSkills({ session, prompt, disabled, setPrompt }: SlashSk
 
   function pick(skill: SessionSkill) {
     if (disabled) return
-    const next = insertSkill(prompt, skill.invocation)
+    const next = insertSkill(prompt, skill.invocation, caret)
     const element = input.current
 
     setPrompt(next.text)
