@@ -204,6 +204,30 @@ export async function runCli(argv = process.argv.slice(2)) {
         '\n',
     );
 
+    // Codex typed in a terminal runs on Agent Remote's app-server, where it is installed.
+    const codex = await promisify(execFile)('/usr/bin/which', ['codex']).then(
+      (found) => found.stdout.trim(),
+      () => '',
+    );
+
+    if (codex && process.argv[1]) {
+      const { installCodexShell } = await import('./cli/codex-shell.js');
+      const { realpath } = await import('node:fs/promises');
+
+      const codexResult = await installCodexShell({
+        directory: claudeShellDirectory(),
+        rcPath: join(process.env.ZDOTDIR ?? homedir(), '.zshrc'),
+        node: process.execPath,
+        remote: await realpath(process.argv[1]),
+      });
+
+      process.stdout.write(
+        'Codex terminal integration installed. Open a new terminal or run: source ' +
+          JSON.stringify(codexResult.fragment) +
+          '\n',
+      );
+    }
+
     return;
   }
 

@@ -1,4 +1,4 @@
-import { expect, it, vi } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import { EventEmitter } from 'node:events';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -11,11 +11,30 @@ import { AdapterRegistry } from '@daemon/adapters/registry.js';
 import { PermissionBroker } from '@daemon/commands/permission-broker.js';
 
 const connectSocket = vi.hoisted(() => vi.fn());
+const connectDesktop = vi.hoisted(() => vi.fn());
 
 vi.mock('@daemon/codex/rpc/transport.js', () => ({ connectCodexSocket: connectSocket }));
 
-/** A Codex home whose state database holds the given threads. */
-function codexHome(directory: string, threads: { id: string; originator: string; archived?: number }[]) {
+vi.mock('@daemon/codex/desktop/desktop-ipc.js', () => ({ DesktopIpcClient: { connect: connectDesktop } }));
+
+vi.mock('@daemon/codex/desktop/desktop-client.js', () => ({
+  DesktopCodexClient: { attach: () => Promise.reject(new Error('CODEX_DESKTOP_REQUEST_FAILED')) },
+}));
+
+const cleanups: (() => Promise<void>)[] = [];
+
+afterEach(async () => {
+  for (const cleanup of cleanups.splice(0)) {
+    await cleanup();
+  }
+
+  connectDesktop.mockReset();
+});
+
+/** A Codex home whose state database holds the given threads, and a manager whose own app-server serves them. */
+async function setup(threads: { id: string; originator: string; archived?: number }[]) {
+  const directory = await mkdtemp(join(tmpdir(), 'codex-own-threads-'));
+  const endpoint = join(directory, 'codex/app-server.sock');
   const db = new Sqlite(join(directory, 'state_5.sqlite'));
 
   db.exec(
@@ -33,17 +52,6 @@ function codexHome(directory: string, threads: { id: string; originator: string;
   }
 
   db.close();
-}
-
-it('follows the threads the app started on its own app-server again after a restart, though Codex unloaded them', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'codex-own-threads-'));
-  const endpoint = join(directory, 'codex/app-server.sock');
-
-  codexHome(directory, [
-    { id: 'started-by-app', originator: 'claude_remote' },
-    { id: 'archived-by-app', originator: 'claude_remote', archived: 1 },
-    { id: 'typed-in-terminal', originator: '' },
-  ]);
 
   const loaded = new Set<string>();
 
@@ -97,20 +105,57 @@ it('follows the threads the app started on its own app-server again after a rest
     permissionsEnabled: true,
   });
 
-  try {
-    await manager.start();
-
-    await vi.waitFor(() =>
-      expect(
-        monitor
-          .snapshot()
-          .sessions.map((session) => ('threadId' in session.target ? session.target.threadId : '')),
-      ).toEqual(['started-by-app']),
-    );
-  } finally {
+  cleanups.push(async () => {
     await manager.close();
     permissions.close();
     store.close();
     await rm(directory, { recursive: true, force: true });
-  }
+  });
+
+  const threadIds = () =>
+    monitor
+      .snapshot()
+      .sessions.map((session) => ('threadId' in session.target ? session.target.threadId : ''));
+
+  return { manager, rpc, threadIds };
+}
+
+it('follows the threads the app started on its own app-server again after a restart, though Codex unloaded them', async () => {
+  connectDesktop.mockRejectedValue(new Error('ENOENT'));
+
+  const { manager, threadIds } = await setup([
+    { id: 'started-by-app', originator: 'claude_remote' },
+    { id: 'archived-by-app', originator: 'claude_remote', archived: 1 },
+    { id: 'typed-in-terminal', originator: '' },
+  ]);
+
+  await manager.start();
+  await vi.waitFor(() => expect(threadIds()).toEqual(['started-by-app']));
+});
+
+it("follows Codex Desktop's threads on the daemon's own app-server while Codex Desktop is closed", async () => {
+  connectDesktop.mockRejectedValue(new Error('ENOENT'));
+
+  const { manager, threadIds } = await setup([{ id: 'desktop-thread', originator: 'Codex Desktop' }]);
+
+  await manager.start();
+  await vi.waitFor(() => expect(threadIds()).toEqual(['desktop-thread']));
+});
+
+it('leaves a thread Codex Desktop hosts to Codex Desktop', async () => {
+  connectDesktop.mockResolvedValue({
+    owner: async () => 'desktop-window',
+    frameTooLarge: () => false,
+    once() {},
+    async close() {},
+  });
+
+  const { manager, rpc, threadIds } = await setup([{ id: 'desktop-thread', originator: 'Codex Desktop' }]);
+
+  await manager.start();
+  await vi.waitFor(() => expect(connectDesktop).toHaveBeenCalled());
+  await new Promise((resolve) => setTimeout(resolve, 50));
+
+  expect(threadIds()).toEqual([]);
+  expect(rpc.request).not.toHaveBeenCalledWith('thread/resume', expect.anything());
 });

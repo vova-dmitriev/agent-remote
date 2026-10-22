@@ -22,7 +22,7 @@ interface ClaudeShellCommand {
   entry: string;
 }
 
-function assertShellPaths(paths: readonly string[]) {
+export function assertShellPaths(paths: readonly string[]) {
   for (const path of paths) {
     if (!isAbsolute(path) || ASCII_CONTROL_CHARACTERS.test(path)) {
       throw new CodedError(DaemonErrorCode.INVALID_SHELL_PATH);
@@ -97,16 +97,18 @@ const pathExists = (path: string) =>
 
 export const claudeShellDirectory = () => process.env.CLAUDE_REMOTE_HOME ?? join(homedir(), '.claude-remote');
 
-export async function installClaudeShell(
-  options: ClaudeShellCommand & { directory: string; rcPath: string },
-) {
-  assertShellPaths([options.directory, options.rcPath, options.executable, options.node, options.entry]);
-
+/** Writes a shell fragment into `directory` and sources it from the rc file once, keeping a backup of the rc file. */
+export async function installShellFragment(options: {
+  directory: string;
+  rcPath: string;
+  name: string;
+  source: string;
+  comment: string;
+}) {
   await mkdir(options.directory, { recursive: true, mode: 0o700 });
-  const fragment = join(options.directory, CLAUDE_SHELL_FRAGMENT);
-  const source = claudeShellFragment(options);
+  const fragment = join(options.directory, options.name);
 
-  await replaceFileAtomically(fragment, source, 0o600);
+  await replaceFileAtomically(fragment, options.source, 0o600);
   let previous = '';
 
   try {
@@ -129,11 +131,23 @@ export async function installClaudeShell(
     await copyFile(options.rcPath, options.rcPath + '.agent-remote-' + Date.now() + '.bak');
   }
 
-  await writeFile(options.rcPath, previous + '\n# Agent Remote Claude terminal integration\n' + line + '\n', {
-    mode: 0o600,
-  });
+  await writeFile(options.rcPath, previous + `\n# ${options.comment}\n` + line + '\n', { mode: 0o600 });
 
   return { fragment, changed: true };
+}
+
+export async function installClaudeShell(
+  options: ClaudeShellCommand & { directory: string; rcPath: string },
+) {
+  assertShellPaths([options.directory, options.rcPath, options.executable, options.node, options.entry]);
+
+  return installShellFragment({
+    directory: options.directory,
+    rcPath: options.rcPath,
+    name: CLAUDE_SHELL_FRAGMENT,
+    source: claudeShellFragment(options),
+    comment: 'Agent Remote Claude terminal integration',
+  });
 }
 
 /**

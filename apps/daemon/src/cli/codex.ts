@@ -9,6 +9,7 @@ import { localSecret, socketPath, stateDirectory } from '../config.js';
 import { requestLocal } from '../code/hooks/ipc.js';
 import { codexConnectionSchema } from '../domain/codex/connection.js';
 import { ensureManagedCodexSocket } from '../codex/launcher.js';
+import { CODEX_SHELL_FALLBACK } from './codex-shell.js';
 
 export async function runCodex(args: string[]) {
   const home = process.env.CODEX_HOME ?? join(homedir(), '.codex');
@@ -60,20 +61,33 @@ export async function runCodex(args: string[]) {
     throw new CodedError(DaemonErrorCode.INVALID_CODEX_ARGS);
   }
 
-  const managedSocket = await ensureManagedCodexSocket(stateDirectory());
+  let managedSocket: string;
 
-  const result = await requestLocal(
-    socketPath(),
-    {
-      type: IpcMessageType.CodexConnect,
-      token: await localSecret(),
-      codex: { kind: TargetKind.CodexCli, socketPath: managedSocket },
-    },
-    60000,
-  );
+  try {
+    managedSocket = await ensureManagedCodexSocket(stateDirectory());
 
-  if (result.code) {
-    throw new CodedError(result.code);
+    const result = await requestLocal(
+      socketPath(),
+      {
+        type: IpcMessageType.CodexConnect,
+        token: await localSecret(),
+        codex: { kind: TargetKind.CodexCli, socketPath: managedSocket },
+      },
+      60000,
+    );
+
+    if (result.code) {
+      throw new CodedError(result.code);
+    }
+  } catch (error) {
+    // Typed as `codex` in a terminal: Codex still starts, only the app does not follow it.
+    if (process.env[CODEX_SHELL_FALLBACK] !== '1') {
+      throw error;
+    }
+
+    process.stderr.write('Agent Remote is not running; Codex starts without it.\n');
+
+    return run(spawn('codex', args, { stdio: 'inherit', shell: false }));
   }
 
   const selectedDirectory = args.some(
@@ -83,11 +97,16 @@ export async function runCodex(args: string[]) {
   const directoryArgs =
     selectedDirectory || args.includes('resume') || args.includes('fork') ? [] : ['--cd', process.cwd()];
 
-  const child = spawn('codex', ['--remote', 'unix://' + managedSocket, ...directoryArgs, ...args], {
-    stdio: 'inherit',
-    shell: false,
-  });
+  return run(
+    spawn('codex', ['--remote', 'unix://' + managedSocket, ...directoryArgs, ...args], {
+      stdio: 'inherit',
+      shell: false,
+    }),
+  );
+}
 
+/** Waits for Codex to exit and passes on its exit code. */
+function run(child: ReturnType<typeof spawn>) {
   return new Promise<number>((resolve, reject) => {
     child.once('error', () => reject(new CodedError(DaemonErrorCode.CODEX_START_FAILED)));
     child.once('exit', (code) => resolve(code ?? 1));

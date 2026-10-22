@@ -77,6 +77,11 @@ export class CodexManager {
   /** App-servers of the device's own Codex sign-in, whose models the app offers. */
   private nativeSockets = new Set<string>();
   private saved = new Map<string, CodexConnection>();
+  /**
+   * Codex Desktop's threads by who follows them: Codex Desktop itself (`hosted`), or, while it does not (the app is
+   * closed), this daemon's own app-server (`orphans`).
+   */
+  private desktopThreads = { hosted: new Set<string>(), orphans: new Set<string>() };
   /** The app-server this daemon starts for the sessions it creates. */
   private get ownSocket() {
     return join(this.deps.stateDirectory, 'codex/app-server.sock');
@@ -416,15 +421,27 @@ export class CodexManager {
 
     return task;
   }
-  /** Loads the threads this app started that Codex unloaded; returns those now loaded. */
+  /** Who follows a Codex Desktop thread: Codex Desktop while it hosts it, else this daemon's own app-server. */
+  private followDesktopThread(id: string, hosted: boolean) {
+    const { hosted: inDesktop, orphans } = this.desktopThreads;
+
+    (hosted ? inDesktop : orphans).add(id);
+    (hosted ? orphans : inDesktop).delete(id);
+  }
+  /**
+   * Loads into this daemon's own app-server the threads it started that Codex unloaded, and Codex Desktop's threads
+   * while Codex Desktop does not host them; returns those now loaded.
+   */
   private async reload(rpc: NonNullable<Connection['rpc']>, loaded: unknown) {
     const reloaded: string[] = [];
 
-    for (const id of await this.candidates([CodexOriginator.Remote]).catch((error: unknown) => {
+    const started = await this.candidates([CodexOriginator.Remote]).catch((error: unknown) => {
       logDebug('runtime/services/codex-manager', error);
 
       return [];
-    })) {
+    });
+
+    for (const id of new Set([...started, ...this.desktopThreads.orphans])) {
       if (Array.isArray(loaded) && loaded.includes(id)) {
         continue;
       }
@@ -505,7 +522,17 @@ export class CodexManager {
     }
 
     if (selection.kind === TargetKind.CodexDesktop && !entry.ipc) {
-      entry.ipc = await DesktopIpcClient.connect(selection.socketPath, 2500);
+      try {
+        entry.ipc = await DesktopIpcClient.connect(selection.socketPath, 2500);
+      } catch (error) {
+        // Codex Desktop is closed: its threads go on in this daemon's own app-server.
+        for (const id of await this.candidates([CodexOriginator.Desktop, CodexOriginator.DesktopLegacy])) {
+          this.followDesktopThread(id, false);
+        }
+
+        throw error;
+      }
+
       entry.ipc.once(RuntimeEvent.Disconnected, reset);
     }
 
@@ -520,7 +547,19 @@ export class CodexManager {
     // Codex unloads a thread nobody follows, so after a restart the threads this app started on its own app-server
     // are found where Codex records them, and loaded again.
     if (entry.discover && entry.rpc && selection.socketPath === this.ownSocket) {
-      loaded = [...(Array.isArray(loaded) ? loaded : []), ...(await this.reload(entry.rpc, loaded))];
+      loaded = [...(Array.isArray(loaded) ? loaded : []), ...(await this.reload(entry.rpc, loaded))].filter(
+        (id) => !this.desktopThreads.hosted.has(id),
+      );
+
+      // A thread Codex Desktop took back is followed there, not here.
+      for (const id of this.desktopThreads.hosted) {
+        const binding = entry.bindings.get(id);
+
+        if (binding) {
+          entry.bindings.delete(id);
+          await binding.close();
+        }
+      }
     }
 
     const ids = [
@@ -532,6 +571,10 @@ export class CodexManager {
 
     for (const id of ids.slice(0, 20)) {
       const retained = await retainConnectedBinding(entry, id);
+
+      if (retained && entry.ipc) {
+        this.followDesktopThread(id, true);
+      }
 
       if (this.closed || retained) {
         continue;
@@ -549,6 +592,7 @@ export class CodexManager {
       try {
         if (entry.ipc) {
           owner = await entry.ipc.owner(id);
+          this.followDesktopThread(id, !!owner);
 
           if (!owner) {
             continue;
