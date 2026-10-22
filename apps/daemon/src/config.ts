@@ -10,6 +10,8 @@ import { CodedError } from '@protocol';
 
 /** The CLI default home; `~/.claude/settings.json` hooks post here when CLAUDE_REMOTE_HOME is unset. */
 export const defaultStateDirectory = () => join(homedir(), '.claude-remote');
+/** Claude Code's config directory, which holds its transcripts under `projects`. */
+export const claudeConfigDirectory = () => process.env.CLAUDE_CONFIG_DIR ?? join(homedir(), '.claude');
 export const stateDirectory = () => process.env.CLAUDE_REMOTE_HOME ?? defaultStateDirectory();
 /** Set to `1` when this daemon is one of several users' daemons on a shared machine (a Linux VM). */
 export const MULTI_USER_VARIABLE = 'REMOTE_MULTI_USER';

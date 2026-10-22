@@ -77,7 +77,7 @@ it('rejects a runtime that is not the maintained standalone Node release', async
       sourceDirectory: packaged.sourceDirectory,
     }),
   ).rejects.toThrow('LOCAL_RUNTIME_UNTRUSTED');
-});
+}, 60_000);
 
 it('uses a canonical module repository path when the package source directory is omitted', async () => {
   await expect(

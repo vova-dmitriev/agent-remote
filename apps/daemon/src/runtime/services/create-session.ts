@@ -13,6 +13,8 @@ import { type Monitor } from '../../monitor/monitor.js';
 import { type CodexManager } from './codex-manager.js';
 import { launchClaudeSession, validateProject } from '../../sessions/launch/launcher.js';
 import type { RuntimeProfiles } from './runtime-profiles.js';
+import { claudeConfigDirectory } from '../../config.js';
+import { claudeConversation } from '../../sessions/projects/recent-folders.js';
 
 /** Where the daemon can start a Claude session in a terminal. */
 const CLAUDE_LAUNCH_PLATFORMS: ReadonlySet<NodeJS.Platform> = new Set(['darwin', 'linux']);
@@ -74,9 +76,23 @@ async function launchSession(action: CreateAction, options: CreateOptions): Prom
     throw new CodedError(ErrorCode.CAPABILITY_UNAVAILABLE);
   }
 
+  let folder = cwd;
+
+  if (action.resume) {
+    const conversation = await claudeConversation(claudeConfigDirectory(), action.resume);
+
+    // A session that never got a message has no transcript to continue.
+    if (!conversation) {
+      throw new CodedError(ErrorCode.NOT_FOUND);
+    }
+
+    // Claude continues a conversation only in the folder it ran in.
+    folder = conversation.cwd ? await validateProject(conversation.cwd).catch(() => cwd) : cwd;
+  }
+
   const connectorId = await launchClaudeSession({
     directory: options.directory,
-    cwd,
+    cwd: folder,
     node: process.execPath,
     entry: fileURLToPath(new URL('../../entry/entry.js', import.meta.url)),
     ...(action.model ? { model: action.model } : {}),

@@ -43,6 +43,7 @@ export const SESSION_FEED_IDS = {
   terminal: "session-feed-terminal",
   message: "session-feed-message",
   text: "session-feed-message-text",
+  time: "session-feed-message-time",
   empty: "session-feed-empty",
   loading: "session-feed-loading",
   skeletonMessage: "session-feed-skeleton-message",

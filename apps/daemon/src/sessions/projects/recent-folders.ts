@@ -15,6 +15,49 @@ interface RecentFolderSources {
   codexHome: string;
 }
 
+/** The folder a Claude transcript was recorded in, from its first lines. */
+async function transcriptFolder(path: string) {
+  const handle = await open(path, 'r');
+
+  try {
+    const { buffer, bytesRead } = await handle.read(
+      Buffer.alloc(RecentFolderLimit.HeadBytes),
+      0,
+      RecentFolderLimit.HeadBytes,
+      0,
+    );
+
+    const cwd = CWD_FIELD.exec(buffer.subarray(0, bytesRead).toString('utf8'))?.[1];
+
+    return cwd ? (JSON.parse(`"${cwd}"`) as string) : undefined;
+  } finally {
+    await handle.close();
+  }
+}
+
+/**
+ * A Claude conversation to continue: its transcript and the folder it ran in, where Claude finds it again. None when
+ * Claude never wrote one (a session that got no message).
+ */
+export async function claudeConversation(claudeDirectory: string, sessionId: string) {
+  const root = join(claudeDirectory, 'projects');
+
+  for (const project of await readdir(root).catch(() => [])) {
+    const path = join(root, project, sessionId + '.jsonl');
+
+    if (
+      await stat(path).then(
+        (info) => info.isFile(),
+        () => false,
+      )
+    ) {
+      return { path, cwd: await transcriptFolder(path) };
+    }
+  }
+
+  return undefined;
+}
+
 /** The folder of each Claude project's newest transcript, with the transcript's time. */
 async function claudeFolders(directory: string) {
   const root = join(directory, 'projects');
@@ -38,23 +81,10 @@ async function claudeFolders(directory: string) {
       continue;
     }
 
-    const handle = await open(newest.path, 'r');
+    const cwd = await transcriptFolder(newest.path);
 
-    try {
-      const { buffer, bytesRead } = await handle.read(
-        Buffer.alloc(RecentFolderLimit.HeadBytes),
-        0,
-        RecentFolderLimit.HeadBytes,
-        0,
-      );
-
-      const cwd = CWD_FIELD.exec(buffer.subarray(0, bytesRead).toString('utf8'))?.[1];
-
-      if (cwd) {
-        found.push([JSON.parse(`"${cwd}"`) as string, newest.at]);
-      }
-    } finally {
-      await handle.close();
+    if (cwd) {
+      found.push([cwd, newest.at]);
     }
   }
 

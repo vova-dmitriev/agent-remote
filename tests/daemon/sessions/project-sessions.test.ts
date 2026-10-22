@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { AgentProvider, CommandActionType, ErrorCode } from '@protocol';
 import { ProjectSessions } from '@daemon/sessions/projects/project-sessions.js';
-import { recentFolders } from '@daemon/sessions/projects/recent-folders.js';
+import { claudeConversation, recentFolders } from '@daemon/sessions/projects/recent-folders.js';
 
 const roots: string[] = [];
 
@@ -133,4 +133,23 @@ it("offers a Mac's recent session folders from Claude's and Codex's history, new
   await expect(projects.create({ provider: AgentProvider.Claude, cwd: gone })).rejects.toMatchObject({
     code: ErrorCode.INVALID_PROJECT,
   });
+});
+
+it('finds a Claude conversation to continue with the folder it ran in, and none Claude never wrote', async () => {
+  const home = await realpath(await mkdtemp(join(tmpdir(), 'claude-conversation-')));
+
+  roots.push(home);
+  await mkdir(join(home, 'projects', 'synthetic-project'), { recursive: true });
+
+  await writeFile(
+    join(home, 'projects', 'synthetic-project', 'written.jsonl'),
+    JSON.stringify({ type: 'user', cwd: '/synthetic/work' }) + '\n',
+  );
+
+  await expect(claudeConversation(home, 'written')).resolves.toEqual({
+    path: join(home, 'projects', 'synthetic-project', 'written.jsonl'),
+    cwd: '/synthetic/work',
+  });
+
+  await expect(claudeConversation(home, 'never-written')).resolves.toBeUndefined();
 });

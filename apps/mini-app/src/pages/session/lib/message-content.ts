@@ -65,3 +65,17 @@ export function displayMessage(message: HistoryMessage) {
 
   return { text: (match[2] ?? "").replace(/^(?:[ \t]*\r?\n)+/, "").replace(/(?:\r?\n[ \t]*)+$/, ""), missingFiles }
 }
+
+const timeFormats = new Map<string, Intl.DateTimeFormat>()
+
+/** When a message was written, as a date and time in the device's time zone ("22 Oct, 18:05"). */
+export function messageTime(at: number, language: string) {
+  let format = timeFormats.get(language)
+
+  if (!format) {
+    format = new Intl.DateTimeFormat(language, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
+    timeFormats.set(language, format)
+  }
+
+  return format.format(at)
+}

@@ -1,5 +1,3 @@
-import { join } from 'node:path';
-import { homedir } from 'node:os';
 import { SessionStatus } from '@protocol';
 import { NativeProcesses } from '../../sessions/native-process.js';
 import { restartClaudeSession } from '../../sessions/restart-session.js';
@@ -17,7 +15,9 @@ import { DispatchScheduler } from '../../commands/scheduling/index.js';
 import type { DispatcherOptions } from '../../commands/dispatcher.js';
 import type { LocalServices } from '../services/local-services.js';
 
-export const claudeConfigDirectory = () => process.env.CLAUDE_CONFIG_DIR ?? join(homedir(), '.claude');
+import { claudeConfigDirectory } from '../../config.js';
+
+export { claudeConfigDirectory };
 
 type DispatchOptionsDeps = {
   deviceId: string;

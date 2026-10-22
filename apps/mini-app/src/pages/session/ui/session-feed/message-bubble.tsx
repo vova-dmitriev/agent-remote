@@ -4,13 +4,13 @@ import { useTranslation } from "@/shared/lib/hooks"
 import { AttachmentCard, UnavailableAttachment } from "@/entities/attachment"
 import { Markdown } from "@/shared/ui/markdown"
 import { cn } from "@/shared/lib/utils"
-import { displayMessage } from "@/pages/session/lib/message-content"
+import { displayMessage, messageTime } from "@/pages/session/lib/message-content"
 import { SESSION_FEED_IDS } from "@/pages/session/config/test-ids"
 import type { MessageBubbleProps } from "@/pages/session/model/types/message-bubble.types"
 import { ToolActivityLine } from "./tool/tool-activity-line"
 
 export const MessageBubble = memo(function MessageBubble({ message, agent, sessionId = "" }: MessageBubbleProps) {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
 
   // Tool calls of a subagent transcript render as compact activity lines, not as messages.
   if (message.tool)
@@ -33,6 +33,15 @@ export const MessageBubble = memo(function MessageBubble({ message, agent, sessi
       {message.attachments?.map((attachment) => (
         <AttachmentCard key={attachment.id} sessionId={sessionId} attachment={attachment} />
       ))}
+      {message.role === MessageRole.Assistant && message.occurredAt > 0 ? (
+        <time
+          className="mt-[6px] block text-[11px] leading-none text-muted-foreground tabular-nums"
+          dateTime={new Date(message.occurredAt).toISOString()}
+          data-testid={SESSION_FEED_IDS.time}
+        >
+          {messageTime(message.occurredAt, language)}
+        </time>
+      ) : null}
     </article>
   )
 })
