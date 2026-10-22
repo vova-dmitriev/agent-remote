@@ -41,11 +41,13 @@ export function SessionFeed({
     edges.page,
   )
 
-  const reach = useOutlineJump(messages, outline, jump, onHistoryAround)
+  const outlineJump = useOutlineJump(messages, outline, jump, onHistoryAround)
   const { t } = useTranslation()
   const showMessages = tab === SessionTab.History && messages.length > 0
   const map = useRailMap(virtualizer, scroll, content, showMessages && settled)
   const loading = tab === SessionTab.History && !messages.length && historyStatus === HistoryStatus.Loading
+  // The feed hides behind a skeleton while it restores its reading line or loads the window a rail tap asked for.
+  const covered = showMessages && (!settled || outlineJump.pending !== null)
 
   return (
     <div className="relative isolate session:min-h-0 session:flex-1" data-testid={SESSION_FEED_IDS.frame} aria-busy={loading}>
@@ -53,7 +55,7 @@ export function SessionFeed({
         className={cn(feedClass, showMessages && "py-0 pl-[47px] session:py-0")}
         data-testid={SESSION_FEED_IDS.root}
         ref={scroll}
-        style={showMessages && !settled ? { visibility: "hidden" } : undefined}
+        style={covered ? { visibility: "hidden" } : undefined}
         onScroll={onScroll}
         onWheel={onUserScroll}
         onTouchStart={onUserScroll}
@@ -71,7 +73,7 @@ export function SessionFeed({
           />
         </div>
       </div>
-      {showMessages && !settled ? (
+      {covered ? (
         <div className="pointer-events-none absolute inset-0 p-[22px]">
           <HistorySkeleton />
         </div>
@@ -80,8 +82,8 @@ export function SessionFeed({
         <MessageRail
           {...railMarks(messages, map, outline)}
           loaded={messages.length}
-          activeId={railActiveId(messages, activeId)}
-          jump={reach}
+          activeId={outlineJump.pending ?? railActiveId(messages, activeId)}
+          jump={outlineJump.reach}
           older={edges.older}
           newer={edges.newer}
           loadPage={edges.page}
@@ -96,7 +98,9 @@ export function SessionFeed({
           data-testid={SESSION_FEED_IDS.bottom}
           aria-label={t("scrollToBottom")}
           title={t("scrollToBottom")}
-          onClick={() => void latest(navigationScrollBehavior(window.matchMedia("(prefers-reduced-motion: reduce)").matches))}
+          onClick={() =>
+            void latest(navigationScrollBehavior(window.matchMedia("(prefers-reduced-motion: reduce)").matches), !edges.newest)
+          }
         >
           <ArrowDown aria-hidden="true" size={18} />
         </Button>

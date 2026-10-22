@@ -13,3 +13,8 @@ export const PromptStatus = {
 } as const
 
 export type PromptStatus = (typeof PromptStatus)[keyof typeof PromptStatus]
+
+/** A sent prompt shows in the feed at once under this id prefix, until the agent's own record of it arrives. */
+export const PROMPT_ECHO_PREFIX = "echo:"
+/** An echo the agent never records leaves the feed after this long. */
+export const PROMPT_ECHO_TTL_MS = 120_000

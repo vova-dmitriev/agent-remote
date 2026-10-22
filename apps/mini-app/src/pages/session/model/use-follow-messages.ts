@@ -109,22 +109,26 @@ export function useFollowMessages(
     [enabled, virtualizer, cancelRestore],
   )
 
+  /** Moves to the end at once; unless the window is known to end at the newest message, reloads it and follows it down. */
   const latest = useCallback(
-    async (behavior: ScrollBehavior) => {
+    async (behavior: ScrollBehavior, reload: boolean) => {
+      toBottom(behavior)
+      if (!reload) return
       await onHistoryPage?.(HistoryDirection.Latest)
       requestAnimationFrame(() => toBottom(behavior))
     },
     [onHistoryPage, toBottom],
   )
 
+  /** Scrolls to a loaded message; `behavior` overrides the navigation motion (a freshly loaded window lands at once). */
   const jump = useCallback(
-    (id: string) => {
+    (id: string, override?: ScrollBehavior) => {
       const index = messages.findIndex((message) => message.id === id)
 
       if (index < 0) return
       cancelRestore()
       follow.current = false
-      const behavior = navigationScrollBehavior(window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+      const behavior = override ?? navigationScrollBehavior(window.matchMedia("(prefers-reduced-motion: reduce)").matches)
 
       virtualizer.scrollToIndex(index, { align: "start", behavior })
       schedulePage()

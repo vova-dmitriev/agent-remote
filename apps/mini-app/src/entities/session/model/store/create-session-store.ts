@@ -7,6 +7,7 @@ import { PromptStatus, PROMPT_OUTBOX_BYTES, PROMPT_OUTBOX_LIMIT } from "./outbox
 import { initialState, reduceSessionState } from "../session-state"
 import { createPromptEditing } from "./outbox/edit"
 import { observePrompt, samePromptSource } from "./outbox/state"
+import { echoPrompt } from "./outbox/echo"
 import { reduceHistoryWindow } from "./history"
 import type { SessionStoreData, SessionStoreState } from "./types"
 
@@ -14,6 +15,7 @@ function emptyData(connection: Connection = ConnectionStatus.Connecting): Sessio
   return {
     providerFilter: ProviderFilterValue.All,
     outbox: [],
+    echoes: [],
     session: { ...initialState(), connection },
     error: "",
     result: "",
@@ -40,6 +42,13 @@ export function createSessionStore(initialProviderFilter: ProviderFilterValue = 
     updatePrompt: (id, status, code) =>
       set((current) => ({
         outbox: current.outbox.map((item) => (item.command.commandId === id ? { ...item, status, code } : item)),
+      })),
+    sendingPrompt: (item) =>
+      set((current) => ({
+        outbox: current.outbox.map((entry) =>
+          entry.command.commandId === item.command.commandId ? { ...item, status: PromptStatus.Sending } : entry,
+        ),
+        echoes: echoPrompt(current, item),
       })),
     finishPrompt: (receipt) => set((current) => ({ outbox: observePrompt(current.outbox, receipt) })),
     cancelPrompt: (id) =>

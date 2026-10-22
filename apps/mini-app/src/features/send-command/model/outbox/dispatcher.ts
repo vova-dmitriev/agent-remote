@@ -110,9 +110,7 @@ export class PromptDispatcher {
         item = { ...item, command: { ...item.command, action: { ...item.command.action, delivery: PromptDelivery.Immediate } } }
       }
 
-      const sendingItem = { ...item, status: PromptStatus.Sending }
-
-      this.store.setState((current) => ({ outbox: current.outbox.map((entry) => (entry.command.commandId === id ? sendingItem : entry)) }))
+      this.store.getState().sendingPrompt(item)
     }
 
     try {

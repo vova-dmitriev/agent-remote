@@ -1,12 +1,15 @@
 import { useTranslation } from "@/shared/lib/hooks"
 import { COMMAND_IDS } from "@/features/send-command/config/test-ids"
+import { PromptStatus } from "@/entities/session"
 import { PromptQueueItem } from "./prompt-queue-item"
 import type { PromptQueueProps } from "./types"
 
 export function PromptQueue({ queue }: PromptQueueProps) {
   const { t } = useTranslation()
+  // A prompt being sent already shows in the feed.
+  const items = queue.items.filter((item) => item.status !== PromptStatus.Sending)
 
-  if (!queue.items.length) return null
+  if (!items.length) return null
 
   return (
     <div
@@ -14,7 +17,7 @@ export function PromptQueue({ queue }: PromptQueueProps) {
       data-testid={COMMAND_IDS.queue}
       aria-label={t("promptQueue")}
     >
-      {queue.items.map((item) => (
+      {items.map((item) => (
         <PromptQueueItem key={item.command.commandId} item={item} queue={queue} />
       ))}
     </div>

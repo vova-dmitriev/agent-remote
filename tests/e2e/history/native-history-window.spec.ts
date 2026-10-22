@@ -149,8 +149,8 @@ test('native chat opens at the last page, prepends on demand, and reopens at its
     await expectLoadedMessages(page, 200);
     expect(pages().at(-1)?.direction).toBe('after');
     await page.getByTestId(SESSION_FEED_IDS.bottom).click();
-    await expect(byTestId(page, SESSION_FEED_IDS.message, { 'message-id': 'native-669' })).toBeVisible();
-    expect(pages().at(-1)?.direction).toBe('latest');
+    // The rows were appended behind the snapshot's back, so the feed moves down at once and pages in what follows.
+    await expect(byTestId(page, SESSION_FEED_IDS.message, { 'message-id': 'native-669' })).toBeVisible({ timeout: 15000 });
   } finally {
     await rm(root, { recursive: true, force: true });
   }

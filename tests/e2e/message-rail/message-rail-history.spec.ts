@@ -53,7 +53,18 @@ test('the rail marks every owner message of the conversation and jumps to one ou
 
   await expect(rail).toHaveAttribute('data-marker-count', '150');
   await expect(page.getByTestId(SESSION_FEED_IDS.marker).first()).toHaveAttribute('data-message-id', 'rail-0');
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => (release = resolve));
+
+  await page.route('**/events?around=**', async (route) => {
+    await held;
+    await route.continue();
+  });
+
   expect(await jumpNear(page, 'rail-0')).toBe('rail-0');
+  // The tap answers before the window arrives: the rail already marks the target.
+  await expectActiveMessage(page, 'rail-0');
+  release();
 
   await expect(byTestId(page, SESSION_FEED_IDS.message, { 'message-id': 'rail-0' })).toBeInViewport();
   await expectActiveMessage(page, 'rail-0');
@@ -133,4 +144,25 @@ test('with history beyond both ends, a later page loads while an earlier one is 
   expect((await laterPage).ok()).toBe(true);
   release();
   expect((await earlierPage).ok()).toBe(true);
+});
+
+test('the bottom button scrolls at once, without reloading a window that already ends at the newest message', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await publishMessages(railConversation(60));
+  await identity(page, '801', 'en');
+  await page.goto('/');
+  await open(page);
+  await expectLoadedMessages(page, 60);
+  await jumpNear(page, 'rail-0');
+  const bottom = page.getByTestId(SESSION_FEED_IDS.bottom);
+  const reloads: string[] = [];
+
+  page.on('request', (request) => {
+    if (request.url().includes('/events')) reloads.push(request.url());
+  });
+
+  await bottom.click();
+  await expect(byTestId(page, SESSION_FEED_IDS.message, { 'message-id': 'rail-59' })).toBeInViewport();
+  await expect(bottom).toHaveCount(0);
+  expect(reloads).toEqual([]);
 });

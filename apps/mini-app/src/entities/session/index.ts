@@ -28,7 +28,8 @@ export { useSessionPages, type SessionPageLoader } from "./model/pagination/use-
 export { readyPrompts, samePromptSource, canSendQueuedNow } from "./model/store/outbox/state"
 export type { QueuedPrompt } from "./model/store/outbox/types"
 export type { SessionStoreState } from "./model/store/types"
-export { PROMPT_RECEIPT_POLL_MS } from "./model/store/outbox/constants"
+export { PROMPT_RECEIPT_POLL_MS, PROMPT_ECHO_PREFIX } from "./model/store/outbox/constants"
+export { promptEchoes } from "./model/store/outbox/echo"
 export { SessionChanges } from "./ui/changes/session-changes"
 export { patchMarkdown } from "./lib/changes/patch"
 

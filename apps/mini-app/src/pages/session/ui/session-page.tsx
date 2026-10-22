@@ -1,3 +1,4 @@
+import { useMemo } from "react"
 import { ArrowLeft } from "lucide-react"
 import { StatusConfidence, HistoryStatus, ConnectionStatus, DeviceStatus } from "@protocol"
 import {
@@ -9,6 +10,8 @@ import {
   sessionTitle,
   agentName,
   sourceTextClass,
+  promptEchoes,
+  useSessionStore,
 } from "@/entities/session"
 import { useTranslation } from "@/shared/lib/hooks"
 import { SessionTitle } from "@/features/rename-session"
@@ -53,6 +56,15 @@ export function SessionPage({
   const { t, language } = useTranslation()
   const observed = sessionObserved(state, session)
   const outline = useHistoryOutline(session)
+  const echoes = useSessionStore((store) => store.echoes)
+  const outbox = useSessionStore((store) => store.outbox)
+
+  const feed = useMemo(() => {
+    const pending = promptEchoes({ echoes, outbox }, session.id, messages)
+
+    return pending.length ? [...messages, ...pending] : messages
+  }, [echoes, outbox, session.id, messages])
+
   const deviceStatus = state.snapshot?.deviceStatus ?? DeviceStatus.Offline
 
   return (
@@ -158,7 +170,7 @@ export function SessionPage({
         }
         newestAt={session.lastMessageAt}
         agent={agentName(session)}
-        messages={messages}
+        messages={feed}
         historyStatus={historyStatus}
         available={observed}
         tab={tab}

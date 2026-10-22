@@ -15,6 +15,7 @@ function edgeId(messages: HistoryMessage[], direction: HistoryNavigationDirectio
  * an edge counts as exhausted only after a page request for it completed (loaded or declined by the transport)
  * without extending that edge; failed or stale requests keep it open.
  * Newer history additionally requires the session's last message time to be past the loaded tail.
+ * `newest` holds only when the window is known to end at the session's newest message.
  */
 export function useHistoryEdges(messages: HistoryMessage[], onHistoryPage: HistoryPageLoader | undefined, newestAt: number | undefined) {
   const current = useRef(messages)
@@ -39,6 +40,8 @@ export function useHistoryEdges(messages: HistoryMessage[], onHistoryPage: Histo
   const tail = messages.at(-1)
   const older = Boolean(onHistoryPage && head && exhausted.before !== head.id)
   const newer = Boolean(onHistoryPage && tail && newestAt !== undefined && newestAt > tail.occurredAt && exhausted.after !== tail.id)
+  // Known to end at the newest message: the session's last message time is not past the tail, or the edge is exhausted.
+  const newest = !tail || exhausted.after === tail.id || (newestAt !== undefined && newestAt <= tail.occurredAt)
 
-  return { page, older, newer }
+  return { page, older, newer, newest }
 }
