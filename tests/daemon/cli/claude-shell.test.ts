@@ -31,14 +31,17 @@ it('installs an idempotent terminal integration without changing noninteractive 
     expect(first).toContain('# Existing configuration');
 
     expect(
-      (await execute('/bin/zsh', ['-ic', 'claude --version'], { env: { ...process.env, ZDOTDIR: dir } }))
-        .stdout,
+      (
+        await execute('/bin/zsh', ['-dic', 'claude --version'], {
+          env: { ...process.env, HOME: dir, ZDOTDIR: dir },
+        })
+      ).stdout,
     ).toContain('NATIVE:--version');
 
     const output = await new Promise<string>((resolve, reject) => {
-      const terminal = spawn('/bin/zsh', ['-ic', "claude --model 'synthetic-model' --resume safe-id"], {
+      const terminal = spawn('/bin/zsh', ['-dic', "claude --model 'synthetic-model' --resume safe-id"], {
         cwd: dir,
-        env: { ...process.env, ZDOTDIR: dir },
+        env: { ...process.env, HOME: dir, ZDOTDIR: dir },
       });
 
       let text = '';

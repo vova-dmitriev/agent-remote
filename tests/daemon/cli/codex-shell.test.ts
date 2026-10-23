@@ -8,9 +8,9 @@ import { installCodexShell } from '@daemon/cli/codex-shell.js';
 /** Runs a command in an interactive zsh on a terminal, with the synthetic Codex first on the PATH. */
 function terminal(dir: string, command: string) {
   return new Promise<string>((resolve, reject) => {
-    const shell = spawn('/bin/zsh', ['-ic', command], {
+    const shell = spawn('/bin/zsh', ['-dic', command], {
       cwd: dir,
-      env: { ...process.env, ZDOTDIR: dir, PATH: join(dir, 'bin') + ':' + process.env.PATH },
+      env: { ...process.env, HOME: dir, ZDOTDIR: dir, PATH: join(dir, 'bin') + ':' + process.env.PATH },
     });
 
     let text = '';
