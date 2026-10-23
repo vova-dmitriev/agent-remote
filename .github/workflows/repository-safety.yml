@@ -51,6 +51,14 @@ jobs:
           pnpm exec playwright install --with-deps chrome
           npm run test-storybook
           E2E_APP_PORT=4175 npm run test:e2e
+      - name: Preserve synthetic browser failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: browser-failures-${{ github.run_id }}-${{ github.run_attempt }}
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Verify internal Chrome extension package
         run: |
           npm run package:extension
