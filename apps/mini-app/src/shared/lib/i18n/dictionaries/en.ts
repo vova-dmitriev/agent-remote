@@ -6,6 +6,7 @@ import { activityEN } from "./activity"
 import { extensionEN } from "./extension"
 import { usageEN } from "./usage"
 import { rulesEN } from "./rules"
+import { attachmentsEN } from "./attachments"
 
 export const en = {
   ...skillsEN,
@@ -16,6 +17,7 @@ export const en = {
   ...sessionControlsEN,
   ...usageEN,
   ...rulesEN,
+  ...attachmentsEN,
   sessionOnline: "Session online",
   sessionOffline: "Session unavailable",
   sessionTooLarge: "Session too large to mirror",
@@ -149,6 +151,7 @@ export const en = {
   promptOutboxFull: "The message queue is full. Remove an unsent message before adding another.",
   retryCommand: "Check and retry delivery",
   requestFailed: "Something went wrong. Try again.",
+  requestFailedCode: "Something went wrong ({{code}}). Try again.",
   authFailed: "Open the Mini App again from the Telegram bot to sign in.",
   promptInvalid: "Enter a valid message.",
   deviceOffline: "Mac is offline. Open Agent Remote on your Mac and check its internet connection.",
@@ -177,24 +180,4 @@ export const en = {
   codexModelUnavailable: "This model is unavailable for the current Codex sign-in. Choose a model on your Mac.",
   codexAuthRequired: "Codex needs you to sign in again on your Mac.",
   codexTurnFailed: "Codex could not complete this turn. Open the session on your Mac for details.",
-  attachmentSelect: "Attach files or images",
-  attachmentRemove: "Remove {{name}}",
-  attachmentUploading: "Uploading {{progress}}%",
-  attachmentReady: "Ready to send",
-  attachmentRetry: "Retry",
-  attachmentClose: "Close image",
-  attachmentView: "View {{name}}",
-  attachmentDownload: "Download {{name}}",
-  attachmentSize: "{{size}} KB",
-  attachmentLoading: "Loading attachment…",
-  attachmentExpired: "This attachment expired or is unavailable.",
-  attachmentLoadError: "Could not load this attachment.",
-  attachmentUploadFailed: "Could not upload this file. Retry the upload.",
-  attachmentTooLarge: "Each file must be between 1 byte and 10 MB.",
-  attachmentTotalSize: "Attachments must total at most 20 MB.",
-  attachmentCount: "Attach at most 5 files.",
-  attachmentQuota: "Attachment storage is full. Try again after older files expire.",
-  attachmentConflict: "This upload could not be reused. Remove the file and attach it again.",
-  attachmentInvalid: "This file could not be attached. Remove it and select a valid file.",
-  attachmentBusy: "Uploads are busy. Retry shortly.",
 } as const

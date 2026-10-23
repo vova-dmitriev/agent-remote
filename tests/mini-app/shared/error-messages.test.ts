@@ -40,6 +40,11 @@ describe.each(['ru', 'en'] as const)('safe %s feedback', (language) => {
     expect(feedbackText(code, t)).toBe(t('requestFailed'));
   });
 
+  it('names a protocol code that has no text of its own', () => {
+    expect(feedbackText('REQUEST_FAILED', t)).toBe(t('requestFailedCode', { code: 'REQUEST_FAILED' }));
+    expect(feedbackText('REQUEST_FAILED', t)).toContain('REQUEST_FAILED');
+  });
+
   it.each([
     ['NETWORK_UNAVAILABLE', 'networkUnavailable'],
     ['REQUEST_TIMEOUT', 'requestTimedOut'],

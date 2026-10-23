@@ -6,6 +6,7 @@ import { activityRU } from "./activity"
 import { extensionRU } from "./extension"
 import { usageRU } from "./usage"
 import { rulesRU } from "./rules"
+import { attachmentsRU } from "./attachments"
 import type { Dictionary } from "../types"
 
 export const ru = {
@@ -17,6 +18,7 @@ export const ru = {
   ...sessionControlsRU,
   ...usageRU,
   ...rulesRU,
+  ...attachmentsRU,
   sessionOnline: "Сессия онлайн",
   sessionOffline: "Сессия недоступна",
   sessionTooLarge: "Сессия слишком большая для показа",
@@ -148,6 +150,7 @@ export const ru = {
   promptOutboxFull: "Очередь заполнена. Удали неотправленное сообщение, прежде чем добавлять новое.",
   retryCommand: "Проверить и повторить отправку",
   requestFailed: "Не удалось выполнить запрос. Попробуй ещё раз.",
+  requestFailedCode: "Не удалось выполнить запрос ({{code}}). Попробуй ещё раз.",
   authFailed: "Открой Mini App заново из меню Telegram-бота для входа.",
   promptInvalid: "Введи допустимый текст сообщения.",
   deviceOffline: "Mac не в сети. Открой Agent Remote на Mac и проверь его подключение к интернету.",
@@ -176,24 +179,4 @@ export const ru = {
   codexModelUnavailable: "Эта модель недоступна для текущего входа Codex. Выбери модель на Mac.",
   codexAuthRequired: "Войди в Codex заново на своём Mac.",
   codexTurnFailed: "Codex не смог завершить этот ход. Открой сессию на Mac, чтобы посмотреть причину.",
-  attachmentSelect: "Прикрепить файлы или изображения",
-  attachmentRemove: "Удалить {{name}}",
-  attachmentUploading: "Загрузка {{progress}}%",
-  attachmentReady: "Готово к отправке",
-  attachmentRetry: "Повторить",
-  attachmentClose: "Закрыть изображение",
-  attachmentView: "Открыть {{name}}",
-  attachmentDownload: "Скачать {{name}}",
-  attachmentSize: "{{size}} КБ",
-  attachmentLoading: "Загрузка вложения…",
-  attachmentExpired: "Срок хранения вложения истёк или оно недоступно.",
-  attachmentLoadError: "Не удалось загрузить вложение.",
-  attachmentUploadFailed: "Не удалось отправить файл. Повторите загрузку.",
-  attachmentTooLarge: "Размер каждого файла: от 1 байта до 10 МБ.",
-  attachmentTotalSize: "Общий размер вложений — не более 20 МБ.",
-  attachmentCount: "Можно прикрепить не более 5 файлов.",
-  attachmentQuota: "Хранилище вложений заполнено. Повторите после истечения срока хранения старых файлов.",
-  attachmentConflict: "Не удалось повторить загрузку. Удалите файл и прикрепите заново.",
-  attachmentInvalid: "Не удалось прикрепить файл. Удалите его и выберите подходящий файл.",
-  attachmentBusy: "Сервис загрузки занят. Повторите чуть позже.",
 } satisfies Dictionary

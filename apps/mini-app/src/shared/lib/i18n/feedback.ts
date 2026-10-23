@@ -151,10 +151,13 @@ const keys: Record<string, MessageKey> = {
   [LEGACY_NATIVE_PROMPT_REASON]: "nativePromptHint",
 }
 
+const protocolCodes: ReadonlySet<string> = new Set(Object.values(ErrorCode))
+
 export function feedbackText(code: string, t: Translate) {
   const key = Object.hasOwn(keys, code) ? keys[code] : undefined
 
   if (key) return t(key)
 
-  return t("requestFailed")
+  // A protocol code without its own text is named, so one failure is told from another; any other detail stays hidden.
+  return protocolCodes.has(code) ? t("requestFailedCode", { code }) : t("requestFailed")
 }
