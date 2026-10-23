@@ -159,6 +159,7 @@ export class DesktopApplicationClient implements ApplicationClient {
   savePreferences = (patch: Parameters<ApplicationClient["savePreferences"]>[0]) => this.operations.savePreferences(patch)
   renameSession = (sessionId: string, title: string, generation: string) => this.operations.renameSession(sessionId, title, generation)
   pinSession = (sessionId: string, generation: string, pinned: boolean) => this.operations.pinSession(sessionId, generation, pinned)
+  markSessionRead = (sessionId: string, generation: string, at: number) => this.operations.markSessionRead(sessionId, generation, at)
   removeSession = (sessionId: string, generation: string, mode: SessionRemoval) =>
     this.operations.removeSession(sessionId, generation, mode)
   switchSessionModel = (sessionId: string, generation: string, choice: ModelChoice) =>

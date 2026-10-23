@@ -10,6 +10,7 @@ import { useSwitchModel } from "@/features/switch-model"
 import { useCommand } from "@/features/send-command"
 import { usePairDevice } from "@/features/pair-device"
 import { useRevokeDevice } from "@/features/device-access"
+import { useMarkRead } from "@/features/mark-read"
 import { useAccountPreferences } from "./use-account-preferences"
 
 export function useApplication() {
@@ -19,6 +20,8 @@ export function useApplication() {
   const { state, setError, setResult } = connection
   const preferences = useAccountPreferences()
   const selected = selectedSession(state)
+
+  useMarkRead(selected, selected ? state.messages[selected.id] : undefined)
   const rename = useRenameSession()
   const remove = useRemoveSession()
   const switchModel = useSwitchModel()

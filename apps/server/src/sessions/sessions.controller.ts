@@ -25,6 +25,7 @@ import {
   sessionFileQuerySchema,
   sessionModelChoiceSchema,
   sessionPinSchema,
+  sessionReadSchema,
   sessionRemoveSchema,
 } from '@protocol';
 import type { Response } from 'express';
@@ -188,6 +189,20 @@ export class SessionsController {
     return { pinned: body.pinned };
   }
 
+  /** Marks an owned session read up to a message time; the device keeps the mark and counts what came after. */
+  @Put('read')
+  async read(@CurrentPrincipal() p: Principal, @Param('id') id: string, @Body() input: unknown) {
+    const body = sessionReadSchema.parse(input);
+
+    await this.sendToDevice(p, id, body.generation, RelayProtocolFeature.SessionUnread, {
+      type: FrameType.SessionRead,
+      sessionId: id,
+      at: body.at,
+    });
+
+    return { at: body.at };
+  }
+
   /**
    * Removes an owned session from the lists: hides, archives or ends it. The device holds what it hid, so the change
    * goes to its live connection and the session leaves its next snapshot.
@@ -224,7 +239,10 @@ export class SessionsController {
     id: string,
     generation: string,
     feature: number,
-    frame: Extract<ServerFrame, { type: typeof FrameType.SessionPin | typeof FrameType.SessionRemove }>,
+    frame: Extract<
+      ServerFrame,
+      { type: typeof FrameType.SessionPin | typeof FrameType.SessionRead | typeof FrameType.SessionRemove }
+    >,
   ) {
     const connection = await this.liveDevice(p, id, generation, feature);
 

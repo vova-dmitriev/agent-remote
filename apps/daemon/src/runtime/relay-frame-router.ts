@@ -78,6 +78,9 @@ export class RelayFrameRouter {
     } else if (frame.type === FrameType.SessionPin) {
       // The relay sends pins only for its owner's sessions on this device; the snapshot carries the result back.
       monitor.setPinned(frame.sessionId, frame.pinned);
+    } else if (frame.type === FrameType.SessionRead) {
+      // Like pins, the relay sends read marks only for its owner's sessions on this device.
+      monitor.markRead(frame.sessionId, frame.at);
     } else if (frame.type === FrameType.SessionRemove) {
       // Like pins, the relay sends removals only for its owner's sessions on this device.
       await this.deps.removal?.remove(frame.sessionId, frame.mode).catch((error: unknown) => {

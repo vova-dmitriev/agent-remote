@@ -53,6 +53,10 @@ export class ExtensionOperations {
     return this.connection.request({ operation: LocalOperation.Rename, sessionId, title, generation });
   }
 
+  markSessionRead(sessionId: string, generation: string, at: number) {
+    return this.connection.request({ operation: LocalOperation.MarkRead, sessionId, generation, at });
+  }
+
   pinSession(sessionId: string, generation: string, pinned: boolean) {
     return this.connection.request({ operation: LocalOperation.Pin, sessionId, generation, pinned });
   }

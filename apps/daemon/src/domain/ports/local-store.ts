@@ -32,5 +32,8 @@ export interface LocalStorePort {
   pinnedSessions(): Set<string>;
   setPinned(id: string, pinned: boolean): void;
   hiddenSessions(): Map<string, number>;
+  readMarks(): { marks: Map<string, number>; since: number };
+  setReadMark(id: string, at: number): void;
+  replies(since: number): { sessionId: string; id: string; occurredAt: number }[];
   setHidden(id: string, at: number): void;
 }

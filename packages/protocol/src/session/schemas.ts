@@ -13,6 +13,7 @@ import {
   IntegrationState,
   MAX_DEVICE_CONNECTORS,
   MAX_DEVICE_SESSIONS,
+  MAX_UNREAD_MESSAGES,
   NativeRestartState,
   SessionListLimits,
   SessionRemoval,
@@ -143,6 +144,8 @@ export const sessionSchema = z
     createdAt: time.optional(),
     /** Present only when the owner pinned the session; the device keeps pins and puts them in its snapshot. */
     pinned: z.literal(true).optional(),
+    /** The agent's replies since the owner last read the session, up to `MAX_UNREAD_MESSAGES`; absent when none. */
+    unread: z.number().int().positive().max(MAX_UNREAD_MESSAGES).optional(),
     capabilities: capabilitySchema,
     nativeRestartState: z.enum(NativeRestartState).optional(),
     integrationState: integrationStateSchema,
@@ -184,6 +187,9 @@ export const projectSessionReplySchema = z.strictObject({ sessionId: id });
 /** Pins or unpins a session of the current generation; the device holds the pin. */
 export const sessionPinSchema = z.strictObject({ pinned: z.boolean(), generation: id });
 export type SessionPin = z.infer<typeof sessionPinSchema>;
+/** Marks a session of the current generation read up to a message time; the device counts what came after. */
+export const sessionReadSchema = z.strictObject({ at: time, generation: id });
+export type SessionRead = z.infer<typeof sessionReadSchema>;
 /** Switches a session of the current generation to another model; it applies from the session's next turn. */
 export const sessionModelChoiceSchema = z.strictObject({ choice: modelChoiceSchema, generation: id });
 export type SessionModelChoice = z.infer<typeof sessionModelChoiceSchema>;
@@ -533,6 +539,7 @@ export const serverFrameSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal(FrameType.Error), code: id }),
   z.strictObject({ type: z.literal(FrameType.Select), sessionId: id.nullable() }),
   z.strictObject({ type: z.literal(FrameType.SessionPin), sessionId: id, pinned: z.boolean() }),
+  z.strictObject({ type: z.literal(FrameType.SessionRead), sessionId: id, at: time }),
   z.strictObject({ type: z.literal(FrameType.SessionRemove), sessionId: id, mode: z.enum(SessionRemoval) }),
   z.strictObject({
     type: z.literal(FrameType.SessionModel),

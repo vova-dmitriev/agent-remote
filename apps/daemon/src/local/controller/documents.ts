@@ -18,6 +18,7 @@ export const DOCUMENT_OPERATIONS: ReadonlySet<LocalOperation> = new Set([
   LocalOperation.ReadingSave,
   LocalOperation.Rename,
   LocalOperation.Pin,
+  LocalOperation.MarkRead,
   LocalOperation.Remove,
   LocalOperation.Model,
   LocalOperation.Create,
@@ -84,6 +85,16 @@ export function documentOperation(
       }
 
       options.monitor.setPinned(action.sessionId, action.pinned);
+
+      return null;
+
+    case LocalOperation.MarkRead:
+      // Read marks are the device owner's, like pins.
+      if (principal.ownerId !== options.ownerId) {
+        throw new CodedError(ErrorCode.ACCESS_DENIED);
+      }
+
+      options.monitor.markRead(action.sessionId, action.at);
 
       return null;
 

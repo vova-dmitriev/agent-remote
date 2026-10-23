@@ -1,7 +1,15 @@
 import { memo } from "react"
 import { useTranslation } from "@/shared/lib/hooks"
 import { cn } from "@/shared/lib/utils"
-import { SessionStatusTone, sessionFolder, sessionPath, sessionRecency, sessionStatusLabel, sessionStatusTone } from "@/entities/session"
+import {
+  SessionStatusTone,
+  UnreadBadge,
+  sessionFolder,
+  sessionPath,
+  sessionRecency,
+  sessionStatusLabel,
+  sessionStatusTone,
+} from "@/entities/session"
 import { SESSION_SIDEBAR_IDS } from "@/widgets/session-sidebar/config/test-ids"
 import { relativeTime } from "@/widgets/session-sidebar/lib/sidebar-format"
 import { rowTitle } from "@/widgets/session-sidebar/lib/sidebar-search"
@@ -26,6 +34,8 @@ export const SidebarRow = memo(function SidebarRow({
   const unavailable = sessionStatusTone(session, awaitingInput) === SessionStatusTone.Unavailable
   const project = sessionFolder(session)
   const title = rowTitle(session) ?? t("selectedChat")
+  // The open session is being read: its count clears with the device's next snapshot, so it never shows here.
+  const unread = active ? undefined : session.unread
 
   return (
     <div
@@ -54,7 +64,7 @@ export const SidebarRow = memo(function SidebarRow({
             title={title}
             className={cn(
               "min-w-0 flex-1 truncate text-[13px] leading-5",
-              active ? "font-semibold" : "font-medium",
+              active || unread ? "font-semibold" : "font-medium",
               unavailable && "text-muted-foreground",
             )}
           >
@@ -64,14 +74,17 @@ export const SidebarRow = memo(function SidebarRow({
             {session.lastMessageAt === undefined ? null : (relativeTime(sessionRecency(session), now, language) ?? t("sidebarNow"))}
           </span>
         </span>
-        <span className="block truncate text-[11.5px] leading-4 text-muted-foreground" title={sessionPath(session) ?? undefined}>
-          {project ? (
-            <>
-              <HighlightMatch text={project} query={query} />
-              {" · "}
-            </>
-          ) : null}
-          <HighlightMatch text={session.model ?? t("modelUnknown")} query={query} />
+        <span className="flex items-center gap-2">
+          <span className="min-w-0 flex-1 truncate text-[11.5px] leading-4 text-muted-foreground" title={sessionPath(session) ?? undefined}>
+            {project ? (
+              <>
+                <HighlightMatch text={project} query={query} />
+                {" · "}
+              </>
+            ) : null}
+            <HighlightMatch text={session.model ?? t("modelUnknown")} query={query} />
+          </span>
+          <UnreadBadge count={unread} />
         </span>
       </span>
       <span className="sr-only">{t(sessionStatusLabel(session))}</span>

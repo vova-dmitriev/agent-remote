@@ -123,6 +123,10 @@ export abstract class RelayOperations extends RelayCommandOperations implements 
     return this.request("/sessions/" + encodeURIComponent(sessionId), { method: "PATCH", body: JSON.stringify({ title, generation }) })
   }
 
+  markSessionRead(sessionId: string, generation: string, at: number) {
+    return this.request("/sessions/" + encodeURIComponent(sessionId) + "/read", { method: "PUT", body: JSON.stringify({ at, generation }) })
+  }
+
   pinSession(sessionId: string, generation: string, pinned: boolean) {
     return this.request("/sessions/" + encodeURIComponent(sessionId) + "/pin", {
       method: "PUT",

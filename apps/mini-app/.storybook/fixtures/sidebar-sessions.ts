@@ -66,6 +66,7 @@ function build(rowsToBuild: Row[], shiftMinutes = 0, suffix = ""): Session[] {
       lastEventAt: at,
       lastMessageAt: at,
       ...(offline ? { integrationState: IntegrationState.Disconnected } : {}),
+      ...(index === 1 || index === 4 ? { unread: index * 3 - 1 } : {}),
     }
   })
 }

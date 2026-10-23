@@ -18,5 +18,11 @@ export function snapshotForProtocol(snapshot: DaemonSnapshot, protocolVersion: n
     }
   }
 
+  if (protocolVersion < RelayProtocolFeature.SessionUnread) {
+    for (const session of compatible.sessions) {
+      delete session.unread;
+    }
+  }
+
   return compatible;
 }

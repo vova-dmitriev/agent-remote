@@ -50,6 +50,7 @@ export const localActionSchema = z.discriminatedUnion('operation', [
     title: z.string().trim().min(1).max(512),
   }),
   z.strictObject({ ...operation(LocalOperation.Pin), ...session, generation: id, pinned: z.boolean() }),
+  z.strictObject({ ...operation(LocalOperation.MarkRead), ...session, generation: id, at: revision }),
   z.strictObject({ ...operation(LocalOperation.Remove), ...session, ...sessionRemoveSchema.shape }),
   z.strictObject({ ...operation(LocalOperation.Model), ...session, ...sessionModelChoiceSchema.shape }),
   z.strictObject({ ...operation(LocalOperation.Create), session: projectSessionSchema }),

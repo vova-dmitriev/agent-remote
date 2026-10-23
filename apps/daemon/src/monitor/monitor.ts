@@ -1,5 +1,6 @@
 import {
   type AppSnapshot,
+  MessageRole,
   BindingState,
   CodedError,
   ConnectorId,
@@ -52,6 +53,7 @@ import {
   type MonitorPort,
   type SubagentHistoryPage,
 } from '../domain/ports/monitor.js';
+import { UnreadMessages } from './unread-messages.js';
 
 /** Hooks a subagent fires for its own work. With `agent_id` they describe that child, never the parent turn. */
 const SUBAGENT_ACTIVITY_HOOKS: readonly ClaudeHookEvent[] = [
@@ -92,11 +94,14 @@ export class Monitor extends EventEmitter implements MonitorPort {
   private pins: Set<string>;
   /** When the owner hid each session; a hidden session stays out of the lists until a newer message. */
   private hidden: Map<string, number>;
+  /** The agent's replies since the owner last read each session. */
+  private unread: UnreadMessages;
   selectedId: string | null = null;
   constructor(private options: Options) {
     super();
     this.pins = this.options.store.pinnedSessions();
     this.hidden = this.options.store.hiddenSessions();
+    this.unread = new UnreadMessages(this.options.store);
 
     for (const { session: saved } of this.options.store.nativeSessions()) {
       const adapter = this.options.adapters.get(saved.target.connectorId);
@@ -686,6 +691,16 @@ export class Monitor extends EventEmitter implements MonitorPort {
 
     return true;
   }
+  /** Marks a known session read up to a message time; returns whether its unread count changed. */
+  markRead(id: string, at: number): boolean {
+    if (!this.sessions.has(id) || !this.unread.read(id, at)) {
+      return false;
+    }
+
+    this.emit(RuntimeEvent.Snapshot);
+
+    return true;
+  }
   setSessionTitle(id: string, title: string | undefined): boolean {
     const session = this.sessions.get(id);
     const parsed = sessionSchema.shape.title.safeParse(title);
@@ -964,6 +979,7 @@ export class Monitor extends EventEmitter implements MonitorPort {
     const session = sessionId ? this.sessions.get(sessionId) : undefined;
 
     let returned = false;
+    let counted = false;
 
     if (session && message?.success) {
       const shown = this.shown(session);
@@ -971,14 +987,19 @@ export class Monitor extends EventEmitter implements MonitorPort {
       session.lastMessageAt = Math.max(session.lastMessageAt ?? 0, message.data.occurredAt);
       this.persistNative(session);
       returned = !shown && this.shown(session);
+
+      counted =
+        message.data.role === MessageRole.Assistant &&
+        !message.data.tool &&
+        this.unread.add(session.id, message.data.id, message.data.occurredAt);
     }
 
     const event = this.options.store.append({ sessionId, type, payload, occurredAt });
 
     this.emit(RuntimeEvent.Event, event);
 
-    // A hidden session's new message brings it back to the lists.
-    if (returned) {
+    // A hidden session's new message brings it back to the lists; an unread reply changes its count there.
+    if (returned || counted) {
       this.emit(RuntimeEvent.Snapshot);
     }
 
@@ -1035,9 +1056,15 @@ export class Monitor extends EventEmitter implements MonitorPort {
     return structuredClone(
       boundSnapshotChanges({
         sessions: boundSubagentSnapshots(
-          sessions.map((session) =>
-            this.pins.has(session.id) ? { ...session, pinned: true as const } : session,
-          ),
+          sessions.map((session) => {
+            const unread = this.unread.count(session.id);
+
+            return {
+              ...session,
+              ...(this.pins.has(session.id) ? { pinned: true as const } : {}),
+              ...(unread ? { unread } : {}),
+            };
+          }),
         ),
         sessionPages: {
           all: seed(ProviderFilterValue.All),

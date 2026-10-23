@@ -10,8 +10,10 @@ import {
   type Cursor,
   ErrorCode,
   type EventEnvelope,
+  EventType,
   FrameType,
   type HistoryRead,
+  MessageRole,
   SessionListLimits,
   ProviderFilterValue,
   type Session,
@@ -35,6 +37,7 @@ import {
 } from './session-list-page.js';
 
 type ManagedRow = { data: string; transcript_path: string | null };
+export type AgentReply = { sessionId: string; id: string; occurredAt: number };
 
 export class LocalStore implements LocalStorePort {
   private db: Sqlite.Database;
@@ -89,6 +92,44 @@ export class LocalStore implements LocalStorePort {
     this.db.exec(
       'CREATE TABLE IF NOT EXISTS session_hidden(device_id TEXT NOT NULL,id TEXT NOT NULL,hidden_at INTEGER NOT NULL,PRIMARY KEY(device_id,id))',
     );
+
+    this.db.exec(
+      'CREATE TABLE IF NOT EXISTS session_reads(device_id TEXT NOT NULL,id TEXT NOT NULL,read_at INTEGER NOT NULL,PRIMARY KEY(device_id,id))',
+    );
+
+    // Sessions the owner has not read yet count replies from the first run that keeps read marks, not their whole past.
+    this.db.prepare('INSERT OR IGNORE INTO metadata VALUES(?,?)').run('readsSince', String(Date.now()));
+  }
+  /** When the owner last read each session on this device, and since when a session without a mark counts replies. */
+  readMarks(): { marks: Map<string, number>; since: number } {
+    const rows = this.db
+      .prepare('SELECT id,read_at FROM session_reads WHERE device_id=?')
+      .all(this.deviceId) as {
+      id: string;
+      read_at: number;
+    }[];
+
+    const since = this.db.prepare('SELECT value FROM metadata WHERE key=?').get('readsSince') as {
+      value: string;
+    };
+
+    return { marks: new Map(rows.map((row) => [row.id, row.read_at])), since: Number(since.value) };
+  }
+  setReadMark(id: string, at: number) {
+    // ponytail: marks of sessions that are gone stay, like pins.
+    this.db
+      .prepare(
+        'INSERT INTO session_reads(device_id,id,read_at) VALUES(?,?,?) ON CONFLICT(device_id,id) DO UPDATE SET read_at=max(read_at,excluded.read_at)',
+      )
+      .run(this.deviceId, id, at);
+  }
+  /** The agent's replies the store still holds that were written after `since`. */
+  replies(since: number): AgentReply[] {
+    return this.db
+      .prepare(
+        "SELECT json_extract(data,'$.sessionId') AS sessionId,json_extract(data,'$.payload.id') AS id,json_extract(data,'$.payload.occurredAt') AS occurredAt FROM events WHERE json_extract(data,'$.type')=? AND json_extract(data,'$.payload.role')=? AND json_extract(data,'$.payload.tool') IS NULL AND json_extract(data,'$.payload.occurredAt')>?",
+      )
+      .all(EventType.Message, MessageRole.Assistant, since) as AgentReply[];
   }
   /** When the owner hid each session on this device, by session id. */
   hiddenSessions(): Map<string, number> {

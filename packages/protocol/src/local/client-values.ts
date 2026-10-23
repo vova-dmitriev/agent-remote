@@ -23,6 +23,7 @@ export const LocalOperation = {
   PreferencesSave: 'preferences_save',
   Rename: 'rename',
   Pin: 'pin',
+  MarkRead: 'mark_read',
   Remove: 'remove',
   Model: 'model',
   Create: 'create',

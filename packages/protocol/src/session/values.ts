@@ -40,6 +40,9 @@ export type SessionStatus = (typeof SessionStatus)[keyof typeof SessionStatus];
 export const SessionListLimits = { PageSize: 30, DeviceCursorLength: 1024, CursorLength: 4096 } as const;
 export const MAX_DEVICE_SESSIONS = SessionListLimits.PageSize;
 
+/** The most unread replies a session counts; the lists show more as "99+". */
+export const MAX_UNREAD_MESSAGES = 99;
+
 /** A connector per cmux surface or terminal session in use, plus the native, Codex and desktop ones. */
 export const MAX_DEVICE_CONNECTORS = MAX_DEVICE_SESSIONS + 20;
 

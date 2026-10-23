@@ -7,7 +7,7 @@ import { Monitor } from '@daemon/monitor/monitor.js';
 import { EventReplay } from '@daemon/monitor/replay.js';
 import { PermissionBroker } from '@daemon/commands/permission-broker.js';
 import { AdapterRegistry, SourceAdapter } from '@daemon/adapters/registry.js';
-import { MAX_DEVICE_SESSIONS, type EventEnvelope } from '@protocol';
+import { EventType, MAX_DEVICE_SESSIONS, MessageRole, type EventEnvelope } from '@protocol';
 
 const cleanups: Array<() => void> = [];
 
@@ -378,4 +378,51 @@ it('hides a restored native record once a live session runs the same conversatio
 
   expect(live.binding).toBe('verified');
   expect(restarted.monitor.snapshot().sessions.map((session) => session.id)).toEqual([live.id]);
+});
+
+const reply = (id: string, occurredAt: number, extra: object = {}) => ({
+  id,
+  role: MessageRole.Assistant,
+  text: 'Synthetic reply',
+  occurredAt,
+  ...extra,
+});
+
+const unread = (monitor: Monitor, id: string) => monitor.snapshot().sessions.find((s) => s.id === id)?.unread;
+
+it("counts the agent's replies after the read mark, once each, and keeps the mark across restarts", () => {
+  const f = fixture(),
+    first = f.open();
+
+  first.monitor.ingestHook({ hook_event_name: 'SessionStart', session_id: 'unread-source' }, 'native');
+  const id = first.monitor.findClaude('native', 'unread-source')!.id;
+  const now = Date.now() + 1000;
+
+  first.monitor.publish(id, EventType.Message, reply('r1', now));
+  first.monitor.publish(id, EventType.Message, reply('r1', now));
+  first.monitor.publish(id, EventType.Message, reply('r2', now + 1));
+  first.monitor.publish(id, EventType.Message, { ...reply('u1', now + 2), role: MessageRole.User });
+
+  first.monitor.publish(
+    id,
+    EventType.Message,
+    reply('t1', now + 3, { tool: { id: 'tool-1', phase: 'completed' } }),
+  );
+
+  // A reply written before read marks were kept is history, not news.
+  first.monitor.publish(id, EventType.Message, reply('old', 1000));
+
+  expect(unread(first.monitor, id)).toBe(2);
+  expect(first.monitor.markRead('unknown-session', now)).toBe(false);
+  expect(first.monitor.markRead(id, now)).toBe(true);
+  expect(unread(first.monitor, id)).toBe(1);
+  first.store.close();
+
+  // The mark and the reply after it come back from the store.
+  const second = f.open();
+
+  expect(unread(second.monitor, id)).toBe(1);
+  expect(second.monitor.markRead(id, now + 1)).toBe(true);
+  expect(unread(second.monitor, id)).toBeUndefined();
+  expect(second.monitor.markRead(id, now)).toBe(false);
 });

@@ -39,6 +39,8 @@ export interface ApplicationOperations {
   renameSession(sessionId: string, title: string, generation: string): Promise<unknown>
   /** Pins or unpins a session on its device; the device's next snapshot shows the result. */
   pinSession(sessionId: string, generation: string, pinned: boolean): Promise<unknown>
+  /** Marks a session read up to a message time on its device; the device's next snapshot shows its unread count. */
+  markSessionRead(sessionId: string, generation: string, at: number): Promise<unknown>
   /** Hides, archives or ends a session on its device; the session leaves the device's next snapshot. */
   removeSession(sessionId: string, generation: string, mode: SessionRemoval): Promise<unknown>
   /** Switches a session to another model on its device; its next turn uses it. */

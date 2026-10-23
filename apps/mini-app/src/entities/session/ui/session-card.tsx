@@ -6,6 +6,7 @@ import { sourceNames, sessionTitle, agentName, sessionFolder, sessionPath } from
 import { sessionStatusLabel } from "../lib/availability"
 import { sessionCardBodyClass, sessionCardClass } from "./session-class"
 import { SessionStatusDot } from "./status-dot/status-dot"
+import { UnreadBadge } from "./unread-badge/unread-badge"
 import type { SessionCardProps } from "./session-card.types"
 
 export function SessionCard({ session, onSelect, awaitingInput = false }: SessionCardProps) {
@@ -49,6 +50,7 @@ export function SessionCard({ session, onSelect, awaitingInput = false }: Sessio
           {t(sessionStatusLabel(session))}
         </span>
       </div>
+      <UnreadBadge count={session.unread} />
       <SessionStatusDot session={session} awaitingInput={awaitingInput} />
     </Button>
   )

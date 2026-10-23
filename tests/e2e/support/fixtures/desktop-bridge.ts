@@ -13,7 +13,7 @@ interface FakeBridgeOptions {
     result: string;
     version: number;
     snapshot: string;
-    operations: Record<'devices' | 'select' | 'history' | 'preferences' | 'reading' | 'draft' | 'queue' | 'pin' | 'remove' | 'model' | 'create' | 'file' | 'analytics' | 'rules', string>;
+    operations: Record<'devices' | 'select' | 'history' | 'preferences' | 'reading' | 'draft' | 'queue' | 'pin' | 'read' | 'remove' | 'model' | 'create' | 'file' | 'analytics' | 'rules', string>;
     unavailable: string;
   };
 }
@@ -49,6 +49,7 @@ export async function installDesktopBridge(
         draft: LocalOperation.DraftGet,
         queue: LocalOperation.QueueGet,
         pin: LocalOperation.Pin,
+        read: LocalOperation.MarkRead,
         remove: LocalOperation.Remove,
         model: LocalOperation.Model,
         create: LocalOperation.Create,
@@ -99,8 +100,6 @@ export async function installDesktopBridge(
           const base = { kind: values.result, version: values.version, requestId: request.requestId, leaseId, epoch };
           const { operation, agentId } = request.action;
 
-          // Like the companion: the pin is applied to the snapshot, which is published again. `pinRefused` simulates
-          // a device that cannot take it.
           // A changed file as the companion reads it from the Mac: synthetic Markdown.
           if (operation === operations.file) {
             return { ...base, ok: true, data: { path: request.action.path, content: '# Synthetic notes\n\n**Formatted** body.', truncated: false } };
@@ -156,17 +155,19 @@ export async function installDesktopBridge(
             return { ...base, ok: true, data: operation === operations.create ? { sessionId: started.id } : null }
           }
 
-          if (operation === operations.pin) {
-            if ((window as unknown as { pinRefused?: boolean }).pinRefused) return { ...base, ok: false, code: values.unavailable };
+          // Like the companion: a pin or a read mark lands in the snapshot; `pinRefused` refuses a pin, `readMarks` lists marks.
+          if (operation === operations.pin || operation === operations.read) {
+            if (operation === operations.pin && (window as unknown as { pinRefused?: boolean }).pinRefused) return { ...base, ok: false, code: values.unavailable };
+            if (operation === operations.read) note('readMarks', request.action.sessionId);
 
             snapshot = {
               ...snapshot,
               sessions: snapshot.sessions.map((session) => {
                 if (session.id !== request.action.sessionId) return session;
 
-                const rest = Object.fromEntries(Object.entries(session).filter(([key]) => key !== 'pinned'));
+                const rest = Object.fromEntries(Object.entries(session).filter(([key]) => key !== (operation === operations.pin ? 'pinned' : 'unread')));
 
-                return (request.action.pinned ? { ...rest, pinned: true } : rest) as typeof session;
+                return (operation === operations.pin && request.action.pinned ? { ...rest, pinned: true } : rest) as typeof session;
               }),
             };
 
