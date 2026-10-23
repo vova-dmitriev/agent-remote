@@ -180,7 +180,8 @@ process.once('SIGTERM', async () => { await daemon.close(); process.exit(0); });
     let page = await app.firstWindow();
 
     await page.waitForLoadState('domcontentloaded');
-    await expect.poll(() => page.locator('#root > *').count()).toBeGreaterThan(0);
+    await page.locator('#root > *').first().waitFor({ state: 'attached' });
+    expect(await page.locator('#root > *').count()).toBeGreaterThan(0);
     expect(new URL(page.url()).protocol).toBe('agent-remote:');
     expect(await page.evaluate(() => typeof window.Telegram)).toBe('undefined');
     // The desktop shell keeps its route in the fragment; bridge IPC must stay trusted with it.
