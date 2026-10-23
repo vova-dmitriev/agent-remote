@@ -21,6 +21,7 @@ it('validates an existing directory and writes a fixed private Terminal launcher
       cwd,
       node: '/node',
       entry: '/remote.mjs',
+      platform: 'darwin',
       cmuxCli: null,
       open: async (file, args) => {
         calls.push({ file, args });
@@ -39,29 +40,33 @@ it('validates an existing directory and writes a fixed private Terminal launcher
   }
 });
 
-it('starts Claude with the model and effort the owner picked', async () => {
-  const dir = await mkdtemp(join(tmpdir(), 'remote-launch-'));
+it.each(['darwin', 'linux'] as const)(
+  'starts Claude with the model and effort the owner picked on %s',
+  async (platform) => {
+    const dir = await mkdtemp(join(tmpdir(), 'remote-launch-'));
 
-  try {
-    const scripts: string[] = [];
+    try {
+      const scripts: string[] = [];
 
-    await launchClaudeSession({
-      directory: dir,
-      cwd: dir,
-      node: '/node',
-      entry: '/remote.mjs',
-      model: { model: 'opus', effort: 'high' },
-      cmuxCli: null,
-      open: async (_file, args) => {
-        scripts.push(await readFile(args[2]!, 'utf8'));
-      },
-    });
+      await launchClaudeSession({
+        directory: dir,
+        cwd: dir,
+        node: '/node',
+        entry: '/remote.mjs',
+        platform,
+        model: { model: 'opus', effort: 'high' },
+        cmuxCli: null,
+        open: async (_file, args) => {
+          scripts.push(await readFile(args.at(-1)!, 'utf8'));
+        },
+      });
 
-    expect(scripts[0]).toContain("exec '/node' '/remote.mjs' claude --model 'opus' --effort 'high'");
-  } finally {
-    await rm(dir, { recursive: true, force: true });
-  }
-});
+      expect(scripts[0]).toContain("exec '/node' '/remote.mjs' claude --model 'opus' --effort 'high'");
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  },
+);
 
 it('starts Claude in a detached tmux session on Linux, where there is no Terminal app', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'remote-launch-'));
@@ -90,48 +95,52 @@ it('starts Claude in a detached tmux session on Linux, where there is no Termina
   }
 });
 
-it('starts Claude without the Claude Code session the daemon itself may run under', async () => {
-  const dir = await mkdtemp(join(tmpdir(), 'remote-launch-'));
+it.each(['darwin', 'linux'] as const)(
+  'starts Claude without the Claude Code session the daemon itself may run under on %s',
+  async (platform) => {
+    const dir = await mkdtemp(join(tmpdir(), 'remote-launch-'));
 
-  try {
-    const printer = join(dir, 'print-env.sh');
-    const out = join(dir, 'env.txt');
+    try {
+      const printer = join(dir, 'print-env.sh');
+      const out = join(dir, 'env.txt');
 
-    await writeFile(printer, `#!/bin/sh\nenv > ${JSON.stringify(out)}\n`, { mode: 0o700 });
-    let script = '';
+      await writeFile(printer, `#!/bin/sh\nenv > ${JSON.stringify(out)}\n`, { mode: 0o700 });
+      let script = '';
 
-    await launchClaudeSession({
-      directory: dir,
-      cwd: dir,
-      node: '/bin/sh',
-      entry: printer,
-      cmuxCli: null,
-      open: async (_file, args) => {
-        script = args[2]!;
-      },
-    });
+      await launchClaudeSession({
+        directory: dir,
+        cwd: dir,
+        node: '/bin/sh',
+        entry: printer,
+        platform,
+        cmuxCli: null,
+        open: async (_file, args) => {
+          script = args.at(-1)!;
+        },
+      });
 
-    // A Terminal the daemon opened inherits its environment, which inside Claude Code names that session.
-    execFileSync('/bin/sh', [script], {
-      env: {
-        PATH: process.env.PATH,
-        CLAUDE_CODE_SESSION_ID: 'synthetic-parent',
-        CLAUDE_CODE_CHILD_SESSION: '1',
-        CLAUDE_PID: '1',
-        CLAUDE_CONFIG_DIR: '/synthetic/config',
-      },
-    });
+      // A Terminal the daemon opened inherits its environment, which inside Claude Code names that session.
+      execFileSync('/bin/sh', [script], {
+        env: {
+          PATH: process.env.PATH,
+          CLAUDE_CODE_SESSION_ID: 'synthetic-parent',
+          CLAUDE_CODE_CHILD_SESSION: '1',
+          CLAUDE_PID: '1',
+          CLAUDE_CONFIG_DIR: '/synthetic/config',
+        },
+      });
 
-    const env = await readFile(out, 'utf8');
+      const env = await readFile(out, 'utf8');
 
-    expect(env).not.toMatch(/^CLAUDE_CODE_/mu);
-    expect(env).not.toMatch(/^CLAUDE_PID=/mu);
-    expect(env).toMatch(/^CLAUDE_CONFIG_DIR=\/synthetic\/config$/mu);
-    expect(env).toMatch(/^CLAUDE_REMOTE_LAUNCH_ID=/mu);
-  } finally {
-    await rm(dir, { recursive: true, force: true });
-  }
-});
+      expect(env).not.toMatch(/^CLAUDE_CODE_/mu);
+      expect(env).not.toMatch(/^CLAUDE_PID=/mu);
+      expect(env).toMatch(/^CLAUDE_CONFIG_DIR=\/synthetic\/config$/mu);
+      expect(env).toMatch(/^CLAUDE_REMOTE_LAUNCH_ID=/mu);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  },
+);
 
 /** A cmux command line whose one window holds workspaces open in the given folders. */
 function syntheticCmux(folders: string[]) {
@@ -214,28 +223,32 @@ it('opens a new session as a tab of the cmux workspace that already holds the pr
   }
 });
 
-it('opens Codex in a terminal on the thread the app started', async () => {
-  const dir = await mkdtemp(join(tmpdir(), 'remote-launch-'));
+it.each(['darwin', 'linux'] as const)(
+  'opens Codex in a terminal on the thread the app started on %s',
+  async (platform) => {
+    const dir = await mkdtemp(join(tmpdir(), 'remote-launch-'));
 
-  try {
-    const scripts: string[] = [];
+    try {
+      const scripts: string[] = [];
 
-    await launchClaudeSession({
-      directory: dir,
-      cwd: dir,
-      node: '/node',
-      entry: '/remote.mjs',
-      codexThreadId: 'thread-1',
-      codexHome: '/codex-home',
-      cmuxCli: null,
-      open: async (_file, args) => {
-        scripts.push(await readFile(args[2]!, 'utf8'));
-      },
-    });
+      await launchClaudeSession({
+        directory: dir,
+        cwd: dir,
+        node: '/node',
+        entry: '/remote.mjs',
+        platform,
+        codexThreadId: 'thread-1',
+        codexHome: '/codex-home',
+        cmuxCli: null,
+        open: async (_file, args) => {
+          scripts.push(await readFile(args.at(-1)!, 'utf8'));
+        },
+      });
 
-    expect(scripts[0]).toContain("exec '/node' '/remote.mjs' codex resume 'thread-1'\n");
-    expect(scripts[0]).toContain("until ls '/codex-home/sessions'/*/*/*/rollout-*-'thread-1'.jsonl");
-  } finally {
-    await rm(dir, { recursive: true, force: true });
-  }
-});
+      expect(scripts[0]).toContain("exec '/node' '/remote.mjs' codex resume 'thread-1'\n");
+      expect(scripts[0]).toContain("until ls '/codex-home/sessions'/*/*/*/rollout-*-'thread-1'.jsonl");
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  },
+);

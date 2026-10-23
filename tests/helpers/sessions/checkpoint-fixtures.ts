@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { CheckpointMessage, CheckpointSource, SourceFence } from '@daemon/continuity/context/types.js';
@@ -6,9 +6,11 @@ import type { CheckpointMessage, CheckpointSource, SourceFence } from '@daemon/c
 const roots: string[] = [];
 
 export async function checkpointRoot(prefix: string) {
-  const path = await mkdtemp(join(tmpdir(), prefix));
+  const root = await mkdtemp(join(tmpdir(), prefix));
+  const path = join(root, 'checkpoints');
 
-  roots.push(path);
+  roots.push(root);
+  await mkdir(path, { mode: 0o700 });
 
   return path;
 }

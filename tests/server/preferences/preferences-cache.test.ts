@@ -8,7 +8,9 @@ import { databaseFixture } from '../../helpers/relay/database.js';
 
 it('serves preferences from Redis, isolates owners, and invalidates stale in-flight fills after changes', async () => {
   const fixture = await databaseFixture(),
-    client = new Redis(process.env.TEST_REDIS_URL ?? 'redis://127.0.0.1:56380');
+    client = new Redis(process.env.TEST_REDIS_URL ?? 'redis://127.0.0.1:56380', {
+      lazyConnect: true,
+    });
 
   let release!: () => void, loaded!: () => void;
 
@@ -42,6 +44,8 @@ it('serves preferences from Redis, isolates owners, and invalidates stale in-fli
   }
 
   try {
+    await client.connect();
+
     await fixture.db.pool.query(
       "INSERT INTO users(id,telegram_id,created_at) VALUES('a','8801',0),('b','8802',0)",
     );
@@ -61,7 +65,7 @@ it('serves preferences from Redis, isolates owners, and invalidates stale in-fli
     await service.update(a, { language: 'en', theme: 'dark' });
     expect(await service.get(a)).toEqual({ language: 'en', theme: 'dark' });
     release();
-    await old;
+    expect(await old).toEqual({ language: null, theme: null });
     expect(await service.get(a)).toEqual({ language: 'en', theme: 'dark' });
     expect(await service.get(b)).toEqual({ language: null, theme: null });
 
@@ -71,6 +75,7 @@ it('serves preferences from Redis, isolates owners, and invalidates stale in-fli
 
     try {
       expect(await service.get(a)).toEqual({ language: 'en', theme: 'dark' });
+      expect(unavailable).not.toHaveBeenCalled();
     } finally {
       unavailable.mockRestore();
     }

@@ -8,7 +8,7 @@ jobs:
   secrets:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -24,12 +24,19 @@ jobs:
   validation:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: '22.23.3'
+      - name: Prepare trusted Node runtime and shell test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends zsh
+          runtime="$(mktemp -d /tmp/agent-remote-node.XXXXXX)"
+          install -D -m 755 "$(node -p 'process.execPath')" "$runtime/bin/node"
+          printf '%s\n' "$runtime/bin" >> "$GITHUB_PATH"
       - name: Install pinned tooling and dependencies
         run: |
           npm install --global pnpm@10.34.7
@@ -44,6 +51,14 @@ jobs:
           pnpm exec playwright install --with-deps chrome
           npm run test-storybook
           E2E_APP_PORT=4175 npm run test:e2e
+      - name: Preserve synthetic browser failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: browser-failures-${{ github.run_id }}-${{ github.run_attempt }}
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Verify internal Chrome extension package
         run: |
           npm run package:extension
@@ -52,10 +67,10 @@ jobs:
   extension-browser:
     runs-on: macos-14
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: '22.23.3'
       - name: Install pinned tooling and isolated Chromium
@@ -68,10 +83,10 @@ jobs:
   desktop:
     runs-on: macos-14
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: '22.23.3'
       - name: Install pinned tooling and dependencies

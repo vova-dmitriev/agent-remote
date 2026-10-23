@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { LOCAL_LIMITS } from '@protocol';
 import { verifyDesktopRuntime } from '../../../scripts/desktop/runtime/verify-runtime-lib.mjs';
 import { desktopRuntimeFixture } from '../../helpers/desktop/desktop-runtime-fixture.js';
-import { packagedCompanionFixture } from '../../helpers/desktop/packaged-companion.js';
+import { assertPinnedDesktopNode } from '../../../scripts/desktop/runtime/runtime-pin.mjs';
 import { guardRuntimeProcesses } from '../../helpers/desktop/runtime-processes.js';
 import {
   copyRuntimeTree,
@@ -66,18 +66,24 @@ itOnDarwin(
 );
 
 it('rejects a runtime that is not the maintained standalone Node release', async () => {
-  const packaged = await packagedCompanionFixture(process.execPath);
+  const directory = await mkdtemp(join(tmpdir(), 'desktop-node-reject-'));
+  const nodePath = join(directory, 'node');
 
-  cleanups.push(() => packaged.close());
+  cleanups.push(() => rm(directory, { recursive: true, force: true }));
 
-  await expect(
-    packageDesktopRuntime({
-      outputDirectory: join(packaged.sourceDirectory, 'output', 'desktop-reject'),
-      nodePath: packaged.nodePath,
-      sourceDirectory: packaged.sourceDirectory,
-    }),
-  ).rejects.toThrow('LOCAL_RUNTIME_UNTRUSTED');
-}, 60_000);
+  const metadata = JSON.stringify({
+    version: 'v0.0.0',
+    abi: process.versions.modules,
+    platform: process.platform,
+    arch: process.arch,
+  });
+
+  await writeFile(nodePath, `#!/bin/sh\nprintf '%s\\n' '${metadata}'\n`, { mode: 0o700 });
+
+  expect(() => assertPinnedDesktopNode(nodePath, process.platform, process.arch)).toThrow(
+    'LOCAL_RUNTIME_UNTRUSTED',
+  );
+});
 
 it('uses a canonical module repository path when the package source directory is omitted', async () => {
   await expect(
