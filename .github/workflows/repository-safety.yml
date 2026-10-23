@@ -30,6 +30,13 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '22.23.3'
+      - name: Prepare trusted Node runtime and shell test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends zsh
+          runtime="$(mktemp -d /tmp/agent-remote-node.XXXXXX)"
+          install -D -m 755 "$(node -p 'process.execPath')" "$runtime/bin/node"
+          printf '%s\n' "$runtime/bin" >> "$GITHUB_PATH"
       - name: Install pinned tooling and dependencies
         run: |
           npm install --global pnpm@10.34.7

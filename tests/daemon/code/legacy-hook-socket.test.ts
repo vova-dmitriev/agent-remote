@@ -316,13 +316,15 @@ it('leaves a live CLI daemon socket untouched while occupied and takes the path 
 
 it('replaces a stale socket the user owns', async () => {
   await leaveStaleSocket(legacyPath);
-  const stale = await lstat(legacyPath);
-  const { startLegacy } = await companion();
+  expect(await accepts(legacyPath)).toBe(false);
+  const { monitor, startLegacy } = await companion();
   const legacy = await startLegacy();
 
   expect(legacy.state).toBe(LegacyHookSocketState.Listening);
-  expect((await lstat(legacyPath)).ino).not.toBe(stale.ino);
+  expect((await lstat(legacyPath)).mode & 0o777).toBe(0o600);
   expect(await accepts(legacyPath)).toBe(true);
+  expect((await postHook(legacyPath, legacyToken)).type).toBe(IpcMessageType.HookResult);
+  expect(monitor.snapshot().sessions).toHaveLength(1);
 });
 
 it('refuses a stale socket that is not 0600 without deleting it', async () => {

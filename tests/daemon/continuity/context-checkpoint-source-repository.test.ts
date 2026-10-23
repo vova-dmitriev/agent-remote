@@ -83,9 +83,10 @@ it('rejects the bounded metadata probe when the visible path budget is exceeded'
 
 it('persists the production scope label and rejects a scope-version change after restart', async () => {
   const cwd = await repository();
-  const checkpointDirectory = await mkdtemp(join(tmpdir(), 'checkpoint-manifest-'));
+  const checkpointHome = await mkdtemp(join(tmpdir(), 'checkpoint-manifest-'));
+  const checkpointDirectory = join(checkpointHome, 'checkpoints');
 
-  roots.push(checkpointDirectory);
+  roots.push(checkpointHome);
 
   const current: Session = {
     id: 'native-codex',

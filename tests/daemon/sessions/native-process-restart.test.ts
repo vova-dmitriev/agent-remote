@@ -1,12 +1,32 @@
-import { expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import { spawn, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { mkdtemp, mkdir, writeFile, symlink, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
 import { NativeProcesses } from '@daemon/sessions/native-process.js';
+import { NativePidDomain, NativeProcessKind } from '@daemon/domain/runtime.js';
+import { shellQuote } from '@daemon/shell/index.js';
 
 const execute = promisify(execFile);
+
+afterEach(() => vi.unstubAllEnvs());
+
+async function useLinuxProcessContext(directory: string) {
+  if (process.platform !== 'linux') {
+    return;
+  }
+
+  const helper = join(directory, 'process-context');
+  const fixture = fileURLToPath(new URL('./fixtures/linux-process-context.mjs', import.meta.url));
+
+  await writeFile(helper, `#!/bin/sh\nexec ${shellQuote(process.execPath)} ${shellQuote(fixture)} "$@"\n`, {
+    mode: 0o700,
+  });
+
+  vi.stubEnv('CLAUDE_REMOTE_HELPER', helper);
+}
 
 it('requires an owned native record, matching OS process start time and executable before stopping a process', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'native-restart-')),
@@ -15,6 +35,7 @@ it('requires an owned native record, matching OS process start time and executab
   const child = spawn(process.execPath, ['-e', 'setInterval(()=>{},1000)'], { stdio: 'ignore' });
 
   try {
+    await useLinuxProcessContext(directory);
     await mkdir(join(directory, 'sessions'));
     await symlink(process.execPath, join(directory, 'claude'));
     process.env.PATH = directory + ':' + previous;
@@ -30,8 +51,8 @@ it('requires an owned native record, matching OS process start time and executab
       sessionId: 'synthetic-native',
       cwd: directory,
       procStart,
-      pidDomain: 'darwin',
-      kind: 'interactive',
+      pidDomain: NativePidDomain.Darwin,
+      kind: NativeProcessKind.Interactive,
     };
 
     const path = join(directory, 'sessions', child.pid + '.json');
@@ -74,6 +95,7 @@ it('reports duplicate live writers without granting stop authority and recovers 
   ];
 
   try {
+    await useLinuxProcessContext(directory);
     await mkdir(join(directory, 'sessions'));
     process.env.CLAUDE_REMOTE_NATIVE_CLAUDE = process.execPath;
     const native = new NativeProcesses(directory);
@@ -91,8 +113,8 @@ it('reports duplicate live writers without granting stop authority and recovers 
             env: { ...process.env, LC_ALL: 'C', TZ: 'UTC' },
           })
         ).stdout.trim(),
-        pidDomain: 'darwin',
-        kind: 'interactive',
+        pidDomain: NativePidDomain.Darwin,
+        kind: NativeProcessKind.Interactive,
       };
 
       records.push(record);

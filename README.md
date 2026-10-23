@@ -24,6 +24,8 @@ Read [AGENTS.md](AGENTS.md) before changing code and [frontend rules](apps/mini-
 
 Requirements: Node.js **22.12+**, pnpm **10.34.7**, Git and [Gitleaks](https://github.com/gitleaks/gitleaks). Docker is needed for database-backed tests. macOS 13+ and Swift are needed for the optional native helper. Install Gitleaks on macOS with `brew install gitleaks`; CI pins version 8.30.1.
 
+Linux shell-integration tests also require `zsh`. Runtime-trust tests require a canonical Node executable and ancestor directories that are not writable by other users (root-owned sticky temporary directories are allowed). CI copies its pinned Node executable into a private temporary directory rather than relaxing these checks for the shared tool cache. Validation uses half the available CPUs for test workers to avoid oversubscribing smaller runners.
+
 From the repository root:
 
 ```sh
