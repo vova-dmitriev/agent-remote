@@ -48,7 +48,18 @@ export async function runCli(argv = process.argv.slice(2)) {
     return;
   }
 
-  if (command === CliCommand.Personal) {
+  if (command === CliCommand.Personal && args[0]) {
+    const { PersonalServiceAction, runPersonalService } = await import('./cli/personal/personal-service.js');
+    const action = Object.values(PersonalServiceAction).find((value) => value === args[0]);
+
+    if (action) {
+      const { installationRoot } = await import('./desktop/bridge-client.js');
+
+      await runPersonalService(action, { root: installationRoot() });
+
+      return;
+    }
+  } else if (command === CliCommand.Personal) {
     const { startPersonal } = await import('./cli/personal/personal.js');
 
     await startPersonal();
@@ -366,6 +377,6 @@ export async function runCli(argv = process.argv.slice(2)) {
   }
 
   process.stdout.write(
-    'remote personal\nremote connect [relayUrl]\nremote pair <https://relay>\nremote start\nremote hooks install|uninstall\nremote shell install\nremote claude [--resume <session-id>]\nremote cmux [--window <uuid>] [--resume <session-id>]\nremote desktop bind chat|code\nremote codex [resume <thread-id>]\nremote codex connect cli|desktop [thread-id] [--socket <absolute-path>]\nremote status\n',
+    'remote personal [install|uninstall|start|stop|restart]\nremote connect [relayUrl]\nremote pair <https://relay>\nremote start\nremote hooks install|uninstall\nremote shell install\nremote claude [--resume <session-id>]\nremote cmux [--window <uuid>] [--resume <session-id>]\nremote desktop bind chat|code\nremote codex [resume <thread-id>]\nremote codex connect cli|desktop [thread-id] [--socket <absolute-path>]\nremote status\n',
   );
 }

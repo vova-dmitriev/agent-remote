@@ -4,6 +4,7 @@ import type { DesktopCompanionFactory } from './companion-port.js';
 import { installDesktopIpc, type DesktopIpcController } from './ipc/ipc.js';
 import { registerDesktopAssetScheme, registerDesktopAssets } from './protocol.js';
 import { createDesktopWindow } from './window.js';
+import { installServerMenu } from './server/menu.js';
 
 registerDesktopAssetScheme();
 
@@ -22,6 +23,7 @@ export async function startDesktopMain(options: DesktopBootstrapOptions): Promis
   }
 
   await app.whenReady();
+  installServerMenu();
 
   let window: BrowserWindow | null = null;
   let bridge: DesktopIpcController | null = null;
