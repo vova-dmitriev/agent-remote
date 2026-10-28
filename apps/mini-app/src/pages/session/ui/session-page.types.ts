@@ -54,6 +54,11 @@ export interface SessionMenuProps {
   onOpenUsage?: ((sessionId: string) => void) | undefined
 }
 
+export interface PinSessionItemProps {
+  pinned: boolean
+  onToggle: () => void
+}
+
 export interface CopySessionIdItemProps {
   /** The agent's own id of the session. */
   id: string

@@ -177,3 +177,43 @@ it('backfills the bounded metadata catalog from legacy native rows without openi
     rmSync(directory, { recursive: true, force: true });
   }
 });
+
+it('leaves out an ended session whose conversation another listed session resumed', () => {
+  const store = new LocalStore(':memory:', 'device');
+
+  try {
+    const ended = {
+      ...makeSession(1, ProviderFilterValue.Claude),
+      claudeSessionId: 'resumed',
+      status: 'ended',
+    } as const;
+
+    const resumed = {
+      ...makeSession(2, ProviderFilterValue.Claude),
+      claudeSessionId: 'resumed',
+      status: 'idle',
+    } as const;
+
+    const other = {
+      ...makeSession(3, ProviderFilterValue.Claude),
+      claudeSessionId: 'other',
+      status: 'ended',
+    } as const;
+
+    store.saveListedSession(ended);
+
+    expect(store.sessionPage(ProviderFilterValue.All).sessions.map((session) => session.id)).toEqual([
+      ended.id,
+    ]);
+
+    store.saveListedSession(resumed);
+    store.saveListedSession(other);
+
+    expect(store.sessionPage(ProviderFilterValue.All).sessions.map((session) => session.id)).toEqual([
+      resumed.id,
+      other.id,
+    ]);
+  } finally {
+    store.close();
+  }
+});

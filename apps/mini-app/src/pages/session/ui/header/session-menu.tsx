@@ -3,6 +3,7 @@ import { ChartColumn } from "lucide-react"
 import { ConnectionStatus, DeviceStatus } from "@protocol"
 import { SessionActions } from "@/features/send-command"
 import { RemoveSessionItems } from "@/features/remove-session"
+import { usePinSession } from "@/features/pin-session"
 import { ModelDialog, ModelMenuItem } from "@/features/switch-model"
 import type { SessionMenuProps } from "../session-page.types"
 import { useTranslation } from "@/shared/lib/hooks"
@@ -11,11 +12,12 @@ import { Button } from "@/shared/ui/button"
 import { DropdownItem, menuItemClass } from "@/shared/ui/dropdown"
 import { SESSION_PAGE_IDS } from "@/pages/session/config/test-ids"
 import { CopySessionIdItem } from "./copy-session-id-item"
+import { PinSessionItem } from "./pin-session-item"
 import { sessionModels } from "./session-models"
 
 /**
  * The session's "…" menu: its model (picked in a dialog, which outlives the closed menu), interrupting the agent,
- * and removing the session when the page can.
+ * pinning, and removing the session when the page can.
  */
 export function SessionMenu({ session, state, controller, switchModel, remove, onRemoved, onOpenUsage }: SessionMenuProps) {
   const { t } = useTranslation()
@@ -25,6 +27,7 @@ export function SessionMenu({ session, state, controller, switchModel, remove, o
   const nativeId = session.claudeSessionId ?? ("threadId" in session.target ? session.target.threadId : null)
   const choice = switchModel ? sessionModels(session, state) : null
   const deviceStatus = state.snapshot?.deviceStatus ?? DeviceStatus.Offline
+  const pins = usePinSession([session])
 
   return (
     <>
@@ -32,6 +35,7 @@ export function SessionMenu({ session, state, controller, switchModel, remove, o
         {choice && switchModel ? (
           <ModelMenuItem session={session} models={choice.models} controller={switchModel} onOpen={() => setChoosing(true)} />
         ) : null}
+        <PinSessionItem pinned={pins.sessions[0]?.pinned === true} onToggle={() => void pins.toggle(session)} />
         {nativeId ? <CopySessionIdItem id={nativeId} onCopied={() => setCopies((count) => count + 1)} /> : null}
         {onOpenUsage ? (
           <DropdownItem asChild onSelect={() => onOpenUsage(session.id)}>
@@ -53,6 +57,11 @@ export function SessionMenu({ session, state, controller, switchModel, remove, o
       {copies ? (
         <Toast show={String(copies)} testId={SESSION_PAGE_IDS.idCopied}>
           {t("sessionIdCopied")}
+        </Toast>
+      ) : null}
+      {pins.failed ? (
+        <Toast show="pin-failed" testId={SESSION_PAGE_IDS.pinFailed}>
+          {t("pinFailed")}
         </Toast>
       ) : null}
       {choice && switchModel ? (

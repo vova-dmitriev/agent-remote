@@ -2,6 +2,8 @@ export const SESSION_PAGE_IDS = {
   loading: "session-page-loading",
   root: "session-page",
   copyId: "session-page-copy-id",
+  pin: "session-page-pin",
+  pinFailed: "session-page-pin-failed",
   usage: "session-page-usage",
   idCopied: "session-page-id-copied",
   back: "session-page-back",

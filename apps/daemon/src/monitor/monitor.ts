@@ -564,15 +564,22 @@ export class Monitor extends EventEmitter implements MonitorPort {
     return hiddenAt === undefined || (session.lastMessageAt ?? 0) > hiddenAt;
   }
   /**
-   * The sessions the lists show and the device limit counts: every session but the hidden ones, and but a record
-   * restored from an earlier run whose conversation now runs live in another session (a terminal, cmux).
+   * The sessions the lists show and the device limit counts: every session but the hidden ones, but a record
+   * restored from an earlier run whose conversation now runs live in another session (a terminal, cmux), and but an
+   * ended session whose conversation was resumed in another one.
    */
   private visible() {
     const sessions = [...this.sessions.values()];
 
-    const live = new Set(
-      sessions
-        .filter((session) => session.binding === BindingState.Verified && session.claudeSessionId)
+    const verified = sessions.filter(
+      (session) => session.binding === BindingState.Verified && session.claudeSessionId,
+    );
+
+    const live = new Set(verified.map((session) => session.claudeSessionId));
+
+    const running = new Set(
+      verified
+        .filter((session) => session.status !== SessionStatus.Ended)
         .map((session) => session.claudeSessionId),
     );
 
@@ -583,7 +590,8 @@ export class Monitor extends EventEmitter implements MonitorPort {
           this.restored.has(session.id) &&
           session.binding === BindingState.Unverified &&
           live.has(session.claudeSessionId)
-        ),
+        ) &&
+        !(session.status === SessionStatus.Ended && running.has(session.claudeSessionId)),
     );
   }
   /** Hides a listed session from the lists until its next message; returns whether it changed. */

@@ -15,7 +15,9 @@ export function SessionsPage({ sessions, connected, loading, onSelect, onLoadPag
   const pages = useSessionPages({ snapshot: sessions, scope: pageScope ?? null, provider: filter.provider, loadPage: onLoadPage })
   const [query, setQuery] = useState("")
   // ponytail: searches the sessions loaded so far; older pages join the results as they load.
-  const shown = query.trim() ? pages.sessions.filter((session) => matchesSessionQuery(session, query)) : pages.sessions
+  const found = query.trim() ? pages.sessions.filter((session) => matchesSessionQuery(session, query)) : pages.sessions
+  // Pinned sessions lead, as in the sidebar; each part keeps its recency order.
+  const shown = [...found.filter((session) => session.pinned), ...found.filter((session) => !session.pinned)]
 
   return (
     <section data-testid={SESSIONS_PAGE_IDS.root}>

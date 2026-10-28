@@ -1,3 +1,4 @@
+import { Pin } from "lucide-react"
 import { useTranslation } from "@/shared/lib/hooks"
 import { Button } from "@/shared/ui/button"
 import { cn } from "@/shared/lib/utils"
@@ -41,6 +42,15 @@ export function SessionCard({ session, onSelect, awaitingInput = false }: Sessio
           className="col-span-full row-start-1 overflow-hidden text-[15px] leading-[20px] font-semibold text-ellipsis whitespace-nowrap"
           data-testid={SESSION_CARD_IDS.title}
         >
+          {session.pinned ? (
+            <Pin
+              size={12}
+              role="img"
+              aria-label={t("sidebarPinned")}
+              data-testid={SESSION_CARD_IDS.pinned}
+              className="mr-[4px] inline align-[-1px] text-muted-foreground"
+            />
+          ) : null}
           {sessionTitle(session, 12) ?? t("selectedChat")}
         </strong>
         <span

@@ -3,6 +3,9 @@ import { SESSION_SIDEBAR_IDS } from '@/widgets/session-sidebar/config/test-ids.j
 import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
 import { SidebarGroup } from '@/widgets/session-sidebar/config/values.js';
 import { DESKTOP_IDS } from '@/app/config/test-ids.js';
+import { SESSION_PAGE_IDS } from '@/pages/session/config/test-ids.js';
+import { SESSIONS_PAGE_IDS } from '@/pages/sessions/config/test-ids.js';
+import { COMMAND_IDS } from '@/features/send-command/config/test-ids.js';
 import { byTestId } from '../support/ui/testid.js';
 import { installDesktopBridge } from '../support/fixtures/desktop-bridge.js';
 import { sessionSnapshot } from '../support/fixtures/session-fixtures.js';
@@ -83,4 +86,30 @@ test('shows a session’s unread replies in the sidebar and clears them once the
   await row('terminal-session').click();
   // The read mark reached the device, whose next snapshot has no count for the session.
   await expect(row('chat-session').getByTestId(SESSION_CARD_IDS.unread)).toHaveCount(0);
+});
+
+test('pins a session from its menu on a phone, and the list shows it first with a pin', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 800 });
+  await open(page);
+  const card = (id: string) => byTestId(page, SESSION_CARD_IDS.root, { 'session-id': id });
+  const cards = page.getByTestId(SESSION_CARD_IDS.root);
+  const last = (await cards.last().getAttribute('data-session-id'))!;
+
+  await expect(page.getByTestId(SESSIONS_PAGE_IDS.root)).toBeVisible();
+  await expect(card(last).getByTestId(SESSION_CARD_IDS.pinned)).toHaveCount(0);
+  await card(last).click();
+  await page.getByTestId(COMMAND_IDS.actionsTrigger).click();
+  await expect(page.getByTestId(SESSION_PAGE_IDS.pin)).toHaveAttribute('data-pinned', 'false');
+  await page.getByTestId(SESSION_PAGE_IDS.pin).click();
+  await page.getByTestId(SESSION_PAGE_IDS.back).click();
+
+  await expect(cards.first()).toHaveAttribute('data-session-id', last);
+  await expect(card(last).getByTestId(SESSION_CARD_IDS.pinned)).toBeVisible();
+
+  await card(last).click();
+  await page.getByTestId(COMMAND_IDS.actionsTrigger).click();
+  await expect(page.getByTestId(SESSION_PAGE_IDS.pin)).toHaveAttribute('data-pinned', 'true');
+  await page.getByTestId(SESSION_PAGE_IDS.pin).click();
+  await page.getByTestId(SESSION_PAGE_IDS.back).click();
+  await expect(card(last).getByTestId(SESSION_CARD_IDS.pinned)).toHaveCount(0);
 });

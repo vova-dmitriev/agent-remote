@@ -8,4 +8,5 @@ export const SESSION_CARD_IDS = {
   skeleton: "session-card-skeleton",
   statusDot: "session-status-dot",
   unread: "session-unread",
+  pinned: "session-pinned",
 } as const

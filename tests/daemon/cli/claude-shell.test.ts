@@ -8,6 +8,8 @@ import { spawn } from 'node-pty';
 import { installClaudeShell } from '@daemon/cli/shell-integration.js';
 
 const execute = promisify(execFile);
+/** The shell of a terminal outside any Agent Remote session, even when the suite itself runs inside one. */
+const { CLAUDE_REMOTE_WRAPPER_ID: _wrapper, ...hostEnv } = process.env;
 
 it('installs an idempotent terminal integration without changing noninteractive Claude commands', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'claude-shell-'));
@@ -33,7 +35,7 @@ it('installs an idempotent terminal integration without changing noninteractive 
     expect(
       (
         await execute('/bin/zsh', ['-dic', 'claude --version'], {
-          env: { ...process.env, HOME: dir, ZDOTDIR: dir },
+          env: { ...hostEnv, HOME: dir, ZDOTDIR: dir },
         })
       ).stdout,
     ).toContain('NATIVE:--version');
@@ -41,7 +43,7 @@ it('installs an idempotent terminal integration without changing noninteractive 
     const output = await new Promise<string>((resolve, reject) => {
       const terminal = spawn('/bin/zsh', ['-dic', "claude --model 'synthetic-model' --resume safe-id"], {
         cwd: dir,
-        env: { ...process.env, HOME: dir, ZDOTDIR: dir },
+        env: { ...hostEnv, HOME: dir, ZDOTDIR: dir },
       });
 
       let text = '';

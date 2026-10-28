@@ -4,6 +4,7 @@ import {
   ErrorCode,
   ProviderFilterValue,
   SessionListLimits,
+  SessionStatus,
   sessionSchema,
   type Session,
 } from '@protocol';
@@ -106,11 +107,17 @@ export function pageListedSessions(
   const hiddenClause =
     ' AND NOT EXISTS (SELECT 1 FROM session_hidden hidden WHERE hidden.device_id=listed_sessions.device_id AND hidden.id=listed_sessions.id AND listed_sessions.recency_at<=hidden.hidden_at)';
 
+  // An ended session whose conversation another listed session resumed is that session's past; the lists show it once.
+  const resumedClause =
+    " AND NOT (json_extract(data,'$.status')=? AND EXISTS (SELECT 1 FROM listed_sessions other WHERE other.device_id=listed_sessions.device_id AND other.id<>listed_sessions.id AND json_extract(other.data,'$.claudeSessionId')=json_extract(listed_sessions.data,'$.claudeSessionId') AND json_extract(other.data,'$.status')<>?))";
+
   const values: (string | number)[] = [deviceId];
 
   if (provider !== ProviderFilterValue.All) {
     values.push(provider.toLowerCase());
   }
+
+  values.push(SessionStatus.Ended, SessionStatus.Ended);
 
   if (cursor) {
     values.push(cursor.recency, cursor.recency, cursor.id);
@@ -120,7 +127,7 @@ export function pageListedSessions(
 
   const rows = db
     .prepare(
-      `SELECT id,data,recency_at,EXISTS (SELECT 1 FROM session_pins pins WHERE pins.device_id=listed_sessions.device_id AND pins.id=listed_sessions.id) AS pinned FROM listed_sessions WHERE device_id=?${providerClause}${hiddenClause}${cursorClause} ORDER BY recency_at DESC,id ASC LIMIT ?`,
+      `SELECT id,data,recency_at,EXISTS (SELECT 1 FROM session_pins pins WHERE pins.device_id=listed_sessions.device_id AND pins.id=listed_sessions.id) AS pinned FROM listed_sessions WHERE device_id=?${providerClause}${hiddenClause}${resumedClause}${cursorClause} ORDER BY recency_at DESC,id ASC LIMIT ?`,
     )
     .all(...values) as { id: string; data: string; recency_at: number; pinned: number }[];
 

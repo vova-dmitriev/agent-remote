@@ -380,6 +380,46 @@ it('hides a restored native record once a live session runs the same conversatio
   expect(restarted.monitor.snapshot().sessions.map((session) => session.id)).toEqual([live.id]);
 });
 
+it('hides an ended session once its conversation is resumed in another terminal', () => {
+  const { monitor, adapters } = fixture().open();
+
+  for (const connectorId of ['first-pane', 'second-pane']) {
+    adapters.register(
+      new SourceAdapter({
+        connectorId,
+        kind: 'claude-code-cli',
+        transport: 'cmux',
+        sourceVersion: 'test',
+        state: 'ready',
+        reason: null,
+        capabilities: {
+          observe: true,
+          history: true,
+          prompt: true,
+          interrupt: true,
+          permission: false,
+          terminalSnapshot: false,
+        },
+      }),
+    );
+  }
+
+  monitor.ingestHook({ hook_event_name: 'SessionStart', session_id: 'resumed-conversation' }, 'first-pane');
+  monitor.ingestHook({ hook_event_name: 'SessionEnd', session_id: 'resumed-conversation' }, 'first-pane');
+  const ended = monitor.findClaude('first-pane', 'resumed-conversation')!;
+
+  // Until the conversation runs again, the ended session stays listed.
+  expect(monitor.snapshot().sessions.map((session) => [session.id, session.status])).toEqual([
+    [ended.id, 'ended'],
+  ]);
+
+  monitor.ingestHook({ hook_event_name: 'SessionStart', session_id: 'resumed-conversation' }, 'second-pane');
+  const resumed = monitor.findClaude('second-pane', 'resumed-conversation')!;
+
+  expect(resumed.id).not.toBe(ended.id);
+  expect(monitor.snapshot().sessions.map((session) => session.id)).toEqual([resumed.id]);
+});
+
 const reply = (id: string, occurredAt: number, extra: object = {}) => ({
   id,
   role: MessageRole.Assistant,
