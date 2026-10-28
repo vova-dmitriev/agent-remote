@@ -10,6 +10,7 @@ import type { DesktopCompanionConnector, DesktopCompanionOptions } from '../main
 import { readDesktopHandle, writeDesktopHandle } from './client-state.js';
 import { connectDesktopSocket } from './socket-client.js';
 import { installDesktopRuntime } from './install-runtime.js';
+import { reconnectingConnector } from './reconnecting.js';
 import { verifyDesktopRuntime } from '../../../../scripts/desktop/runtime/verify-runtime-lib.mjs';
 
 const runFile = promisify(execFile);
@@ -76,34 +77,35 @@ export async function createDesktopCompanionConnector(
 
   const probe = () => probeCompanion(socketPath, capability, LocalFeature.DesktopGrants);
 
-  await ensureCompanion({ directory, runtime, probe, legacyClaudeHooks: true, replaceOtherBuild: true });
+  // Each connection, the first and every reconnect, starts the companion again if it is gone.
+  const open = async () => {
+    await ensureCompanion({ directory, runtime, probe, legacyClaudeHooks: true, replaceOtherBuild: true });
 
-  let connection: Awaited<ReturnType<typeof connectDesktopSocket>>;
+    let connection: Awaited<ReturnType<typeof connectDesktopSocket>>;
 
-  try {
-    connection = await connectDesktopSocket(socketPath, capability, clientId, handle);
-  } catch (error) {
-    if (!(error instanceof Error) || error.message !== ErrorCode.LOCAL_APPROVAL_REQUIRED) {
-      throw error;
+    try {
+      connection = await connectDesktopSocket(socketPath, capability, clientId, handle);
+    } catch (error) {
+      if (!(error instanceof Error) || error.message !== ErrorCode.LOCAL_APPROVAL_REQUIRED) {
+        throw error;
+      }
+
+      if (!(await options.confirmLocalAccess())) {
+        throw new Error(ErrorCode.LOCAL_APPROVAL_REQUIRED);
+      }
+
+      await dependencies.approveDesktopGrant(verified.nodePath, verified.entryPath, directory, clientId);
+      connection = await connectDesktopSocket(socketPath, capability, clientId, handle);
     }
 
-    if (!(await options.confirmLocalAccess())) {
-      throw new Error(ErrorCode.LOCAL_APPROVAL_REQUIRED);
+    if (connection.handle !== handle) {
+      await writeDesktopHandle(handlePath, clientId, connection.handle);
     }
 
-    await dependencies.approveDesktopGrant(verified.nodePath, verified.entryPath, directory, clientId);
-    connection = await connectDesktopSocket(socketPath, capability, clientId, handle);
-  }
+    handle = connection.handle;
 
-  if (connection.handle !== handle) {
-    await writeDesktopHandle(handlePath, clientId, connection.handle);
-  }
-
-  handle = connection.handle;
-
-  return {
-    request: (action, signal) => connection.client.request(action, signal),
-    subscribe: (listener) => connection.client.subscribe(listener),
-    close: () => connection.client.close(),
+    return connection.client;
   };
+
+  return reconnectingConnector(open);
 }

@@ -20,6 +20,8 @@ export interface DesktopSocketClient {
   request(action: LocalAction, signal?: AbortSignal): Promise<unknown>;
   subscribe(listener: (frame: ServerFrame) => void): () => void;
   close(): Promise<void>;
+  /** Settles when the companion side is gone, for whatever reason. */
+  closed: Promise<void>;
 }
 
 export async function connectDesktopSocket(
@@ -190,6 +192,7 @@ export async function connectDesktopSocket(
         peer.close();
         await peer.closed;
       },
+      closed: peer.closed,
     },
   };
 }

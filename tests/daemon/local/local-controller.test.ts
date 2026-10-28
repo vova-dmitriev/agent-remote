@@ -2,6 +2,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import {
   AnalyticsPeriod,
   ErrorCode,
+  FrameType,
   LocalOperation,
   ProfileRequestKind,
   RuleAction,
@@ -10,6 +11,7 @@ import {
   SessionRemoval,
   ReasoningEffort,
 } from '@protocol';
+import { RuntimeEvent } from '@daemon/domain/runtime.js';
 import { localFixture } from '../../helpers/local/local-runtime.js';
 
 const fixtures: ReturnType<typeof localFixture>[] = [];
@@ -144,6 +146,29 @@ it('tracks only active granted viewers for local question ownership', async () =
   f.grants.revoke(f.principal.clientId);
   expect(f.controller.hasViewers()).toBe(false);
   revoked();
+});
+
+it('sends one snapshot for a burst of runtime events, so a busy Mac cannot overflow a viewer', async () => {
+  const f = setup();
+  const frames: string[] = [];
+
+  const close = f.controller.subscribe(
+    f.principal,
+    (frame) => frames.push(frame.type),
+    () => null,
+  );
+
+  for (let index = 0; index < 100; index++) {
+    f.monitor.emit(RuntimeEvent.Snapshot);
+  }
+
+  expect(frames).toEqual([]);
+  await new Promise((resolve) => setImmediate(resolve));
+  expect(frames).toEqual([FrameType.Snapshot]);
+  close();
+  f.monitor.emit(RuntimeEvent.Snapshot);
+  await new Promise((resolve) => setImmediate(resolve));
+  expect(frames).toEqual([FrameType.Snapshot]);
 });
 
 it('rejects a Profiles request scoped to another device with ACCESS_DENIED', async () => {

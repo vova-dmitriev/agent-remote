@@ -77,13 +77,29 @@ export class LocalController {
     const viewer = Symbol();
 
     this.viewers.set(viewer, principal);
+    let scheduled = false;
 
+    // A burst of runtime events becomes one snapshot: each is the whole list, and a queue of them overflows the viewer.
     const snapshot = () => {
-      if (this.options.grants.current(principal)) {
-        notify(this.snapshot(principal, selected()));
-      } else {
-        notify({ type: FrameType.Error, code: ErrorCode.LOCAL_GRANT_REVOKED });
+      if (scheduled) {
+        return;
       }
+
+      scheduled = true;
+
+      setImmediate(() => {
+        scheduled = false;
+
+        if (!this.viewers.has(viewer)) {
+          return;
+        }
+
+        if (this.options.grants.current(principal)) {
+          notify(this.snapshot(principal, selected()));
+        } else {
+          notify({ type: FrameType.Error, code: ErrorCode.LOCAL_GRANT_REVOKED });
+        }
+      });
     };
 
     const event = (envelope: import('@protocol').EventEnvelope) => {
