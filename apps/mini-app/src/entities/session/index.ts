@@ -16,6 +16,8 @@ export {
   matchesSessionQuery,
 } from "./lib/selectors"
 export { useSessionsAwaitingInput } from "./model/use-sessions-awaiting-input"
+export { groupByProject, PINNED_GROUP, type SessionGroup } from "./lib/projects/group-by-project"
+export { useCollapsedProjects } from "./model/projects/use-collapsed-projects"
 export { sessionStatusTone } from "./lib/status-tone"
 export { useProviderFilter } from "./model/use-provider-filter"
 export { SessionStatusDot } from "./ui/status-dot/status-dot"

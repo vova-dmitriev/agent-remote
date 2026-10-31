@@ -1,12 +1,18 @@
+import { useEffect, useRef } from "react"
+import { PINNED_GROUP, sessionFolder } from "@/entities/session"
 import { useTranslation } from "@/shared/lib/hooks"
 import { SESSION_SIDEBAR_IDS } from "@/widgets/session-sidebar/config/test-ids"
-import { sidebarGroupLabels } from "@/widgets/session-sidebar/config/i18n-keys"
 import { rowDomId } from "@/widgets/session-sidebar/lib/row-dom-id"
 import { SidebarRow } from "../sidebar-row"
 import type { SidebarGroupsProps } from "../list.types"
+import { SidebarGroupHeader } from "./sidebar-group-header"
+
+const LOAD_MORE_DISTANCE_PX = 100
 
 export function SidebarGroups({
   sections,
+  collapsedGroups,
+  onToggleGroup,
   activeId,
   cursorId,
   query,
@@ -16,12 +22,28 @@ export function SidebarGroups({
   onTogglePin,
   onKeyDown,
   onLoadMore,
+  pagesLoading,
+  pagesFailed,
   label,
 }: SidebarGroupsProps) {
   const { t } = useTranslation()
+  const list = useRef<HTMLDivElement>(null)
+
+  const loadIfNearEnd = () => {
+    const node = list.current
+
+    if (node && node.scrollHeight - node.scrollTop - node.clientHeight < LOAD_MORE_DISTANCE_PX) onLoadMore?.()
+  }
+
+  // Collapsed groups can leave nothing to scroll, and older projects must still arrive. A failed page waits for the
+  // retry button: retrying here would loop on every render.
+  useEffect(() => {
+    if (!pagesLoading && !pagesFailed) loadIfNearEnd()
+  })
 
   return (
     <div
+      ref={list}
       role="listbox"
       tabIndex={0}
       aria-label={label}
@@ -29,41 +51,41 @@ export function SidebarGroups({
       data-testid={SESSION_SIDEBAR_IDS.list}
       className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-3 [scrollbar-gutter:stable] outline-none focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:ring-inset"
       onKeyDown={onKeyDown}
-      onScroll={(event) => {
-        const node = event.currentTarget
-
-        if (node.scrollHeight - node.scrollTop - node.clientHeight < 100) onLoadMore?.()
-      }}
+      onScroll={loadIfNearEnd}
     >
-      {sections.map((section) => (
-        <div
-          key={section.group}
-          role="group"
-          aria-labelledby={`session-sidebar-group-${section.group}`}
-          data-testid={SESSION_SIDEBAR_IDS.group}
-          data-group={section.group}
-        >
+      {sections.map((section) => {
+        const open = !collapsedGroups.has(section.key)
+
+        return (
           <div
-            id={`session-sidebar-group-${section.group}`}
-            className="sticky top-0 z-10 bg-card px-2 pt-3 pb-1 text-[11px] font-medium text-muted-foreground"
+            key={section.key}
+            role="group"
+            aria-label={section.name ?? t("sidebarPinned")}
+            data-testid={SESSION_SIDEBAR_IDS.group}
+            data-group={section.key}
+            data-open={open}
           >
-            {t(sidebarGroupLabels[section.group])}
+            <SidebarGroupHeader group={section} open={open} activeId={activeId} awaitingIds={awaitingIds} onToggle={onToggleGroup} />
+            {open
+              ? section.sessions.map((session) => (
+                  <SidebarRow
+                    key={session.id}
+                    session={session}
+                    active={session.id === activeId}
+                    cursor={session.id === cursorId}
+                    awaitingInput={awaitingIds.has(session.id)}
+                    query={query}
+                    now={now}
+                    // A search highlights matches in the project name, so the row keeps it then.
+                    project={section.key !== PINNED_GROUP && !query.trim() ? null : sessionFolder(session)}
+                    onOpen={onOpen}
+                    onTogglePin={onTogglePin}
+                  />
+                ))
+              : null}
           </div>
-          {section.sessions.map((session) => (
-            <SidebarRow
-              key={session.id}
-              session={session}
-              active={session.id === activeId}
-              cursor={session.id === cursorId}
-              awaitingInput={awaitingIds.has(session.id)}
-              query={query}
-              now={now}
-              onOpen={onOpen}
-              onTogglePin={onTogglePin}
-            />
-          ))}
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }

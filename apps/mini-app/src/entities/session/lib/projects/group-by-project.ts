@@ -1,5 +1,5 @@
 import type { Session } from "@protocol"
-import { sessionFolder } from "@/entities/session"
+import { sessionFolder } from "../labels"
 
 /** The storage key and identity of the group of pinned sessions; a real project key is always an absolute path. */
 export const PINNED_GROUP = "pinned"

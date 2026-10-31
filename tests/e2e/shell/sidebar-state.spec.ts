@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { SESSION_SIDEBAR_IDS } from '@/widgets/session-sidebar/config/test-ids.js';
 import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
-import { SidebarGroup } from '@/widgets/session-sidebar/config/values.js';
+import { PINNED_GROUP } from '@/entities/session/lib/projects/group-by-project.js';
 import { DESKTOP_IDS } from '@/app/config/test-ids.js';
 import { SESSION_PAGE_IDS } from '@/pages/session/config/test-ids.js';
 import { SESSIONS_PAGE_IDS } from '@/pages/sessions/config/test-ids.js';
@@ -22,13 +22,13 @@ test('pins a session to the top of the sidebar without opening it, and unpins it
   const row = byTestId(page, SESSION_SIDEBAR_IDS.row, { 'session-id': 'terminal-session' });
   const pin = row.getByTestId(SESSION_SIDEBAR_IDS.rowPin);
   const groups = page.getByTestId(SESSION_SIDEBAR_IDS.group);
-  const pinnedGroup = byTestId(page, SESSION_SIDEBAR_IDS.group, { group: SidebarGroup.Pinned });
+  const pinnedGroup = byTestId(page, SESSION_SIDEBAR_IDS.group, { group: PINNED_GROUP });
 
   await expect(pinnedGroup).toHaveCount(0);
   await row.hover();
   await pin.click();
 
-  await expect(groups.first()).toHaveAttribute('data-group', SidebarGroup.Pinned);
+  await expect(groups.first()).toHaveAttribute('data-group', PINNED_GROUP);
   await expect(pinnedGroup.getByTestId(SESSION_SIDEBAR_IDS.row)).toHaveAttribute('data-session-id', 'terminal-session');
   await expect(pin).toHaveAttribute('data-pinned', 'true');
   await expect(page.getByTestId(DESKTOP_IDS.placeholder)).toBeVisible();
@@ -50,7 +50,7 @@ test('pins the row under the keyboard cursor with P, while P in the search field
   await open(page);
   const search = page.getByTestId(SESSION_SIDEBAR_IDS.search);
   const list = page.getByTestId(SESSION_SIDEBAR_IDS.list);
-  const pinnedGroup = byTestId(page, SESSION_SIDEBAR_IDS.group, { group: SidebarGroup.Pinned });
+  const pinnedGroup = byTestId(page, SESSION_SIDEBAR_IDS.group, { group: PINNED_GROUP });
 
   await search.fill('p');
   await expect(pinnedGroup).toHaveCount(0);

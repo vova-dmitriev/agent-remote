@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import type { Session } from '@protocol';
-import { groupByProject, PINNED_GROUP } from '@/pages/sessions/lib/group-by-project.js';
+import { groupByProject, PINNED_GROUP } from '@/entities/session/lib/projects/group-by-project.js';
 
 const session = (id: string, cwd?: string, pinned = false) => ({ id, cwd, pinned }) as unknown as Session;
 

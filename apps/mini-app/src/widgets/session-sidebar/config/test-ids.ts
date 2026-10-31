@@ -10,6 +10,8 @@ export const SESSION_SIDEBAR_IDS = {
   providerCodex: "session-sidebar-provider-codex",
   list: "session-sidebar-list",
   group: "session-sidebar-group",
+  groupToggle: "session-sidebar-group-toggle",
+  groupCount: "session-sidebar-group-count",
   row: "session-sidebar-row",
   rowTitle: "session-sidebar-row-title",
   rowPin: "session-sidebar-row-pin",

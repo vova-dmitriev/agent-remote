@@ -1,12 +1,3 @@
-export const SidebarGroup = {
-  Pinned: "pinned",
-  Today: "today",
-  Yesterday: "yesterday",
-  Earlier: "earlier",
-} as const
-
-export type SidebarGroup = (typeof SidebarGroup)[keyof typeof SidebarGroup]
-
 export const SidebarKey = {
   Down: "ArrowDown",
   Up: "ArrowUp",

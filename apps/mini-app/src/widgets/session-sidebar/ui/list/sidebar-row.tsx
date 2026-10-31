@@ -1,15 +1,7 @@
 import { memo } from "react"
 import { useTranslation } from "@/shared/lib/hooks"
 import { cn } from "@/shared/lib/utils"
-import {
-  SessionStatusTone,
-  UnreadBadge,
-  sessionFolder,
-  sessionPath,
-  sessionRecency,
-  sessionStatusLabel,
-  sessionStatusTone,
-} from "@/entities/session"
+import { SessionStatusTone, UnreadBadge, sessionPath, sessionRecency, sessionStatusLabel, sessionStatusTone } from "@/entities/session"
 import { SESSION_SIDEBAR_IDS } from "@/widgets/session-sidebar/config/test-ids"
 import { relativeTime } from "@/widgets/session-sidebar/lib/sidebar-format"
 import { rowTitle } from "@/widgets/session-sidebar/lib/sidebar-search"
@@ -27,12 +19,12 @@ export const SidebarRow = memo(function SidebarRow({
   awaitingInput,
   query,
   now,
+  project,
   onOpen,
   onTogglePin,
 }: SidebarRowProps) {
   const { t, language } = useTranslation()
   const unavailable = sessionStatusTone(session, awaitingInput) === SessionStatusTone.Unavailable
-  const project = sessionFolder(session)
   const title = rowTitle(session) ?? t("selectedChat")
   // The open session is being read: its count clears with the device's next snapshot, so it never shows here.
   const unread = active ? undefined : session.unread

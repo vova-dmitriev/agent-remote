@@ -1,9 +1,11 @@
 import type { KeyboardEvent } from "react"
 import type { Session } from "@protocol"
-import type { SidebarSection } from "@/widgets/session-sidebar/lib/sidebar-groups"
+import type { SessionGroup } from "@/entities/session"
 
 export interface SidebarListProps {
-  sections: SidebarSection[]
+  sections: SessionGroup[]
+  collapsedGroups: ReadonlySet<string>
+  onToggleGroup: (key: string) => void
   activeId: string | null
   cursorId: string | null
   query: string
@@ -20,7 +22,9 @@ export interface SidebarListProps {
 }
 
 export interface SidebarGroupsProps {
-  sections: SidebarSection[]
+  sections: SessionGroup[]
+  collapsedGroups: ReadonlySet<string>
+  onToggleGroup: (key: string) => void
   activeId: string | null
   cursorId: string | null
   query: string
@@ -30,6 +34,8 @@ export interface SidebarGroupsProps {
   onTogglePin?: ((session: Session) => void) | undefined
   onKeyDown: (event: KeyboardEvent<HTMLElement>) => void
   onLoadMore?: () => void
+  pagesLoading?: boolean
+  pagesFailed?: boolean
   label: string
 }
 
@@ -46,8 +52,18 @@ export interface SidebarRowProps {
   awaitingInput: boolean
   query: string
   now: number
+  /** Null when the group above the row already names the project. */
+  project: string | null
   onOpen: (session: Session) => void
   onTogglePin?: ((session: Session) => void) | undefined
+}
+
+export interface SidebarGroupHeaderProps {
+  group: SessionGroup
+  open: boolean
+  activeId: string | null
+  awaitingIds: ReadonlySet<string>
+  onToggle: (key: string) => void
 }
 
 export interface SidebarPinButtonProps {

@@ -39,7 +39,6 @@ export function SessionSidebar({
   const model = useSessionSidebar({
     sessions,
     activeId,
-    now,
     collapsed,
     onOpen,
     ...(onLoadPage ? { onLoadPage } : {}),
@@ -102,6 +101,8 @@ export function SessionSidebar({
       </div>
       <SidebarList
         sections={model.sections}
+        collapsedGroups={model.collapsedGroups}
+        onToggleGroup={model.toggleGroup}
         activeId={activeId}
         cursorId={model.cursorId}
         query={model.query}

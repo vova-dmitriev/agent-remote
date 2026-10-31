@@ -1,36 +1,28 @@
 import type { Session } from "@protocol"
-import type { ProviderFilterValue } from "@/entities/session"
+import { groupByProject, sortByRecency, type ProviderFilterValue, type SessionGroup } from "@/entities/session"
 import { filterSessions } from "./sidebar-search"
-import { groupByRecency, type SidebarSection } from "./sidebar-groups"
 
 interface SectionsInput {
   sessions: Session[]
   query: string
   provider: ProviderFilterValue
-  now: number
 }
 
 /**
- * Filters and groups the list, recomputing only when the session array, query, provider or clock tick changes.
+ * Filters and groups the list, recomputing only when the session array, query or provider changes.
  * Message, history and outbox updates keep the snapshot's session array, so they reuse the previous sections.
  */
 export function createSectionsMemo() {
-  let last: { input: SectionsInput; sections: SidebarSection[] } | null = null
+  let last: { input: SectionsInput; sections: SessionGroup[] } | null = null
 
-  return (input: SectionsInput): SidebarSection[] => {
+  return (input: SectionsInput): SessionGroup[] => {
     const previous = last?.input
 
-    if (
-      last &&
-      previous?.sessions === input.sessions &&
-      previous.query === input.query &&
-      previous.provider === input.provider &&
-      previous.now === input.now
-    ) {
+    if (last && previous?.sessions === input.sessions && previous.query === input.query && previous.provider === input.provider) {
       return last.sections
     }
 
-    const sections = groupByRecency(filterSessions(input.sessions, input.query, input.provider), input.now)
+    const sections = groupByProject(sortByRecency(filterSessions(input.sessions, input.query, input.provider)))
 
     last = { input, sections }
 

@@ -1,7 +1,6 @@
 import type { ReactNode } from "react"
 import type { Session } from "@protocol"
-import type { SessionPageLoader } from "@/entities/session"
-import type { SessionGroup } from "../lib/group-by-project"
+import type { SessionGroup, SessionPageLoader } from "@/entities/session"
 
 export interface SessionsPageProps {
   sessions: Session[]

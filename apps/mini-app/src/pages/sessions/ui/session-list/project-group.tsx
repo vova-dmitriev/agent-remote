@@ -1,9 +1,8 @@
 import { ChevronDown, ChevronRight } from "lucide-react"
-import { SessionCard, SessionStatusDot, UnreadBadge } from "@/entities/session"
+import { PINNED_GROUP, SessionCard, SessionStatusDot, UnreadBadge } from "@/entities/session"
 import { useTranslation } from "@/shared/lib/hooks"
 import { Button } from "@/shared/ui/button"
 import { SESSIONS_PAGE_IDS } from "@/pages/sessions/config/test-ids"
-import { PINNED_GROUP } from "@/pages/sessions/lib/group-by-project"
 import type { ProjectGroupProps } from "@/pages/sessions/ui/sessions-page.types"
 
 export function ProjectGroup({ group, open, awaiting, onToggle, onSelect }: ProjectGroupProps) {

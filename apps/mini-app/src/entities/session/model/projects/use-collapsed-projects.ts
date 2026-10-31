@@ -1,5 +1,6 @@
 import { useState } from "react"
-import { COLLAPSED_PROJECTS_STORAGE_KEY } from "../config/values"
+
+const COLLAPSED_PROJECTS_STORAGE_KEY = "agent-remote:collapsed-projects"
 
 function readCollapsed(): ReadonlySet<string> {
   try {

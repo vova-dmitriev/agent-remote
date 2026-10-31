@@ -4,19 +4,19 @@ import { ProviderFilterValue } from "../src/entities/session/config/session-valu
 import { createSessionStore } from "../src/entities/session/model/store/create-session-store.js"
 import { sessionsAwaitingInput } from "../src/entities/session/lib/selectors.js"
 import { sessionSnapshot } from "../../../tests/e2e/support/fixtures/session-fixtures.js"
-import type * as SidebarGroups from "../src/widgets/session-sidebar/lib/sidebar-groups.js"
+import type * as ProjectGroups from "../src/entities/session/lib/projects/group-by-project.js"
 
 const groups = vi.hoisted(() => ({ calls: 0 }))
 
-vi.mock("../src/widgets/session-sidebar/lib/sidebar-groups.js", async (importOriginal) => {
-  const original = await importOriginal<typeof SidebarGroups>()
+vi.mock("../src/entities/session/lib/projects/group-by-project.js", async (importOriginal) => {
+  const original = await importOriginal<typeof ProjectGroups>()
 
   return {
     ...original,
-    groupByRecency: (...args: Parameters<typeof original.groupByRecency>) => {
+    groupByProject: (...args: Parameters<typeof original.groupByProject>) => {
       groups.calls += 1
 
-      return original.groupByRecency(...args)
+      return original.groupByProject(...args)
     },
   }
 })
@@ -25,7 +25,6 @@ const { createSectionsMemo } = await import("../src/widgets/session-sidebar/lib/
 
 const DEVICE = "device"
 const SESSION = "terminal-session"
-const NOW = Date.UTC(2026, 9, 19, 12)
 
 function messageFrame(seq: number, occurredAt: number, id = "message-" + seq): ServerFrame {
   const event: EventEnvelope = {
@@ -54,7 +53,7 @@ describe("desktop sidebar sections across real message frames", () => {
 
     const read = () => store.getState().session.snapshot!
     const sectionsFor = createSectionsMemo()
-    const sections = () => sectionsFor({ sessions: read().sessions, query: "", provider: ProviderFilterValue.All, now: NOW })
+    const sections = () => sectionsFor({ sessions: read().sessions, query: "", provider: ProviderFilterValue.All })
     const before = read()
     const first = sections()
     const awaiting = () => sessionsAwaitingInput(read().sessions, read().permissions, read().userInputs)

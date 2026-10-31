@@ -1,7 +1,5 @@
-import { SessionCardSkeleton, useSessionsAwaitingInput } from "@/entities/session"
+import { groupByProject, SessionCardSkeleton, useCollapsedProjects, useSessionsAwaitingInput } from "@/entities/session"
 import { SESSIONS_PAGE_IDS } from "@/pages/sessions/config/test-ids"
-import { groupByProject } from "@/pages/sessions/lib/group-by-project"
-import { useCollapsedProjects } from "@/pages/sessions/model/use-collapsed-projects"
 import type { SessionsPageListProps } from "@/pages/sessions/ui/sessions-page.types"
 import { ProjectGroup } from "./project-group"
 

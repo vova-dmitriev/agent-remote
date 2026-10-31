@@ -1,15 +1,16 @@
 import { useEffect, useEffectEvent, useMemo, useRef, useState, type KeyboardEvent } from "react"
 import { ProviderFilterValue, type Session } from "@protocol"
-import { useProviderFilter, useSessionPages } from "@/entities/session"
+import { useCollapsedProjects, useProviderFilter, useSessionPages } from "@/entities/session"
 import { useStableCallback } from "@/shared/lib/hooks"
 import { SidebarKey } from "../config/values"
 import { createSectionsMemo } from "../lib/sidebar-sections"
 import { rowDomId } from "../lib/row-dom-id"
 
+const NOTHING_COLLAPSED: ReadonlySet<string> = new Set()
+
 interface SidebarModelOptions {
   sessions: Session[]
   activeId: string | null
-  now: number
   collapsed: boolean
   onOpen: (session: Session) => void
   onLoadPage?: (provider: ProviderFilterValue, cursor?: string) => Promise<{ sessions: Session[]; nextCursor: string | null }>
@@ -22,7 +23,6 @@ interface SidebarModelOptions {
 export function useSessionSidebar({
   sessions,
   activeId,
-  now,
   collapsed,
   onOpen,
   onLoadPage,
@@ -37,8 +37,16 @@ export function useSessionSidebar({
   const searchRef = useRef<HTMLInputElement | null>(null)
   const focusRequested = useRef(false)
   const [sectionsFor] = useState(createSectionsMemo)
-  const sections = sectionsFor({ sessions: pages.sessions, query, provider, now })
-  const order = useMemo(() => sections.flatMap((section) => section.sessions), [sections])
+  const sections = sectionsFor({ sessions: pages.sessions, query, provider })
+  const projects = useCollapsedProjects()
+  // A search shows its matches whatever is collapsed.
+  const collapsedGroups = query.trim() ? NOTHING_COLLAPSED : projects.collapsed
+
+  const order = useMemo(
+    () => sections.filter((section) => !collapsedGroups.has(section.key)).flatMap((section) => section.sessions),
+    [sections, collapsedGroups],
+  )
+
   const cursor = order.find((session) => session.id === cursorId) ?? (query.trim() ? order[0] : undefined)
 
   const move = (step: number) => {
@@ -132,6 +140,8 @@ export function useSessionSidebar({
     pagesLoading: pages.loading,
     pagesFailed: pages.failed,
     sections,
+    collapsedGroups,
+    toggleGroup: projects.toggle,
     order,
     cursorId: cursor?.id ?? null,
     open,

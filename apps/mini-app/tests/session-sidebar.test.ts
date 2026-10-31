@@ -11,9 +11,8 @@ import { sessionFolder, sessionPath } from "../src/entities/session/lib/labels.j
 import { sessionsAwaitingInput, sortByRecency } from "../src/entities/session/lib/selectors.js"
 import { mergeSessionPages } from "../src/entities/session/model/pagination/merge-pages.js"
 import { filterSessions, matchParts } from "../src/widgets/session-sidebar/lib/sidebar-search.js"
-import { groupByRecency } from "../src/widgets/session-sidebar/lib/sidebar-groups.js"
+import { groupByProject, PINNED_GROUP } from "../src/entities/session/lib/projects/group-by-project.js"
 import { relativeTime } from "../src/widgets/session-sidebar/lib/sidebar-format.js"
-import { SidebarGroup } from "../src/widgets/session-sidebar/config/values.js"
 import { sessionSnapshot } from "../../../tests/e2e/support/fixtures/session-fixtures.js"
 
 const NOW = new Date(2026, 9, 19, 15, 0).getTime()
@@ -92,19 +91,14 @@ it("splits every case-insensitive match for highlighting", () => {
   expect(matchParts("plain", "")).toEqual([{ text: "plain", match: false }])
 })
 
-it("groups newest first into today, yesterday and earlier", () => {
-  const sections = groupByRecency([at(chat, 60 * 40), at(terminal, 5), at(codexCli, 60 * 20)], NOW)
+it("leads with pinned sessions, newest first, and keeps them out of the project groups", () => {
+  const sections = groupByProject(
+    sortByRecency([at(chat, 60 * 40, { pinned: true }), at(terminal, 5, { cwd: "/work/one" }), at(codexCli, 60 * 20, { pinned: true })]),
+  )
 
-  expect(sections.map((section) => section.group)).toEqual([SidebarGroup.Today, SidebarGroup.Yesterday, SidebarGroup.Earlier])
-  expect(sections.map((section) => section.sessions[0]!.id)).toEqual([terminal.id, codexCli.id, chat.id])
-})
-
-it("leads with pinned sessions, newest first, and keeps them out of the day groups", () => {
-  const sections = groupByRecency([at(chat, 60 * 40, { pinned: true }), at(terminal, 5), at(codexCli, 60 * 20, { pinned: true })], NOW)
-
-  expect(sections.map((section) => [section.group, section.sessions.map((session) => session.id)])).toEqual([
-    [SidebarGroup.Pinned, [codexCli.id, chat.id]],
-    [SidebarGroup.Today, [terminal.id]],
+  expect(sections.map((section) => [section.key, section.sessions.map((session) => session.id)])).toEqual([
+    [PINNED_GROUP, [codexCli.id, chat.id]],
+    ["/work/one", [terminal.id]],
   ])
 })
 
@@ -135,7 +129,6 @@ it("orders every list by the last message and never by status events", () => {
   const newer = at(codexCli, 5)
 
   expect(sortByRecency([statusOnly, older, newer]).map((session) => session.id)).toEqual([codexCli.id, terminal.id, chat.id])
-  expect(groupByRecency([statusOnly], NOW).map((section) => section.group)).toEqual([SidebarGroup.Earlier])
 })
 
 it("puts a session created from the app at its creation time until it has messages", () => {
@@ -143,7 +136,6 @@ it("puts a session created from the app at its creation time until it has messag
   const older = at(terminal, 30)
 
   expect(sortByRecency([older, created]).map((session) => session.id)).toEqual([chat.id, terminal.id])
-  expect(groupByRecency([created], NOW).map((section) => section.group)).toEqual([SidebarGroup.Today])
 })
 
 it("lists a conversation once though an older catalog page knows it under an earlier session id", () => {
