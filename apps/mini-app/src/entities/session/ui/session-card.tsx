@@ -10,9 +10,9 @@ import { SessionStatusDot } from "./status-dot/status-dot"
 import { UnreadBadge } from "./unread-badge/unread-badge"
 import type { SessionCardProps } from "./session-card.types"
 
-export function SessionCard({ session, onSelect, awaitingInput = false }: SessionCardProps) {
+export function SessionCard({ session, onSelect, awaitingInput = false, hideFolder = false }: SessionCardProps) {
   const { t } = useTranslation()
-  const folder = sessionFolder(session)
+  const folder = hideFolder ? null : sessionFolder(session)
 
   return (
     <Button

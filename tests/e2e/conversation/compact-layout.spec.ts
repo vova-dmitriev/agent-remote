@@ -107,7 +107,7 @@ for (const language of ['ru', 'en'] as const) {
       ).toBeLessThanOrEqual(2);
     }
 
-    expect((await cards.first().boundingBox())!.y).toBeLessThanOrEqual(160);
+    expect((await page.getByTestId(SESSIONS_PAGE_IDS.group).first().boundingBox())!.y).toBeLessThanOrEqual(160);
 
     for (const card of await cards.all()) {
       const box = (await card.boundingBox())!;

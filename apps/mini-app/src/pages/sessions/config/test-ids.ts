@@ -14,4 +14,7 @@ export const SESSIONS_PAGE_IDS = {
   search: "sessions-page-search",
   searchClear: "sessions-page-search-clear",
   noMatches: "sessions-page-no-matches",
+  group: "sessions-page-group",
+  groupToggle: "sessions-page-group-toggle",
+  groupCount: "sessions-page-group-count",
 } as const

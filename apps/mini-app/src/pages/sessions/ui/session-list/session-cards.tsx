@@ -1,9 +1,13 @@
-import { SessionCard, SessionCardSkeleton, useSessionsAwaitingInput } from "@/entities/session"
+import { SessionCardSkeleton, useSessionsAwaitingInput } from "@/entities/session"
 import { SESSIONS_PAGE_IDS } from "@/pages/sessions/config/test-ids"
+import { groupByProject } from "@/pages/sessions/lib/group-by-project"
+import { useCollapsedProjects } from "@/pages/sessions/model/use-collapsed-projects"
 import type { SessionsPageListProps } from "@/pages/sessions/ui/sessions-page.types"
+import { ProjectGroup } from "./project-group"
 
-export function SessionCards({ sessions, loading, onSelect }: SessionsPageListProps) {
+export function SessionCards({ sessions, loading, searching, onSelect }: SessionsPageListProps) {
   const awaiting = useSessionsAwaitingInput()
+  const { collapsed, toggle } = useCollapsedProjects()
 
   if (loading) {
     return (
@@ -15,7 +19,15 @@ export function SessionCards({ sessions, loading, onSelect }: SessionsPageListPr
     )
   }
 
-  return sessions.map((session) => (
-    <SessionCard key={session.id} session={session} awaitingInput={awaiting.has(session.id)} onSelect={onSelect} />
+  return groupByProject(sessions).map((group) => (
+    <ProjectGroup
+      key={group.key}
+      group={group}
+      // A search shows its matches whatever is collapsed.
+      open={searching || !collapsed.has(group.key)}
+      awaiting={awaiting}
+      onToggle={toggle}
+      onSelect={onSelect}
+    />
   ))
 }

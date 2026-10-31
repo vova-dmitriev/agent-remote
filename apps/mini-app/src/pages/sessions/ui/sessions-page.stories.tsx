@@ -3,6 +3,7 @@ import { userEvent } from "storybook/test"
 import { ThemePreference, Language } from "@protocol"
 import { SessionsPageStory } from "@storybook-components/sessions-page-story"
 import { sessionStatuses } from "@storybook-fixtures/page-states"
+import { sidebarSessions } from "@storybook-fixtures/sidebar-sessions"
 import { PAIR_DEVICE_IDS } from "@/features/pair-device"
 import { DEVICE_ACCESS_IDS } from "@/features/device-access"
 
@@ -14,6 +15,7 @@ export default meta
 export const Loaded: StoryObj<typeof meta> = {}
 export const Loading: StoryObj<typeof meta> = { args: { loading: true } }
 export const Empty: StoryObj<typeof meta> = { args: { sessions: [] } }
+export const GroupedByProject: StoryObj<typeof meta> = { args: { sessions: sidebarSessions } }
 export const AllStatuses: StoryObj<typeof meta> = { args: { sessions: sessionStatuses } }
 export const ConnectionsAndSettings: StoryObj<typeof meta> = {
   play: async ({ canvas }) => {

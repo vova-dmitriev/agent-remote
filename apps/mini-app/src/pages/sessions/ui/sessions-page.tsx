@@ -16,8 +16,6 @@ export function SessionsPage({ sessions, connected, loading, onSelect, onLoadPag
   const [query, setQuery] = useState("")
   // ponytail: searches the sessions loaded so far; older pages join the results as they load.
   const found = query.trim() ? pages.sessions.filter((session) => matchesSessionQuery(session, query)) : pages.sessions
-  // Pinned sessions lead, as in the sidebar; each part keeps its recency order.
-  const shown = [...found.filter((session) => session.pinned), ...found.filter((session) => !session.pinned)]
 
   return (
     <section data-testid={SESSIONS_PAGE_IDS.root}>
@@ -36,18 +34,19 @@ export function SessionsPage({ sessions, connected, loading, onSelect, onLoadPag
           <ProviderFilter value={filter.provider} onChange={filter.setProvider} />
         </div>
       ) : null}
-      {query.trim() && !shown.length ? (
+      {query.trim() && !found.length ? (
         <p className={mutedTextClass + " px-[4px] py-[18px] text-center"} data-testid={SESSIONS_PAGE_IDS.noMatches}>
           {t("sidebarNoMatches", { query: query.trim() })}
         </p>
       ) : (
         <SessionsPageList
-          sessions={shown}
+          sessions={found}
           connected={connected}
           loading={loading}
           pagesLoading={pages.loading}
           pagesFailed={pages.failed}
           hasMore={pages.hasMore}
+          searching={!!query.trim()}
           onSelect={onSelect}
           onLoadMore={pages.loadMore}
           onRetry={pages.retry}

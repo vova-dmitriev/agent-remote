@@ -43,6 +43,7 @@ export const ru = {
   logout: "Выйти",
   footer: "Сессия и контекст остаются на твоём Mac.",
   sessionsTitle: "Твои сессии",
+  sessionsNoProject: "Без проекта",
   sessionsSubtitle: "Продолжай с того места, где остановился.",
   sessionPagesLoading: "Загружаем старые сессии…",
   sessionPagesRetry: "Повторить загрузку сессий",

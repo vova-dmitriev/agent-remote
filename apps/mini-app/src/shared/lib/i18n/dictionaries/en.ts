@@ -42,6 +42,7 @@ export const en = {
   logout: "Sign out",
   footer: "Your session and context stay on your Mac.",
   sessionsTitle: "Your sessions",
+  sessionsNoProject: "No project",
   sessionsSubtitle: "Pick up where you left off.",
   sessionPagesLoading: "Loading older sessions…",
   sessionPagesRetry: "Retry loading sessions",

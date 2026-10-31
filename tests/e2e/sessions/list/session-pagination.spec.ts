@@ -3,9 +3,9 @@ import { FrameType, type Session } from '@protocol';
 import { SESSION_PAGE_IDS } from '@/pages/session/config/test-ids.js';
 import { SESSIONS_PAGE_IDS } from '@/pages/sessions/config/test-ids.js';
 import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
-import { identity } from '../support/relay/identity.js';
-import { deviceFixture, test } from '../support/relay/relay-fixture.js';
-import { sessionSnapshot } from '../support/fixtures/session-fixtures.js';
+import { identity } from '../../support/relay/identity.js';
+import { deviceFixture, test } from '../../support/relay/relay-fixture.js';
+import { sessionSnapshot } from '../../support/fixtures/session-fixtures.js';
 
 test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
 

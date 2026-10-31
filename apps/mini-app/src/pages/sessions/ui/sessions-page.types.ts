@@ -1,6 +1,7 @@
 import type { ReactNode } from "react"
 import type { Session } from "@protocol"
 import type { SessionPageLoader } from "@/entities/session"
+import type { SessionGroup } from "../lib/group-by-project"
 
 export interface SessionsPageProps {
   sessions: Session[]
@@ -20,6 +21,7 @@ export interface SessionsPageListProps {
   pagesLoading: boolean
   pagesFailed: boolean
   hasMore: boolean
+  searching: boolean
   onSelect: (session: Session) => void
   onLoadMore: () => void
   onRetry: () => void
@@ -28,4 +30,12 @@ export interface SessionsPageListProps {
 export interface SessionSearchProps {
   query: string
   onQuery: (query: string) => void
+}
+
+export interface ProjectGroupProps {
+  group: SessionGroup
+  open: boolean
+  awaiting: ReadonlySet<string>
+  onToggle: (key: string) => void
+  onSelect: (session: Session) => void
 }

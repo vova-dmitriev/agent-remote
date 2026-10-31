@@ -2,9 +2,9 @@ import { expect } from '@playwright/test';
 import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
 import { SESSIONS_PAGE_IDS } from '@/pages/sessions/config/test-ids.js';
 import { SESSION_PAGE_IDS } from '@/pages/session/config/test-ids.js';
-import { identity } from '../support/relay/identity.js';
-import { test } from '../support/relay/relay-fixture.js';
-import { byTestId } from '../support/ui/testid.js';
+import { identity } from '../../support/relay/identity.js';
+import { test } from '../../support/relay/relay-fixture.js';
+import { byTestId } from '../../support/ui/testid.js';
 
 test('filters providers and keeps agent before model in session subtitles', async ({ page }) => {
   await identity(page, '801');

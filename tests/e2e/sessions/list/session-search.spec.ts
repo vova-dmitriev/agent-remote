@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test';
-import { test } from '../support/relay/relay-fixture.js';
-import { identity } from '../support/relay/identity.js';
+import { test } from '../../support/relay/relay-fixture.js';
+import { identity } from '../../support/relay/identity.js';
 import { SESSION_CARD_IDS } from '@/entities/session/config/test-ids.js';
 import { SESSIONS_PAGE_IDS } from '@/pages/sessions/config/test-ids.js';
 
