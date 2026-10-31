@@ -30,3 +30,6 @@ output
 **/*.sqlite*
 test-results
 playwright-report
+# The packaged desktop app: over a gigabyte, built only on a Mac.
+apps/desktop/out
+apps/desktop/dist
