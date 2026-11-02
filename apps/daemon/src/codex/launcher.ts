@@ -184,7 +184,8 @@ export async function ensureManagedCodexSocket(
       try {
         const stale = await lstat(path);
 
-        if (!stale.isSocket() || stale.uid !== process.getuid?.()) {
+        // Codex links this path to its socket under /tmp, which a reboot empties: the link outlives what it points at.
+        if (!(stale.isSocket() || stale.isSymbolicLink()) || stale.uid !== process.getuid?.()) {
           throw new CodedError(ErrorCode.CODEX_INVALID_SOCKET);
         }
 
