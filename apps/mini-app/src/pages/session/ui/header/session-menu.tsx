@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { ChartColumn } from "lucide-react"
 import { ConnectionStatus, DeviceStatus } from "@protocol"
+import { sourceSessionId } from "@/entities/session"
 import { SessionActions } from "@/features/send-command"
 import { RemoveSessionItems } from "@/features/remove-session"
 import { usePinSession } from "@/features/pin-session"
@@ -24,7 +25,7 @@ export function SessionMenu({ session, state, controller, switchModel, remove, o
   const [choosing, setChoosing] = useState(false)
   /** How many times the id was copied: each copy shows its toast again. */
   const [copies, setCopies] = useState(0)
-  const nativeId = session.claudeSessionId ?? ("threadId" in session.target ? session.target.threadId : null)
+  const nativeId = sourceSessionId(session)
   const choice = switchModel ? sessionModels(session, state) : null
   const deviceStatus = state.snapshot?.deviceStatus ?? DeviceStatus.Offline
   const pins = usePinSession([session])

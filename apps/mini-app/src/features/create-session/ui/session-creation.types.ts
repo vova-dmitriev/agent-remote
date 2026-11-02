@@ -17,3 +17,10 @@ export interface SessionCreationProps {
   /** Renders the form without its toggle, e.g. in the desktop "New session" pane. */
   inline?: boolean
 }
+
+export interface ResumeSessionProps {
+  session: Session
+  online: boolean
+  /** Continues the session's conversation, by the agent's own id; absent, the page offers no way back. */
+  onResume?: ((session: Session, id: string) => Promise<unknown>) | undefined
+}

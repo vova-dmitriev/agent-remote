@@ -30,6 +30,13 @@ test('groups the session list by project, and a collapsed group stays collapsed 
   await expect(cards).toHaveCount(inBeta);
   await expect(beta.getByTestId(SESSIONS_PAGE_IDS.groupCount)).toHaveText(String(inBeta));
 
+  // Every card fills the list, so the status dots line up however long a card's text is.
+  const widths = await page
+    .getByTestId(SESSION_CARD_IDS.root)
+    .evaluateAll((nodes) => [...new Set(nodes.map((node) => node.getBoundingClientRect().width))]);
+
+  expect(widths).toHaveLength(1);
+
   await beta.getByTestId(SESSIONS_PAGE_IDS.groupToggle).click();
   await expect(cards).toHaveCount(0);
 

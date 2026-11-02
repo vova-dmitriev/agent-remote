@@ -11,7 +11,8 @@ export const sourceNames: Record<Session["target"]["kind"], MessageKey> = {
   [TargetKind.Cmux]: "sourceCmux",
 }
 
-function sourceSessionId(session: Session): string | null {
+/** The agent's own id of the session: Claude's session id, Codex's thread id. */
+export function sourceSessionId(session: Session): string | null {
   return "threadId" in session.target ? session.target.threadId : session.claudeSessionId
 }
 

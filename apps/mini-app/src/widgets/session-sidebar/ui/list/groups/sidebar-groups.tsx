@@ -44,7 +44,8 @@ export function SidebarGroups({
   return (
     <div
       ref={list}
-      role="listbox"
+      // The list holds the keyboard cursor; each project is a listbox of its own under its toggle, which no listbox may hold.
+      role="group"
       tabIndex={0}
       aria-label={label}
       aria-activedescendant={cursorId ? rowDomId(cursorId) : undefined}
@@ -55,19 +56,21 @@ export function SidebarGroups({
     >
       {sections.map((section) => {
         const open = !collapsedGroups.has(section.key)
+        const name = section.key === PINNED_GROUP ? t("sidebarPinned") : (section.name ?? t("sessionsNoProject"))
 
         return (
           <div
             key={section.key}
             role="group"
-            aria-label={section.name ?? t("sidebarPinned")}
+            aria-label={name}
             data-testid={SESSION_SIDEBAR_IDS.group}
             data-group={section.key}
             data-open={open}
           >
             <SidebarGroupHeader group={section} open={open} activeId={activeId} awaitingIds={awaitingIds} onToggle={onToggleGroup} />
-            {open
-              ? section.sessions.map((session) => (
+            {open ? (
+              <div role="listbox" aria-label={name}>
+                {section.sessions.map((session) => (
                   <SidebarRow
                     key={session.id}
                     session={session}
@@ -81,8 +84,9 @@ export function SidebarGroups({
                     onOpen={onOpen}
                     onTogglePin={onTogglePin}
                   />
-                ))
-              : null}
+                ))}
+              </div>
+            ) : null}
           </div>
         )
       })}

@@ -11,6 +11,7 @@ import {
   sourceTextClass,
 } from "@/entities/session"
 import { useTranslation } from "@/shared/lib/hooks"
+import { ResumeSession } from "@/features/create-session"
 import { SessionTitle } from "@/features/rename-session"
 import { RateLimits, providerLimits, usageProvider } from "@/entities/usage"
 import { Button } from "@/shared/ui/button"
@@ -51,6 +52,7 @@ export function SessionPage({
   onOpenFile,
   onOpenRules,
   onOpenUsage,
+  onResume,
 }: SessionPageProps) {
   const { t, language } = useTranslation()
   const observed = sessionObserved(state, session)
@@ -165,6 +167,11 @@ export function SessionPage({
       <SessionPermissions session={session} state={state} controller={controller} />
       <UserInputRequests session={session} state={state} controller={controller} />
       <SessionActivity session={session} available={observed} />
+      <ResumeSession
+        session={session}
+        online={state.connection === ConnectionStatus.Online && deviceStatus === DeviceStatus.Online}
+        onResume={onResume}
+      />
       <SessionInput tab={tab} session={session} controller={controller} connection={state.connection} deviceStatus={deviceStatus} />
     </section>
   )

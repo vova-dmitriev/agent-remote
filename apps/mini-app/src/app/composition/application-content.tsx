@@ -3,6 +3,7 @@ import { DevicePage } from "./device-page"
 import { SignInPage } from "@/pages/sign-in"
 import { useState } from "react"
 import { SessionFilePage, SessionLoading, SessionPage, SubagentPage } from "@/pages/session"
+import { resumeSession } from "@/app/model/session-creation-props"
 import type { ApplicationContentProps } from "./application-content.types"
 
 export function ApplicationContent({
@@ -60,6 +61,7 @@ export function ApplicationContent({
       onOpenFile={(path) => setFile({ sessionId: selected.id, path })}
       onOpenRules={openRules}
       onOpenUsage={openUsage}
+      onResume={(session, id) => resumeSession(model, session, id)}
     />
   )
 }

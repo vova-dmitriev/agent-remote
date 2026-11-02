@@ -4,6 +4,8 @@ export const SESSION_CREATE_IDS = {
   form: "session-create-form",
   submit: "session-create-submit",
   resume: "session-create-resume",
+  resumeSession: "session-resume",
+  resumeSessionError: "session-resume-error",
   profile: { root: "create-profile-field", trigger: "create-profile", panel: "create-profile-panel" },
   profileStatus: "create-profile-status",
   model: { root: "create-model-field", trigger: "create-model", panel: "create-model-panel" },

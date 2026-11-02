@@ -34,6 +34,8 @@ export interface SessionPageProps {
   onOpenRules: (sessionId: string) => void
   /** Opens the Usage page with this session picked. */
   onOpenUsage?: ((sessionId: string) => void) | undefined
+  /** Continues a dead session's conversation in a new session. */
+  onResume?: ((session: Session, id: string) => Promise<unknown>) | undefined
 }
 
 export interface SessionNoticesProps {

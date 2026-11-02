@@ -4,7 +4,7 @@ export { useSessionConnection } from "./model/use-session-connection"
 export { useSessionSelection } from "./model/use-session-selection"
 export { useSessionStoreApi, useSessionStore } from "./model/context/use-session-store"
 export { SessionProvider } from "./ui/provider/session-provider"
-export { sourceNames, connectorStates, sessionTitle, agentName, sessionFolder, sessionPath } from "./lib/labels"
+export { sourceNames, connectorStates, sessionTitle, agentName, sessionFolder, sessionPath, sourceSessionId } from "./lib/labels"
 export { sourceAvailable, sourceObserved, sessionStatusLabel } from "./lib/availability"
 export {
   selectedSession,
