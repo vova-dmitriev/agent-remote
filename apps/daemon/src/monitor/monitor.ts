@@ -262,6 +262,10 @@ export class Monitor extends EventEmitter implements MonitorPort {
       if (adapter instanceof SourceAdapter) {
         adapter.bind(binding);
       }
+
+      if (started && managed) {
+        this.retireEarlier(session);
+      }
     }
 
     if (hook.permission_mode) {
@@ -445,6 +449,37 @@ export class Monitor extends EventEmitter implements MonitorPort {
     session.subagents = merged;
     this.persistNative(session);
     this.emit(RuntimeEvent.Snapshot);
+  }
+  /**
+   * A restart continues the conversation in a new terminal: its earlier managed sessions end and leave the lists, and
+   * the new one keeps their pin. An ended record is not restored when its wrapper registers again.
+   * ponytail: the earlier Claude process keeps running; a hook from it updates the ended record again.
+   */
+  private retireEarlier(current: Session) {
+    for (const session of this.sessions.values()) {
+      const transport = this.options.adapters.get(session.target.connectorId)?.descriptor().transport;
+
+      if (
+        session.id === current.id ||
+        session.claudeSessionId !== current.claudeSessionId ||
+        session.status === SessionStatus.Ended ||
+        ![ConnectorTransport.Pty, ConnectorTransport.Cmux].some((value) => value === transport)
+      ) {
+        continue;
+      }
+
+      session.status = SessionStatus.Ended;
+      clearCurrentStep(session);
+      this.options.permissions.cancelSession(session.id, session.generation);
+      this.options.userInputs?.cancelSession(session.id, session.generation);
+      this.persistNative(session);
+
+      if (this.pins.delete(session.id)) {
+        this.options.store.setPinned(session.id, false);
+        this.pins.add(current.id);
+        this.options.store.setPinned(current.id, true);
+      }
+    }
   }
   private persistNative(session: Session, transcriptPath?: string) {
     if (
