@@ -14,7 +14,17 @@ const conversationOf = (session: Session) =>
 export function mergeSessionPages(snapshot: readonly Session[], pages: readonly Session[]) {
   const sessions = new Map(pages.map((session) => [conversationOf(session), session]))
 
-  for (const session of snapshot) sessions.set(conversationOf(session), session)
+  const live = new Map<string, Session>()
+
+  // A restart leaves the dead bindings of the conversation in the snapshot: the newest binding is the live one.
+  for (const session of snapshot) {
+    const key = conversationOf(session)
+    const current = live.get(key)
+
+    if (!current || (session.createdAt ?? 0) > (current.createdAt ?? 0)) live.set(key, session)
+  }
+
+  for (const [key, session] of live) sessions.set(key, session)
 
   return [...sessions.values()].sort(
     (left, right) =>

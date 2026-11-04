@@ -145,3 +145,12 @@ it("lists a conversation once though an older catalog page knows it under an ear
 
   expect(mergeSessionPages([live], [stale, other]).map((session) => session.id)).toEqual([terminal.id, chat.id])
 })
+
+it("lists a restarted conversation under its newest session though the snapshot still holds the dead ones", () => {
+  // A restart binds the conversation anew; the same transcript gives every binding the same last message.
+  const dead = at(terminal, 1, { id: "zzz-dead-binding", createdAt: NOW - 90 * MINUTE })
+  const untimed = at(terminal, 1, { id: "yyy-untimed-binding", createdAt: undefined })
+  const restarted = at(terminal, 1, { id: "aaa-restarted", createdAt: NOW - 2 * MINUTE })
+
+  expect(mergeSessionPages([restarted, untimed, dead], []).map((session) => session.id)).toEqual(["aaa-restarted"])
+})
