@@ -4,7 +4,7 @@ import { groupByProject, PINNED_GROUP } from '@/entities/session/lib/projects/gr
 
 const session = (id: string, cwd?: string, pinned = false) => ({ id, cwd, pinned }) as unknown as Session;
 
-it('leads with pinned, then keeps projects in list order and same-named folders apart', () => {
+it('leads with pinned, then keeps projects in list order and same-named folders apart, named by their parent', () => {
   const groups = groupByProject([
     session('a', '/work/one/app'),
     session('b', '/work/two/app'),
@@ -15,8 +15,14 @@ it('leads with pinned, then keeps projects in list order and same-named folders 
 
   expect(groups.map(({ key, name, sessions }) => [key, name, sessions.map(({ id }) => id)])).toEqual([
     [PINNED_GROUP, null, ['c']],
-    ['/work/one/app', 'app', ['a', 'e']],
-    ['/work/two/app', 'app', ['b']],
+    ['/work/one/app', 'app · one', ['a', 'e']],
+    ['/work/two/app', 'app · two', ['b']],
     ['none', null, ['d']],
   ]);
+});
+
+it('keeps a project name that no other folder shares', () => {
+  expect(
+    groupByProject([session('a', '/work/one/app'), session('b', '/work/one/api')]).map(({ name }) => name),
+  ).toEqual(['app', 'api']);
 });
