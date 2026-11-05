@@ -5,6 +5,7 @@ import { cn } from "@/shared/lib/utils"
 import { MarkdownVariant } from "./constants/values"
 import { CodeBlock } from "./code-block"
 import { remarkLiteralHtml } from "./helpers/literal-html"
+import { remarkLocalImages } from "./helpers/local-images"
 import { TaskInput } from "./helpers/task-input"
 import { MARKDOWN_IDS } from "./test-ids"
 import { MarkdownImageLink } from "./preview/markdown-image-link"
@@ -15,7 +16,7 @@ import { ImagePreview } from "./preview/image-preview"
 import type { MarkdownProps } from "./markdown.types"
 
 // skipHtml stays as a second guard: literal HTML leaves no html nodes to render.
-const remarkPlugins = [remarkGfm, remarkLiteralHtml]
+const remarkPlugins = [remarkGfm, remarkLiteralHtml, remarkLocalImages]
 const rehypePlugins: Options["rehypePlugins"] = [[rehypeHighlight, { detect: false }]]
 const components: Components = { pre: CodeBlock, a: MarkdownLink, img: MarkdownImageLink, input: TaskInput }
 const previewComponents: Components = { pre: CodePreview, a: LinkPreview, img: ImagePreview, input: TaskInput }

@@ -15,6 +15,7 @@ import { ResumeSession } from "@/features/create-session"
 import { SessionTitle } from "@/features/rename-session"
 import { RateLimits, providerLimits, usageProvider } from "@/entities/usage"
 import { Button } from "@/shared/ui/button"
+import { LocalPathProvider } from "@/shared/ui/markdown"
 import { cn } from "@/shared/lib/utils"
 import { SessionActivity } from "./activity/session-activity"
 import { sessionObserved } from "../lib/session-availability"
@@ -60,120 +61,123 @@ export function SessionPage({
   const deviceStatus = state.snapshot?.deviceStatus ?? DeviceStatus.Offline
 
   return (
-    <section className="session:flex session:min-h-0 session:flex-1 session:flex-col" data-testid={SESSION_PAGE_IDS.root}>
-      <div className="session:flex session:items-center session:gap-[8px] session:pt-[8px] session:short:pt-[4px]">
-        {showBack ? (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="mt-[3px] mb-[25px] session:m-0 session:size-[32px] session:flex-none session:p-0"
-            data-testid={SESSION_PAGE_IDS.back}
-            aria-label={t("allSessions")}
-            onClick={onBack}
-          >
-            <ArrowLeft aria-hidden="true" size={20} />
-          </Button>
-        ) : null}
-        <div className="flex items-center justify-between gap-[14px] phone:items-start session:min-w-0 session:flex-1 session:items-center session:gap-[8px]">
-          <div className="min-w-0">
-            <h1 className={titleClass} data-testid={SESSION_PAGE_IDS.title}>
-              {rename ? (
-                <SessionTitle
-                  key={session.id + ":" + session.generation}
-                  title={sessionTitle(session, 16) ?? t("selectedChat")}
-                  controller={rename}
-                  disabled={state.connection !== ConnectionStatus.Online}
-                />
-              ) : (
-                (sessionTitle(session, 16) ?? t("selectedChat"))
-              )}
-            </h1>
-            {/* One line: the header's controls keep their room on a narrow phone. */}
-            <p className={cn(sourceTextClass, "truncate")}>
-              {t(sourceNames[session.target.kind])} ·{" "}
-              <span className="text-[12px] text-muted-foreground session:p-0 session:text-[10px]" data-testid={SESSION_PAGE_IDS.status}>
-                {t(sessionStatusLabel(session, observed))}
-              </span>
-            </p>
+    // A local image the agent names in a message opens in the file view, read from the session's device.
+    <LocalPathProvider value={onOpenFile}>
+      <section className="session:flex session:min-h-0 session:flex-1 session:flex-col" data-testid={SESSION_PAGE_IDS.root}>
+        <div className="session:flex session:items-center session:gap-[8px] session:pt-[8px] session:short:pt-[4px]">
+          {showBack ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="mt-[3px] mb-[25px] session:m-0 session:size-[32px] session:flex-none session:p-0"
+              data-testid={SESSION_PAGE_IDS.back}
+              aria-label={t("allSessions")}
+              onClick={onBack}
+            >
+              <ArrowLeft aria-hidden="true" size={20} />
+            </Button>
+          ) : null}
+          <div className="flex items-center justify-between gap-[14px] phone:items-start session:min-w-0 session:flex-1 session:items-center session:gap-[8px]">
+            <div className="min-w-0">
+              <h1 className={titleClass} data-testid={SESSION_PAGE_IDS.title}>
+                {rename ? (
+                  <SessionTitle
+                    key={session.id + ":" + session.generation}
+                    title={sessionTitle(session, 16) ?? t("selectedChat")}
+                    controller={rename}
+                    disabled={state.connection !== ConnectionStatus.Online}
+                  />
+                ) : (
+                  (sessionTitle(session, 16) ?? t("selectedChat"))
+                )}
+              </h1>
+              {/* One line: the header's controls keep their room on a narrow phone. */}
+              <p className={cn(sourceTextClass, "truncate")}>
+                {t(sourceNames[session.target.kind])} ·{" "}
+                <span className="text-[12px] text-muted-foreground session:p-0 session:text-[10px]" data-testid={SESSION_PAGE_IDS.status}>
+                  {t(sessionStatusLabel(session, observed))}
+                </span>
+              </p>
+            </div>
           </div>
+          <ChatSearchButton onOpen={search.show} />
+          <SessionRulesBadge session={session} state={state} onOpen={onOpenRules} />
+          <SessionAvailability key={session.id + ":availability:" + session.generation} available={observed} />
+          <SessionMenu
+            key={session.id + ":" + session.generation}
+            session={session}
+            state={state}
+            controller={controller}
+            switchModel={switchModel}
+            remove={remove}
+            onRemoved={onBack}
+            onOpenUsage={onOpenUsage}
+          />
         </div>
-        <ChatSearchButton onOpen={search.show} />
-        <SessionRulesBadge session={session} state={state} onOpen={onOpenRules} />
-        <SessionAvailability key={session.id + ":availability:" + session.generation} available={observed} />
-        <SessionMenu
-          key={session.id + ":" + session.generation}
-          session={session}
-          state={state}
-          controller={controller}
-          switchModel={switchModel}
-          remove={remove}
-          onRemoved={onBack}
-          onOpenUsage={onOpenUsage}
-        />
-      </div>
-      {/* The plan limits sit at the right of the status line, so the header leaves the title its room. */}
-      <div className="mt-[15px] flex items-center gap-[8px] session:mt-[5px] session:flex-none">
-        <p className="min-w-0 flex-1 text-[11px] text-muted-foreground session:text-[10px] session:short:hidden">
-          {t("updatedAt", { time: new Date(session.lastEventAt).toLocaleTimeString(language) })} ·{" "}
-          {t(session.statusConfidence === StatusConfidence.Inferred ? "inferredStatus" : "observedStatus")}
-        </p>
-        <RateLimits
-          limits={providerLimits(state.snapshot?.rateLimits ?? [], usageProvider(session.target.kind))}
+        {/* The plan limits sit at the right of the status line, so the header leaves the title its room. */}
+        <div className="mt-[15px] flex items-center gap-[8px] session:mt-[5px] session:flex-none">
+          <p className="min-w-0 flex-1 text-[11px] text-muted-foreground session:text-[10px] session:short:hidden">
+            {t("updatedAt", { time: new Date(session.lastEventAt).toLocaleTimeString(language) })} ·{" "}
+            {t(session.statusConfidence === StatusConfidence.Inferred ? "inferredStatus" : "observedStatus")}
+          </p>
+          <RateLimits
+            limits={providerLimits(state.snapshot?.rateLimits ?? [], usageProvider(session.target.kind))}
+            agent={agentName(session)}
+          />
+        </div>
+        <SessionNotices session={session} remove={remove} switchModel={switchModel} />
+        {session.capabilities.terminalSnapshot ? (
+          <div className="mt-[28px] flex gap-[24px] border-b border-border session:mt-[4px] session:flex-none session:gap-[18px] session:short:mt-[3px]">
+            <Button
+              variant="ghost"
+              className={cn(tabClass, tab === SessionTab.History && activeTabClass)}
+              data-testid={SESSION_PAGE_IDS.history}
+              onClick={() => setTab(SessionTab.History)}
+            >
+              {t("history")}
+            </Button>
+            <Button
+              variant="ghost"
+              className={cn(tabClass, tab === SessionTab.Terminal && activeTabClass)}
+              data-testid={SESSION_PAGE_IDS.terminal}
+              onClick={() => setTab(SessionTab.Terminal)}
+            >
+              {t("terminal")}
+            </Button>
+          </div>
+        ) : null}
+        <SubagentPanel agents={session.subagents ?? []} online={observed} onOpen={onOpenSubagent} />
+        {session.changes ? (
+          <SessionChanges key={session.id + ":changes:" + session.generation} changes={session.changes} onOpen={onOpenFile} />
+        ) : null}
+        <ChatSearch open={search.open} session={session} agent={agentName(session)} onPick={search.pick} onClose={search.close} />
+        <SessionFeed
+          key={session.id + tab}
+          focus={search.focus}
+          sessionId={session.id}
+          readingScope={readingScope}
+          onHistoryPage={onHistoryPage}
+          outline={outline}
+          onHistoryAround={around}
+          newestAt={session.lastMessageAt}
           agent={agentName(session)}
+          messages={feed}
+          historyStatus={historyStatus}
+          available={observed}
+          tab={tab}
+          terminal={state.snapshot?.terminal ?? null}
         />
-      </div>
-      <SessionNotices session={session} remove={remove} switchModel={switchModel} />
-      {session.capabilities.terminalSnapshot ? (
-        <div className="mt-[28px] flex gap-[24px] border-b border-border session:mt-[4px] session:flex-none session:gap-[18px] session:short:mt-[3px]">
-          <Button
-            variant="ghost"
-            className={cn(tabClass, tab === SessionTab.History && activeTabClass)}
-            data-testid={SESSION_PAGE_IDS.history}
-            onClick={() => setTab(SessionTab.History)}
-          >
-            {t("history")}
-          </Button>
-          <Button
-            variant="ghost"
-            className={cn(tabClass, tab === SessionTab.Terminal && activeTabClass)}
-            data-testid={SESSION_PAGE_IDS.terminal}
-            onClick={() => setTab(SessionTab.Terminal)}
-          >
-            {t("terminal")}
-          </Button>
-        </div>
-      ) : null}
-      <SubagentPanel agents={session.subagents ?? []} online={observed} onOpen={onOpenSubagent} />
-      {session.changes ? (
-        <SessionChanges key={session.id + ":changes:" + session.generation} changes={session.changes} onOpen={onOpenFile} />
-      ) : null}
-      <ChatSearch open={search.open} session={session} agent={agentName(session)} onPick={search.pick} onClose={search.close} />
-      <SessionFeed
-        key={session.id + tab}
-        focus={search.focus}
-        sessionId={session.id}
-        readingScope={readingScope}
-        onHistoryPage={onHistoryPage}
-        outline={outline}
-        onHistoryAround={around}
-        newestAt={session.lastMessageAt}
-        agent={agentName(session)}
-        messages={feed}
-        historyStatus={historyStatus}
-        available={observed}
-        tab={tab}
-        terminal={state.snapshot?.terminal ?? null}
-      />
-      <SessionPermissions session={session} state={state} controller={controller} />
-      <UserInputRequests session={session} state={state} controller={controller} />
-      <SessionActivity session={session} available={observed} />
-      <ResumeSession
-        session={session}
-        online={state.connection === ConnectionStatus.Online && deviceStatus === DeviceStatus.Online}
-        onResume={onResume}
-      />
-      <SessionInput tab={tab} session={session} controller={controller} connection={state.connection} deviceStatus={deviceStatus} />
-    </section>
+        <SessionPermissions session={session} state={state} controller={controller} />
+        <UserInputRequests session={session} state={state} controller={controller} />
+        <SessionActivity session={session} available={observed} />
+        <ResumeSession
+          session={session}
+          online={state.connection === ConnectionStatus.Online && deviceStatus === DeviceStatus.Online}
+          onResume={onResume}
+        />
+        <SessionInput tab={tab} session={session} controller={controller} connection={state.connection} deviceStatus={deviceStatus} />
+      </section>
+    </LocalPathProvider>
   )
 }
 

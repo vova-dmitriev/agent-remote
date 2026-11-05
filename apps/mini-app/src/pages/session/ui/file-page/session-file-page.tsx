@@ -4,7 +4,7 @@ import { FileView } from "./file-view"
 import { useTelegramBackButton } from "@/shared/lib/telegram"
 import type { SessionFilePageProps } from "./session-file-page.types"
 
-/** A file the session changed, read from its device when opened. */
+/** A file the session changed, or a local image the agent named, read from its device when opened. */
 export function SessionFilePage({ session, path, onBack }: SessionFilePageProps) {
   const { state, retry } = useSessionFile(session, path)
 
@@ -12,6 +12,7 @@ export function SessionFilePage({ session, path, onBack }: SessionFilePageProps)
 
   return (
     <FileView
+      sessionId={session.id}
       path={path}
       status={state.status}
       file={state.status === FileViewStatus.Ready ? state.file : undefined}

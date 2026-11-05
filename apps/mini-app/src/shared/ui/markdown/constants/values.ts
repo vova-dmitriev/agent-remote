@@ -17,6 +17,9 @@ export const MarkdownSourceNodeType = {
   Html: "html",
   Text: "text",
   Paragraph: "paragraph",
+  InlineCode: "inlineCode",
+  Link: "link",
+  LinkReference: "linkReference",
 } as const
 
 export type MarkdownSourceNodeType = (typeof MarkdownSourceNodeType)[keyof typeof MarkdownSourceNodeType]

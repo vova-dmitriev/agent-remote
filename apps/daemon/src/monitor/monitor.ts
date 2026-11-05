@@ -54,6 +54,7 @@ import {
   type SubagentHistoryPage,
 } from '../domain/ports/monitor.js';
 import { UnreadMessages } from './unread-messages.js';
+import { OfferedImages } from '../files/offered-images.js';
 
 /** Hooks a subagent fires for its own work. With `agent_id` they describe that child, never the parent turn. */
 const SUBAGENT_ACTIVITY_HOOKS: readonly ClaudeHookEvent[] = [
@@ -72,8 +73,11 @@ interface Options {
   permissions: PermissionBroker;
   userInputs?: UserInputBroker;
   allowSessionCreation?: boolean;
+  /** The local images the agent names in its messages, which the app may open. */
+  images?: OfferedImages;
 }
 export class Monitor extends EventEmitter implements MonitorPort {
+  readonly images: OfferedImages;
   private sessions = new Map<string, Session>();
   private bindings = new Map<string, Binding>();
   private subagentHistoryReaders = new Map<
@@ -99,6 +103,7 @@ export class Monitor extends EventEmitter implements MonitorPort {
   selectedId: string | null = null;
   constructor(private options: Options) {
     super();
+    this.images = options.images ?? new OfferedImages();
     this.pins = this.options.store.pinnedSessions();
     this.hidden = this.options.store.hiddenSessions();
     this.unread = new UnreadMessages(this.options.store);
@@ -1026,6 +1031,8 @@ export class Monitor extends EventEmitter implements MonitorPort {
 
     if (session && message?.success) {
       const shown = this.shown(session);
+
+      this.images.offer(session.id, message.data);
 
       session.lastMessageAt = Math.max(session.lastMessageAt ?? 0, message.data.occurredAt);
       this.persistNative(session);

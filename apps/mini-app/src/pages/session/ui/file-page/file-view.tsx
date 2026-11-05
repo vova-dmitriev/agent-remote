@@ -4,6 +4,7 @@ import { feedbackText } from "@/shared/lib/i18n"
 import { useTranslation } from "@/shared/lib/hooks"
 import { Button } from "@/shared/ui/button"
 import { Markdown } from "@/shared/ui/markdown"
+import { AttachmentCard } from "@/entities/attachment"
 import { NoticeTone, noticeVariants } from "@/shared/ui/notice"
 import { Skeleton } from "@/shared/ui/skeleton"
 import { FILE_VIEW_IDS } from "@/pages/session/config/test-ids"
@@ -13,8 +14,11 @@ import type { FileViewProps } from "./file-view.types"
 const fileName = (path: string) => path.split("/").at(-1) ?? path
 const isMarkdown = (path: string) => MARKDOWN_EXTENSIONS.includes(path.split(".").at(-1)?.toLowerCase() ?? "")
 
-/** A file the session changed, as it is now on the Mac: Markdown formatted, anything else as highlighted text. */
-export function FileView({ path, status, file, error, onBack, onRetry }: FileViewProps) {
+/**
+ * A file the session changed, as it is now on the Mac: Markdown formatted, anything else as highlighted text. A local
+ * image the agent named comes as an attachment.
+ */
+export function FileView({ sessionId, path, status, file, error, onBack, onRetry }: FileViewProps) {
   const { t } = useTranslation()
 
   return (
@@ -54,7 +58,8 @@ export function FileView({ path, status, file, error, onBack, onRetry }: FileVie
             </Button>
           </div>
         ) : null}
-        {status === FileViewStatus.Ready && file ? (
+        {status === FileViewStatus.Ready && file?.attachment ? <AttachmentCard sessionId={sessionId} attachment={file.attachment} /> : null}
+        {status === FileViewStatus.Ready && file && !file.attachment ? (
           <>
             {file.truncated ? (
               <p className={noticeVariants()} data-testid={FILE_VIEW_IDS.truncated}>

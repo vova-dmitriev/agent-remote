@@ -6,5 +6,6 @@ export const MARKDOWN_IDS = {
   copyStatus: "markdown-copy-status",
   link: "markdown-link",
   imageLink: "markdown-image-link",
+  localImage: "markdown-local-image",
   taskInput: "markdown-task-input",
 } as const

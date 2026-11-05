@@ -14,6 +14,7 @@ import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { mkdir } from 'node:fs/promises';
 import { LocalStore } from './monitor/store.js';
+import { OfferedImages } from './files/offered-images.js';
 import { Monitor } from './monitor/monitor.js';
 import { AdapterRegistry } from './adapters/registry.js';
 import { UserInputBroker } from './commands/user-input-broker.js';
@@ -60,7 +61,13 @@ export async function startDaemon(options: { legacyClaudeHooks?: boolean } = {})
 
   registerNativeAdapter(adapters, permissionsEnabled, inputEnabled);
 
+  // Opening a named image exports it like the agent's own media; the service is created below.
+  const images = new OfferedImages((session, path, name) =>
+    attachments.export(session, 'local-image:' + path, { name, mimeType: '', path }),
+  );
+
   const monitor = new Monitor({
+    images,
     deviceId: config.deviceId,
     store,
     adapters,

@@ -7,15 +7,22 @@ import {
   truncateUtf8,
   type Session,
   type SessionFile,
+  type AttachmentDescriptor,
 } from '@protocol';
 
 interface SessionLookup {
   session(id: string): Session | undefined;
+  /** The local images the agent named; without them only changed files open. */
+  images?: {
+    has(sessionId: string, path: string): boolean;
+    open(session: Session, path: string): Promise<AttachmentDescriptor>;
+  };
 }
 
 /**
  * The text of a file the session changed, for the app's file view. Only a path in the session's own change list is
- * read, never through a symlink, and only text; a large file comes back cut to its first 200 KB.
+ * read, never through a symlink, and only text; a large file comes back cut to its first 200 KB. A local image the
+ * agent named in the session comes back as an attachment instead.
  */
 export async function readSessionFile(
   monitor: SessionLookup,
@@ -29,6 +36,10 @@ export async function readSessionFile(
   }
 
   if (!session.changes?.files.some((file) => file.path === path)) {
+    if (monitor.images?.has(sessionId, path)) {
+      return { path, content: '', truncated: false, attachment: await monitor.images.open(session, path) };
+    }
+
     throw new CodedError(ErrorCode.ACCESS_DENIED);
   }
 

@@ -4,11 +4,15 @@ import { I18nextProvider } from "react-i18next"
 import { describe, expect, it } from "vitest"
 import { Language } from "@protocol"
 import { createLanguageInstance } from "@/shared/lib/i18n"
-import { Markdown, MARKDOWN_IDS } from "../index"
+import { LocalPathProvider, Markdown, MARKDOWN_IDS } from "../index"
 
-function render(text: string) {
+function render(text: string, openPath?: (path: string) => void) {
   return renderToStaticMarkup(
-    createElement(I18nextProvider, { i18n: createLanguageInstance(Language.En) }, createElement(Markdown, { text })),
+    createElement(
+      I18nextProvider,
+      { i18n: createLanguageInstance(Language.En) },
+      createElement(LocalPathProvider, { value: openPath }, createElement(Markdown, { text })),
+    ),
   )
 }
 
@@ -54,6 +58,18 @@ describe("safe Markdown", () => {
     expect(html).not.toContain("<link")
     expect(html).toContain('href="https://example.test/diagram.png"')
     expect(html).toContain(`data-testid="${MARKDOWN_IDS.imageLink}"`)
+  })
+
+  it("opens the local image paths an agent names in the app, never as browser links", () => {
+    const text = "Shot: ~/out/chart.png, `/tmp/shot one.png` and ![crop](/tmp/crop.webp) next to https://example.test/x.png"
+    const opened = render(text, () => {})
+    const plain = render(text)
+
+    expect(opened.match(new RegExp(`data-testid="${MARKDOWN_IDS.localImage}"`, "g"))).toHaveLength(3)
+    expect(opened).toContain('href="https://example.test/x.png"')
+    expect(plain).not.toContain(MARKDOWN_IDS.localImage)
+
+    for (const html of [opened, plain]) expect(html).not.toMatch(/href="(~|\/tmp)/)
   })
 
   it("keeps whitespace and unknown-language code readable", () => {

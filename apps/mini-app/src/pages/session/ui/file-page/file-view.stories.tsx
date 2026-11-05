@@ -13,7 +13,14 @@ const notes = {
 const meta = {
   title: "Pages/Session/FileView",
   component: FileView,
-  args: { path: notes.path, status: FileViewStatus.Ready, file: notes, onBack: () => {}, onRetry: () => {} },
+  args: {
+    sessionId: "synthetic-session",
+    path: notes.path,
+    status: FileViewStatus.Ready,
+    file: notes,
+    onBack: () => {},
+    onRetry: () => {},
+  },
 } satisfies Meta<typeof FileView>
 
 export default meta

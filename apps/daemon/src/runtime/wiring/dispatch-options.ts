@@ -81,6 +81,11 @@ export function openTranscriptSources(monitor: Monitor, attachments: AttachmentS
     async (sessionId, generation, message, media) => {
       const session = monitor.session(sessionId);
 
+      // A history page shows the agent's messages too: the images they name may be opened.
+      if (session?.generation === generation) {
+        monitor.images.offer(sessionId, message);
+      }
+
       if (!session || session.generation !== generation || !attachmentSourceCurrent(session, session)) {
         return message;
       }

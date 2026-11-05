@@ -1,9 +1,16 @@
 import { afterEach, beforeEach, expect, it } from 'vitest';
 import { mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { ErrorCode, MAX_SESSION_FILE_BYTES, type Session } from '@protocol';
+import {
+  ErrorCode,
+  MAX_SESSION_FILE_BYTES,
+  MessageRole,
+  type AttachmentDescriptor,
+  type Session,
+} from '@protocol';
 import { readSessionFile } from '@daemon/files/session-files.js';
+import { OfferedImages } from '@daemon/files/offered-images.js';
 
 let root: string;
 
@@ -80,4 +87,40 @@ it('shows the start of a large file and says it is cut', async () => {
 
   expect(file.content).toHaveLength(MAX_SESSION_FILE_BYTES);
   expect(file.truncated).toBe(true);
+});
+
+it('opens as an attachment only a local image the agent named in the session', async () => {
+  const exported: [string, string][] = [];
+  const descriptor = { id: 'attachment-1', name: 'chart.png' } as AttachmentDescriptor;
+
+  const images = new OfferedImages(async (_session, path, name) => {
+    exported.push([path, name]);
+
+    return descriptor;
+  });
+
+  const message = (role: MessageRole, text: string) => ({ id: text, role, text, occurredAt: 1 });
+
+  images.offer('s', message(MessageRole.Assistant, 'Preview: ~/Desktop/chart.png and `/tmp/shot one.png`'));
+  images.offer('s', message(MessageRole.User, 'Open /tmp/owner-typed.png'));
+
+  const lookup = { session: () => session([]), images };
+
+  expect(await readSessionFile(lookup, 's', '~/Desktop/chart.png')).toEqual({
+    path: '~/Desktop/chart.png',
+    content: '',
+    truncated: false,
+    attachment: descriptor,
+  });
+
+  await readSessionFile(lookup, 's', '/tmp/shot one.png');
+
+  expect(exported).toEqual([
+    [join(homedir(), 'Desktop/chart.png'), 'chart.png'],
+    ['/tmp/shot one.png', 'shot one.png'],
+  ]);
+
+  for (const path of ['/tmp/owner-typed.png', '/tmp/never-named.png']) {
+    await expect(readSessionFile(lookup, 's', path)).rejects.toThrow(ErrorCode.ACCESS_DENIED);
+  }
 });
