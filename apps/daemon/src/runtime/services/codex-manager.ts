@@ -643,6 +643,14 @@ export class CodexManager {
       ]),
     ];
 
+    // Codex Desktop answers for a thread no window has open only once its own wait runs out: asked one after another,
+    // the threads would hold the queue (and a session being created behind it) for seconds each.
+    const ipc = entry.ipc;
+
+    const owners = ipc
+      ? new Map(await Promise.all(ids.slice(0, 20).map(async (id) => [id, await ipc.owner(id)] as const)))
+      : undefined;
+
     for (const id of ids.slice(0, 20)) {
       const retained = await retainConnectedBinding(entry, id);
 
@@ -665,7 +673,7 @@ export class CodexManager {
 
       try {
         if (entry.ipc) {
-          owner = await entry.ipc.owner(id);
+          owner = owners?.get(id) ?? null;
           this.followDesktopThread(id, !!owner);
 
           if (!owner) {

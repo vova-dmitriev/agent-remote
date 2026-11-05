@@ -233,3 +233,27 @@ it('keeps its own app-server while it holds only the threads this app started', 
 
   expect(stopSocket).not.toHaveBeenCalled();
 });
+
+it("asks Codex Desktop for its threads' owners at once: an unopened thread answers only after a wait", async () => {
+  let asking = 0,
+    most = 0;
+
+  connectDesktop.mockResolvedValue({
+    owner: async () => {
+      most = Math.max(most, ++asking);
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      asking--;
+
+      return null;
+    },
+    frameTooLarge: () => false,
+    once() {},
+    async close() {},
+  });
+
+  const threads = ['a', 'b', 'c', 'd'].map((id) => ({ id: 'desktop-' + id, originator: 'Codex Desktop' }));
+  const { manager } = await setup(threads);
+
+  await manager.start();
+  await vi.waitFor(() => expect(most).toBe(threads.length));
+});
