@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 import { connect } from 'node:net';
-import { mkdir, lstat, chmod, unlink, open } from 'node:fs/promises';
+import { mkdir, lstat, chmod, unlink, open, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import {
@@ -242,6 +242,8 @@ export async function ensureManagedCodexSocket(
         });
 
         evidence({ type: ManagedCodexLaunchEvidenceType.ChildCreated, pid: child.pid });
+        // A later daemon run stops it by this pid: the app-server outlives the daemon.
+        await writeFile(join(directory, ManagedCodexPath.Pid), String(child.pid), { mode: 0o600 });
       } else {
         evidence({ type: ManagedCodexLaunchEvidenceType.ExistingOrUnknown });
       }
@@ -275,4 +277,35 @@ export async function ensureManagedCodexSocket(
 
     throw error;
   }
+}
+
+/**
+ * Stops the daemon's own app-server: only its exit lets go of the threads it loaded. Signals the process group the
+ * detached launch made (the npm wrapper and Codex itself), and only while the socket answers, so a stale pid is left
+ * alone. An app-server started before the pid was recorded stays: false.
+ */
+export async function stopManagedCodexSocket(stateDirectory: string) {
+  const path = managedCodexSocketPath(stateDirectory);
+  const file = join(stateDirectory, ManagedCodexPath.Directory, ManagedCodexPath.Pid);
+  const pid = Number(await readFile(file, 'utf8').catch(() => ''));
+
+  if (!Number.isInteger(pid) || pid <= 1 || !(await listening(path))) {
+    return false;
+  }
+
+  try {
+    process.kill(-pid, 'SIGTERM');
+  } catch (error) {
+    logDebug('codex/launcher', error);
+
+    return false;
+  }
+
+  for (let attempt = 0; attempt < 50 && !(await managedCodexSocketExited(path)); attempt++) {
+    await delay(100);
+  }
+
+  await unlink(file).catch((error: unknown) => logDebug('codex/launcher', error));
+
+  return managedCodexSocketExited(path);
 }

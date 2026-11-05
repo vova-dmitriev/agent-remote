@@ -4,6 +4,7 @@ import {
   ErrorCode,
   IntegrationState,
   type ModelChoice,
+  SessionStatus,
   TargetKind,
 } from '@protocol';
 import { RuntimeEvent } from '../../domain/runtime.js';
@@ -14,7 +15,11 @@ import { join } from 'node:path';
 import { mkdir, readFile, writeFile, rename, readdir } from 'node:fs/promises';
 import Sqlite from 'better-sqlite3';
 import { z } from 'zod';
-import { ensureManagedCodexSocket, managedCodexChildState } from '../../codex/launcher.js';
+import {
+  ensureManagedCodexSocket,
+  managedCodexChildState,
+  stopManagedCodexSocket,
+} from '../../codex/launcher.js';
 import { bindCodex } from '../../codex/binding/binding.js';
 import type { CodexClient } from '../../domain/codex/client.js';
 import { connectCodexSocket } from '../../codex/rpc/transport.js';
@@ -77,11 +82,10 @@ export class CodexManager {
   /** App-servers of the device's own Codex sign-in, whose models the app offers. */
   private nativeSockets = new Set<string>();
   private saved = new Map<string, CodexConnection>();
-  /**
-   * Codex Desktop's threads by who follows them: Codex Desktop itself (`hosted`), or, while it does not (the app is
-   * closed), this daemon's own app-server (`orphans`).
-   */
-  private desktopThreads = { hosted: new Set<string>(), orphans: new Set<string>() };
+  /** Codex Desktop's threads it hosts: followed there, not here. */
+  private hostedDesktopThreads = new Set<string>();
+  /** Codex Desktop connected again: the own app-server lets go of the threads it holds against it. */
+  private desktopBack = false;
   /** The app-server this daemon starts for the sessions it creates. */
   private get ownSocket() {
     return join(this.deps.stateDirectory, 'codex/app-server.sock');
@@ -183,7 +187,7 @@ export class CodexManager {
 
       await this.refresh(entry);
 
-      if (!this.desktopThreads.hosted.has(threadId)) {
+      if (!this.hostedDesktopThreads.has(threadId)) {
         try {
           await entry.rpc!.request(CodexMethod.ThreadResume, { threadId, excludeTurns: true });
         } catch (error) {
@@ -456,17 +460,49 @@ export class CodexManager {
 
     return task;
   }
-  /** Who follows a Codex Desktop thread: Codex Desktop while it hosts it, else this daemon's own app-server. */
   private followDesktopThread(id: string, hosted: boolean) {
-    const { hosted: inDesktop, orphans } = this.desktopThreads;
-
-    (hosted ? inDesktop : orphans).add(id);
-    (hosted ? orphans : inDesktop).delete(id);
+    if (hosted) {
+      this.hostedDesktopThreads.add(id);
+    } else {
+      this.hostedDesktopThreads.delete(id);
+    }
   }
   /**
-   * Loads into this daemon's own app-server the threads it started that Codex unloaded, and Codex Desktop's threads
-   * while Codex Desktop does not host them; returns those now loaded.
+   * Codex Desktop is back. A thread loaded in an app-server stays locked against every other one ("This is open in
+   * another app") until that app-server exits: Codex has no unload, and `thread/unsubscribe` keeps the lock. The own
+   * app-server holding a thread it did not start (one the owner continued here, `resumeThread`) restarts, unless a
+   * turn runs on it; it loads again the threads this app started.
    */
+  private async letGo(entry: Connection, loaded: unknown) {
+    const ours = new Set([
+      ...entry.started,
+      ...(await this.candidates([CodexOriginator.Remote]).catch(() => [])),
+    ]);
+
+    const busy: readonly SessionStatus[] = [
+      SessionStatus.Running,
+      SessionStatus.WaitingPermission,
+      SessionStatus.WaitingInput,
+    ];
+
+    if (
+      !Array.isArray(loaded) ||
+      loaded.every((id) => ours.has(id)) ||
+      this.deps.monitor.find(
+        (session) =>
+          'endpoint' in session.target &&
+          session.target.endpoint === this.ownSocket &&
+          busy.includes(session.status),
+      )
+    ) {
+      return;
+    }
+
+    if (await stopManagedCodexSocket(this.deps.stateDirectory)) {
+      await ensureManagedCodexSocket(this.deps.stateDirectory);
+    }
+  }
+  /** Loads into this daemon's own app-server the threads it started that Codex unloaded; returns those now loaded. */
   private async reload(rpc: NonNullable<Connection['rpc']>, loaded: unknown) {
     const reloaded: string[] = [];
 
@@ -476,7 +512,7 @@ export class CodexManager {
       return [];
     });
 
-    for (const id of new Set([...started, ...this.desktopThreads.orphans])) {
+    for (const id of started) {
       if (Array.isArray(loaded) && loaded.includes(id)) {
         continue;
       }
@@ -540,16 +576,13 @@ export class CodexManager {
       delete entry.ipc;
     };
 
-    if (selection.kind === TargetKind.CodexCli && !entry.rpc) {
-      // The own app-server is started on demand; Codex Desktop's threads need it while Codex Desktop is closed.
-      if (
-        selection.socketPath === this.ownSocket &&
-        this.desktopThreads.orphans.size &&
-        this.deps.inputEnabled
-      ) {
-        await ensureManagedCodexSocket(this.deps.stateDirectory);
-      }
+    const desktopBack = selection.socketPath === this.ownSocket && this.desktopBack;
 
+    if (selection.socketPath === this.ownSocket) {
+      this.desktopBack = false;
+    }
+
+    if (selection.kind === TargetKind.CodexCli && !entry.rpc) {
       entry.rpc = await connectCodexSocket(selection.socketPath);
 
       entry.rpc.once(RuntimeEvent.Disconnected, () => {
@@ -566,16 +599,9 @@ export class CodexManager {
     }
 
     if (selection.kind === TargetKind.CodexDesktop && !entry.ipc) {
-      try {
-        entry.ipc = await DesktopIpcClient.connect(selection.socketPath, 2500);
-      } catch (error) {
-        // Codex Desktop is closed: its threads go on in this daemon's own app-server.
-        for (const id of await this.candidates([CodexOriginator.Desktop, CodexOriginator.DesktopLegacy])) {
-          this.followDesktopThread(id, false);
-        }
-
-        throw error;
-      }
+      // Codex Desktop closed leaves its threads alone: loading them here would lock them against it.
+      entry.ipc = await DesktopIpcClient.connect(selection.socketPath, 2500);
+      this.desktopBack = true;
 
       entry.ipc.once(RuntimeEvent.Disconnected, reset);
     }
@@ -588,15 +614,19 @@ export class CodexManager {
         : await this.candidates([CodexOriginator.Desktop, CodexOriginator.DesktopLegacy]);
     }
 
-    // Codex unloads a thread nobody follows, so after a restart the threads this app started on its own app-server
-    // are found where Codex records them, and loaded again.
+    // A restarted app-server holds no thread: the threads this app started on its own app-server are found where
+    // Codex records them, and loaded again.
     if (entry.discover && entry.rpc && selection.socketPath === this.ownSocket) {
+      if (desktopBack) {
+        await this.letGo(entry, loaded);
+      }
+
       loaded = [...(Array.isArray(loaded) ? loaded : []), ...(await this.reload(entry.rpc, loaded))].filter(
-        (id) => !this.desktopThreads.hosted.has(id),
+        (id) => !this.hostedDesktopThreads.has(id),
       );
 
       // A thread Codex Desktop took back is followed there, not here.
-      for (const id of this.desktopThreads.hosted) {
+      for (const id of this.hostedDesktopThreads) {
         const binding = entry.bindings.get(id);
 
         if (binding) {
