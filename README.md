@@ -12,7 +12,7 @@ These screenshots come exclusively from English Storybook stories with synthetic
 
 <img src="docs/screenshots/conversation.png" width="430" alt="English Codex conversation using synthetic Storybook messages" />
 
-The Mini App includes provider filters, session creation and renaming, bounded history, saved reading positions, message navigation, questions and approvals, subagent activity, editable queued prompts, file attachments, an image viewer and available native file-edit patches. The session list starts with 30 recent sessions and loads older pages as you scroll. Claude Code questions support single or multiple choices; the slash menu discovers invocable skills from the verified native session’s configuration. Connector capabilities determine which controls are available. Telegram's unsent prompt queue remains in memory and is lost when that app closes or reloads. The Chrome host persists acknowledged drafts and queued intents in the local companion.
+The Mini App includes provider filters, session creation and renaming, bounded history, saved reading positions, message navigation, questions and approvals, subagent activity, editable queued prompts, file attachments, an image viewer and available native file-edit patches. The session list groups sessions by project in collapsible groups (same-named projects are told apart by their parent folder), keeps pinned sessions on top, starts with 30 recent sessions and loads older pages as you scroll. An ended session restarts with one press. A local image path the agent names in its reply opens in the app: only paths named in that session's assistant messages are offered, and the file leaves the Mac only when the owner opens it. Claude Code questions support single or multiple choices; the slash menu discovers invocable skills from the verified native session’s configuration. Connector capabilities determine which controls are available. Telegram's unsent prompt queue remains in memory and is lost when that app closes or reloads. The Chrome host persists acknowledged drafts and queued intents in the local companion.
 
 <img src="docs/screenshots/accounts.png" width="700" alt="English Accounts and keys page showing two synthetic OpenAI subscriptions and an API profile" />
 
@@ -87,7 +87,7 @@ Archives and checksums are written to ignored `artifacts/`. Native dependencies 
 
 ## Desktop: internal macOS build
 
-The Electron host reuses the Mini App UI and the independently supervised local companion. It has its own local approval identity; Telegram pairing and Chrome approval do not grant Desktop access. Closing the window leaves agent sessions running.
+The Electron host reuses the Mini App UI and the independently supervised local companion. It has its own local approval identity; Telegram pairing and Chrome approval do not grant Desktop access. Closing the window leaves agent sessions running. The sidebar groups sessions by project, and the Server menu starts, restarts and stops the personal login service; opening the app starts the service when it is installed.
 
 ```sh
 npm run validate
@@ -121,7 +121,7 @@ brew install cloudflared
 pnpm personal
 ```
 
-The first launch creates a private local `.env`; enter your own `BOT_TOKEN` there, then repeat `pnpm personal`. Do not paste the token into a chat, issue or README. The launcher starts the local database, Redis, relay and tunnel, updates the bot menu, and asks you to confirm pairing on the Mac. A temporary tunnel URL can change on restart; a [named tunnel and your own domain](docs/permanent-domain.md) provide a stable origin. Configure the [Telegram Main App](docs/telegram-main-app.md) separately in BotFather.
+The first launch creates a private local `.env`; enter your own `BOT_TOKEN` there, then repeat `pnpm personal`. Do not paste the token into a chat, issue or README. The launcher starts the local database, Redis, relay and tunnel, updates the bot menu, and asks you to confirm pairing on the Mac. To keep the service running across logins and restarts, `pnpm personal install` registers it as a launchd agent (`com.agentremote.personal`); `pnpm personal start|stop|restart|uninstall` manage it, and it logs to `~/Library/Logs/Agent Remote/personal.log`. A temporary tunnel URL can change on restart; a [named tunnel and your own domain](docs/permanent-domain.md) provide a stable origin. Configure the [Telegram Main App](docs/telegram-main-app.md) separately in BotFather.
 
 For a separately hosted relay, copy `.env.example` to `.env`, configure `BOT_TOKEN`, `DATABASE_URL`, `REDIS_URL` and `PUBLIC_ORIGIN`, then follow [operations](docs/operations.md) and [companion installation](docs/install-daemon.md). Remote input and permission handling are explicitly gated by `REMOTE_INPUT_ENABLED` and `REMOTE_PERMISSIONS_ENABLED` on both sides. Ordinary hooked Claude sessions can remain observation-only; use the supported managed launcher to enable input. cmux is optional.
 
