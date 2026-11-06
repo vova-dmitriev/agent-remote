@@ -18,7 +18,7 @@ export function MessagePreview({ id, message, anchor, agent, keep, leave, open }
       style={position}
       onPointerEnter={keep}
       onPointerLeave={leave}
-      onPointerDown={(event) => event.preventDefault()}
+      onMouseDown={(event) => event.preventDefault()}
     >
       {open ? (
         <button type="button" className="block w-full cursor-pointer text-left" data-testid={SESSION_FEED_IDS.previewOpen} onClick={open}>

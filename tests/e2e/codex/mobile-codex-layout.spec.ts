@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test';
+import { Language, ThemePreference } from '@protocol';
 import { test, publishMessages } from '../support/relay/relay-fixture.js';
 import { identity } from '../support/relay/identity.js';
 import { byTestId } from '../support/ui/testid.js';
@@ -104,8 +105,12 @@ test('dark mobile conversation preserves a neutral user bubble and readable text
     'chat-session',
   );
 
+  // The app applies the saved theme once preferences load, so the dark theme comes from there.
+  await page.route('**/preferences', (route) => route.request().method() === 'GET'
+    ? route.fulfill({ json: { language: Language.En, theme: ThemePreference.Dark } })
+    : route.continue());
+
   await page.goto('/');
-  await page.evaluate(() => document.documentElement.classList.add('dark'));
   await byTestId(page, SESSION_CARD_IDS.root, { 'session-id': 'chat-session' }).click();
   const user = byTestId(page, SESSION_FEED_IDS.message, { 'message-id': 'dark-user' });
   const answer = byTestId(page, SESSION_FEED_IDS.message, { 'message-id': 'dark-answer' });

@@ -88,8 +88,8 @@ for (const theme of [ThemePreference.Light, ThemePreference.Dark]) {
   expect(delivered).toHaveLength(0);
   // A slash in the middle of the text completes too, and replaces only its own word.
   await input.fill('Please run  after the fix');
-  await input.press('Home');
-  for (let step = 0; step < 'Please run '.length; step++) await input.press('ArrowRight');
+  // Home does not move the caret in a WebKit text field on macOS, so place it directly.
+  await input.evaluate((node: HTMLTextAreaElement, at) => node.setSelectionRange(at, at), 'Please run '.length);
   await input.pressSequentially('/te');
   await expect(page.getByTestId(SLASH_SKILL_IDS.option)).toHaveCount(1);
   await input.press('Enter');

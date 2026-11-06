@@ -28,7 +28,11 @@ export function AttachmentCard({ sessionId, attachment }: AttachmentCardProps) {
           className="h-auto min-h-[80px] w-full basis-full overflow-hidden p-0 has-[>svg]:px-0"
           data-testid={ATTACHMENT_IDS.open}
           disabled={!resource.url}
-          onClick={() => resource.setOpened(true)}
+          onClick={(event) => {
+            // WebKit does not focus a clicked button; the viewer returns focus to whatever held it on open.
+            event.currentTarget.focus()
+            resource.setOpened(true)
+          }}
           aria-label={t("attachmentView", { name: attachment.name })}
         >
           {resource.url ? (
